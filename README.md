@@ -23,12 +23,15 @@ mutant.
   don't actually depend on the behavior of the function.
 * Be fast enough to plausibly run on thousand-file trees, although not necessarily instant. It's OK if
   it takes some minutes to run.
-* Default on and easy start: no annotations need to be added to the source tree to use Enucleate, 
-  you just run it. I'd like it to be useful on a tree you haven't seen before, where you're not
+* Easy start: no annotations need to be added to the source tree to use Enucleate, 
+  you just run it and it should say something useful about any Rust tree. 
+  I'd like it to be useful on a tree you haven't seen before, where you're not
   sure of the quality of the tests.
 * Understandable output including easily reproducible test failures and a copy of the output.
-* Low noise: avoid raising warnings about
+* Signal to noise: most warnings should indicate something that really should be tested more; 
+  false positives should be easy to durably dismiss.
 * Opt-in annotations to disable mutation of some methods or to explain how to mutate them usefully.
+* Rust only, Cargo only. No need to mutate C code; there are other tests for that.
 
 ## Approach
 
@@ -62,6 +65,22 @@ so Enucleate does not need to really understand the function return type at this
 Some functions will fail to build because they return a type that does not implement `Default`,
 and that's OK.
 
+## Further thoughts
+
 To make this faster on large trees, we could keep several scratch trees and test them in parallel, 
 which is likely to exploit CPU resources more thoroughly than Cargo's own parallelism: in particular
 Cargo tends to fall down to a single task during linking.
+
+One class of functions that have a reason to exist but may not cause a test suite failure if emptied 
+out are those that exist for performance reasons, or more generally that have effects other than on the directly
+observable side effects of calling the function.  For example, functions to do with managing caches
+or memory.
+
+Ideally, these should be tested, but doing so in a way that's not flaky can be difficult. Enucleate
+can help in a few ways:
+
+* It helps to at least highlight to the developer that the function is not covered by tests, and
+  so should perhaps be treated with extra care, or tested manually.
+* A `#[enucleate::skip]` annotation can be added to suppress warnings and explain the decision.
+* Sometimes these effects can be tested by making the side-effect observable with, for example,
+  a counter of the number of memory allocations or cache misses/hits.
