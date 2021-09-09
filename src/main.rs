@@ -3,43 +3,26 @@
 use std::env::args;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
+// use syn::parse;
+use syn::visit::Visit;
+use syn::ItemFn;
 
-use syntex_syntax::ast::{FnDecl, NodeId};
-use syntex_syntax::codemap::FilePathMapping;
-use syntex_syntax::ext::quote::rt::Span;
-use syntex_syntax::parse;
-use syntex_syntax::visit::{walk_crate, FnKind, Visitor};
+struct FnVisitor {}
 
-struct VisitFns {}
-
-impl<'ast> Visitor<'ast> for VisitFns {
-    fn visit_fn(&mut self, fk: FnKind<'ast>, fd: &'ast FnDecl, s: Span, _: NodeId) {
-        match fk {
-            FnKind::ItemFn(ident, _generics, _unsafety, _constness, _abi, _visibility, _block) => {
-                println!("visit item fn {:?}", ident)
-            }
-            FnKind::Method(ident, _sig, _vis, _block) => {
-                println!("visit method fn {:?}", ident)
-            }
-            FnKind::Closure(expr) => {
-                println!("visit closure fn {:?}", expr)
-            }
-            _ => (),
-        }
+impl<'ast> Visit<'ast> for FnVisitor {
+    fn visit_item_fn(&mut self, node: &'ast ItemFn) {
+        println!("visit item fn {}", node.sig.ident);
+        syn::visit::visit_item_fn(self, node);
     }
 }
 
 fn main() -> Result<()> {
-    let mapping = FilePathMapping::empty();
-    let session = parse::ParseSess::new(mapping);
     let srcpath = PathBuf::from(&args().nth(1).expect("a Rust source file name"));
-    let crat =
-        parse::parse_crate_from_file(&srcpath, &session).map_err(|mut diag| {
-            diag.emit();
-            anyhow!("Failed to parse crate")
-        })?;
-    // dbg!(&crat);
-    walk_crate(&mut VisitFns {}, &crat);
+
+    let code = std::fs::read_to_string(&srcpath)?;
+    let file_ast = syn::parse_str::<syn::File>(&code)?;
+    // println!("{:#?}", expr);
+    FnVisitor {}.visit_file(&file_ast);
     Ok(())
 }

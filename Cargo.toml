@@ -9,4 +9,7 @@ publish = false
 
 [dependencies]
 anyhow = "1.0"
-syntex_syntax = "0.59"
+
+[dependencies.syn]
+version = "1.0.76"
+features = ["full", "extra-traits", "visit"]
