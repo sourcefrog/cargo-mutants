@@ -19,7 +19,7 @@ pub enum MutationOp {
 
 #[derive()]
 pub struct Mutation {
-    op: MutationOp,
+    pub op: MutationOp,
     function_ident: syn::Ident,
     span: Span,
 }

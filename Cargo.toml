@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 anyhow = "1.0"
+argh = "0.1.6"
 quote = "1.0"
 
 [dependencies.syn]
