@@ -66,29 +66,50 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     }
 }
 
-fn discover_mutation_sites(file_ast: &syn::File) -> Vec<Mutation> {
-    let mut v = DiscoveryVisitor::default();
-    v.visit_file(&file_ast);
-    v.sites
+struct FileMutagen {
+    #[allow(unused)]
+    path: PathBuf,
+    code: String,
+    syn_file: syn::File,
+}
+
+impl FileMutagen {
+    pub fn new(path: PathBuf) -> Result<FileMutagen> {
+        let code = std::fs::read_to_string(&path)?;
+        let syn_file = syn::parse_str::<syn::File>(&code)?;
+        Ok(FileMutagen {
+            path,
+            code,
+            syn_file,
+        })
+    }
+
+    fn discover_mutation_sites(&self) -> Vec<Mutation> {
+        let mut v = DiscoveryVisitor::default();
+        v.visit_file(&self.syn_file);
+        v.sites
+    }
 }
 
 fn main() -> Result<()> {
     let srcpath = PathBuf::from(&args().nth(1).expect("a Rust source file name"));
-
-    let code = std::fs::read_to_string(&srcpath)?;
-    let file_ast = syn::parse_str::<syn::File>(&code)?;
-    // println!("{:#?}", expr);
-    let mutation_sites = discover_mutation_sites(&file_ast);
+    let mutagen = FileMutagen::new(srcpath)?;
+    let mutation_sites = mutagen.discover_mutation_sites();
     // eprintln!("{:#?}", mutation_sites);
     for m in &mutation_sites[..1] {
-        print!("{}", m.apply(&code));
+        print!("{}", m.apply(&mutagen.code));
     }
-    // let out_tokens = file_ast.into_token_stream();
-    // println!("{}", out_tokens);
     Ok(())
 }
 
 #[cfg(test)]
 mod test {
-    // use super::*;
+    use super::*;
+
+    #[test]
+    fn discover_mutations() {
+        let mutagen = FileMutagen::new("testdata/tree/factorial/src/bin/main.rs".into()).unwrap();
+        let muts = mutagen.discover_mutation_sites();
+        assert_eq!(muts.len(), 2);
+    }
 }
