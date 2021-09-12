@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use argh::FromArgs;
+use similar::TextDiff;
 
 mod mutate;
 mod textedit;
@@ -45,6 +46,10 @@ struct ApplyMutation {
     /// mutation index number, from list-mutants.
     #[argh(option)]
     index: usize,
+
+    /// show the diff between the original and mutated file.
+    #[argh(switch)]
+    diff: bool,
 }
 
 fn main() -> Result<()> {
@@ -63,7 +68,21 @@ fn main() -> Result<()> {
                 .into_iter()
                 .nth(sub.index)
                 .expect("index in range");
-            std::io::stdout().write_all(mutation.mutated_code(&mutagen).as_bytes())?;
+            let mutated_code = mutation.mutated_code(&mutagen);
+            if sub.diff {
+                let old_label = mutagen.path.to_string_lossy();
+                let new_label = format!("{} {:?}", &old_label, &mutation);
+                let text_diff = TextDiff::from_lines(&mutagen.code, &mutated_code);
+                print!(
+                    "{}",
+                    text_diff
+                        .unified_diff()
+                        .context_radius(10)
+                        .header(&old_label, &new_label)
+                );
+            } else {
+                std::io::stdout().write_all(mutated_code.as_bytes())?;
+            }
         }
     }
     Ok(())

@@ -99,8 +99,8 @@ fn item_fn_is_test(node: &ItemFn) -> bool {
 
 pub struct FileMutagen {
     #[allow(unused)]
-    path: PathBuf,
-    code: String,
+    pub path: PathBuf,
+    pub code: String,
     syn_file: syn::File,
 }
 
