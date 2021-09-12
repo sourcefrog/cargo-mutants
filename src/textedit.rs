@@ -6,7 +6,7 @@ use proc_macro2::LineColumn;
 ///
 /// In `LineColumn`, lines are 1-indexed, and inclusive; columns are 0-indexed
 /// in UTF-8 characters (presumably really code points) and inclusive.
-pub(crate) fn replace_line_column_region(
+pub(crate) fn replace_region(
     s: &str,
     start: &LineColumn,
     end: &LineColumn,
@@ -40,7 +40,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn replace_region() {
+    fn test_replace_region() {
         let source = "
 fn foo() {
     some();
@@ -51,7 +51,7 @@ const BAR: u32 = 32;
 ";
         // typical multi-line case
         assert_eq!(
-            replace_line_column_region(
+            replace_region(
                 &source,
                 &LineColumn { line: 2, column: 9 },
                 &LineColumn { line: 5, column: 0 },
@@ -66,7 +66,7 @@ const BAR: u32 = 32;
 
         // single-line case
         assert_eq!(
-            replace_line_column_region(
+            replace_region(
                 &source,
                 &LineColumn {
                     line: 7,

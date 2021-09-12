@@ -11,7 +11,7 @@ use syn::ItemFn;
 use syn::visit::Visit;
 
 mod textedit;
-use textedit::replace_line_column_region;
+use textedit::replace_region;
 
 #[derive(Debug, Eq, PartialEq)]
 enum MutationOp {
@@ -30,7 +30,7 @@ struct Mutation {
 impl Mutation {
     fn apply(&self, source: &str) -> String {
         match self.op {
-            MutationOp::ReturnDefault => replace_line_column_region(
+            MutationOp::ReturnDefault => replace_region(
                 source,
                 &self.span.start(),
                 &self.span.end(),
