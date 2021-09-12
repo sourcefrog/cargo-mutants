@@ -11,3 +11,8 @@ fn factorial(n: u32) -> u32 {
     }
     a
 }
+
+#[test]
+fn test_factorial() {
+    assert_eq!(factorial(6), 720);
+}

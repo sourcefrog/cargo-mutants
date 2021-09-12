@@ -66,6 +66,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     fn visit_item_fn(&mut self, node: &'ast ItemFn) {
         // TODO: Filter out inapplicable fns.
         // TODO: Also visit methods and maybe closures.
+        if item_fn_is_test(node) {
+            eprintln!("skip #[test] fn {:?}", node.sig.ident);
+            return; // don't look inside it either
+        }
         self.sites.push(Mutation {
             op: MutationOp::ReturnDefault,
             function_ident: node.sig.ident.clone(),
@@ -81,6 +85,16 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
         // );
         syn::visit::visit_item_fn(self, node);
     }
+}
+
+fn item_fn_is_test(node: &ItemFn) -> bool {
+    node.attrs.iter().any(|attr| {
+        attr.path
+            .segments
+            .iter()
+            .map(|ps| &ps.ident)
+            .eq(["test"].iter())
+    })
 }
 
 pub struct FileMutagen {
@@ -151,6 +165,11 @@ fn factorial(n: u32) -> u32 {
     }
     a
 }
+
+#[test]
+fn test_factorial() {
+    assert_eq!(factorial(6), 720);
+}
 "#
         );
 
@@ -167,6 +186,11 @@ fn factorial(n: u32) -> u32 {
 
 fn factorial(n: u32) -> u32 {
 /* ~ removed by enucleate ~ */ Default::default()
+}
+
+#[test]
+fn test_factorial() {
+    assert_eq!(factorial(6), 720);
 }
 "#
         );
