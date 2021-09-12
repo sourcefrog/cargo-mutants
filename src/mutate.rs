@@ -135,8 +135,9 @@ mod test {
         let muts = mutagen.discover_mutation_sites();
         assert_eq!(muts.len(), 2);
 
-        let mutated_code = muts[0].mutated_code(&mutagen);
+        let mut mutated_code = muts[0].mutated_code(&mutagen);
         assert_eq!(muts[0].function_name(), "main");
+        mutated_code.retain(|c| c != '\r');
         assert_eq!(
             mutated_code,
             r#"fn main() {
@@ -153,8 +154,9 @@ fn factorial(n: u32) -> u32 {
 "#
         );
 
-        let mutated_code = muts[1].mutated_code(&mutagen);
+        let mut mutated_code = muts[1].mutated_code(&mutagen);
         assert_eq!(muts[1].function_name(), "factorial");
+        mutated_code.retain(|c| c != '\r');
         assert_eq!(
             mutated_code,
             r#"fn main() {
