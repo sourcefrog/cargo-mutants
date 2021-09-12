@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 anyhow = "1.0"
+quote = "1.0"
 
 [dependencies.syn]
 version = "1.0.76"

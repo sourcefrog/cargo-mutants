@@ -67,6 +67,12 @@ so Enucleate does not need to really understand the function return type at this
 Some functions will fail to build because they return a type that does not implement `Default`,
 and that's OK.
 
+The file is parsed using the [`syn`](https://docs.rs/syn) crate, but mutations
+are applied textually, rather than to the token stream, so that unmutated code
+retains its prior formatting, comments, line numbers, etc. This makes it
+possible to show a text diff of the mutation and should make it easier to
+understand any error messages from the build of the mutated code.
+
 ## Further thoughts
 
 To make this faster on large trees, we could keep several scratch trees and test them in parallel, 
