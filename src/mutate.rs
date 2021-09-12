@@ -31,9 +31,18 @@ impl Mutation {
                 &mutagen.code,
                 &self.span.start(),
                 &self.span.end(),
-                "{\n /* ~ removed by enucleate ~ */ Default::default()\n}",
+                "{\n/* ~ removed by enucleate ~ */ Default::default()\n}\n",
             ),
         }
+    }
+
+    /// Return the name of the function to be mutated.
+    ///
+    /// Note that this will often not be unique: the same name can be reused
+    /// in different modules, under different cfg guards, etc.
+    #[allow(unused)]
+    pub fn function_name(&self) -> String {
+        self.function_ident.to_string()
     }
 }
 
@@ -101,6 +110,8 @@ impl FileMutagen {
 
 #[cfg(test)]
 mod test {
+    use pretty_assertions::assert_eq;
+
     use super::*;
 
     #[test]
@@ -115,6 +126,47 @@ mod test {
         assert_eq!(
             format!("{:?}", muts[1]),
             "Mutation { op: ReturnDefault, function: \"factorial\", start: (7, 28), end: (13, 1) }"
+        );
+    }
+
+    #[test]
+    fn mutate_factorial() {
+        let mutagen = FileMutagen::new("testdata/tree/factorial/src/bin/main.rs".into()).unwrap();
+        let muts = mutagen.discover_mutation_sites();
+        assert_eq!(muts.len(), 2);
+
+        let mutated_code = muts[0].mutated_code(&mutagen);
+        assert_eq!(muts[0].function_name(), "main");
+        assert_eq!(
+            mutated_code,
+            r#"fn main() {
+/* ~ removed by enucleate ~ */ Default::default()
+}
+
+fn factorial(n: u32) -> u32 {
+    let mut a = 1;
+    for i in 2..=n {
+        a *= i;
+    }
+    a
+}
+"#
+        );
+
+        let mutated_code = muts[1].mutated_code(&mutagen);
+        assert_eq!(muts[1].function_name(), "factorial");
+        assert_eq!(
+            mutated_code,
+            r#"fn main() {
+    for i in 1..=6 {
+        println!("{}! = {}", i, factorial(i));
+    }
+}
+
+fn factorial(n: u32) -> u32 {
+/* ~ removed by enucleate ~ */ Default::default()
+}
+"#
         );
     }
 }

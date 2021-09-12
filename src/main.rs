@@ -24,5 +24,4 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod test {
     // use super::*;
-
 }
