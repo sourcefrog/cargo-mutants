@@ -12,4 +12,8 @@ anyhow = "1.0"
 
 [dependencies.syn]
 version = "1.0.76"
-features = ["full", "extra-traits", "visit"]
+features = ["full", "extra-traits", "visit", "visit-mut"]
+
+[dependencies.proc-macro2]
+features = ["span-locations"]
+version = "1.0.29"

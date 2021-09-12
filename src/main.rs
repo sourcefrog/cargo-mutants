@@ -12,7 +12,13 @@ struct FnVisitor {}
 
 impl<'ast> Visit<'ast> for FnVisitor {
     fn visit_item_fn(&mut self, node: &'ast ItemFn) {
-        println!("visit item fn {}", node.sig.ident);
+        let span = &node.block.brace_token.span;
+        println!(
+            "visit item fn {} with brace token span {:?}-{:?}",
+            node.sig.ident,
+            span.start(),
+            span.end(),
+        );
         syn::visit::visit_item_fn(self, node);
     }
 }
