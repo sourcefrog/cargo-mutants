@@ -15,7 +15,7 @@ similar = "2.0"
 
 [dependencies.syn]
 version = "1.0.76"
-features = ["full", "extra-traits", "visit", "visit-mut"]
+features = ["full", "extra-traits", "visit"]
 
 [dependencies.proc-macro2]
 features = ["span-locations"]
