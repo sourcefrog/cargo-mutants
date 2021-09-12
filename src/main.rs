@@ -1,6 +1,7 @@
 // Copyright 2021 Martin Pool
 
 use std::env::args;
+use std::fmt;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -18,13 +19,11 @@ enum MutationOp {
     ReturnDefault,
 }
 
-#[derive(Debug)]
+#[derive()]
 struct Mutation {
     op: MutationOp,
     function_ident: syn::Ident,
     span: Span,
-    // We could later have a concept of mutations that apply at scopes other
-    // than whole functions.
 }
 
 impl Mutation {
@@ -37,6 +36,17 @@ impl Mutation {
                 "{\n /* ~ removed by enucleate ~ */ Default::default()\n}",
             ),
         }
+    }
+}
+
+impl fmt::Debug for Mutation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Mutation")
+            .field("op", &self.op)
+            .field("function", &self.function_ident.to_string())
+            .field("start", &(self.span.start().line, self.span.start().column))
+            .field("end", &(self.span.end().line, self.span.end().column))
+            .finish()
     }
 }
 
@@ -111,5 +121,13 @@ mod test {
         let mutagen = FileMutagen::new("testdata/tree/factorial/src/bin/main.rs".into()).unwrap();
         let muts = mutagen.discover_mutation_sites();
         assert_eq!(muts.len(), 2);
-    }
+        assert_eq!(
+            format!("{:?}", muts[0]),
+            "Mutation { op: ReturnDefault, function: \"main\", start: (1, 10), end: (5, 1) }"
+        );
+        assert_eq!(
+            format!("{:?}", muts[1]),
+            "Mutation { op: ReturnDefault, function: \"factorial\", start: (7, 28), end: (13, 1) }"
+        );
+        }
 }
