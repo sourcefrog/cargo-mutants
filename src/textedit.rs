@@ -12,6 +12,7 @@ pub(crate) fn replace_region(
     end: &LineColumn,
     replacement: &str,
 ) -> String {
+    dbg!(start, end);
     let mut r = String::with_capacity(s.len() + replacement.len());
     let mut line_no = 1;
     let mut col_no = 0;
@@ -28,6 +29,8 @@ pub(crate) fn replace_region(
         if c == '\n' {
             line_no += 1;
             col_no = 0;
+        } else if c == '\r' {
+            // counts as part of the last column, not a separate column
         } else {
             col_no += 1;
         }
