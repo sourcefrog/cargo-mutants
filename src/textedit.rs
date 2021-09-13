@@ -45,6 +45,20 @@ mod test {
     use super::*;
 
     #[test]
+    fn replace_treats_crlf_as_part_of_last_column() {
+        let source = "fn foo() {\r\n    wibble();\r\n}\r\n//hey!\r\n";
+        assert_eq!(
+            replace_region(
+                source,
+                &LineColumn { line: 1, column: 9 },
+                &LineColumn { line: 3, column: 1 },
+                "{}\r\n"
+            ),
+            "fn foo() {}\r\n//hey!\r\n"
+        );
+    }
+
+    #[test]
     fn test_replace_region() {
         let source = "
 fn foo() {
