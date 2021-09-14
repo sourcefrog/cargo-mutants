@@ -68,8 +68,8 @@ fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     match args.command {
         Command::ListFiles(sub) => {
-            for name in SourceTree::new(&sub.dir).source_files() {
-                println!("{}", name.display());
+            for relpath in SourceTree::new(&sub.dir).source_files() {
+                println!("{}", relpath.to_slash_lossy());
             }
         }
         Command::ListMutants(sub) => {
@@ -95,7 +95,7 @@ fn main() -> Result<()> {
                 .expect("index in range");
             let mutated_code = mutation.mutated_code(&mutagen);
             if sub.diff {
-                let old_label = mutagen.path.to_string_lossy();
+                let old_label = mutagen.path.to_slash_lossy();
                 let new_label = format!("{} {:?}", &old_label, &mutation);
                 let text_diff = TextDiff::from_lines(&mutagen.code, &mutated_code);
                 print!(
