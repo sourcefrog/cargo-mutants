@@ -41,8 +41,8 @@ mod test {
             SourceTree::new(Path::new("testdata/tree/factorial"))
                 .source_files()
                 .map(|path| path.to_string_lossy().into_owned())
-                .collect::<Vec<String>>(),
-            vec!["src/bin/main.rs"]
+                .collect::<Vec<_>>(),
+            vec![Path::new("src/bin/main.rs")]
         )
     }
 }
