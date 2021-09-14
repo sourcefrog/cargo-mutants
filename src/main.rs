@@ -33,7 +33,7 @@ enum Command {
 #[argh(subcommand, name = "list-files")]
 struct ListFiles {
     /// rust crate directory to examine.
-    #[argh(option)]
+    #[argh(option, short = 'd')]
     dir: PathBuf,
 }
 
@@ -51,7 +51,7 @@ struct ListMutants {
 #[argh(subcommand, name = "apply")]
 struct ApplyMutation {
     /// rust source file to read and mutate.
-    #[argh(option)]
+    #[argh(option, short = 'f')]
     file: PathBuf,
 
     /// mutation index number, from list-mutants.
