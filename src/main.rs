@@ -41,9 +41,9 @@ struct ListFiles {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "list-mutants")]
 struct ListMutants {
-    /// rust source file to examine.
-    #[argh(option)]
-    file: Option<PathBuf>,
+    /// rust crate directory to examine.
+    #[argh(option, short = 'd')]
+    dir: PathBuf,
 }
 
 /// Print mutated source to stdout.
@@ -72,9 +72,17 @@ fn main() -> Result<()> {
             }
         }
         Command::ListMutants(sub) => {
-            let mutagen = FileMutagen::new(sub.file.expect("file must be specified"))?;
-            for (i, mute) in mutagen.discover_mutation_sites().into_iter().enumerate() {
-                println!("{:>8} {:<16?} {}", i, mute.op, mute.function_name());
+            for relpath in SourceTree::new(&sub.dir).source_files() {
+                let mutagen = FileMutagen::new(sub.dir.join(&relpath))?;
+                for (i, mute) in mutagen.discover_mutation_sites().into_iter().enumerate() {
+                    println!(
+                        "{:>8} {:<30} {:<16?} {}",
+                        i,
+                        relpath.to_string_lossy(),
+                        mute.op,
+                        mute.function_name()
+                    );
+                }
             }
         }
         Command::ApplyMutation(sub) => {
@@ -106,5 +114,5 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    // use super::*;
+//  use super::*;
 }
