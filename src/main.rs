@@ -22,8 +22,18 @@ struct TopArgs {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum Command {
-    ListMutants(ListMutants),
     ApplyMutation(ApplyMutation),
+    ListFiles(ListFiles),
+    ListMutants(ListMutants),
+}
+
+/// List source files in a tree.
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "list-files")]
+struct ListFiles {
+    /// rust crate directory to examine.
+    #[argh(option)]
+    dir: PathBuf,
 }
 
 /// List mutation scenarios that can be generated from a file.
@@ -55,6 +65,23 @@ struct ApplyMutation {
 fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     match args.command {
+        Command::ListFiles(sub) => {
+            // TODO: Check there's a Cargo.toml.
+            for entry in walkdir::WalkDir::new(sub.dir.join("src"))
+                .sort_by_file_name()
+                .into_iter()
+                .filter_map(|r| r.ok())
+                .filter(|entry| entry.file_type().is_file())
+                .filter(|entry| {
+                    entry
+                        .path()
+                        .extension()
+                        .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
+                })
+            {
+                println!("{}", entry.path().display());
+            }
+        }
         Command::ListMutants(sub) => {
             let mutagen = FileMutagen::new(sub.file.expect("file must be specified"))?;
             for (i, mute) in mutagen.discover_mutation_sites().into_iter().enumerate() {

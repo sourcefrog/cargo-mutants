@@ -12,6 +12,7 @@ anyhow = "1.0"
 argh = "0.1.6"
 quote = "1.0"
 similar = "2.0"
+walkdir = "2.3"
 
 [dependencies.syn]
 version = "1.0.76"
