@@ -112,7 +112,28 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+/// Tests for CLI layer.
 #[cfg(test)]
 mod test {
-//  use super::*;
+    use std::path;
+
+    // use assert_cmd::prelude::*;
+    use assert_cmd::Command;
+    #[allow(unused)]
+    use pretty_assertions::*;
+
+    const BIN_NAME: &str = "enucleate";
+
+    #[test]
+    fn list_files_in_factorial() {
+        let expected = "src/bin/main.rs\n".replace('/', &String::from(path::MAIN_SEPARATOR));
+        Command::cargo_bin(BIN_NAME)
+            .unwrap()
+            .arg("list-files")
+            .arg("-d")
+            .arg("testdata/tree/factorial")
+            .assert()
+            .success()
+            .stdout(expected);
+    }
 }

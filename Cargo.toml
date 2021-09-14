@@ -23,4 +23,5 @@ features = ["span-locations"]
 version = "1.0.29"
 
 [dev-dependencies]
+assert_cmd = "2.0"
 pretty_assertions = "0.7.2"
