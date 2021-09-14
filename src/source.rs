@@ -40,7 +40,7 @@ mod test {
         assert!(
             SourceTree::new(Path::new("testdata/tree/factorial"))
                 .source_files()
-                .eq([Path::new("src/bin/main.rs")].into_iter())
+                .eq([PathBuf::from("src/bin/main.rs")].into_iter())
         )
     }
 }
