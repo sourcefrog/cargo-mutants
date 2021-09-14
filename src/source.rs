@@ -8,13 +8,13 @@ pub struct SourceTree {
 
 impl SourceTree {
     pub fn new(root: &Path) -> SourceTree {
+        // TODO: Check there's a Cargo.toml.
         SourceTree {
             root: root.to_owned(),
         }
     }
-    /// Return an iterator through `src/**/*.rs`
-    pub fn source_files(&self) -> impl Iterator<Item = PathBuf> {
-        // TODO: Check there's a Cargo.toml.
+    /// Return an iterator of `src/**/*.rs` paths relative to the root.
+    pub fn source_files(&self) -> impl Iterator<Item = PathBuf> + '_ {
         walkdir::WalkDir::new(self.root.join("src"))
             .sort_by_file_name()
             .into_iter()
@@ -27,5 +27,22 @@ impl SourceTree {
                     .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
             })
             .map(|entry| entry.into_path())
+            .map(move |path| path.strip_prefix(&self.root).unwrap().to_owned())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn source_files_in_testdata_factorial() {
+        assert_eq!(
+            SourceTree::new(Path::new("testdata/tree/factorial"))
+                .source_files()
+                .map(|path| path.to_string_lossy().into_owned())
+                .collect::<Vec<String>>(),
+            vec!["src/bin/main.rs"]
+        )
     }
 }
