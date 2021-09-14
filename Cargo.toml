@@ -10,6 +10,7 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 argh = "0.1.6"
+path-slash = "0.1.4"
 quote = "1.0"
 similar = "2.0"
 walkdir = "2.3"

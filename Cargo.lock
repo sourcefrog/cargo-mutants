@@ -112,6 +112,7 @@ dependencies = [
  "anyhow",
  "argh",
  "assert_cmd",
+ "path-slash",
  "pretty_assertions",
  "proc-macro2",
  "quote",
@@ -164,6 +165,12 @@ checksum = "53cdc5b785b7a58c5aad8216b3dfa114df64b0b06ae6e1501cef91df2fbdf8f9"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "path-slash"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cacbb3c4ff353b534a67fb8d7524d00229da4cb1dc8c79f4db96e375ab5b619"
 
 [[package]]
 name = "predicates"

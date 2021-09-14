@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use argh::FromArgs;
+use path_slash::PathExt;
 use similar::TextDiff;
 
 mod mutate;
@@ -78,7 +79,7 @@ fn main() -> Result<()> {
                     println!(
                         "{:>8} {:<30} {:<16?} {}",
                         i,
-                        relpath.to_string_lossy(),
+                        relpath.to_slash_lossy(),
                         mute.op,
                         mute.function_name()
                     );
@@ -115,8 +116,6 @@ fn main() -> Result<()> {
 /// Tests for CLI layer.
 #[cfg(test)]
 mod test {
-    use std::path;
-
     // use assert_cmd::prelude::*;
     use assert_cmd::Command;
     #[allow(unused)]
@@ -126,7 +125,6 @@ mod test {
 
     #[test]
     fn list_files_in_factorial() {
-        let expected = "src/bin/main.rs\n".replace('/', &String::from(path::MAIN_SEPARATOR));
         Command::cargo_bin(BIN_NAME)
             .unwrap()
             .arg("list-files")
@@ -134,6 +132,7 @@ mod test {
             .arg("testdata/tree/factorial")
             .assert()
             .success()
-            .stdout(expected);
+            .stdout("src/bin/main.rs\n")
+            .stderr("");
     }
 }
