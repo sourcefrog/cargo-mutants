@@ -2,17 +2,23 @@
 
 //! Tests for CLI layer.
 
+use std::path::PathBuf;
+
 // use assert_cmd::prelude::*;
 use assert_cmd::Command;
+
+use lazy_static::lazy_static;
+
 #[allow(unused)]
 use pretty_assertions::*;
 
-const BIN_NAME: &str = "enucleate";
+lazy_static! {
+    static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("enucleate");
+}
 
 #[test]
 fn list_files_in_factorial() {
-    Command::cargo_bin(BIN_NAME)
-        .unwrap()
+    Command::new(MAIN_BINARY.as_os_str())
         .arg("list-files")
         .arg("-d")
         .arg("testdata/tree/factorial")

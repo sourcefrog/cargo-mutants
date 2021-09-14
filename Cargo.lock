@@ -112,6 +112,7 @@ dependencies = [
  "anyhow",
  "argh",
  "assert_cmd",
+ "lazy_static",
  "path-slash",
  "pretty_assertions",
  "proc-macro2",
