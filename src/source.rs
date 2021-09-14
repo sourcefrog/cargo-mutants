@@ -38,9 +38,9 @@ mod test {
     #[test]
     fn source_files_in_testdata_factorial() {
         assert!(
-            SourceTree::new(Path::new("testdata/tree/factorial"))
-                .source_files()
-                .eq([PathBuf::from("src/bin/main.rs")].into_iter())
+            [PathBuf::from("src/bin/main.rs")].iter().eq(
+                SourceTree::new(Path::new("testdata/tree/factorial"))
+                    .source_files())
         )
     }
 }
