@@ -8,9 +8,10 @@ use argh::FromArgs;
 use similar::TextDiff;
 
 mod mutate;
-mod textedit;
-
 use mutate::FileMutagen;
+mod source;
+use source::SourceTree;
+mod textedit;
 
 /// Rust mutation testing.
 #[derive(FromArgs, PartialEq, Debug)]
@@ -66,20 +67,8 @@ fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     match args.command {
         Command::ListFiles(sub) => {
-            // TODO: Check there's a Cargo.toml.
-            for entry in walkdir::WalkDir::new(sub.dir.join("src"))
-                .sort_by_file_name()
-                .into_iter()
-                .filter_map(|r| r.ok())
-                .filter(|entry| entry.file_type().is_file())
-                .filter(|entry| {
-                    entry
-                        .path()
-                        .extension()
-                        .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
-                })
-            {
-                println!("{}", entry.path().display());
+            for name in SourceTree::new(&sub.dir).source_files() {
+                println!("{}", name.display());
             }
         }
         Command::ListMutants(sub) => {
