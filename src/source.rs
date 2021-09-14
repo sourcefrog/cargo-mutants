@@ -37,12 +37,10 @@ mod test {
 
     #[test]
     fn source_files_in_testdata_factorial() {
-        assert_eq!(
+        assert!(
             SourceTree::new(Path::new("testdata/tree/factorial"))
                 .source_files()
-                .map(|path| path.to_string_lossy().into_owned())
-                .collect::<Vec<_>>(),
-            vec![Path::new("src/bin/main.rs")]
+                .eq([Path::new("src/bin/main.rs")].iter())
         )
     }
 }
