@@ -1,5 +1,10 @@
 // Copyright 2021 Martin Pool
 
+mod mutate;
+mod source;
+mod textedit;
+mod work;
+
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -8,11 +13,9 @@ use argh::FromArgs;
 use path_slash::PathExt;
 use similar::TextDiff;
 
-mod mutate;
 use mutate::FileMutagen;
-mod source;
 use source::SourceTree;
-mod textedit;
+use work::Work;
 
 /// Rust mutation testing.
 #[derive(FromArgs, PartialEq, Debug)]
@@ -27,6 +30,24 @@ enum Command {
     ApplyMutation(ApplyMutation),
     ListFiles(ListFiles),
     ListMutants(ListMutants),
+    Test(Test),
+}
+
+/// Print mutated source to stdout.
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "apply")]
+struct ApplyMutation {
+    /// rust source file to read and mutate.
+    #[argh(option, short = 'f')]
+    file: PathBuf,
+
+    /// mutation index number, from list-mutants.
+    #[argh(option)]
+    index: usize,
+
+    /// show the diff between the original and mutated file.
+    #[argh(switch)]
+    diff: bool,
 }
 
 /// List source files in a tree.
@@ -47,21 +68,13 @@ struct ListMutants {
     dir: PathBuf,
 }
 
-/// Print mutated source to stdout.
+/// Test the tree with mutations applied.
 #[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "apply")]
-struct ApplyMutation {
-    /// rust source file to read and mutate.
-    #[argh(option, short = 'f')]
-    file: PathBuf,
-
-    /// mutation index number, from list-mutants.
-    #[argh(option)]
-    index: usize,
-
-    /// show the diff between the original and mutated file.
-    #[argh(switch)]
-    diff: bool,
+#[argh(subcommand, name = "test")]
+struct Test {
+    /// rust crate directory to examine.
+    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
+    dir: PathBuf,
 }
 
 fn main() -> Result<()> {
@@ -108,6 +121,12 @@ fn main() -> Result<()> {
             } else {
                 std::io::stdout().write_all(mutated_code.as_bytes())?;
             }
+        }
+        Command::Test(sub) => {
+            let source = SourceTree::new(&sub.dir)?;
+            let work = Work::new(&source)?;
+            dbg!(&work);
+            work.test_clean()?;
         }
     }
     Ok(())

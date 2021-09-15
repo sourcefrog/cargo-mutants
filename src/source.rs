@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Result};
 use path_slash::PathExt;
 
+#[derive(Debug)]
 pub struct SourceTree {
     root: PathBuf,
 }
@@ -21,6 +22,7 @@ impl SourceTree {
             root: root.to_owned(),
         })
     }
+
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
     pub fn source_files(&self) -> impl Iterator<Item = PathBuf> + '_ {
         walkdir::WalkDir::new(self.root.join("src"))
@@ -37,6 +39,11 @@ impl SourceTree {
                     .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
             })
             .map(move |path| path.strip_prefix(&self.root).unwrap().to_owned())
+    }
+
+    /// Return the path (possibly relative) to the root of the source tree.
+    pub fn root(&self) -> &Path {
+        &self.root
     }
 }
 
