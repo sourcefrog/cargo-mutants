@@ -3,7 +3,7 @@
 mod mutate;
 mod source;
 mod textedit;
-mod work;
+mod lab;
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -15,7 +15,7 @@ use similar::TextDiff;
 
 use mutate::FileMutagen;
 use source::SourceTree;
-use work::Work;
+use lab::Lab;
 
 /// Rust mutation testing.
 #[derive(FromArgs, PartialEq, Debug)]
@@ -124,7 +124,7 @@ fn main() -> Result<()> {
         }
         Command::Test(sub) => {
             let source = SourceTree::new(&sub.dir)?;
-            let work = Work::new(&source)?;
+            let work = Lab::new(&source)?;
             dbg!(&work);
             work.test_clean()?;
         }
