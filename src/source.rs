@@ -23,13 +23,11 @@ impl SourceTree {
                     .ok()
             })
             .filter(|entry| entry.file_type().is_file())
-            .filter(|entry| {
-                entry
-                    .path()
-                    .extension()
+            .map(|entry| entry.into_path())
+            .filter(|path| {
+                path.extension()
                     .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
             })
-            .map(|entry| entry.into_path())
             .map(move |path| path.strip_prefix(&self.root).unwrap().to_owned())
     }
 }
