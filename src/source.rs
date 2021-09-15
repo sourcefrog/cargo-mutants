@@ -2,16 +2,24 @@
 
 use std::path::{Path, PathBuf};
 
+use anyhow::{anyhow, Result};
+use path_slash::PathExt;
+
 pub struct SourceTree {
     root: PathBuf,
 }
 
 impl SourceTree {
-    pub fn new(root: &Path) -> SourceTree {
-        // TODO: Check there's a Cargo.toml.
-        SourceTree {
-            root: root.to_owned(),
+    pub fn new(root: &Path) -> Result<SourceTree> {
+        if !root.join("Cargo.toml").is_file() {
+            return Err(anyhow!(
+                "{} does not contain a Cargo.toml: specify a crate directory",
+                root.to_slash_lossy()
+            ));
         }
+        Ok(SourceTree {
+            root: root.to_owned(),
+        })
     }
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
     pub fn source_files(&self) -> impl Iterator<Item = PathBuf> + '_ {
@@ -42,9 +50,22 @@ mod test {
     fn source_files_in_testdata_factorial() {
         assert_eq!(
             SourceTree::new(Path::new("testdata/tree/factorial"))
+                .unwrap()
                 .source_files()
                 .collect::<Vec<PathBuf>>(),
             vec![Path::new("src/bin/main.rs")]
         )
+    }
+
+    #[test]
+    fn error_opening_subdirectory_of_crate() {
+        let result = SourceTree::new(Path::new("testdata/tree/factorial/src"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn error_opening_outside_of_crate() {
+        let result = SourceTree::new(Path::new("/"));
+        assert!(result.is_err());
     }
 }

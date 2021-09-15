@@ -68,12 +68,12 @@ fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     match args.command {
         Command::ListFiles(sub) => {
-            for relpath in SourceTree::new(&sub.dir).source_files() {
+            for relpath in SourceTree::new(&sub.dir)?.source_files() {
                 println!("{}", relpath.to_slash_lossy());
             }
         }
         Command::ListMutants(sub) => {
-            for relpath in SourceTree::new(&sub.dir).source_files() {
+            for relpath in SourceTree::new(&sub.dir)?.source_files() {
                 let mutagen = FileMutagen::new(sub.dir.join(&relpath))?;
                 for (i, mute) in mutagen.discover_mutation_sites().into_iter().enumerate() {
                     println!(
