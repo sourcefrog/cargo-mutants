@@ -18,7 +18,10 @@ impl SourceTree {
         walkdir::WalkDir::new(self.root.join("src"))
             .sort_by_file_name()
             .into_iter()
-            .filter_map(|r| r.ok())
+            .filter_map(|r| {
+                r.map_err(|err| eprintln!("error walking source tree: {:?}", err))
+                    .ok()
+            })
             .filter(|entry| entry.file_type().is_file())
             .filter(|entry| {
                 entry
