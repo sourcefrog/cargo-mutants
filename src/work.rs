@@ -5,7 +5,7 @@ use std::process::Command;
 
 use anyhow::{anyhow, Result};
 use path_slash::PathExt;
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 use crate::source::SourceTree;
 
@@ -21,7 +21,7 @@ pub struct Work<'s> {
 
 impl<'s> Work<'s> {
     pub fn new(source: &'s SourceTree) -> Result<Work<'s>> {
-        let tmp = TempDir::new("enucleate-work")?;
+        let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
         let errs = copy_dir::copy_dir(source.root(), &build_dir)?;
         if !errs.is_empty() {

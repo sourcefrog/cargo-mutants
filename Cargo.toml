@@ -14,7 +14,7 @@ copy_dir = "0.1.2"
 path-slash = "0.1.4"
 quote = "1.0"
 similar = "2.0"
-tempdir = "0.3"
+tempfile = "3.2"
 walkdir = "2.3"
 
 [dependencies.syn]
