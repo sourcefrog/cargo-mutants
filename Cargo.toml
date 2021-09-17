@@ -10,6 +10,7 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 argh = "0.1.6"
+better-panic = "0.2"
 copy_dir = "0.1.2"
 path-slash = "0.1.4"
 quote = "1.0"
