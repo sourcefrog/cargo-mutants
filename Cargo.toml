@@ -27,5 +27,7 @@ version = "1.0.29"
 
 [dev-dependencies]
 assert_cmd = "2.0"
+insta = "1.8"
 lazy_static = "1.4"
+predicates = "2.0.2"
 pretty_assertions = "0.7.2"
