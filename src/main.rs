@@ -16,7 +16,6 @@ use path_slash::PathExt;
 use similar::TextDiff;
 
 use lab::Lab;
-use mutate::FileMutagen;
 use source::SourceTree;
 
 /// Rust mutation testing.
@@ -68,26 +67,27 @@ fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     match args.command {
         Command::ListFiles(sub) => {
-            for source_path in SourceTree::new(&sub.dir)?.source_files() {
-                println!("{}", source_path.tree_relative_slashes());
+            for source_file in SourceTree::new(&sub.dir)?.source_files() {
+                println!("{}", source_file.tree_relative_slashes());
             }
         }
         Command::ListMutants(sub) => {
-            for source_path in SourceTree::new(&sub.dir)?.source_files() {
-                let mutagen = FileMutagen::new(&source_path)?;
-                for (i, mutation) in mutagen.discover_mutation_sites().into_iter().enumerate() {
+            let mut index = 0;
+            for source_file in SourceTree::new(&sub.dir)?.source_files() {
+                for mutation in source_file.mutations()? {
                     println!(
                         "{:>8} {:<30} {:<16?} {}",
-                        i,
-                        source_path.tree_relative_slashes(),
+                        index,
+                        source_file.tree_relative_slashes(),
                         mutation.op,
                         mutation.function_name()
                     );
                     if sub.diff {
-                        let mutated_code = mutation.mutated_code(&mutagen);
-                        let old_label = source_path.tree_relative_slashes();
+                        let mutated_code = mutation.mutated_code();
+                        let old_label = source_file.tree_relative_slashes();
                         let new_label = format!("{} {:?}", &old_label, &mutation);
-                        let text_diff = TextDiff::from_lines(&mutagen.code, &mutated_code);
+                        let text_diff =
+                            TextDiff::from_lines(mutation.original_code(), &mutated_code);
                         print!(
                             "{}",
                             text_diff
@@ -96,6 +96,7 @@ fn main() -> Result<()> {
                                 .header(&old_label, &new_label)
                         );
                     }
+                    index += 1;
                 }
             }
         }

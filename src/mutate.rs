@@ -4,6 +4,7 @@ use std::fmt;
 #[allow(unused)]
 use std::path::PathBuf;
 
+#[allow(unused)]
 use anyhow::Result;
 use proc_macro2::Span;
 use syn::ItemFn;
@@ -20,22 +21,27 @@ pub enum MutationOp {
 }
 
 #[derive()]
-pub struct Mutation {
+pub struct Mutation<'a> {
+    pub source_file: &'a SourceFile,
     pub op: MutationOp,
     function_ident: syn::Ident,
     span: Span,
 }
 
-impl Mutation {
-    pub fn mutated_code(&self, mutagen: &FileMutagen) -> String {
+impl<'a> Mutation<'a> {
+    pub fn mutated_code(&self) -> String {
         match self.op {
             MutationOp::ReturnDefault => replace_region(
-                &mutagen.code,
+                &self.source_file.code,
                 &self.span.start(),
                 &self.span.end(),
                 "{\n/* ~ removed by enucleate ~ */ Default::default()\n}\n",
             ),
         }
+    }
+
+    pub fn original_code(&self) -> &str {
+        &self.source_file.code
     }
 
     /// Return the name of the function to be mutated.
@@ -48,7 +54,7 @@ impl Mutation {
     }
 }
 
-impl fmt::Debug for Mutation {
+impl<'sf> fmt::Debug for Mutation<'sf> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Mutation")
             .field("op", &self.op)
@@ -59,12 +65,21 @@ impl fmt::Debug for Mutation {
     }
 }
 
-#[derive(Default, Debug)]
-struct DiscoveryVisitor {
-    sites: Vec<Mutation>,
+pub(crate) struct DiscoveryVisitor<'sf> {
+    pub(crate) sites: Vec<Mutation<'sf>>,
+    source_file: &'sf SourceFile,
 }
 
-impl<'ast> Visit<'ast> for DiscoveryVisitor {
+impl<'sf> DiscoveryVisitor<'sf> {
+    pub(crate) fn new(source_file: &'sf SourceFile) -> DiscoveryVisitor<'sf> {
+        DiscoveryVisitor {
+            source_file,
+            sites: Vec::new(),
+        }
+    }
+}
+
+impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
     fn visit_item_fn(&mut self, node: &'ast ItemFn) {
         // TODO: Filter out inapplicable fns.
         // TODO: Also visit methods and maybe closures.
@@ -73,6 +88,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             return; // don't look inside it either
         }
         self.sites.push(Mutation {
+            source_file: self.source_file,
             op: MutationOp::ReturnDefault,
             function_ident: node.sig.ident.clone(),
             span: node.block.brace_token.span,
@@ -99,31 +115,6 @@ fn item_fn_is_test(node: &ItemFn) -> bool {
     })
 }
 
-pub struct FileMutagen {
-    #[allow(unused)]
-    pub source_path: SourceFile,
-    pub code: String,
-    syn_file: syn::File,
-}
-
-impl FileMutagen {
-    pub fn new(source_path: &SourceFile) -> Result<FileMutagen> {
-        let code = source_path.read_to_string()?;
-        let syn_file = syn::parse_str::<syn::File>(&code)?;
-        Ok(FileMutagen {
-            source_path: source_path.clone(),
-            code,
-            syn_file,
-        })
-    }
-
-    pub fn discover_mutation_sites(&self) -> Vec<Mutation> {
-        let mut v = DiscoveryVisitor::default();
-        v.visit_file(&self.syn_file);
-        v.sites
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::path::Path;
@@ -132,14 +123,16 @@ mod test {
 
     use crate::source::SourceTree;
 
+    #[allow(unused)]
     use super::*;
 
     #[test]
     fn discover_mutations() {
         let source_tree = SourceTree::new(&Path::new("testdata/tree/factorial")).unwrap();
-        let source_path = source_tree.source_file(&Path::new("src/bin/main.rs"));
-        let mutagen = FileMutagen::new(&source_path).unwrap();
-        let muts = mutagen.discover_mutation_sites();
+        let source_file = source_tree
+            .source_file(&Path::new("src/bin/main.rs"))
+            .unwrap();
+        let muts = source_file.mutations().unwrap();
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
@@ -154,12 +147,13 @@ mod test {
     #[test]
     fn mutate_factorial() {
         let source_tree = SourceTree::new(&Path::new("testdata/tree/factorial")).unwrap();
-        let source_path = source_tree.source_file(&Path::new("src/bin/main.rs"));
-        let mutagen = FileMutagen::new(&source_path).unwrap();
-        let muts = mutagen.discover_mutation_sites();
+        let source_file = source_tree
+            .source_file(&Path::new("src/bin/main.rs"))
+            .unwrap();
+        let muts = source_file.mutations().unwrap();
         assert_eq!(muts.len(), 2);
 
-        let mut mutated_code = muts[0].mutated_code(&mutagen);
+        let mut mutated_code = muts[0].mutated_code();
         assert_eq!(muts[0].function_name(), "main");
         mutated_code.retain(|c| c != '\r');
         assert_eq!(
@@ -183,7 +177,7 @@ fn test_factorial() {
 "#
         );
 
-        let mut mutated_code = muts[1].mutated_code(&mutagen);
+        let mut mutated_code = muts[1].mutated_code();
         assert_eq!(muts[1].function_name(), "factorial");
         mutated_code.retain(|c| c != '\r');
         assert_eq!(

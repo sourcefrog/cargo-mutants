@@ -1,28 +1,48 @@
 // Copyright 2021 Martin Pool
 
+/// Access to a Rust source tree and files.
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
+use syn::visit::Visit;
 
-/// A RUst source file within a source tree.
+use crate::mutate::{DiscoveryVisitor, Mutation};
+
+/// A Rust source file within a source tree.
 ///
 /// It can be viewed either relative to the source tree (for display)
 /// or as a path that can be opened (relative to cwd or absolute.)
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
     tree_relative: PathBuf,
     pub full_path: PathBuf,
+    /// Full copy of the source.
+    pub code: String,
 }
 
 impl SourceFile {
+    pub fn new(tree_path: &Path, tree_relative: &Path) -> Result<SourceFile> {
+        let full_path = tree_path.join(tree_relative);
+        let code = std::fs::read_to_string(&full_path)
+            .with_context(|| format!("failed to read source of {:?}", full_path))?;
+        Ok(SourceFile {
+            tree_relative: tree_relative.to_owned(),
+            full_path,
+            code,
+        })
+    }
+
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative.to_slash_lossy()
     }
 
-    pub fn read_to_string(&self) -> Result<String> {
-        std::fs::read_to_string(&self.full_path)
-            .with_context(|| format!("failed to read source of {:?}", self.full_path))
+    /// Generate a list of all mutation possibilities within this file.
+    pub fn mutations(&self) -> Result<Vec<Mutation>> {
+        let syn_file = syn::parse_str::<syn::File>(&self.code)?;
+        let mut v = DiscoveryVisitor::new(self);
+        v.visit_file(&syn_file);
+        Ok(v.sites)
     }
 }
 
@@ -45,11 +65,8 @@ impl SourceTree {
     }
 
     #[allow(dead_code)]
-    pub fn source_file(&self, tree_relative: &Path) -> SourceFile {
-        SourceFile {
-            tree_relative: tree_relative.to_owned(),
-            full_path: self.root.join(tree_relative),
-        }
+    pub fn source_file(&self, tree_relative: &Path) -> Result<SourceFile> {
+        SourceFile::new(&self.root, tree_relative)
     }
 
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
@@ -67,12 +84,17 @@ impl SourceTree {
                 path.extension()
                     .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
             })
-            .map(move |full_path| {
-                let tree_relative = full_path.strip_prefix(&self.root).unwrap().to_owned();
-                SourceFile {
-                    full_path,
-                    tree_relative,
-                }
+            .filter_map(move |full_path| {
+                let tree_relative = full_path.strip_prefix(&self.root).unwrap();
+                SourceFile::new(&self.root, tree_relative)
+                    .map_err(|err| {
+                        eprintln!(
+                            "error reading source {}: {}",
+                            full_path.to_slash_lossy(),
+                            err
+                        );
+                    })
+                    .ok()
             })
     }
 
@@ -96,11 +118,12 @@ mod test {
             .collect::<Vec<SourceFile>>();
         assert_eq!(source_paths.len(), 1);
         assert_eq!(
-            source_paths[0],
-            SourceFile {
-                full_path: PathBuf::from("testdata/tree/factorial/src/bin/main.rs"),
-                tree_relative: PathBuf::from("src/bin/main.rs"),
-            }
+            source_paths[0].full_path,
+            PathBuf::from("testdata/tree/factorial/src/bin/main.rs")
+        );
+        assert_eq!(
+            source_paths[0].tree_relative,
+            PathBuf::from("src/bin/main.rs"),
         );
     }
 
