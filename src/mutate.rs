@@ -45,6 +45,28 @@ impl<'a> Mutation<'a> {
         &self.source_file.code
     }
 
+    /// Return a "file:line:column" description of the location of this mutation.
+    ///
+    /// Columns are expressed 1-based which seems more common in editors.
+    pub fn describe_location(&self) -> String {
+        let start = self.span.start();
+        format!(
+            "{}:{}:{}",
+            self.source_file.tree_relative_slashes(),
+            start.line,
+            start.column + 1
+        )
+    }
+
+    /// Describe the mutation briefly, not including the location.
+    pub fn describe_change(&self) -> String {
+        match self.op {
+            MutationOp::ReturnDefault => {
+                format!("replace {} with Default::default()", self.function_name())
+            }
+        }
+    }
+
     /// Return the name of the function to be mutated.
     ///
     /// Note that this will often not be unique: the same name can be reused

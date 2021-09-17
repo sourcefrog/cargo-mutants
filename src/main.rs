@@ -74,10 +74,9 @@ fn main() -> Result<()> {
             for source_file in SourceTree::new(&sub.dir)?.source_files() {
                 for mutation in source_file.mutations()? {
                     println!(
-                        "{:<30} {:<16?} {}",
-                        source_file.tree_relative_slashes(),
-                        mutation.op,
-                        mutation.function_name()
+                        "{}: {}",
+                        mutation.describe_location(),
+                        mutation.describe_change(),
                     );
                     if sub.diff {
                         println!("{}", mutation.diff());
