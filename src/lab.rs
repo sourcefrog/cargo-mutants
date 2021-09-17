@@ -2,6 +2,7 @@
 
 //! A lab directory in which to test mutations to the source code.
 
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -51,17 +52,18 @@ impl<'s> Lab<'s> {
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
-        if !Command::new("cargo")
+        let output = Command::new("cargo")
             .arg("test")
             .current_dir(&self.build_dir)
-            .spawn()?
-            .wait()?
-            .success()
-        {
-            Err(anyhow!("build in clean tree failed"))
-        } else {
+            .output()?;
+        if output.status.success() {
             eprintln!("tests passed in clean tree");
             Ok(())
+        } else {
+            println!("error: build in clean tree failed; tests won't continue");
+            std::io::stdout().write_all(&output.stdout)?;
+            std::io::stdout().write_all(&output.stderr)?;
+            Err(anyhow!("build in clean tree failed"))
         }
     }
 }

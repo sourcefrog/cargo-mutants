@@ -87,7 +87,6 @@ fn main() -> Result<()> {
         Command::Test(sub) => {
             let source = SourceTree::new(&sub.dir)?;
             let work = Lab::new(&source)?;
-            dbg!(&work);
             work.test_clean()?;
         }
     }
