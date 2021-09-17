@@ -79,7 +79,7 @@ impl<'a> Mutation<'a> {
     /// Return a unified diff for the mutation.
     pub fn diff(&self) -> String {
         let old_label = self.source_file.tree_relative_slashes();
-        let new_label = format!("{} {:?}", &old_label, &self);
+        let new_label = self.describe_change();
         let mutated_code = self.mutated_code();
         let text_diff = TextDiff::from_lines(self.original_code(), &mutated_code);
         text_diff
