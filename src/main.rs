@@ -71,12 +71,10 @@ fn main() -> Result<()> {
             }
         }
         Command::ListMutants(sub) => {
-            let mut index = 0;
             for source_file in SourceTree::new(&sub.dir)?.source_files() {
                 for mutation in source_file.mutations()? {
                     println!(
-                        "{:>8} {:<30} {:<16?} {}",
-                        index,
+                        "{:<30} {:<16?} {}",
                         source_file.tree_relative_slashes(),
                         mutation.op,
                         mutation.function_name()
@@ -84,7 +82,6 @@ fn main() -> Result<()> {
                     if sub.diff {
                         println!("{}", mutation.diff());
                     }
-                    index += 1;
                 }
             }
         }

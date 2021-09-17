@@ -1,8 +1,8 @@
 ---
 source: tests/cli.rs
-expression: "String::from_utf8(output.stdout).unwrap()"
+expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
-       0 src/bin/main.rs                ReturnDefault main
-       1 src/bin/main.rs                ReturnDefault factorial
+src/bin/main.rs                ReturnDefault main
+src/bin/main.rs                ReturnDefault factorial
 
