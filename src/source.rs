@@ -5,17 +5,17 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 
-/// The path of a file within a source tree.
+/// A RUst source file within a source tree.
 ///
 /// It can be viewed either relative to the source tree (for display)
 /// or as a path that can be opened (relative to cwd or absolute.)
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SourcePath {
+pub struct SourceFile {
     tree_relative: PathBuf,
     pub full_path: PathBuf,
 }
 
-impl SourcePath {
+impl SourceFile {
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative.to_slash_lossy()
     }
@@ -45,15 +45,15 @@ impl SourceTree {
     }
 
     #[allow(dead_code)]
-    pub fn source_file(&self, tree_relative: &Path) -> SourcePath {
-        SourcePath {
+    pub fn source_file(&self, tree_relative: &Path) -> SourceFile {
+        SourceFile {
             tree_relative: tree_relative.to_owned(),
             full_path: self.root.join(tree_relative),
         }
     }
 
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
-    pub fn source_files(&self) -> impl Iterator<Item = SourcePath> + '_ {
+    pub fn source_files(&self) -> impl Iterator<Item = SourceFile> + '_ {
         walkdir::WalkDir::new(self.root.join("src"))
             .sort_by_file_name()
             .into_iter()
@@ -69,7 +69,7 @@ impl SourceTree {
             })
             .map(move |full_path| {
                 let tree_relative = full_path.strip_prefix(&self.root).unwrap().to_owned();
-                SourcePath {
+                SourceFile {
                     full_path,
                     tree_relative,
                 }
@@ -93,11 +93,11 @@ mod test {
         let source_paths = SourceTree::new(Path::new("testdata/tree/factorial"))
             .unwrap()
             .source_files()
-            .collect::<Vec<SourcePath>>();
+            .collect::<Vec<SourceFile>>();
         assert_eq!(source_paths.len(), 1);
         assert_eq!(
             source_paths[0],
-            SourcePath {
+            SourceFile {
                 full_path: PathBuf::from("testdata/tree/factorial/src/bin/main.rs"),
                 tree_relative: PathBuf::from("src/bin/main.rs"),
             }

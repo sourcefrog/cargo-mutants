@@ -11,7 +11,7 @@ use syn::ItemFn;
 // use quote::ToTokens;
 use syn::visit::Visit;
 
-use crate::source::SourcePath;
+use crate::source::SourceFile;
 use crate::textedit::replace_region;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -101,13 +101,13 @@ fn item_fn_is_test(node: &ItemFn) -> bool {
 
 pub struct FileMutagen {
     #[allow(unused)]
-    pub source_path: SourcePath,
+    pub source_path: SourceFile,
     pub code: String,
     syn_file: syn::File,
 }
 
 impl FileMutagen {
-    pub fn new(source_path: &SourcePath) -> Result<FileMutagen> {
+    pub fn new(source_path: &SourceFile) -> Result<FileMutagen> {
         let code = source_path.read_to_string()?;
         let syn_file = syn::parse_str::<syn::File>(&code)?;
         Ok(FileMutagen {
