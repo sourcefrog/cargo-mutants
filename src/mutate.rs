@@ -1,6 +1,7 @@
 // Copyright 2021 Martin Pool
 
 use std::fmt;
+#[allow(unused)]
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -10,6 +11,7 @@ use syn::ItemFn;
 // use quote::ToTokens;
 use syn::visit::Visit;
 
+use crate::source::SourcePath;
 use crate::textedit::replace_region;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -99,17 +101,17 @@ fn item_fn_is_test(node: &ItemFn) -> bool {
 
 pub struct FileMutagen {
     #[allow(unused)]
-    pub path: PathBuf,
+    pub source_path: SourcePath,
     pub code: String,
     syn_file: syn::File,
 }
 
 impl FileMutagen {
-    pub fn new(path: PathBuf) -> Result<FileMutagen> {
-        let code = std::fs::read_to_string(&path)?;
+    pub fn new(source_path: &SourcePath) -> Result<FileMutagen> {
+        let code = source_path.read_to_string()?;
         let syn_file = syn::parse_str::<syn::File>(&code)?;
         Ok(FileMutagen {
-            path,
+            source_path: source_path.clone(),
             code,
             syn_file,
         })
@@ -124,13 +126,19 @@ impl FileMutagen {
 
 #[cfg(test)]
 mod test {
+    use std::path::Path;
+
     use pretty_assertions::assert_eq;
+
+    use crate::source::SourceTree;
 
     use super::*;
 
     #[test]
     fn discover_mutations() {
-        let mutagen = FileMutagen::new("testdata/tree/factorial/src/bin/main.rs".into()).unwrap();
+        let source_tree = SourceTree::new(&Path::new("testdata/tree/factorial")).unwrap();
+        let source_path = source_tree.source_file(&Path::new("src/bin/main.rs"));
+        let mutagen = FileMutagen::new(&source_path).unwrap();
         let muts = mutagen.discover_mutation_sites();
         assert_eq!(muts.len(), 2);
         assert_eq!(
@@ -145,7 +153,9 @@ mod test {
 
     #[test]
     fn mutate_factorial() {
-        let mutagen = FileMutagen::new("testdata/tree/factorial/src/bin/main.rs".into()).unwrap();
+        let source_tree = SourceTree::new(&Path::new("testdata/tree/factorial")).unwrap();
+        let source_path = source_tree.source_file(&Path::new("src/bin/main.rs"));
+        let mutagen = FileMutagen::new(&source_path).unwrap();
         let muts = mutagen.discover_mutation_sites();
         assert_eq!(muts.len(), 2);
 

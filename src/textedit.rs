@@ -12,7 +12,7 @@ pub(crate) fn replace_region(
     end: &LineColumn,
     replacement: &str,
 ) -> String {
-    dbg!(start, end);
+    // dbg!(start, end);
     let mut r = String::with_capacity(s.len() + replacement.len());
     let mut line_no = 1;
     let mut col_no = 0;
