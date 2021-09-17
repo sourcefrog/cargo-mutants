@@ -98,7 +98,7 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
         // TODO: Filter out inapplicable fns.
         // TODO: Also visit methods and maybe closures.
         if item_fn_is_test(node) {
-            eprintln!("skip #[test] fn {:?}", node.sig.ident);
+            // eprintln!("skip #[test] fn {:?}", node.sig.ident);
             return; // don't look inside it either
         }
         self.sites.push(Mutation {
