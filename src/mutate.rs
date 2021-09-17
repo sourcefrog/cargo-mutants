@@ -7,6 +7,7 @@ use std::path::PathBuf;
 #[allow(unused)]
 use anyhow::Result;
 use proc_macro2::Span;
+use similar::TextDiff;
 use syn::ItemFn;
 // use syn::parse;
 // use quote::ToTokens;
@@ -51,6 +52,19 @@ impl<'a> Mutation<'a> {
     #[allow(unused)]
     pub fn function_name(&self) -> String {
         self.function_ident.to_string()
+    }
+
+    /// Return a unified diff for the mutation.
+    pub fn diff(&self) -> String {
+        let old_label = self.source_file.tree_relative_slashes();
+        let new_label = format!("{} {:?}", &old_label, &self);
+        let mutated_code = self.mutated_code();
+        let text_diff = TextDiff::from_lines(self.original_code(), &mutated_code);
+        text_diff
+            .unified_diff()
+            .context_radius(8)
+            .header(&old_label, &new_label)
+            .to_string()
     }
 }
 

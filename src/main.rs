@@ -13,7 +13,6 @@ use anyhow::Result;
 use argh::FromArgs;
 #[allow(unused)]
 use path_slash::PathExt;
-use similar::TextDiff;
 
 use lab::Lab;
 use source::SourceTree;
@@ -83,18 +82,7 @@ fn main() -> Result<()> {
                         mutation.function_name()
                     );
                     if sub.diff {
-                        let mutated_code = mutation.mutated_code();
-                        let old_label = source_file.tree_relative_slashes();
-                        let new_label = format!("{} {:?}", &old_label, &mutation);
-                        let text_diff =
-                            TextDiff::from_lines(mutation.original_code(), &mutated_code);
-                        print!(
-                            "{}",
-                            text_diff
-                                .unified_diff()
-                                .context_radius(10)
-                                .header(&old_label, &new_label)
-                        );
+                        println!("{}", mutation.diff());
                     }
                     index += 1;
                 }
