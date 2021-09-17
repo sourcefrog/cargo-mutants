@@ -64,3 +64,12 @@ fn list_mutants_with_diffs_in_factorial() {
         .current_dir("testdata/tree/factorial")
         .assert_insta();
 }
+
+#[test]
+fn test_factorial() {
+    Command::new(MAIN_BINARY.as_os_str())
+        .arg("test")
+        .current_dir("testdata/tree/factorial")
+        .assert_insta();
+}
+

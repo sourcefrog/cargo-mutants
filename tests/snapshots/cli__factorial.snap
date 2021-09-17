@@ -1,0 +1,7 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+
+---
+baseline tests passed in clean tree
+

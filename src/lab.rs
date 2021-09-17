@@ -57,10 +57,10 @@ impl<'s> Lab<'s> {
             .current_dir(&self.build_dir)
             .output()?;
         if output.status.success() {
-            eprintln!("tests passed in clean tree");
+            println!("baseline tests passed in clean tree");
             Ok(())
         } else {
-            println!("error: build in clean tree failed; tests won't continue");
+            println!("error: baseline tests in clean tree failed; tests won't continue");
             std::io::stdout().write_all(&output.stdout)?;
             std::io::stdout().write_all(&output.stderr)?;
             Err(anyhow!("build in clean tree failed"))
