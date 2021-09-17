@@ -3,9 +3,10 @@
 //! Tests for CLI layer.
 
 use std::path::PathBuf;
+use std::process::Command;
 
 // use assert_cmd::prelude::*;
-use assert_cmd::Command;
+// use assert_cmd::Command;
 
 use lazy_static::lazy_static;
 
@@ -16,26 +17,32 @@ lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("enucleate");
 }
 
+trait CommandInstaExt {
+    fn assert_insta(&mut self);
+}
+
+impl CommandInstaExt for std::process::Command {
+    fn assert_insta(&mut self) {
+        let output = self.output().expect("command completes");
+        assert!(output.status.success());
+        insta::assert_snapshot!(String::from_utf8_lossy(&output.stdout));
+        assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
+    }
+}
+
 #[test]
 fn list_files_in_factorial() {
     Command::new(MAIN_BINARY.as_os_str())
         .arg("list-files")
         .arg("-d")
         .arg("testdata/tree/factorial")
-        .assert()
-        .success()
-        .stdout("src/bin/main.rs\n")
-        .stderr("");
+        .assert_insta();
 }
 
 #[test]
 fn list_mutants_in_factorial() {
-    let output = std::process::Command::new(MAIN_BINARY.as_os_str())
+    Command::new(MAIN_BINARY.as_os_str())
         .arg("list-mutants")
         .current_dir("testdata/tree/factorial")
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    assert_eq!(String::from_utf8_lossy(&output.stderr), "");
-    insta::assert_snapshot!(String::from_utf8_lossy(&output.stdout));
+        .assert_insta();
 }
