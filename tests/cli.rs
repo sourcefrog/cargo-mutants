@@ -46,3 +46,21 @@ fn list_mutants_in_factorial() {
         .current_dir("testdata/tree/factorial")
         .assert_insta();
 }
+
+#[test]
+fn list_mutants_with_dir_option() {
+    Command::new(MAIN_BINARY.as_os_str())
+        .arg("list-mutants")
+        .arg("--dir")
+        .arg("testdata/tree/factorial")
+        .assert_insta();
+}
+
+#[test]
+fn list_mutants_with_diffs_in_factorial() {
+    Command::new(MAIN_BINARY.as_os_str())
+        .arg("list-mutants")
+        .arg("--diff")
+        .current_dir("testdata/tree/factorial")
+        .assert_insta();
+}

@@ -1,0 +1,48 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+
+---
+src/bin/main.rs:1:11: replace main with Default::default()
+--- src/bin/main.rs
++++ replace main with Default::default()
+@@ -1,12 +1,10 @@
+ fn main() {
+-    for i in 1..=6 {
+-        println!("{}! = {}", i, factorial(i));
+-    }
++/* ~ removed by enucleate ~ */ Default::default()
+ }
+ 
+ fn factorial(n: u32) -> u32 {
+     let mut a = 1;
+     for i in 2..=n {
+         a *= i;
+     }
+     a
+
+src/bin/main.rs:7:29: replace factorial with Default::default()
+--- src/bin/main.rs
++++ replace factorial with Default::default()
+@@ -1,18 +1,14 @@
+ fn main() {
+     for i in 1..=6 {
+         println!("{}! = {}", i, factorial(i));
+     }
+ }
+ 
+ fn factorial(n: u32) -> u32 {
+-    let mut a = 1;
+-    for i in 2..=n {
+-        a *= i;
+-    }
+-    a
++/* ~ removed by enucleate ~ */ Default::default()
+ }
+ 
+ #[test]
+ fn test_factorial() {
+     assert_eq!(factorial(6), 720);
+ }
+
+
