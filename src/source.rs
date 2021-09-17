@@ -13,6 +13,9 @@ use crate::mutate::{DiscoveryVisitor, Mutation};
 ///
 /// It can be viewed either relative to the source tree (for display)
 /// or as a path that can be opened (relative to cwd or absolute.)
+///
+/// Code is normalized to Unix line endings as it's read in, and modified
+/// files are written with Unix line endings.
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
     tree_relative: PathBuf,
@@ -25,7 +28,8 @@ impl SourceFile {
     pub fn new(tree_path: &Path, tree_relative: &Path) -> Result<SourceFile> {
         let full_path = tree_path.join(tree_relative);
         let code = std::fs::read_to_string(&full_path)
-            .with_context(|| format!("failed to read source of {:?}", full_path))?;
+            .with_context(|| format!("failed to read source of {:?}", full_path))?
+            .replace("\r\n", "\n");
         Ok(SourceFile {
             tree_relative: tree_relative.to_owned(),
             full_path,
@@ -106,6 +110,9 @@ impl SourceTree {
 
 #[cfg(test)]
 mod test {
+    use std::fs::File;
+    use std::io::Write;
+
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -137,5 +144,17 @@ mod test {
     fn error_opening_outside_of_crate() {
         let result = SourceTree::new(Path::new("/"));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn source_file_normalizes_crlf() {
+        let temp = tempfile::tempdir().unwrap();
+        let file_name = "lib.rs";
+        File::create(temp.path().join(file_name))
+            .unwrap()
+            .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
+            .unwrap();
+        let source_file = SourceFile::new(&temp.path(), Path::new(file_name)).unwrap();
+        assert_eq!(source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 }
