@@ -2,7 +2,7 @@
 
 https://github.com/sourcefrog/enucleate
 
-[![Rust](https://github.com/sourcefrog/enucleate/actions/workflows/rust.yml/badge.svg)](https://github.com/sourcefrog/enucleate/actions/workflows/rust.yml)
+[![Tests](https://github.com/sourcefrog/enucleate/actions/workflows/tests.yml/badge.svg)](https://github.com/sourcefrog/enucleate/actions/workflows/tests.yml)
 
 Enucleate is a mutation testing tool for Rust. It guides you to missing test coverage by finding functions whose
 implementation could be replaced by something trivial and the tests would all still pass. 
