@@ -3,5 +3,5 @@ source: tests/cli.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
-Baseline test with no mutations ...ok
+Baseline test with no mutations ... ok
 
