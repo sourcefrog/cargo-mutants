@@ -7,6 +7,7 @@ use std::process::Command;
 
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
+use predicates::prelude::*;
 
 use lazy_static::lazy_static;
 
@@ -15,6 +16,10 @@ use pretty_assertions::assert_eq;
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("enucleate");
+}
+
+fn run_assert_cmd() -> assert_cmd::Command {
+    assert_cmd::Command::new(MAIN_BINARY.as_os_str())
 }
 
 trait CommandInstaExt {
@@ -73,3 +78,27 @@ fn test_factorial() {
         .assert_insta();
 }
 
+#[test]
+fn detect_already_failing_tests() {
+    // The detailed text output contains some noisy parts
+    run_assert_cmd()
+        .arg("test")
+        .current_dir("testdata/tree/already_failing_tests")
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .failure()
+        .stderr("Error: build in clean tree failed\n")
+        .stdout(
+            predicate::str::contains("running 1 test\ntest test_factorial ... FAILED").normalize(),
+        )
+        .stdout(
+            predicate::str::contains(
+                "thread 'test_factorial' panicked at 'assertion failed: `(left == right)`
+  left: `720`,
+ right: `72`'",
+            )
+            .normalize(),
+        )
+        .stdout(predicate::str::contains("lib.rs:11:5"))
+        .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
+}

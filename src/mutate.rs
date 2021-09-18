@@ -81,8 +81,7 @@ impl<'a> Mutation<'a> {
         let old_label = self.source_file.tree_relative_slashes();
         let new_label = self.describe_change();
         let mutated_code = self.mutated_code();
-        let text_diff = TextDiff::from_lines(self.original_code(), &mutated_code);
-        text_diff
+        TextDiff::from_lines(self.original_code(), &mutated_code)
             .unified_diff()
             .context_radius(8)
             .header(&old_label, &new_label)
