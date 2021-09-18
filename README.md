@@ -19,6 +19,29 @@ I think it's an interesting insight that mutation at the level of a whole functi
 missing tests, while (at least at moderate-size trees) still making it feasible to exhaustively generate every
 mutant.
 
+## Example
+
+Just run `enucleate test` in a Rust source directory, and it will point out
+functions that may be inadequately tested:
+
+    present ~/src/enucleate> enucleate test --dir ~/src/unix_mode/
+    baseline test with no mutations ... ok
+    replace type_bits with Default::default() in src/lib.rs:42:32 ... caught
+    replace is_file with Default::default() in src/lib.rs:52:35 ... caught
+    replace is_dir with Default::default() in src/lib.rs:62:34 ... caught
+    replace is_symlink with Default::default() in src/lib.rs:72:38 ... caught
+    replace is_fifo with Default::default() in src/lib.rs:77:35 ... caught
+    replace is_char_device with Default::default() in src/lib.rs:82:42 ... caught
+    replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
+    replace is_socket with Default::default() in src/lib.rs:92:37 ... caught
+    replace is_setuid with Default::default() in src/lib.rs:97:37 ... NOT CAUGHT!
+    replace is_setgid with Default::default() in src/lib.rs:102:37 ... NOT CAUGHT!
+    replace is_sticky with Default::default() in src/lib.rs:107:37 ... caught
+    replace to_string with Default::default() in src/lib.rs:130:39 ... caught
+    replace bitset with Default::default() in src/lib.rs:134:39 ... caught
+    replace permch with Default::default() in src/lib.rs:138:52 ... caught
+    replace file_mode with Default::default() in src/lib.rs:213:47 ... caught
+
 ## Manifesto
 
 * Draw attention to code that is not tested or only "pseudo-tested": reached by tests but the tests
