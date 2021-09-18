@@ -22,6 +22,10 @@ fn run_assert_cmd() -> assert_cmd::Command {
     assert_cmd::Command::new(MAIN_BINARY.as_os_str())
 }
 
+fn run() -> std::process::Command {
+    Command::new(MAIN_BINARY.as_os_str())
+}
+
 trait CommandInstaExt {
     fn assert_insta(&mut self);
 }
@@ -37,7 +41,7 @@ impl CommandInstaExt for std::process::Command {
 
 #[test]
 fn list_files_in_factorial() {
-    Command::new(MAIN_BINARY.as_os_str())
+    run()
         .arg("list-files")
         .arg("-d")
         .arg("testdata/tree/factorial")
@@ -46,7 +50,7 @@ fn list_files_in_factorial() {
 
 #[test]
 fn list_mutants_in_factorial() {
-    Command::new(MAIN_BINARY.as_os_str())
+    run()
         .arg("list-mutants")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
@@ -54,7 +58,7 @@ fn list_mutants_in_factorial() {
 
 #[test]
 fn list_mutants_with_dir_option() {
-    Command::new(MAIN_BINARY.as_os_str())
+    run()
         .arg("list-mutants")
         .arg("--dir")
         .arg("testdata/tree/factorial")
@@ -63,7 +67,7 @@ fn list_mutants_with_dir_option() {
 
 #[test]
 fn list_mutants_with_diffs_in_factorial() {
-    Command::new(MAIN_BINARY.as_os_str())
+    run()
         .arg("list-mutants")
         .arg("--diff")
         .current_dir("testdata/tree/factorial")
@@ -72,7 +76,7 @@ fn list_mutants_with_diffs_in_factorial() {
 
 #[test]
 fn test_factorial() {
-    Command::new(MAIN_BINARY.as_os_str())
+    run()
         .arg("test")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
