@@ -48,6 +48,14 @@ fn list_files_in_factorial() {
         .assert_insta();
 }
 
+
+#[test]
+fn list_files_in_cwd() {
+    run()
+        .arg("list-files")
+        .current_dir("testdata/tree/factorial")
+        .assert_insta();
+}
 #[test]
 fn list_mutants_in_factorial() {
     run()

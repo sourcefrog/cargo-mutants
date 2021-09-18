@@ -38,7 +38,7 @@ enum Command {
 #[argh(subcommand, name = "list-files")]
 struct ListFiles {
     /// rust crate directory to examine.
-    #[argh(option, short = 'd')]
+    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
     dir: PathBuf,
 }
 
