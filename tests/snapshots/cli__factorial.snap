@@ -3,5 +3,7 @@ source: tests/cli.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
-Baseline test with no mutations ... ok
+baseline test with no mutations ... ok
+replace main with Default::default() in src/bin/main.rs:1:11 ... NOT CAUGHT!
+replace factorial with Default::default() in src/bin/main.rs:7:29 ... caught
 

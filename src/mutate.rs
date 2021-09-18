@@ -1,9 +1,12 @@
 // Copyright 2021 Martin Pool
 
 use std::fmt;
+use std::fs;
+use std::path::Path;
 #[allow(unused)]
 use std::path::PathBuf;
 
+use anyhow::Context;
 #[allow(unused)]
 use anyhow::Result;
 use proc_macro2::Span;
@@ -87,6 +90,22 @@ impl<'a> Mutation<'a> {
             .header(&old_label, &new_label)
             .to_string()
     }
+
+    pub fn apply_in_dir(&self, dir: &Path) -> Result<()> {
+        self.write_in_dir(dir, &self.mutated_code())
+    }
+
+    pub fn revert_in_dir(&self, dir: &Path) -> Result<()> {
+        self.write_in_dir(dir, self.original_code())
+    }
+
+    fn write_in_dir(&self, dir: &Path, code: &str) -> Result<()> {
+        let path = self.source_file.within_dir(dir);
+        // for safety, don't follow symlinks
+        assert!(path.is_file(), "{:?} is not a file", path);
+        fs::write(&path, code.as_bytes())
+            .with_context(|| format!("failed to write mutated code to {:?}", path))
+    }
 }
 
 impl<'sf> fmt::Debug for Mutation<'sf> {
@@ -97,6 +116,17 @@ impl<'sf> fmt::Debug for Mutation<'sf> {
             .field("start", &(self.span.start().line, self.span.start().column))
             .field("end", &(self.span.end().line, self.span.end().column))
             .finish()
+    }
+}
+
+impl<'sf> fmt::Display for Mutation<'sf> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} in {}",
+            self.describe_change(),
+            self.describe_location(),
+        )
     }
 }
 

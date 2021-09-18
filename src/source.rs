@@ -48,6 +48,10 @@ impl SourceFile {
         v.visit_file(&syn_file);
         Ok(v.sites)
     }
+
+    pub fn within_dir(&self, dir: &Path) -> PathBuf {
+        dir.join(&self.tree_relative)
+    }
 }
 
 #[derive(Debug)]

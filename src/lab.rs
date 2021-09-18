@@ -4,14 +4,31 @@
 
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Output};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
 use crate::console;
+use crate::mutate::Mutation;
 use crate::source::SourceTree;
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Outcome {
+    Caught,
+    NotCaught,
+}
+
+impl Outcome {
+    fn from_cmd_output(output: &Output) -> Outcome {
+        if output.status.success() {
+            Outcome::NotCaught
+        } else {
+            Outcome::Caught
+        }
+    }
+}
 
 /// Holds scratch directories in which files can be mutated and tests executed.
 #[derive(Debug)]
@@ -48,16 +65,26 @@ impl<'s> Lab<'s> {
         })
     }
 
+    pub fn run(&self) -> Result<()> {
+        self.test_clean()?;
+
+        for source_file in self.source.source_files() {
+            for mutation in source_file.mutations()? {
+                console::show_start(&format!("{}", &mutation));
+                let outcome = self.test_mutation(&mutation)?;
+                console::show_outcome(&outcome);
+            }
+        }
+        Ok(())
+    }
+
     /// Test building the unmodified source.
     ///
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
-        console::show_start("Baseline test with no mutations");
-        let output = Command::new("cargo")
-            .arg("test")
-            .current_dir(&self.build_dir)
-            .output()?;
+        console::show_start("baseline test with no mutations");
+        let output = self.run_cargo_test()?;
         if output.status.success() {
             console::show_result("ok");
             Ok(())
@@ -68,5 +95,23 @@ impl<'s> Lab<'s> {
             std::io::stdout().write_all(&output.stderr)?;
             Err(anyhow!("build in clean tree failed"))
         }
+    }
+
+    /// Test with one mutation applied.
+    pub fn test_mutation(&self, mutation: &Mutation) -> Result<Outcome> {
+        mutation.apply_in_dir(&self.build_dir)?;
+        // TODO: Maybe an object that reverts on Drop?
+        let test_result = self.run_cargo_test();
+        // Revert even if there was an error running cargo test
+        mutation.revert_in_dir(&self.build_dir)?;
+        test_result.map(|output| Outcome::from_cmd_output(&output))
+    }
+
+    fn run_cargo_test(&self) -> Result<std::process::Output> {
+        Command::new("cargo")
+            .arg("test")
+            .current_dir(&self.build_dir)
+            .output()
+            .context("run cargo test")
     }
 }
