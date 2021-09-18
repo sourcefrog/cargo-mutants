@@ -11,6 +11,7 @@ publish = false
 anyhow = "1.0"
 argh = "0.1.6"
 better-panic = "0.2"
+console = "0.14"
 copy_dir = "0.1.2"
 path-slash = "0.1.4"
 quote = "1.0"

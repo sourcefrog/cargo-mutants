@@ -3,6 +3,8 @@
 /// Print messages to the terminal.
 use std::io::{stdout, Write};
 
+use console::style;
+
 use crate::lab::Outcome;
 
 pub fn show_start(msg: &str) {
@@ -16,7 +18,7 @@ pub fn show_result(msg: &str) {
 
 pub fn show_outcome(outcome: &Outcome) {
     match outcome {
-        Outcome::Caught => show_result("caught"),
-        Outcome::NotCaught => show_result("NOT CAUGHT!"),
+        Outcome::Caught => println!("{}", style("caught").green()),
+        Outcome::NotCaught => println!("{}", style("NOT CAUGHT!").bold().red()),
     }
 }
