@@ -10,6 +10,7 @@ use anyhow::{anyhow, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
+use crate::console;
 use crate::source::SourceTree;
 
 /// Holds scratch directories in which files can be mutated and tests executed.
@@ -52,15 +53,17 @@ impl<'s> Lab<'s> {
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
+        console::show_start("Baseline test with no mutations");
         let output = Command::new("cargo")
             .arg("test")
             .current_dir(&self.build_dir)
             .output()?;
         if output.status.success() {
-            println!("baseline tests passed in clean tree");
+            console::show_result("ok");
             Ok(())
         } else {
-            println!("error: baseline tests in clean tree failed; tests won't continue");
+            console::show_result("failed");
+            // println!("error: baseline tests in clean tree failed; tests won't continue");
             std::io::stdout().write_all(&output.stdout)?;
             std::io::stdout().write_all(&output.stderr)?;
             Err(anyhow!("build in clean tree failed"))

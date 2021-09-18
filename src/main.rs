@@ -1,5 +1,6 @@
 // Copyright 2021 Martin Pool
 
+mod console;
 mod lab;
 mod mutate;
 mod source;
