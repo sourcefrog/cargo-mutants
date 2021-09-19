@@ -48,16 +48,13 @@ impl<'a> Mutation<'a> {
         &self.source_file.code
     }
 
-    /// Return a "file:line:column" description of the location of this mutation.
-    ///
-    /// Columns are expressed 1-based which seems more common in editors.
+    /// Return a "file:line" description of the location of this mutation.
     pub fn describe_location(&self) -> String {
         let start = self.span.start();
         format!(
-            "{}:{}:{}",
+            "{}:{}",
             self.source_file.tree_relative_slashes(),
             start.line,
-            start.column + 1
         )
     }
 
@@ -74,7 +71,6 @@ impl<'a> Mutation<'a> {
     ///
     /// Note that this will often not be unique: the same name can be reused
     /// in different modules, under different cfg guards, etc.
-    #[allow(unused)]
     pub fn function_name(&self) -> String {
         self.function_ident.to_string()
     }

@@ -3,6 +3,6 @@ source: tests/cli.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
-src/bin/main.rs:1:11: replace main with Default::default()
-src/bin/main.rs:7:29: replace factorial with Default::default()
+src/bin/main.rs:1: replace main with Default::default()
+src/bin/main.rs:7: replace factorial with Default::default()
 
