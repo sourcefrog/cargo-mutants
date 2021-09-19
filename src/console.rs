@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use console::style;
 
-use crate::lab::Outcome;
+use crate::outcome::{Outcome, Status};
 
 pub fn show_start(msg: &str) {
     print!("{} ... ", msg);
@@ -25,10 +25,25 @@ pub fn show_failure(msg: &str, duration: &Duration) {
     );
 }
 
-pub fn show_outcome(outcome: &Outcome, duration: &Duration) {
-    match outcome {
-        Outcome::Caught => show_success("caught", duration),
-        Outcome::NotCaught => show_failure("NOT CAUGHT", duration),
+pub fn show_outcome(outcome: &Outcome) {
+    match outcome.status {
+        Status::Failed => show_success("caught", &outcome.duration),
+        Status::Passed => show_failure("NOT CAUGHT", &outcome.duration),
+        // OutcomeType::Timeout => show_failure("TIMEOUT", duration),
+    }
+}
+
+pub fn show_baseline_outcome(outcome: &Outcome) {
+    match outcome.status {
+        Status::Passed => {
+            show_success("ok", &outcome.duration);
+        }
+        Status::Failed => {
+            show_failure("failed", &outcome.duration);
+            // println!("error: baseline tests in clean tree failed; tests won't continue");
+            print!("{}", &outcome.stdout);
+            print!("{}", &outcome.stderr);
+        }
     }
 }
 

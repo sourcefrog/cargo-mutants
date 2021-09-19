@@ -2,10 +2,9 @@
 
 //! A lab directory in which to test mutations to the source code.
 
-use std::io::Write;
 use std::path::PathBuf;
-use std::process::{self, Command, Output};
-use std::time::{Duration, Instant};
+use std::process::Command;
+use std::time::Instant;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
@@ -13,23 +12,8 @@ use tempfile::TempDir;
 
 use crate::console;
 use crate::mutate::Mutation;
+use crate::outcome::{Outcome, Status};
 use crate::source::SourceTree;
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Outcome {
-    Caught,
-    NotCaught,
-}
-
-impl Outcome {
-    fn from_cmd_output(output: &Output) -> Outcome {
-        if output.status.success() {
-            Outcome::NotCaught
-        } else {
-            Outcome::Caught
-        }
-    }
-}
 
 /// Holds scratch directories in which files can be mutated and tests executed.
 #[derive(Debug)]
@@ -83,15 +67,11 @@ impl<'s> Lab<'s> {
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
         console::show_start("baseline test with no mutations");
-        let (output, duration) = self.run_cargo_test()?;
-        if output.status.success() {
-            console::show_success("ok", &duration);
+        let outcome = self.run_cargo_test()?;
+        console::show_baseline_outcome(&outcome);
+        if outcome.status == Status::Passed {
             Ok(())
         } else {
-            console::show_failure("failed", &duration);
-            // println!("error: baseline tests in clean tree failed; tests won't continue");
-            std::io::stdout().write_all(&output.stdout)?;
-            std::io::stdout().write_all(&output.stderr)?;
             Err(anyhow!("build in clean tree failed"))
         }
     }
@@ -104,19 +84,23 @@ impl<'s> Lab<'s> {
         let test_result = self.run_cargo_test();
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
-        let (output, duration) = test_result?;
-        let outcome = Outcome::from_cmd_output(&output);
-        console::show_outcome(&outcome, &duration);
+        let outcome = test_result?;
+        console::show_outcome(&outcome);
         Ok(())
     }
 
-    fn run_cargo_test(&self) -> Result<(process::Output, Duration)> {
+    fn run_cargo_test(&self) -> Result<Outcome> {
         let start = Instant::now();
         let output = Command::new("cargo")
             .arg("test")
             .current_dir(&self.build_dir)
             .output()
             .context("run cargo test")?;
-        Ok((output, start.elapsed()))
+        Ok(Outcome {
+            status: output.status.into(),
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            duration: start.elapsed(),
+        })
     }
 }

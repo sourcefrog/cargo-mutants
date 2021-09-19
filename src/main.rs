@@ -3,6 +3,7 @@
 mod console;
 mod lab;
 mod mutate;
+mod outcome;
 mod source;
 mod textedit;
 
