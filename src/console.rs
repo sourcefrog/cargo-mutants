@@ -29,6 +29,7 @@ pub fn show_outcome(outcome: &Outcome) {
     match outcome.status {
         Status::Failed => show_success("caught", &outcome.duration),
         Status::Passed => show_failure("NOT CAUGHT", &outcome.duration),
+        Status::Timeout => show_failure("TIMEOUT", &outcome.duration),
         // OutcomeType::Timeout => show_failure("TIMEOUT", duration),
     }
 }
@@ -38,8 +39,8 @@ pub fn show_baseline_outcome(outcome: &Outcome) {
         Status::Passed => {
             show_success("ok", &outcome.duration);
         }
-        Status::Failed => {
-            show_failure("failed", &outcome.duration);
+        Status::Failed | Status::Timeout => {
+            show_failure(&format!("{:?}", outcome.status), &outcome.duration);
             // println!("error: baseline tests in clean tree failed; tests won't continue");
             print!("{}", &outcome.stdout);
             print!("{}", &outcome.stderr);

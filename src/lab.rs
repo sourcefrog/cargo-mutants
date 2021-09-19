@@ -2,9 +2,12 @@
 
 //! A lab directory in which to test mutations to the source code.
 
+use std::io::{Read, Seek};
 use std::path::PathBuf;
+use std::process;
 use std::process::Command;
-use std::time::Instant;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
@@ -14,6 +17,8 @@ use crate::console;
 use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Status};
 use crate::source::SourceTree;
+
+const TEST_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Holds scratch directories in which files can be mutated and tests executed.
 #[derive(Debug)]
@@ -97,15 +102,45 @@ impl<'s> Lab<'s> {
 
     fn run_cargo_test(&self) -> Result<Outcome> {
         let start = Instant::now();
-        let output = Command::new("cargo")
+        let mut timed_out = false;
+        let mut out_file = tempfile::tempfile()?;
+        let mut child = Command::new("cargo")
             .arg("test")
             .current_dir(&self.build_dir)
-            .output()
-            .context("run cargo test")?;
+            .stdout(out_file.try_clone()?)
+            .stderr(out_file.try_clone()?)
+            .stdin(process::Stdio::null())
+            .spawn()
+            .context("spawn cargo test")?;
+        let exit_status = loop {
+            if start.elapsed() > TEST_TIMEOUT {
+                // eprintln!("bored! killing child...");
+                if let Err(e) = child.kill() {
+                    // most likely we raced and it's already gone
+                    eprintln!("failed to kill child after timeout: {}", e);
+                }
+                timed_out = true;
+                sleep(Duration::from_millis(200));
+            }
+            match child.try_wait()? {
+                Some(status) => break status,
+                None => {
+                    // eprintln!("wait...");
+                    sleep(Duration::from_millis(200))
+                }
+            }
+        };
+        out_file.rewind()?;
+        let mut out_bytes = Vec::new();
+        out_file.read_to_end(&mut out_bytes)?;
         Ok(Outcome {
-            status: output.status.into(),
-            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
-            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            status: if timed_out {
+                Status::Timeout
+            } else {
+                exit_status.into()
+            },
+            stdout: String::from_utf8_lossy(&out_bytes).to_string(),
+            stderr: String::new(),
             duration: start.elapsed(),
         })
     }

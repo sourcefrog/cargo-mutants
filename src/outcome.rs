@@ -20,7 +20,9 @@ pub enum Status {
     /// The tests passed. This is desired in a clean tree and undesired in a
     /// mutated tree.
     Passed,
-    // Timeout,
+    /// Test ran too long and was killed. Maybe the mutation caused an infinite
+    /// loop.
+    Timeout,
 }
 
 impl From<process::ExitStatus> for Status {
