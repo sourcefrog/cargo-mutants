@@ -31,8 +31,14 @@ impl<'s> Lab<'s> {
     pub fn new(source: &'s SourceTree) -> Result<Lab<'s>> {
         let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
+        let start = Instant::now();
+        console::show_start("copy source to scratch directory");
         let errs = copy_dir::copy_dir(source.root(), &build_dir)?;
-        if !errs.is_empty() {
+        let duration = start.elapsed();
+        if errs.is_empty() {
+            console::show_success("done", &duration);
+        } else {
+            console::show_failure("failed", &duration);
             eprintln!(
                 "error copying source tree {} to {}:",
                 &source.root().to_slash_lossy(),
