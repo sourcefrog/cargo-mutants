@@ -2,6 +2,7 @@
 
 /// Print messages to the terminal.
 use std::io::{stdout, Write};
+use std::time::Duration;
 
 use console::style;
 
@@ -12,13 +13,25 @@ pub fn show_start(msg: &str) {
     stdout().flush().unwrap();
 }
 
-pub fn show_result(msg: &str) {
-    println!("{}", msg);
+pub fn show_success(msg: &str, duration: &Duration) {
+    println!("{} in {}", style(msg).green(), format_elapsed(duration));
 }
 
-pub fn show_outcome(outcome: &Outcome) {
+pub fn show_failure(msg: &str, duration: &Duration) {
+    println!(
+        "{} in {}",
+        style(msg).red().bold(),
+        format_elapsed(duration)
+    );
+}
+
+pub fn show_outcome(outcome: &Outcome, duration: &Duration) {
     match outcome {
-        Outcome::Caught => println!("{}", style("caught").green()),
-        Outcome::NotCaught => println!("{}", style("NOT CAUGHT!").bold().red()),
+        Outcome::Caught => show_success("caught", duration),
+        Outcome::NotCaught => show_failure("NOT CAUGHT", duration),
     }
+}
+
+fn format_elapsed(duration: &Duration) -> String {
+    format!("{:.3}s", duration.as_secs_f64())
 }

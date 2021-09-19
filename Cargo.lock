@@ -269,6 +269,7 @@ dependencies = [
  "pretty_assertions",
  "proc-macro2",
  "quote",
+ "regex",
  "similar 2.0.0",
  "syn",
  "tempfile",

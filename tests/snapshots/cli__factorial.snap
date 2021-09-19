@@ -1,9 +1,9 @@
 ---
 source: tests/cli.rs
-expression: "String::from_utf8_lossy(&output.stdout)"
+expression: cleaned_stdout
 
 ---
-baseline test with no mutations ... ok
-replace main with Default::default() in src/bin/main.rs:1:11 ... NOT CAUGHT!
-replace factorial with Default::default() in src/bin/main.rs:7:29 ... caught
+baseline test with no mutations ... ok in x.xxxs
+replace main with Default::default() in src/bin/main.rs:1:11 ... NOT CAUGHT in x.xxxs
+replace factorial with Default::default() in src/bin/main.rs:7:29 ... caught in x.xxxs
 

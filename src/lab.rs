@@ -4,7 +4,8 @@
 
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Command, Output};
+use std::process::{self, Command, Output};
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
@@ -70,9 +71,7 @@ impl<'s> Lab<'s> {
 
         for source_file in self.source.source_files() {
             for mutation in source_file.mutations()? {
-                console::show_start(&format!("{}", &mutation));
-                let outcome = self.test_mutation(&mutation)?;
-                console::show_outcome(&outcome);
+                self.test_mutation(&mutation)?;
             }
         }
         Ok(())
@@ -84,12 +83,12 @@ impl<'s> Lab<'s> {
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
         console::show_start("baseline test with no mutations");
-        let output = self.run_cargo_test()?;
+        let (output, duration) = self.run_cargo_test()?;
         if output.status.success() {
-            console::show_result("ok");
+            console::show_success("ok", &duration);
             Ok(())
         } else {
-            console::show_result("failed");
+            console::show_failure("failed", &duration);
             // println!("error: baseline tests in clean tree failed; tests won't continue");
             std::io::stdout().write_all(&output.stdout)?;
             std::io::stdout().write_all(&output.stderr)?;
@@ -98,20 +97,26 @@ impl<'s> Lab<'s> {
     }
 
     /// Test with one mutation applied.
-    pub fn test_mutation(&self, mutation: &Mutation) -> Result<Outcome> {
-        mutation.apply_in_dir(&self.build_dir)?;
+    pub fn test_mutation(&self, mutation: &Mutation) -> Result<()> {
+        console::show_start(&format!("{}", &mutation));
         // TODO: Maybe an object that reverts on Drop?
+        mutation.apply_in_dir(&self.build_dir)?;
         let test_result = self.run_cargo_test();
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
-        test_result.map(|output| Outcome::from_cmd_output(&output))
+        let (output, duration) = test_result?;
+        let outcome = Outcome::from_cmd_output(&output);
+        console::show_outcome(&outcome, &duration);
+        Ok(())
     }
 
-    fn run_cargo_test(&self) -> Result<std::process::Output> {
-        Command::new("cargo")
+    fn run_cargo_test(&self) -> Result<(process::Output, Duration)> {
+        let start = Instant::now();
+        let output = Command::new("cargo")
             .arg("test")
             .current_dir(&self.build_dir)
             .output()
-            .context("run cargo test")
+            .context("run cargo test")?;
+        Ok((output, start.elapsed()))
     }
 }

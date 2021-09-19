@@ -84,10 +84,17 @@ fn list_mutants_with_diffs_in_factorial() {
 
 #[test]
 fn test_factorial() {
-    run()
+    let output = run()
         .arg("test")
         .current_dir("testdata/tree/factorial")
-        .assert_insta();
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let remove_time = regex::Regex::new(r"in \d+\.\d{3}s").unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let cleaned_stdout = remove_time.replace_all(&stdout, "in x.xxxs");
+    insta::assert_snapshot!(cleaned_stdout);
+    assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
 }
 
 #[test]
