@@ -67,7 +67,6 @@ struct Test {
 }
 
 fn main() -> Result<()> {
-    better_panic::install();
     let args: TopArgs = argh::from_env();
     match args.command {
         Command::ListFiles(sub) => {
