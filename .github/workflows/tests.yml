@@ -20,16 +20,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Show Cargo version
       run: cargo --version
-    - name: Configure Mac OS environment variables
-      # macOS tar seems to cause intermittent corruption...
-      if: matrix.os == 'macos-latest'
-      run: |
-        echo "/usr/local/opt/gnu-tar/libexec/gnubin" >>$GITHUB_PATH
-    - name: Check tar version
-      if: matrix.os == 'macOS-latest'
-      run: |
-        which tar
-        tar --version
     - name: Cache Cargo
       uses: actions/cache@v2
       with:
