@@ -22,7 +22,9 @@ jobs:
     - name: Cache Cargo registry
       uses: actions/cache@v1
       with:
-        path: ~/.cargo/registry
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
         key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
         restore-keys: |
           ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
