@@ -19,14 +19,13 @@ jobs:
     - uses: actions/checkout@v2
     - name: Show Cargo version
       run: cargo --version
-    - name: Cargo cache
+    - name: Cache Cargo registry
       uses: actions/cache@v1
       with:
-        path: ~/.cargo
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
         restore-keys: |
-          ${{ runner.os }}-cargo-${{ hashFiles('Cargo.toml') }}
-          ${{ runner.os }}-cargo
+          ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
     - name: Show Cargo version again
       run: cargo --version
     - name: Cargo target cache
@@ -36,7 +35,6 @@ jobs:
         key: ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.toml') }}
         restore-keys: |
           ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.toml') }}
-          ${{ runner.os }}-cargo-target
     - name: Show Cargo version again 3
       run: cargo --version
     - name: Build
