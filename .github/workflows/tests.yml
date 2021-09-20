@@ -18,8 +18,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Show Cargo version
-      run: cargo --version
+    - name: Show Cargo and rustc version
+      run: |
+        cargo --version
+        rustc --version
     - name: Cache Cargo
       uses: actions/cache@v2
       with:
