@@ -21,28 +21,23 @@ jobs:
     - name: Show Cargo version
       run: cargo --version
     - name: Configure Mac OS environment variables
-      # From https://github.com/ankitects/anki/commit/43f5db648078e9cd4e18ca2559eae396858327d1
+      # macOS tar seems to cause intermittent corruption...
       if: matrix.os == 'macos-latest'
       run: |
-        # gnu tar for cache issue
         echo "/usr/local/opt/gnu-tar/libexec/gnubin" >>$GITHUB_PATH
     - name: Check tar version
       if: matrix.os == 'macOS-latest'
       run: |
         which tar
         tar --version
-    - name: Cache Cargo registry
-      uses: actions/cache@v1
+    - name: Cache Cargo
+      uses: actions/cache@v2
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-        key: ${{ runner.os }}-cargo-gnutar-registry-${{ hashFiles('Cargo.lock') }}
-    - name: Cargo target cache
-      uses: actions/cache@v1
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-gnutar-target-${{ hashFiles('Cargo.lock') }}
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
     - name: Build
       run: cargo build --all-targets
     - name: Test
