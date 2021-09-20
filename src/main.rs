@@ -1,9 +1,11 @@
 // Copyright 2021 Martin Pool
 
+/// `enucleate` command line tool for Rust mutation testing.
 mod console;
 mod lab;
 mod mutate;
 mod outcome;
+mod output;
 mod source;
 mod textedit;
 

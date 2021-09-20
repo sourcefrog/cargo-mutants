@@ -263,6 +263,7 @@ dependencies = [
  "console 0.14.1",
  "copy_dir",
  "insta",
+ "itertools",
  "lazy_static",
  "path-slash",
  "predicates",

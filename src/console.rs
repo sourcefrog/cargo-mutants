@@ -42,8 +42,7 @@ pub fn show_baseline_outcome(outcome: &Outcome) {
         Status::Failed | Status::Timeout => {
             show_failure(&format!("{:?}", outcome.status), &outcome.duration);
             // println!("error: baseline tests in clean tree failed; tests won't continue");
-            print!("{}", &outcome.stdout);
-            print!("{}", &outcome.stderr);
+            print!("{}", &outcome.log_content);
         }
     }
 }

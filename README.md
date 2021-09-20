@@ -42,6 +42,9 @@ functions that may be inadequately tested:
     replace permch with Default::default() in src/lib.rs:138:52 ... caught
     replace file_mode with Default::default() in src/lib.rs:213:47 ... caught
 
+The Cargo output is logged into `target/enucleate/` within the original source
+directory, so you can see why individual tests failed.
+
 ## Manifesto
 
 * Draw attention to code that is not tested or only "pseudo-tested": reached by tests but the tests

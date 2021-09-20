@@ -2,7 +2,6 @@
 
 //! A lab directory in which to test mutations to the source code.
 
-use std::io::{Read, Seek};
 use std::path::PathBuf;
 use std::process;
 use std::process::Command;
@@ -16,6 +15,7 @@ use tempfile::TempDir;
 use crate::console;
 use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Status};
+use crate::output::OutputDir;
 use crate::source::SourceTree;
 
 const TEST_TIMEOUT: Duration = Duration::from_secs(60);
@@ -31,6 +31,9 @@ pub struct Lab<'s> {
 
     /// Path (within tmp) holding a copy of the source that can be modified and built.
     build_dir: PathBuf,
+
+    /// Output directory, holding logs.
+    output_dir: OutputDir,
 }
 
 impl<'s> Lab<'s> {
@@ -55,10 +58,13 @@ impl<'s> Lab<'s> {
             }
             return Err(anyhow!("error copying source to build directory"));
         }
+        let output_dir = OutputDir::new(source)?;
+        output_dir.delete_logs()?;
         Ok(Lab {
             source,
             tmp,
             build_dir,
+            output_dir,
         })
     }
 
@@ -79,7 +85,7 @@ impl<'s> Lab<'s> {
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
         console::show_start("baseline test with no mutations");
-        let outcome = self.run_cargo_test()?;
+        let outcome = self.run_cargo_test("baseline")?;
         console::show_baseline_outcome(&outcome);
         if outcome.status == Status::Passed {
             Ok(())
@@ -90,10 +96,11 @@ impl<'s> Lab<'s> {
 
     /// Test with one mutation applied.
     pub fn test_mutation(&self, mutation: &Mutation) -> Result<()> {
-        console::show_start(&format!("{}", &mutation));
+        let mutation_name = format!("{}", &mutation);
+        console::show_start(&mutation_name);
         // TODO: Maybe an object that reverts on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
-        let test_result = self.run_cargo_test();
+        let test_result = self.run_cargo_test(&mutation_name);
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;
@@ -101,15 +108,15 @@ impl<'s> Lab<'s> {
         Ok(())
     }
 
-    fn run_cargo_test(&self) -> Result<Outcome> {
+    fn run_cargo_test(&self, scenario_name: &str) -> Result<Outcome> {
         let start = Instant::now();
         let mut timed_out = false;
-        let mut out_file = tempfile::tempfile()?;
+        let mut log_file = self.output_dir.create_log(scenario_name)?;
         let mut child = Command::new("cargo")
             .arg("test")
             .current_dir(&self.build_dir)
-            .stdout(out_file.try_clone()?)
-            .stderr(out_file.try_clone()?)
+            .stdout(log_file.file.try_clone()?)
+            .stderr(log_file.file.try_clone()?)
             .stdin(process::Stdio::null())
             .spawn()
             .context("spawn cargo test")?;
@@ -121,27 +128,22 @@ impl<'s> Lab<'s> {
                     eprintln!("failed to kill child after timeout: {}", e);
                 }
                 timed_out = true;
+                // Give it a bit of time to exit, then keep signalling until it
+                // does stop.
                 sleep(Duration::from_millis(200));
             }
             match child.try_wait()? {
                 Some(status) => break status,
-                None => {
-                    // eprintln!("wait...");
-                    sleep(Duration::from_millis(200))
-                }
+                None => sleep(Duration::from_millis(200)),
             }
         };
-        out_file.rewind()?;
-        let mut out_bytes = Vec::new();
-        out_file.read_to_end(&mut out_bytes)?;
         Ok(Outcome {
             status: if timed_out {
                 Status::Timeout
             } else {
                 exit_status.into()
             },
-            stdout: String::from_utf8_lossy(&out_bytes).to_string(),
-            stderr: String::new(),
+            log_content: log_file.log_content()?,
             duration: start.elapsed(),
         })
     }

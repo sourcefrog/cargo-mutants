@@ -8,8 +8,7 @@ use std::time::Duration;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Outcome {
     pub status: Status,
-    pub stdout: String,
-    pub stderr: String,
+    pub log_content: String,
     pub duration: Duration,
 }
 
