@@ -10,6 +10,7 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 argh = "0.1.6"
+atty = "0.2"
 better-panic = "0.2"
 console = "0.14"
 copy_dir = "0.1.2"

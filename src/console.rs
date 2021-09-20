@@ -1,15 +1,18 @@
 // Copyright 2021 Martin Pool
 
-/// Print messages to the terminal.
-use std::io::{stdout, Write};
-use std::time::{Duration, Instant};
+//! Print messages to the terminal.
 
+use std::io::{stdout, Write};
+use std::time::Instant;
+
+use atty::Stream;
 use console::style;
 
 use crate::outcome::{Outcome, Status};
 
 pub(crate) struct Activity {
     pub start_time: Instant,
+    atty: bool,
 }
 
 impl Activity {
@@ -18,6 +21,7 @@ impl Activity {
         stdout().flush().unwrap();
         Activity {
             start_time: Instant::now(),
+            atty: atty::is(Stream::Stdout),
         }
     }
 
@@ -29,6 +33,15 @@ impl Activity {
         println!("{} in {}", style(msg).red().bold(), self.format_elapsed());
     }
 
+    pub fn tick(&self) {
+        if self.atty {
+            let time_str = format!("{}s", self.start_time.elapsed().as_secs());
+            let backspace = "\x08".repeat(time_str.len());
+            print!("{}{}", time_str, backspace);
+            stdout().flush().unwrap();
+        }
+    }
+
     pub fn outcome(self, outcome: &Outcome) {
         match outcome.status {
             Status::Failed => self.succeed("caught"),
@@ -38,10 +51,6 @@ impl Activity {
     }
 
     fn format_elapsed(&self) -> String {
-        format_elapsed(&self.start_time.elapsed())
+        format!("{:.3}s", &self.start_time.elapsed().as_secs_f64())
     }
-}
-
-fn format_elapsed(duration: &Duration) -> String {
-    format!("{:.3}s", duration.as_secs_f64())
 }

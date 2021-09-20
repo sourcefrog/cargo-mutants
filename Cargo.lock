@@ -259,6 +259,7 @@ dependencies = [
  "anyhow",
  "argh",
  "assert_cmd",
+ "atty",
  "better-panic",
  "console 0.14.1",
  "copy_dir",

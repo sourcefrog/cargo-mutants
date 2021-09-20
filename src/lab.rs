@@ -82,7 +82,7 @@ impl<'s> Lab<'s> {
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
         let activity = Activity::start("baseline test with no mutations");
-        let outcome = self.run_cargo_test("baseline")?;
+        let outcome = self.run_cargo_test("baseline", &activity)?;
         match outcome.status {
             Status::Passed => {
                 activity.succeed("ok");
@@ -104,7 +104,7 @@ impl<'s> Lab<'s> {
         // TODO: Maybe an object representing the applied mutation that reverts
         // on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
-        let test_result = self.run_cargo_test(&mutation_name);
+        let test_result = self.run_cargo_test(&mutation_name, &activity);
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;
@@ -112,7 +112,7 @@ impl<'s> Lab<'s> {
         Ok(())
     }
 
-    fn run_cargo_test(&self, scenario_name: &str) -> Result<Outcome> {
+    fn run_cargo_test(&self, scenario_name: &str, activity: &Activity) -> Result<Outcome> {
         let start = Instant::now();
         let mut timed_out = false;
         let mut log_file = self.output_dir.create_log(scenario_name)?;
@@ -140,6 +140,7 @@ impl<'s> Lab<'s> {
                 Some(status) => break status,
                 None => sleep(Duration::from_millis(200)),
             }
+            activity.tick();
         };
         Ok(Outcome {
             status: if timed_out {
