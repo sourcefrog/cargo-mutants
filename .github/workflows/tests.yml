@@ -25,7 +25,7 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         # gnu tar for cache issue
-        echo "::add-path::/usr/local/opt/gnu-tar/libexec/gnubin"
+        echo "/usr/local/opt/gnu-tar/libexec/gnubin" >>$GITHUB_PATH
     - name: Check tar version
       if: matrix.os == 'macOS-latest'
       run: |
