@@ -94,6 +94,7 @@ impl TestLog {
 #[cfg(test)]
 mod test {
     use itertools::Itertools;
+    use path_slash::PathExt;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
@@ -119,7 +120,7 @@ mod test {
                     .path()
                     .strip_prefix(tmp.path())
                     .unwrap()
-                    .display()
+                    .to_slash_lossy()
                     .to_string()
             })
             .collect_vec();
