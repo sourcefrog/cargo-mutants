@@ -26,6 +26,7 @@ pub struct Lab<'s> {
     source: &'s SourceTree,
 
     /// Top-level temporary directory for this lab.
+    #[allow(unused)] // Needed to set tmpdir lifetime.
     tmp: TempDir,
 
     /// Path (within tmp) holding a copy of the source that can be modified and built.
