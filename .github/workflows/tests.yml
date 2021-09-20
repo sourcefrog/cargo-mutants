@@ -22,12 +22,8 @@ jobs:
     - name: Cache Cargo registry
       uses: actions/cache@v1
       with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-just-registry-${{ hashFiles('Cargo.lock') }}
     - name: Show Cargo version again
       run: cargo --version
     - name: Cargo target cache
