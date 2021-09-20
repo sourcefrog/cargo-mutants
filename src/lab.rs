@@ -12,7 +12,7 @@ use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
-use crate::console;
+use crate::console::Activity;
 use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Status};
 use crate::output::OutputDir;
@@ -40,14 +40,12 @@ impl<'s> Lab<'s> {
     pub fn new(source: &'s SourceTree) -> Result<Lab<'s>> {
         let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
-        let start = Instant::now();
-        console::show_start("copy source to scratch directory");
+        let activity = Activity::start("copy source to scratch directory");
         let errs = copy_dir::copy_dir(source.root(), &build_dir)?;
-        let duration = start.elapsed();
         if errs.is_empty() {
-            console::show_success("done", &duration);
+            activity.succeed("done");
         } else {
-            console::show_failure("failed", &duration);
+            activity.fail("failed");
             eprintln!(
                 "error copying source tree {} to {}:",
                 &source.root().to_slash_lossy(),
@@ -70,7 +68,6 @@ impl<'s> Lab<'s> {
 
     pub fn run(&self) -> Result<()> {
         self.test_clean()?;
-
         for source_file in self.source.source_files() {
             for mutation in source_file.mutations()? {
                 self.test_mutation(&mutation)?;
@@ -84,27 +81,34 @@ impl<'s> Lab<'s> {
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
-        console::show_start("baseline test with no mutations");
+        let activity = Activity::start("baseline test with no mutations");
         let outcome = self.run_cargo_test("baseline")?;
-        console::show_baseline_outcome(&outcome);
-        if outcome.status == Status::Passed {
-            Ok(())
-        } else {
-            Err(anyhow!("build in clean tree failed"))
+        match outcome.status {
+            Status::Passed => {
+                activity.succeed("ok");
+                Ok(())
+            }
+            Status::Failed | Status::Timeout => {
+                activity.fail(&format!("{:?}", outcome.status));
+                // println!("error: baseline tests in clean tree failed; tests won't continue");
+                print!("{}", &outcome.log_content);
+                Err(anyhow!("build in clean tree failed"))
+            }
         }
     }
 
     /// Test with one mutation applied.
     pub fn test_mutation(&self, mutation: &Mutation) -> Result<()> {
         let mutation_name = format!("{}", &mutation);
-        console::show_start(&mutation_name);
-        // TODO: Maybe an object that reverts on Drop?
+        let activity = Activity::start(&mutation_name);
+        // TODO: Maybe an object representing the applied mutation that reverts
+        // on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
         let test_result = self.run_cargo_test(&mutation_name);
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;
-        console::show_outcome(&outcome);
+        activity.outcome(&outcome);
         Ok(())
     }
 
