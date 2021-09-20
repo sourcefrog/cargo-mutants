@@ -25,18 +25,18 @@ jobs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
+          ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
     - name: Show Cargo version again
       run: cargo --version
     - name: Cargo target cache
       uses: actions/cache@v1
       with:
         path: target
-        key: ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.toml') }}
+        key: ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.toml') }}
+          ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.lock') }}
     - name: Show Cargo version again 3
       run: cargo --version
     - name: Build
