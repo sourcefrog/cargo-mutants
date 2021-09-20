@@ -96,6 +96,11 @@ retains its prior formatting, comments, line numbers, etc. This makes it
 possible to show a text diff of the mutation and should make it easier to
 understand any error messages from the build of the mutated code.
 
+## Using Enucleate
+
+* Trees that `deny` style lints such as unused parameters are likely to fail to
+  build when mutated, without really saying much about the value of the tests.
+
 ## Further thoughts
 
 To make this faster on large trees, we could keep several scratch trees and test them in parallel, 
