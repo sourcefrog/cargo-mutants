@@ -34,17 +34,17 @@ jobs:
     - name: Cache Cargo registry
       uses: actions/cache@v1
       with:
-        path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-just-registry-${{ hashFiles('Cargo.lock') }}
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-gnutar-registry-${{ hashFiles('Cargo.lock') }}
     - name: Show Cargo version again
       run: cargo --version
     - name: Cargo target cache
       uses: actions/cache@v1
       with:
         path: target
-        key: ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-target-${{ hashFiles('Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-gnutar-target-${{ hashFiles('Cargo.lock') }}
     - name: Show Cargo version again 3
       run: cargo --version
     - name: Build
