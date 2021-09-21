@@ -1,6 +1,6 @@
 [package]
-name = "mutants-testdata-factorial"
-version = "0.0.0"
+name = "mutants-testdata-already-failing-tests"
 edition = "2018"
+version = "0.0.0"
 authors = ["Martin Pool"]
 publish = false

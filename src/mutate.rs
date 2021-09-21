@@ -11,6 +11,7 @@ use anyhow::Context;
 use anyhow::Result;
 use proc_macro2::Span;
 use similar::TextDiff;
+use syn::Attribute;
 use syn::ItemFn;
 // use syn::parse;
 // use quote::ToTokens;
@@ -144,8 +145,7 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
     fn visit_item_fn(&mut self, node: &'ast ItemFn) {
         // TODO: Filter out inapplicable fns.
         // TODO: Also visit methods and maybe closures.
-        if item_fn_is_test(node) {
-            // eprintln!("skip #[test] fn {:?}", node.sig.ident);
+        if attrs_include_test(&node.attrs) || attrs_include_mutants_skip(&node.attrs) {
             return; // don't look inside it either
         }
         self.sites.push(Mutation {
@@ -154,20 +154,12 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
             function_ident: node.sig.ident.clone(),
             span: node.block.brace_token.span,
         });
-        // let span = &node.block.brace_token.span;
-        // eprintln!(
-        //     "visit item fn {} with brace token span {:?}-{:?} {:#?}",
-        //     node.sig.ident,
-        //     span.start(),
-        //     span.end(),
-        //     span.start(),
-        // );
         syn::visit::visit_item_fn(self, node);
     }
 }
 
-fn item_fn_is_test(node: &ItemFn) -> bool {
-    node.attrs.iter().any(|attr| {
+fn attrs_include_test(attrs: &[Attribute]) -> bool {
+    attrs.iter().any(|attr| {
         attr.path
             .segments
             .iter()
@@ -176,10 +168,21 @@ fn item_fn_is_test(node: &ItemFn) -> bool {
     })
 }
 
+fn attrs_include_mutants_skip(attrs: &[Attribute]) -> bool {
+    attrs.iter().any(|attr| {
+        attr.path
+            .segments
+            .iter()
+            .map(|ps| &ps.ident)
+            .eq(["mutants", "skip"].iter())
+    })
+}
+
 #[cfg(test)]
 mod test {
     use std::path::Path;
 
+    use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
     use crate::source::SourceTree;
@@ -202,6 +205,18 @@ mod test {
         assert_eq!(
             format!("{:?}", muts[1]),
             "Mutation { op: ReturnDefault, function: \"factorial\", start: (7, 28), end: (13, 1) }"
+        );
+    }
+
+    #[test]
+    fn filter_by_attributes() {
+        let source_tree = SourceTree::new(&Path::new("testdata/tree/could_hang")).unwrap();
+        let source_file = source_tree.source_file(&Path::new("src/lib.rs")).unwrap();
+        let muts = source_file.mutations().unwrap();
+        let descriptions = muts.iter().map(Mutation::describe_change).collect_vec();
+        insta::assert_snapshot!(
+            descriptions.join("\n"),
+            @"replace controlled_loop with Default::default()"
         );
     }
 
