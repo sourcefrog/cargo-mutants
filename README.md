@@ -45,6 +45,20 @@ functions that may be inadequately tested:
 The Cargo output is logged into `target/enucleate/` within the original source
 directory, so you can see why individual tests failed.
 
+## Using Enucleate
+
+* Trees that `deny` style lints such as unused parameters are likely to fail to
+  build when mutated, without really saying much about the value of the tests.
+  I suggest you don't statically deny warnings in your source code, but rather
+  set `RUSTFLAGS` when you do want to check this.
+
+## Limitations
+
+* Some mutations will cause the program to hang or spin, for example if called
+  as the condition of a `while` loop. Enucleate currently detects this but does
+  not kill the test process, so you'll need to find and kill it yourself. (On
+  Unix we might need to use `setpgrp`.)
+
 ## Manifesto
 
 * Draw attention to code that is not tested or only "pseudo-tested": reached by tests but the tests
@@ -98,11 +112,6 @@ are applied textually, rather than to the token stream, so that unmutated code
 retains its prior formatting, comments, line numbers, etc. This makes it
 possible to show a text diff of the mutation and should make it easier to
 understand any error messages from the build of the mutated code.
-
-## Using Enucleate
-
-* Trees that `deny` style lints such as unused parameters are likely to fail to
-  build when mutated, without really saying much about the value of the tests.
 
 ## Further thoughts
 
