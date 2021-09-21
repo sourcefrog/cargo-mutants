@@ -63,6 +63,9 @@ directory, so you can see why individual tests failed.
   not kill the test process, so you'll need to find and kill it yourself. (On
   Unix we might need to use `setpgrp`.)
 
+* Copying the tree to build it doesn't work well if the `Cargo.toml` points to
+  dependencies by a relative `path`.
+
 ## Manifesto
 
 * Draw attention to code that is not tested or only "pseudo-tested": reached by tests but the tests
