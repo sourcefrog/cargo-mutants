@@ -1,6 +1,7 @@
 // Copyright 2021 Martin Pool
 
-//! A lab directory in which to test mutations to the source code.
+//! A lab directory in which to test mutations to the source code, and control
+//! over running `cargo`.
 
 use std::path::PathBuf;
 use std::process;
@@ -18,7 +19,9 @@ use crate::outcome::{Outcome, Status};
 use crate::output::OutputDir;
 use crate::source::SourceTree;
 
-const TEST_TIMEOUT: Duration = Duration::from_secs(60);
+// Until we can reliably stop the grandchild test binaries, by killing a process
+// group, timeouts are disabled.
+const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(60);
 
 /// Holds scratch directories in which files can be mutated and tests executed.
 #[derive(Debug)]
