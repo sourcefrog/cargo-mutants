@@ -67,16 +67,6 @@ flags the function for cargo-mutants.
   I suggest you don't statically deny warnings in your source code, but rather
   set `RUSTFLAGS` when you do want to check this.
 
-## Limitations, caveats, and known bugs
-
-* Some mutations will cause the program to hang or spin, for example if called
-  as the condition of a `while` loop. cargo-mutants currently detects this but does
-  not kill the test process, so you'll need to find and kill it yourself. (On
-  Unix we might need to use `setpgrp`.)
-
-* Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path`.
-
 ## Goals
 
 * Draw attention to code that is not tested or only "pseudo-tested": reached by tests but the tests
@@ -108,9 +98,25 @@ flags the function for cargo-mutants.
 * In this version, the _only_ mutation it applies is to return
   `Default::default()`. For many functions, and in particular for the common
   case of returning a `Result`, this will fail to build, which is not an
-  interesting result. cargo-mutants can see the return type in the tree, so
+  interesting result. 
+  
+  cargo-mutants can see the return type in the tree, so
   it's possible to do much better by returning `Ok(Default::default())` and so
   on for other return types. I expect to fix this soon.
+  
+  cargo-mutants sees the AST of the tree but doesn't fully "understand" the types, so it may always have some limitations in generating good mutants.
+
+* Some mutations will cause the program to hang or spin, for example if the mutation causes the condition of a `while` loop to always be true.
+  For now, you'll need to notice and interrupt `cargo mutants` yourself, but I plan to add a 
+  timeout. (On
+  Unix we need to run the build in a process group so that the actual test process is terminated.)
+
+* Copying the tree to build it doesn't work well if the `Cargo.toml` points to
+  dependencies by a relative `path`.
+  
+* Copying a Rust tree and its `target/` directory seems to cause a full build the first time `cargo test` runs there, even if mtimes are preserved. (Perhaps the path is part of the calculation whether files need to be rebuilt?) Later incremental builds are faster.
+
+* cargo-mutants sees the AST of the 
 
 * It should skip functions with `#[cfg(...)]` attributes that don't match the
   current platform, but it does not yet.
