@@ -5,3 +5,6 @@ edition = "2018"
 
 [dependencies.mutants]
 path = "../../../mutants_attrs"
+
+[lib]
+doctest = false
