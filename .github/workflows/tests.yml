@@ -41,5 +41,5 @@ jobs:
     - name: Build
       run: cargo build --all-targets
     - name: Test
-      run: cargo test
+      run: cargo test --workspace
 

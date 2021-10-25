@@ -105,7 +105,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "argh",
@@ -203,6 +203,17 @@ name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
+
+[[package]]
+name = "enucleate-testdata-could-hang"
+version = "0.1.0"
+dependencies = [
+ "mutants",
+]
+
+[[package]]
+name = "enucleate-testdata-factorial"
+version = "0.0.0"
 
 [[package]]
 name = "filetime"
@@ -323,6 +334,10 @@ name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
+
+[[package]]
+name = "mutants"
+version = "0.0.2"
 
 [[package]]
 name = "normalize-line-endings"

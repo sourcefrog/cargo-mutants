@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -41,3 +41,13 @@ lazy_static = "1.4"
 predicates = "2.0"
 pretty_assertions = "0.7.2"
 regex = "1.5"
+
+[workspace]
+members = [
+    "mutants_attrs",
+    # TODO: Re-enable this when the tests are checked by the real integration tests, but
+    # skipped by `cargo test --workspace`. (It's complicated!)
+    # "testdata/tree/already_failing_tests",
+    "testdata/tree/could_hang/",
+    "testdata/tree/factorial",
+]
