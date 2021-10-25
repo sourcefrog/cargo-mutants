@@ -44,20 +44,20 @@ impl<'s> Lab<'s> {
         let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
         let activity = Activity::start("copy source to scratch directory");
-        let errs = copy_dir::copy_dir(source.root(), &build_dir)?;
-        if errs.is_empty() {
-            activity.succeed("done");
-        } else {
-            activity.fail("failed");
-            eprintln!(
-                "error copying source tree {} to {}:",
-                &source.root().to_slash_lossy(),
-                &build_dir.to_slash_lossy()
-            );
-            for e in errs {
-                eprintln!("  {}", e);
+        match cp_r::copy_tree(source.root(), &build_dir, &cp_r::CopyOptions::new())
+            .context("copy source tree to lab directory")
+        {
+            Ok(_stats) => activity.succeed("done"),
+            Err(err) => {
+                activity.fail("failed");
+                eprintln!(
+                    "error copying source tree {} to {}: {:?}",
+                    &source.root().to_slash_lossy(),
+                    &build_dir.to_slash_lossy(),
+                    err
+                );
+                return Err(err);
             }
-            return Err(anyhow!("error copying source to build directory"));
         }
         let output_dir = OutputDir::new(source)?;
         output_dir.delete_logs()?;

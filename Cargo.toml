@@ -12,13 +12,16 @@ anyhow = "1.0"
 argh = "0.1.6"
 atty = "0.2"
 console = "0.14"
-copy_dir = "0.1.2"
 itertools = "0.10"
 path-slash = "0.1.4"
 quote = "1.0"
 similar = "2.0"
 tempfile = "3.2"
 walkdir = "2.3"
+
+[dependencies.cp_r]
+version = "0.2"
+# path = "../cp_r"
 
 [dependencies.syn]
 version = "1.0.76"
