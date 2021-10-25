@@ -1,7 +1,7 @@
 [package]
 name = "mutants"
 version = "0.0.2"
-edition = "2021"
+edition = "2018"
 license = "MIT"
 description = "Decorator attributes to be used with cargo-mutants"
 repository = "https://github.com/sourcefrog/cargo-mutants"
