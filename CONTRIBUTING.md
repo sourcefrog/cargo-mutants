@@ -1,6 +1,8 @@
-# Contributing to Enucleate
+# Contributing to cargo-mutants
 
-(more stuff here...)
+Pull requests are welcome.
+
+TODO: More info.
 
 ## UI Style
 
