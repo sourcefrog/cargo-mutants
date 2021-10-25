@@ -1,6 +1,7 @@
 // Copyright 2021 Martin Pool
 
-/// `enucleate` command line tool for Rust mutation testing.
+//! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
+
 mod console;
 mod lab;
 mod mutate;
@@ -21,77 +22,57 @@ use path_slash::PathExt;
 use lab::Lab;
 use source::SourceTree;
 
-/// Rust mutation testing.
+/// Find inadequately-tested code that can be removed without any tests failing.
 #[derive(FromArgs, PartialEq, Debug)]
 struct TopArgs {
     #[argh(subcommand)]
     command: Command,
 }
 
+// Cargo always runs external subcommands passing argv[1] as the name of the subcommand:
+// <https://doc.rust-lang.org/cargo/reference/external-tools.html>
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum Command {
-    ListFiles(ListFiles),
-    ListMutants(ListMutants),
-    Test(Test),
+    Mutants(Mutants),
 }
 
-/// List source files in a tree.
+/// Find inadequately-tested code that can be removed without any tests failing.
 #[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "list-files")]
-struct ListFiles {
+#[argh(subcommand, name = "mutants")]
+struct Mutants {
     /// rust crate directory to examine.
     #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
     dir: PathBuf,
-}
 
-/// List mutation scenarios that can be generated from a file.
-#[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "list-mutants")]
-struct ListMutants {
-    /// rust crate directory to examine.
-    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
-    dir: PathBuf,
-    /// show the diff between the original and mutated file.
+    /// just list possible mutants, don't run them.
+    #[argh(switch)]
+    list_mutants: bool,
+
+    /// show the mutation diffs.
     #[argh(switch)]
     diff: bool,
 }
 
-/// Test the tree with mutations applied.
-#[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "test")]
-struct Test {
-    /// rust crate directory to examine.
-    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
-    dir: PathBuf,
-}
-
 fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
-    match args.command {
-        Command::ListFiles(sub) => {
-            for source_file in SourceTree::new(&sub.dir)?.source_files() {
-                println!("{}", source_file.tree_relative_slashes());
-            }
-        }
-        Command::ListMutants(sub) => {
-            for source_file in SourceTree::new(&sub.dir)?.source_files() {
-                for mutation in source_file.mutations()? {
-                    println!(
-                        "{}: {}",
-                        mutation.describe_location(),
-                        mutation.describe_change(),
-                    );
-                    if sub.diff {
-                        println!("{}", mutation.diff());
-                    }
+    let Command::Mutants(sub) = args.command;
+    if sub.list_mutants {
+        for source_file in SourceTree::new(&sub.dir)?.source_files() {
+            for mutation in source_file.mutations()? {
+                println!(
+                    "{}: {}",
+                    mutation.describe_location(),
+                    mutation.describe_change(),
+                );
+                if sub.diff {
+                    println!("{}", mutation.diff());
                 }
             }
         }
-        Command::Test(sub) => {
-            let source = SourceTree::new(&sub.dir)?;
-            Lab::new(&source)?.run()?;
-        }
+    } else {
+        let source = SourceTree::new(&sub.dir)?;
+        Lab::new(&source)?.run()?;
     }
     Ok(())
 }

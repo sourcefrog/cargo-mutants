@@ -1,5 +1,5 @@
 [package]
-name = "enucleate-testdata-factorial"
+name = "mutants-testdata-factorial"
 version = "0.0.0"
 edition = "2018"
 authors = ["Martin Pool"]

@@ -17,7 +17,7 @@ use lazy_static::lazy_static;
 use pretty_assertions::assert_eq;
 
 lazy_static! {
-    static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("enucleate");
+    static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
 }
 
 fn run_assert_cmd() -> assert_cmd::Command {
@@ -42,26 +42,10 @@ impl CommandInstaExt for std::process::Command {
 }
 
 #[test]
-fn list_files_in_factorial() {
-    run()
-        .arg("list-files")
-        .arg("-d")
-        .arg("testdata/tree/factorial")
-        .assert_insta();
-}
-
-#[test]
-fn list_files_in_cwd() {
-    run()
-        .arg("list-files")
-        .current_dir("testdata/tree/factorial")
-        .assert_insta();
-}
-
-#[test]
 fn list_mutants_in_factorial() {
     run()
-        .arg("list-mutants")
+        .arg("mutants")
+        .arg("--list-mutants")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
 }
@@ -69,7 +53,8 @@ fn list_mutants_in_factorial() {
 #[test]
 fn list_mutants_with_dir_option() {
     run()
-        .arg("list-mutants")
+        .arg("mutants")
+        .arg("--list-mutants")
         .arg("--dir")
         .arg("testdata/tree/factorial")
         .assert_insta();
@@ -78,7 +63,8 @@ fn list_mutants_with_dir_option() {
 #[test]
 fn list_mutants_with_diffs_in_factorial() {
     run()
-        .arg("list-mutants")
+        .arg("mutants")
+        .arg("--list-mutants")
         .arg("--diff")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
@@ -88,7 +74,7 @@ fn list_mutants_with_diffs_in_factorial() {
 fn test_factorial() {
     // TODO: This writes logs into the testdata directory, which is not ideal...
     let tree = Path::new("testdata/tree/factorial");
-    let output = run().arg("test").current_dir(tree).output().unwrap();
+    let output = run().arg("mutants").current_dir(tree).output().unwrap();
     assert!(output.status.success());
     let remove_time = regex::Regex::new(r"in \d+\.\d{3}s").unwrap();
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -97,7 +83,7 @@ fn test_factorial() {
     assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
 
     // Some log files should have been created
-    let log_dir = tree.join("target/enucleate/log");
+    let log_dir = tree.join("target/mutants/log");
     assert!(log_dir.is_dir());
 
     let mut names = fs::read_dir(log_dir)
@@ -115,7 +101,7 @@ fn detect_already_failing_tests() {
     // The detailed text output contains some noisy parts
     let tree = Path::new("testdata/tree/already_failing_tests");
     run_assert_cmd()
-        .arg("test")
+        .arg("mutants")
         .current_dir(tree)
         .env_remove("RUST_BACKTRACE")
         .assert()

@@ -1,9 +1,9 @@
 // Copyright 2021 Martin Pool
 
-//! A `target/enucleate` directory holding logs and other output.
+//! A `target/mutants` directory holding logs and other output.
 //!
-//! This currently doesn't interact with Cargo locking, and if two `enucleate`
-//! runs access the same directory they'll tread on each other...
+//! *CAUTION:* This currently doesn't interact with Cargo locking, and if two `cargo-mutants`
+//! processes access the same directory they'll tread on each other...
 
 use std::fs::File;
 use std::io::{Read, Seek};
@@ -22,7 +22,7 @@ pub struct OutputDir {
 
 impl OutputDir {
     pub fn new(tree: &SourceTree) -> Result<OutputDir> {
-        let path: PathBuf = tree.root().join("target").join("enucleate");
+        let path: PathBuf = tree.root().join("target").join("mutants");
         fs::create_dir_all(&path)
             .with_context(|| format!("create output directory {:?}", &path))?;
         let log_dir = path.join("log");
@@ -131,8 +131,8 @@ mod test {
                 "",
                 "Cargo.toml",
                 "target",
-                "target/enucleate",
-                "target/enucleate/log"
+                "target/mutants",
+                "target/mutants/log"
             ]
         );
     }

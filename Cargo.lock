@@ -104,6 +104,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-mutants"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "argh",
+ "assert_cmd",
+ "atty",
+ "console",
+ "cp_r",
+ "insta",
+ "itertools",
+ "lazy_static",
+ "path-slash",
+ "predicates",
+ "pretty_assertions",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "similar 2.0.0",
+ "syn",
+ "tempfile",
+ "walkdir",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -178,31 +203,6 @@ name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
-
-[[package]]
-name = "enucleate"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argh",
- "assert_cmd",
- "atty",
- "console",
- "cp_r",
- "insta",
- "itertools",
- "lazy_static",
- "path-slash",
- "predicates",
- "pretty_assertions",
- "proc-macro2",
- "quote",
- "regex",
- "similar 2.0.0",
- "syn",
- "tempfile",
- "walkdir",
-]
 
 [[package]]
 name = "filetime"

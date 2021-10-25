@@ -39,7 +39,7 @@ impl<'a> Mutation<'a> {
                 &self.source_file.code,
                 &self.span.start(),
                 &self.span.end(),
-                "{\n/* ~ removed by enucleate ~ */ Default::default()\n}\n",
+                "{\n/* ~ removed by cargo-mutants ~ */ Default::default()\n}\n",
             ),
         }
     }
@@ -220,7 +220,7 @@ mod test {
         assert_eq!(
             mutated_code,
             r#"fn main() {
-/* ~ removed by enucleate ~ */ Default::default()
+/* ~ removed by cargo-mutants ~ */ Default::default()
 }
 
 fn factorial(n: u32) -> u32 {
@@ -250,7 +250,7 @@ fn test_factorial() {
 }
 
 fn factorial(n: u32) -> u32 {
-/* ~ removed by enucleate ~ */ Default::default()
+/* ~ removed by cargo-mutants ~ */ Default::default()
 }
 
 #[test]

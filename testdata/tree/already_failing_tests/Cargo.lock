@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "enucleate-testdata-factorial"
+name = "mutants-testdata-factorial"
 version = "0.0.0"
