@@ -227,4 +227,4 @@ Some differences are:
 
 * Mutagen needs a nightly compiler; cargo-mutants should work with any reasonably-recent compiler and is tested on stable.
 
-* (Probably there are more. Please point out any errors.)
+* (Probably there are more. Please let me know.)
