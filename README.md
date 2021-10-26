@@ -46,6 +46,8 @@ functions that may be inadequately tested:
     replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
     ...
 
+In this version of the unix_mode crate, the `is_block_device` function was indeed untested. The gap was fixed by adding a [doctest](https://github.com/sourcefrog/unix_mode/blob/788e7bd170f1efa29495a4a6b1347a636713c507/src/lib.rs#L239-L242).
+
 The Cargo output is logged into `target/mutants/` within the original source
 directory, so you can see why individual tests failed.
 
@@ -80,7 +82,9 @@ flags the function for cargo-mutants.
   I'd like it to be useful on a tree you haven't seen before, where you're not
   sure of the quality of the tests.
 
-* Understandable output including easily reproducible test failures and a copy of the output.
+* Understandable output.
+
+* Reproducible results, at least assuming the test suite is deterministic and generates reproducible failures.
 
 * Signal to noise: most warnings should indicate something that really should
   be tested more; false positives should be easy to durably dismiss. It ought
@@ -89,7 +93,7 @@ flags the function for cargo-mutants.
 
 * Opt-in annotations to disable mutation of some methods or to explain how to mutate them usefully.
 
-* Cause no changes to the release build.
+* Cause no changes to the release build. (Concretely, cargo-mutants doesn't change the original source tree, and doesn't require that the user make any changes, so the chance of it causing any breakage should be low.)
 
 * Rust only, Cargo only.
 
@@ -105,6 +109,8 @@ flags the function for cargo-mutants.
   on for other return types. I expect to fix this soon.
   
   cargo-mutants sees the AST of the tree but doesn't fully "understand" the types, so it may always have some limitations in generating good mutants.
+  
+* It might be helpful to distinguish whether the build failed, or the mutation was caught by tests. Ideally, cargo-mutants would never generate code that just won't build, firstly because it's a waste of time, and secondly because it may indicate a missed opportunity to generate more interesting mutants that would build. 
 
 * Some mutations will cause the program to hang or spin, for example if the mutation causes the condition of a `while` loop to always be true.
   For now, you'll need to notice and interrupt `cargo mutants` yourself, but I plan to add a 
@@ -135,6 +141,8 @@ flags the function for cargo-mutants.
 * It currently assumes all the source is in `src/` of the directory, but Cargo
   doesn't require that, and some crates have their source in a different
   directory. This could be fixed by reading `cargo metadata`.
+  
+* It could discard all parameters to avoid strict warnings about them being unused. (I haven't seen any crates yet that enforce this.)
 
 ## Hard-to-test cases
 
