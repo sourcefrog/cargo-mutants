@@ -3,6 +3,7 @@
 https://github.com/sourcefrog/cargo-mutants
 
 [![Tests](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml/badge.svg)](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml)
+[![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
 
 cargo-mutants is a mutation testing tool for Rust. It guides you to missing
 test coverage by finding functions whose implementation could be replaced by
@@ -10,7 +11,8 @@ something trivial and the tests would all still pass.
 
 Coverage measurements can be helpful, but they really tell you what code is
 _reached_ by a test, and not whether the test really assert anything about the
-behavior of the code.
+behavior of the code. Mutation tests give different, perhaps richer
+information, about whether the tests really check the code's behavior.
 
 **CAUTION**: This tool builds and runs code with machine-generated
 modifications. If the code under test, or the test suite, has side effects such
