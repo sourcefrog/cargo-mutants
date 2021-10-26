@@ -3,8 +3,6 @@
 use std::fmt;
 use std::fs;
 use std::path::Path;
-#[allow(unused)]
-use std::path::PathBuf;
 
 use anyhow::Context;
 #[allow(unused)]
@@ -25,15 +23,20 @@ pub enum MutationOp {
     ReturnDefault,
 }
 
-#[derive()]
-pub struct Mutation<'a> {
-    pub source_file: &'a SourceFile,
+/// A mutation that could possibly be applied to source code.
+///
+/// The Mutation knows:
+/// * which file to modify,
+/// * which function and span in that file,
+/// * and what type of mutation to apply.
+pub struct Mutation {
+    pub source_file: SourceFile,
     pub op: MutationOp,
     function_ident: syn::Ident,
     span: Span,
 }
 
-impl<'a> Mutation<'a> {
+impl Mutation {
     pub fn mutated_code(&self) -> String {
         match self.op {
             MutationOp::ReturnDefault => replace_region(
@@ -105,7 +108,7 @@ impl<'a> Mutation<'a> {
     }
 }
 
-impl<'sf> fmt::Debug for Mutation<'sf> {
+impl fmt::Debug for Mutation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Mutation")
             .field("op", &self.op)
@@ -116,7 +119,7 @@ impl<'sf> fmt::Debug for Mutation<'sf> {
     }
 }
 
-impl<'sf> fmt::Display for Mutation<'sf> {
+impl fmt::Display for Mutation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -128,7 +131,7 @@ impl<'sf> fmt::Display for Mutation<'sf> {
 }
 
 pub(crate) struct DiscoveryVisitor<'sf> {
-    pub(crate) sites: Vec<Mutation<'sf>>,
+    pub(crate) sites: Vec<Mutation>,
     source_file: &'sf SourceFile,
 }
 
@@ -149,7 +152,7 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
             return; // don't look inside it either
         }
         self.sites.push(Mutation {
-            source_file: self.source_file,
+            source_file: self.source_file.clone(),
             op: MutationOp::ReturnDefault,
             function_ident: node.sig.ident.clone(),
             span: node.block.brace_token.span,
@@ -185,17 +188,15 @@ mod test {
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
-    use crate::source::SourceTree;
-
-    #[allow(unused)]
     use super::*;
 
     #[test]
     fn discover_mutations() {
-        let source_tree = SourceTree::new(&Path::new("testdata/tree/factorial")).unwrap();
-        let source_file = source_tree
-            .source_file(&Path::new("src/bin/main.rs"))
-            .unwrap();
+        let source_file = SourceFile::new(
+            &Path::new("testdata/tree/factorial"),
+            &Path::new("src/bin/main.rs"),
+        )
+        .unwrap();
         let muts = source_file.mutations().unwrap();
         assert_eq!(muts.len(), 2);
         assert_eq!(
@@ -210,8 +211,11 @@ mod test {
 
     #[test]
     fn filter_by_attributes() {
-        let source_tree = SourceTree::new(&Path::new("testdata/tree/could_hang")).unwrap();
-        let source_file = source_tree.source_file(&Path::new("src/lib.rs")).unwrap();
+        let source_file = SourceFile::new(
+            &Path::new("testdata/tree/could_hang"),
+            &Path::new("src/lib.rs"),
+        )
+        .unwrap();
         let muts = source_file.mutations().unwrap();
         let descriptions = muts.iter().map(Mutation::describe_change).collect_vec();
         insta::assert_snapshot!(
@@ -222,10 +226,11 @@ mod test {
 
     #[test]
     fn mutate_factorial() {
-        let source_tree = SourceTree::new(&Path::new("testdata/tree/factorial")).unwrap();
-        let source_file = source_tree
-            .source_file(&Path::new("src/bin/main.rs"))
-            .unwrap();
+        let source_file = SourceFile::new(
+            Path::new("testdata/tree/factorial"),
+            &Path::new("src/bin/main.rs"),
+        )
+        .unwrap();
         let muts = source_file.mutations().unwrap();
         assert_eq!(muts.len(), 2);
 

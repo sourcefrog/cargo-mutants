@@ -57,22 +57,20 @@ struct Mutants {
 fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     let Command::Mutants(sub) = args.command;
+    let source_tree = SourceTree::new(&sub.dir)?;
     if sub.list_mutants {
-        for source_file in SourceTree::new(&sub.dir)?.source_files() {
-            for mutation in source_file.mutations()? {
-                println!(
-                    "{}: {}",
-                    mutation.describe_location(),
-                    mutation.describe_change(),
-                );
-                if sub.diff {
-                    println!("{}", mutation.diff());
-                }
+        for mutation in source_tree.mutations()? {
+            println!(
+                "{}: {}",
+                mutation.describe_location(),
+                mutation.describe_change(),
+            );
+            if sub.diff {
+                println!("{}", mutation.diff());
             }
         }
     } else {
-        let source = SourceTree::new(&sub.dir)?;
-        Lab::new(&source)?.run()?;
+        Lab::new(&source_tree)?.run()?;
     }
     Ok(())
 }

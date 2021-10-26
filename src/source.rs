@@ -1,7 +1,9 @@
 // Copyright 2021 Martin Pool
 
-/// Access to a Rust source tree and files.
+//! Access to a Rust source tree and files.
+
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
@@ -21,7 +23,7 @@ pub struct SourceFile {
     tree_relative: PathBuf,
     pub full_path: PathBuf,
     /// Full copy of the source.
-    pub code: String,
+    pub code: Rc<String>,
 }
 
 impl SourceFile {
@@ -33,10 +35,11 @@ impl SourceFile {
         Ok(SourceFile {
             tree_relative: tree_relative.to_owned(),
             full_path,
-            code,
+            code: Rc::new(code),
         })
     }
 
+    /// Return the path of this file relative to the tree root, with forward slashes.
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative.to_slash_lossy()
     }
@@ -49,6 +52,8 @@ impl SourceFile {
         Ok(v.sites)
     }
 
+    /// Return the path of this file relative to a given directory.
+    // TODO: Maybe let the caller do this.
     pub fn within_dir(&self, dir: &Path) -> PathBuf {
         dir.join(&self.tree_relative)
     }
@@ -72,9 +77,13 @@ impl SourceTree {
         })
     }
 
-    #[allow(dead_code)]
-    pub fn source_file(&self, tree_relative: &Path) -> Result<SourceFile> {
-        SourceFile::new(&self.root, tree_relative)
+    /// Return all the mutations that could possibly be applied to this tree.
+    pub fn mutations(&self) -> Result<Vec<Mutation>> {
+        let mut r = Vec::new();
+        for sf in self.source_files() {
+            r.extend(Rc::new(sf).mutations()?);
+        }
+        Ok(r)
     }
 
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
@@ -159,6 +168,6 @@ mod test {
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
         let source_file = SourceFile::new(&temp.path(), Path::new(file_name)).unwrap();
-        assert_eq!(source_file.code, "fn main() {\n    640 << 10;\n}\n");
+        assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 }

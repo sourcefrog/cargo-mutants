@@ -69,12 +69,14 @@ impl<'s> Lab<'s> {
         })
     }
 
+    /// Run all possible mutations in this lab.
+    ///
+    /// Before testing the mutations, the lab checks that the source tree passes its tests with
+    /// no mutations applied.
     pub fn run(&self) -> Result<()> {
         self.test_clean()?;
-        for source_file in self.source.source_files() {
-            for mutation in source_file.mutations()? {
-                self.test_mutation(&mutation)?;
-            }
+        for mutation in self.source.mutations()? {
+            self.test_mutation(&mutation)?;
         }
         Ok(())
     }
