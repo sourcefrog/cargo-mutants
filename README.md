@@ -16,10 +16,8 @@ information, about whether the tests really check the code's behavior.
 
 **CAUTION**: This tool builds and runs code with machine-generated
 modifications. If the code under test, or the test suite, has side effects such
-as writing or deleting files, running it with mutations may be dangerous: for
-example it might write to or delete files outside of the source tree.
-Eventually, cargo-mutants might support running tests inside a jail or sandbox.
-For now, think first about what side effects the test suite could possibly have
+as writing or deleting files, running it with mutations may be dangerous. 
+Think first about what side effects the test suite could possibly have,
 and/or run it in a restricted or disposable environment.
 
 **NOTE:** cargo-mutants is still pretty new! It can find some interesting
