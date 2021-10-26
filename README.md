@@ -95,7 +95,7 @@ flags the function for cargo-mutants.
 
 * Rust only, Cargo only.
 
-## Limitations, caveats, and known bugs
+## Limitations, caveats, known bugs, and future enhancements
 
 * In this version, the _only_ mutation it applies is to return
   `Default::default()`. For many functions, and in particular for the common
@@ -114,11 +114,9 @@ flags the function for cargo-mutants.
   Unix we need to run the build in a process group so that the actual test process is terminated.)
 
 * Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path`.
+  dependencies by a relative `path` (other than in subdirectories). This could be handled by an option to mutate in-place (maybe into a copy made by the user) or possibly an option to copy a larger containing directory. You can work around this by editing `Cargo.toml` to make the paths absolute, before running `cargo mutants`.
   
-* Copying a Rust tree and its `target/` directory seems to cause a full build the first time `cargo test` runs there, even if mtimes are preserved. (Perhaps the path is part of the calculation whether files need to be rebuilt?) Later incremental builds are faster.
-
-* cargo-mutants sees the AST of the 
+* Copying a Rust tree and its `target/` directory seems to cause a full build the first time `cargo test` runs there, even if mtimes are preserved. (Perhaps the path is part of the calculation whether files need to be rebuilt?) Later incremental builds are faster. [`sccache`](https://crates.io/crates/sccache) might help with this but I have not yet tested it.
 
 * It should skip functions with `#[cfg(...)]` attributes that don't match the
   current platform, but it does not yet.
@@ -139,7 +137,7 @@ flags the function for cargo-mutants.
 * To make this faster on large trees, we could keep several scratch trees and
   test them in parallel, which is likely to exploit CPU resources more
   thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
-  down to a single task during linking.
+  down to a single task during linking, and often comes down to running a single straggler test at a time.
 
 * It currently assumes all the source is in `src/` of the directory, but Cargo
   doesn't require that, and some crates have their source in a different
