@@ -129,11 +129,6 @@ flags the function for cargo-mutants.
   not kill the test process, so you'll need to find and kill it yourself. (On
   Unix we might need to use `setpgrp`.)
 
-* Trees that `deny` style lints such as unused parameters are likely to fail to
-  build when mutated, without really saying much about the value of the tests.
-  I suggest you don't statically deny warnings in your source code, but rather
-  set `RUSTFLAGS` when you do want to check this.
-
 * To make this faster on large trees, we could keep several scratch trees and
   test them in parallel, which is likely to exploit CPU resources more
   thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
