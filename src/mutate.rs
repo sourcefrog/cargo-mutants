@@ -26,7 +26,7 @@ const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 #[derive(Debug, Eq, PartialEq)]
 pub enum MutationOp {
     /// Return [Default::default].
-    ReturnDefault,
+    Default,
 }
 
 impl MutationOp {
@@ -34,7 +34,7 @@ impl MutationOp {
     fn replacement(&self) -> &'static str {
         use MutationOp::*;
         match self {
-            ReturnDefault => "Default::default()",
+            Default => "Default::default()",
         }
     }
 }
@@ -54,6 +54,16 @@ pub struct Mutation {
 }
 
 impl Mutation {
+    /// Create a new mutation that replaces an entire function
+    pub fn of_function(source_file: &SourceFile, node: &ItemFn, op: MutationOp) -> Mutation {
+        Mutation {
+            source_file: source_file.clone(),
+            op,
+            function_ident: node.sig.ident.clone(),
+            span: node.block.brace_token.span,
+        }
+    }
+
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         replace_region(
@@ -173,12 +183,11 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
         if attrs_include_test(&node.attrs) || attrs_include_mutants_skip(&node.attrs) {
             return; // don't look inside it either
         }
-        self.sites.push(Mutation {
-            source_file: self.source_file.clone(),
-            op: MutationOp::ReturnDefault,
-            function_ident: node.sig.ident.clone(),
-            span: node.block.brace_token.span,
-        });
+        self.sites.push(Mutation::of_function(
+            &self.source_file,
+            node,
+            MutationOp::Default,
+        ));
         syn::visit::visit_item_fn(self, node);
     }
 }
@@ -223,11 +232,11 @@ mod test {
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            "Mutation { op: ReturnDefault, function: \"main\", start: (1, 10), end: (5, 1) }"
+            "Mutation { op: Default, function: \"main\", start: (1, 10), end: (5, 1) }"
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            "Mutation { op: ReturnDefault, function: \"factorial\", start: (7, 28), end: (13, 1) }"
+            "Mutation { op: Default, function: \"factorial\", start: (7, 28), end: (13, 1) }"
         );
     }
 
