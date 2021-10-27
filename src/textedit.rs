@@ -1,8 +1,13 @@
 // Copyright 2021 Martin Pool
 
+//! Edit source code.
+
 use proc_macro2::LineColumn;
 
-/// Return s with the specified inclusive region replaced.
+/// Replace a subregion of text.
+///
+/// Returns a copy of `s` with the region between `start` and `end` inclusive replaced by
+/// `replacement`.
 ///
 /// In `LineColumn`, lines are 1-indexed, and inclusive; columns are 0-indexed
 /// in UTF-8 characters (presumably really code points) and inclusive.

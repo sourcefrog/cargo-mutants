@@ -5,7 +5,6 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::Context;
-#[allow(unused)]
 use anyhow::Result;
 use proc_macro2::Span;
 use similar::TextDiff;
@@ -18,8 +17,10 @@ use syn::visit::Visit;
 use crate::source::SourceFile;
 use crate::textedit::replace_region;
 
+/// A type of mutation operation that could be applied to a source file.
 #[derive(Debug, Eq, PartialEq)]
 pub enum MutationOp {
+    /// Return [Default::default].
     ReturnDefault,
 }
 
