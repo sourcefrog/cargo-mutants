@@ -29,6 +29,16 @@ pub enum MutationOp {
     ReturnDefault,
 }
 
+impl MutationOp {
+    /// Return the text that replaces the body of the mutated span, without the marker comment.
+    fn replacement(&self) -> &'static str {
+        use MutationOp::*;
+        match self {
+            ReturnDefault => "Default::default()",
+        }
+    }
+}
+
 /// A mutation that could possibly be applied to source code.
 ///
 /// The Mutation knows:
@@ -46,14 +56,16 @@ pub struct Mutation {
 impl Mutation {
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
-        match self.op {
-            MutationOp::ReturnDefault => replace_region(
-                &self.source_file.code,
-                &self.span.start(),
-                &self.span.end(),
-                &format!("{{\nDefault::default() {}\n}}\n", MUTATION_MARKER_COMMENT),
+        replace_region(
+            &self.source_file.code,
+            &self.span.start(),
+            &self.span.end(),
+            &format!(
+                "{{\n{} {}\n}}\n",
+                self.op.replacement(),
+                MUTATION_MARKER_COMMENT
             ),
-        }
+        )
     }
 
     /// Return the original code for the entire file affected by this mutation.
@@ -73,11 +85,11 @@ impl Mutation {
 
     /// Describe the mutation briefly, not including the location.
     pub fn describe_change(&self) -> String {
-        match self.op {
-            MutationOp::ReturnDefault => {
-                format!("replace {} with Default::default()", self.function_name())
-            }
-        }
+        format!(
+            "replace {} with {}",
+            self.function_name(),
+            self.op.replacement()
+        )
     }
 
     /// Return the name of the function to be mutated.
