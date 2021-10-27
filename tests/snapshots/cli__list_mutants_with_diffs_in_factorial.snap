@@ -11,7 +11,7 @@ src/bin/main.rs:1: replace main with Default::default()
 -    for i in 1..=6 {
 -        println!("{}! = {}", i, factorial(i));
 -    }
-+/* ~ removed by cargo-mutants ~ */ Default::default()
++Default::default() /* ~ changed by cargo-mutants ~ */
  }
  
  fn factorial(n: u32) -> u32 {
@@ -37,7 +37,7 @@ src/bin/main.rs:7: replace factorial with Default::default()
 -        a *= i;
 -    }
 -    a
-+/* ~ removed by cargo-mutants ~ */ Default::default()
++Default::default() /* ~ changed by cargo-mutants ~ */
  }
  
  #[test]

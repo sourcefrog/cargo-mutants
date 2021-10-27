@@ -1,5 +1,7 @@
 // Copyright 2021 Martin Pool
 
+//! Mutate source files.
+
 use std::fmt;
 use std::fs;
 use std::path::Path;
@@ -17,6 +19,9 @@ use syn::visit::Visit;
 use crate::source::SourceFile;
 use crate::textedit::replace_region;
 
+/// A comment marker inserted next to changes, so they can be easily found.
+const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
+
 /// A type of mutation operation that could be applied to a source file.
 #[derive(Debug, Eq, PartialEq)]
 pub enum MutationOp {
@@ -31,6 +36,7 @@ pub enum MutationOp {
 /// * which function and span in that file,
 /// * and what type of mutation to apply.
 pub struct Mutation {
+    // TODO: Generalize to mutations that don't replace a whole function.
     pub source_file: SourceFile,
     pub op: MutationOp,
     function_ident: syn::Ident,
@@ -38,17 +44,19 @@ pub struct Mutation {
 }
 
 impl Mutation {
+    /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         match self.op {
             MutationOp::ReturnDefault => replace_region(
                 &self.source_file.code,
                 &self.span.start(),
                 &self.span.end(),
-                "{\n/* ~ removed by cargo-mutants ~ */ Default::default()\n}\n",
+                &format!("{{\nDefault::default() {}\n}}\n", MUTATION_MARKER_COMMENT),
             ),
         }
     }
 
+    /// Return the original code for the entire file affected by this mutation.
     pub fn original_code(&self) -> &str {
         &self.source_file.code
     }
@@ -84,18 +92,19 @@ impl Mutation {
     pub fn diff(&self) -> String {
         let old_label = self.source_file.tree_relative_slashes();
         let new_label = self.describe_change();
-        let mutated_code = self.mutated_code();
-        TextDiff::from_lines(self.original_code(), &mutated_code)
+        TextDiff::from_lines(self.original_code(), &self.mutated_code())
             .unified_diff()
             .context_radius(8)
             .header(&old_label, &new_label)
             .to_string()
     }
 
+    /// Change the file affected by this mutation in the given directory.
     pub fn apply_in_dir(&self, dir: &Path) -> Result<()> {
         self.write_in_dir(dir, &self.mutated_code())
     }
 
+    /// Restore the file affected by this mutation to its original text.
     pub fn revert_in_dir(&self, dir: &Path) -> Result<()> {
         self.write_in_dir(dir, self.original_code())
     }
@@ -241,7 +250,7 @@ mod test {
         assert_eq!(
             mutated_code,
             r#"fn main() {
-/* ~ removed by cargo-mutants ~ */ Default::default()
+Default::default() /* ~ changed by cargo-mutants ~ */
 }
 
 fn factorial(n: u32) -> u32 {
@@ -271,7 +280,7 @@ fn test_factorial() {
 }
 
 fn factorial(n: u32) -> u32 {
-/* ~ removed by cargo-mutants ~ */ Default::default()
+Default::default() /* ~ changed by cargo-mutants ~ */
 }
 
 #[test]
