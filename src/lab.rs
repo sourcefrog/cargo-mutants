@@ -47,7 +47,7 @@ impl<'s> Lab<'s> {
         match cp_r::copy_tree(source.root(), &build_dir, &cp_r::CopyOptions::new())
             .context("copy source tree to lab directory")
         {
-            Ok(_stats) => activity.succeed("done"),
+            Ok(stats) => activity.succeed(&format!("{} MB", stats.file_bytes / 1_000_000)),
             Err(err) => {
                 activity.fail("failed");
                 eprintln!(

@@ -10,6 +10,7 @@ use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
 use predicates::prelude::*;
+use regex::Regex;
 
 use lazy_static::lazy_static;
 
@@ -85,9 +86,13 @@ fn test_factorial() {
     let tree = Path::new("testdata/tree/factorial");
     let output = run().arg("mutants").current_dir(tree).output().unwrap();
     assert!(output.status.success());
-    let remove_time = regex::Regex::new(r"in \d+\.\d{3}s").unwrap();
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let cleaned_stdout = remove_time.replace_all(&stdout, "in x.xxxs");
+    let cleaned_stdout = Regex::new(r"in \d+\.\d{3}s")
+        .unwrap()
+        .replace_all(&stdout, "in x.xxxs");
+    let cleaned_stdout = Regex::new(r"\d+ MB")
+        .unwrap()
+        .replace_all(&cleaned_stdout, "xxx MB");
     insta::assert_snapshot!(cleaned_stdout);
     assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
 
