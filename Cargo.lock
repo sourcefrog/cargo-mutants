@@ -105,7 +105,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "0.0.2"
+version = "0.0.3-pre"
 dependencies = [
  "anyhow",
  "argh",
@@ -126,6 +126,13 @@ dependencies = [
  "syn",
  "tempfile",
  "walkdir",
+]
+
+[[package]]
+name = "cargo-mutants-testdata-sites"
+version = "0.1.0"
+dependencies = [
+ "mutants",
 ]
 
 [[package]]

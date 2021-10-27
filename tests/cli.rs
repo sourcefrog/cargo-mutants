@@ -71,6 +71,15 @@ fn list_mutants_with_diffs_in_factorial() {
 }
 
 #[test]
+fn list_mutants_with_for_testdata_tree_sites() {
+    run()
+        .arg("mutants")
+        .arg("--list-mutants")
+        .current_dir("testdata/tree/sites")
+        .assert_insta();
+}
+
+#[test]
 fn test_factorial() {
     // TODO: This writes logs into the testdata directory, which is not ideal...
     let tree = Path::new("testdata/tree/factorial");

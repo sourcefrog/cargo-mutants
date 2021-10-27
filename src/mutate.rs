@@ -177,10 +177,11 @@ impl<'sf> DiscoveryVisitor<'sf> {
 }
 
 impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
+    // TODO: Also visit methods and maybe closures.
+
     fn visit_item_fn(&mut self, node: &'ast ItemFn) {
-        // TODO: Filter out inapplicable fns.
-        // TODO: Also visit methods and maybe closures.
-        if attrs_include_test(&node.attrs) || attrs_include_mutants_skip(&node.attrs) {
+        // TODO: Filter out more inapplicable fns.
+        if attrs_excluded(&node.attrs) {
             return; // don't look inside it either
         }
         self.sites.push(Mutation::of_function(
@@ -190,26 +191,54 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
         ));
         syn::visit::visit_item_fn(self, node);
     }
+
+    fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
+        // TODO: Remember which mods we're inside, and put the path into the name of visited
+        // functions.
+        if !attrs_excluded(&node.attrs) {
+            syn::visit::visit_item_mod(self, node);
+        }
+    }
 }
 
-fn attrs_include_test(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.path
-            .segments
-            .iter()
-            .map(|ps| &ps.ident)
-            .eq(["test"].iter())
-    })
+/// True if any of the attrs indicate that we should skip this node and everything inside it.
+fn attrs_excluded(attrs: &[Attribute]) -> bool {
+    attrs
+        .iter()
+        .any(|attr| attr_is_cfg_test(attr) || attr_is_test(attr) || attr_is_mutants_skip(attr))
 }
 
-fn attrs_include_mutants_skip(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.path
-            .segments
-            .iter()
-            .map(|ps| &ps.ident)
-            .eq(["mutants", "skip"].iter())
-    })
+/// True if the attribute is `#[cfg(test)]`.
+fn attr_is_cfg_test(attr: &Attribute) -> bool {
+    if !attr.path.is_ident("cfg") {
+        return false;
+    }
+    if let syn::Meta::List(meta_list) = attr.parse_meta().unwrap() {
+        // We should have already checked this above, but to make sure:
+        assert!(meta_list.path.is_ident("cfg"));
+        for nested_meta in meta_list.nested {
+            if let syn::NestedMeta::Meta(syn::Meta::Path(cfg_path)) = nested_meta {
+                if cfg_path.is_ident("test") {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+/// True if the attribute is `#[test]`.
+fn attr_is_test(attr: &Attribute) -> bool {
+    attr.path.is_ident("test")
+}
+
+/// True if the attribute is `#[mutants::skip]`.
+fn attr_is_mutants_skip(attr: &Attribute) -> bool {
+    attr.path
+        .segments
+        .iter()
+        .map(|ps| &ps.ident)
+        .eq(["mutants", "skip"].iter())
 }
 
 #[cfg(test)]

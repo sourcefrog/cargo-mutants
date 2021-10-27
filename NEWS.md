@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## 0.0.3 unreleased
+
+* Skip functions or modules marked `#[test]`, `#[cfg(test)]` or
+  `#[mutants::skip]`.
+
 ## 0.0.2
 
 * Functions that should not be mutated can be marked with `#[mutants::skip]`

@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "0.0.2"
+version = "0.0.3-pre"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -50,4 +50,5 @@ members = [
     # "testdata/tree/already_failing_tests",
     "testdata/tree/could_hang/",
     "testdata/tree/factorial",
+    "testdata/tree/sites",
 ]

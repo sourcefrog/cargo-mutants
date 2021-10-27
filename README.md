@@ -46,7 +46,9 @@ functions that may be inadequately tested:
     replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
     ...
 
-In this version of the unix_mode crate, the `is_block_device` function was indeed untested. The gap was fixed by adding a [doctest](https://github.com/sourcefrog/unix_mode/blob/788e7bd170f1efa29495a4a6b1347a636713c507/src/lib.rs#L239-L242).
+In this version of the `unix_mode` crate, the `is_block_device` function was
+indeed untested. The gap was fixed by adding a
+[doctest](https://github.com/sourcefrog/unix_mode/blob/07e098c1f06d9971f26fe05afa65c3e36135e81f/src/lib.rs#L239-L242).
 
 The Cargo output is logged into `target/mutants/` within the original source
 directory, so you can see why individual tests failed.
@@ -159,7 +161,7 @@ difficult. cargo-mutants can help in a few ways:
 * Sometimes these effects can be tested by making the side-effect observable with, for example,
   a counter of the number of memory allocations or cache misses/hits.
 
-## Approach
+## How it works
 
 The basic approach is:
 
