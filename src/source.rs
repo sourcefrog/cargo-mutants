@@ -49,7 +49,7 @@ impl SourceFile {
         let syn_file = syn::parse_str::<syn::File>(&self.code)?;
         let mut v = DiscoveryVisitor::new(self);
         v.visit_file(&syn_file);
-        Ok(v.sites)
+        Ok(v.mutations)
     }
 
     /// Return the path of this file relative to a given directory.
