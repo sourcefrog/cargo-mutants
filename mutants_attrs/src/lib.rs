@@ -4,6 +4,12 @@
 //!
 //! For example, a function that is difficult to test, or has disruptive effects when mutated, can
 //! be marked with [macro@skip].
+//!
+//! # Changelog
+//!
+//! ## 0.0.3
+//!
+//! * Reset edition to 2018 for broader compatibility.
 
 use proc_macro::TokenStream;
 
