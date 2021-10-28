@@ -132,7 +132,7 @@ dependencies = [
 name = "cargo-mutants-testdata-sites"
 version = "0.1.0"
 dependencies = [
- "mutants 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mutants 0.0.2",
 ]
 
 [[package]]
@@ -215,7 +215,7 @@ checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 name = "enucleate-testdata-could-hang"
 version = "0.1.0"
 dependencies = [
- "mutants 0.0.2",
+ "mutants 0.0.3",
 ]
 
 [[package]]
@@ -345,12 +345,12 @@ checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 [[package]]
 name = "mutants"
 version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95c2e2a75f1ccb94ceaafce9e619fcd50607396c10075eb8adb655f79e4c17c9"
 
 [[package]]
 name = "mutants"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95c2e2a75f1ccb94ceaafce9e619fcd50607396c10075eb8adb655f79e4c17c9"
+version = "0.0.3"
 
 [[package]]
 name = "normalize-line-endings"
