@@ -60,18 +60,19 @@ pub struct Mutation {
     // TODO: Generalize to mutations that don't replace a whole function.
     pub source_file: SourceFile,
     pub op: MutationOp,
-    function_ident: syn::Ident,
+    /// The function that's being mutated.
+    function_name: String,
     span: Span,
 }
 
 impl Mutation {
     /// Create a new mutation that replaces an entire function
-    pub fn of_function(source_file: &SourceFile, node: &ItemFn, op: MutationOp) -> Mutation {
+    pub fn new(source_file: &SourceFile, item_fn: &ItemFn, op: MutationOp) -> Mutation {
         Mutation {
             source_file: source_file.clone(),
             op,
-            function_ident: node.sig.ident.clone(),
-            span: node.block.brace_token.span,
+            function_name: item_fn.sig.ident.to_string(),
+            span: item_fn.block.brace_token.span,
         }
     }
 
@@ -117,8 +118,8 @@ impl Mutation {
     ///
     /// Note that this will often not be unique: the same name can be reused
     /// in different modules, under different cfg guards, etc.
-    pub fn function_name(&self) -> String {
-        self.function_ident.to_string()
+    pub fn function_name(&self) -> &str {
+        &self.function_name
     }
 
     /// Return a unified diff for the mutation.
@@ -155,7 +156,7 @@ impl fmt::Debug for Mutation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Mutation")
             .field("op", &self.op)
-            .field("function", &self.function_ident.to_string())
+            .field("function_name", &self.function_name())
             .field("start", &(self.span.start().line, self.span.start().column))
             .field("end", &(self.span.end().line, self.span.end().column))
             .finish()
@@ -214,7 +215,7 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
         }
         let mutations: Vec<Mutation> = ops
             .into_iter()
-            .map(|op| Mutation::of_function(&self.source_file, node, op))
+            .map(|op| Mutation::new(&self.source_file, node, op))
             .collect();
         self.mutations.extend(mutations);
 
@@ -290,11 +291,11 @@ mod test {
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            "Mutation { op: Unit, function: \"main\", start: (1, 10), end: (5, 1) }"
+            "Mutation { op: Unit, function_name: \"main\", start: (1, 10), end: (5, 1) }"
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            "Mutation { op: Default, function: \"factorial\", start: (7, 28), end: (13, 1) }"
+            "Mutation { op: Default, function_name: \"factorial\", start: (7, 28), end: (13, 1) }"
         );
     }
 
