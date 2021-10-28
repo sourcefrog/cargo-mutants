@@ -27,6 +27,17 @@ fn returns_ok_unit() -> std::io::Result<()> {
     Ok(())
 }
 
+/// Return `s` repeated twice.
+///
+/// ```
+/// assert_eq!(cargo_mutants_testdata_sites::double_string("cat"), "catcat");
+/// ```
+pub fn double_string(s: &str) -> String {
+    let mut r = s.to_owned();
+    r.push_str(s);
+    r
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

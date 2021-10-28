@@ -8,4 +8,4 @@ publish = false
 
 [dependencies.mutants]
 version = "0.0.2"
-path = "../../../mutants_attrs"
+# path = "../../../mutants_attrs"

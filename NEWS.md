@@ -1,12 +1,15 @@
 # cargo-mutants changelog
 
-## 0.0.3 unreleased
+## 0.0.3
+
+(Not yet released.)
 
 * Skip functions or modules marked `#[test]`, `#[cfg(test)]` or
   `#[mutants::skip]`.
 
-* As an early step towards type-guided mutations, generate mutations of `true`
-  and `false` for functions that return `bool`.
+* Early steps towards type-guided mutations: generate mutations of `true`
+  and `false` for functions that return `bool`, and empty and arbitrary strings
+  for functions returning `String`.
 
 ## 0.0.2
 

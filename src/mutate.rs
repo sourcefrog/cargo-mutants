@@ -35,6 +35,10 @@ pub enum MutationOp {
     True,
     /// Return false.
     False,
+    /// Return empty string.
+    EmptyString,
+    /// Return `"xyzzy"`.
+    Xyzzy,
 }
 
 impl MutationOp {
@@ -46,6 +50,8 @@ impl MutationOp {
             Unit => "()",
             True => "true",
             False => "false",
+            EmptyString => "\"\".into()",
+            Xyzzy => "\"xyzzy\".into()",
         }
     }
 }
@@ -206,6 +212,10 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
                     if path.is_ident("bool") {
                         ops.push(MutationOp::True);
                         ops.push(MutationOp::False);
+                    } else if path.is_ident("String") {
+                        // TODO: Detect &str etc.
+                        ops.push(MutationOp::EmptyString);
+                        ops.push(MutationOp::Xyzzy);
                     } else {
                         ops.push(MutationOp::Default)
                     }
