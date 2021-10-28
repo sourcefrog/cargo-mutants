@@ -3,6 +3,8 @@ source: tests/cli.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
+src/lib.rs:12: replace returns_unit with ()
 src/lib.rs:17: replace returns_42u32 with Default::default()
-src/lib.rs:26: replace returns_true with Default::default()
+src/lib.rs:22: replace returns_true with Default::default()
+src/lib.rs:26: replace returns_ok_unit with Default::default()
 

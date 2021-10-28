@@ -9,6 +9,10 @@ fn outer_test_helper() {
     panic!()
 }
 
+fn returns_unit(a: &mut u32) {
+    *a += 1;
+}
+
 /// Can be mutated to return default (0).
 fn returns_42u32() -> u32 {
     42
@@ -17,6 +21,10 @@ fn returns_42u32() -> u32 {
 /// Can be mutated to return bool::default.
 fn returns_true() -> bool {
     true
+}
+
+fn returns_ok_unit() -> std::io::Result<()> {
+    Ok(())
 }
 
 #[cfg(test)]
@@ -39,6 +47,10 @@ mod tests {
     fn test_mutatable_functions() {
         assert_eq!(returns_42u32(), 42);
         assert!(returns_true());
+
+        let mut a = 0;
+        returns_unit(&mut a);
+        assert_eq!(a, 1);
     }
 }
 

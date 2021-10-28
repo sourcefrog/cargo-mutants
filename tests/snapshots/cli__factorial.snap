@@ -5,6 +5,6 @@ expression: cleaned_stdout
 ---
 copy source to scratch directory ... xxx MB in x.xxxs
 baseline test with no mutations ... ok in x.xxxs
-replace main with Default::default() in src/bin/main.rs:1 ... NOT CAUGHT in x.xxxs
+replace main with () in src/bin/main.rs:1 ... NOT CAUGHT in x.xxxs
 replace factorial with Default::default() in src/bin/main.rs:7 ... caught in x.xxxs
 
