@@ -1,0 +1,42 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+
+---
+[
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "returns_unit",
+    "op": "Unit"
+  },
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "returns_42u32",
+    "op": "Default"
+  },
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "returns_true",
+    "op": "True"
+  },
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "returns_true",
+    "op": "False"
+  },
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "returns_ok_unit",
+    "op": "Default"
+  },
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "double_string",
+    "op": "EmptyString"
+  },
+  {
+    "source_file": "src/lib.rs",
+    "function_name": "double_string",
+    "op": "Xyzzy"
+  }
+]

@@ -82,10 +82,20 @@ fn list_mutants_with_diffs_in_factorial() {
 }
 
 #[test]
-fn list_mutants_with_for_testdata_tree_sites() {
+fn list_mutants_for_testdata_tree_sites() {
     run()
         .arg("mutants")
         .arg("--list-mutants")
+        .current_dir("testdata/tree/sites")
+        .assert_insta();
+}
+
+#[test]
+fn list_mutants_json_for_testdata_tree_sites() {
+    run()
+        .arg("mutants")
+        .arg("--list-mutants")
+        .arg("--json")
         .current_dir("testdata/tree/sites")
         .assert_insta();
 }
