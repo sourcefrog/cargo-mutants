@@ -52,6 +52,16 @@ fn list_mutants_in_factorial() {
 }
 
 #[test]
+fn list_mutants_in_factorial_json() {
+    run()
+        .arg("mutants")
+        .arg("--list-mutants")
+        .arg("--json")
+        .current_dir("testdata/tree/factorial")
+        .assert_insta();
+}
+
+#[test]
 fn list_mutants_with_dir_option() {
     run()
         .arg("mutants")

@@ -1,6 +1,6 @@
 // Copyright 2021 Martin Pool
 
-//! Mutate source files.
+//! Mutations to source files, and inference of interesting mutations to apply.
 
 use std::fmt;
 use std::fs;
@@ -9,6 +9,7 @@ use std::path::Path;
 use anyhow::Context;
 use anyhow::Result;
 use proc_macro2::Span;
+use serde::Serialize;
 use similar::TextDiff;
 use syn::Attribute;
 use syn::ItemFn;
@@ -23,7 +24,7 @@ use crate::textedit::replace_region;
 const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
 /// A type of mutation operation that could be applied to a source file.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Serialize)]
 pub enum MutationOp {
     /// Return [Default::default].
     Default,
@@ -62,12 +63,20 @@ impl MutationOp {
 /// * which file to modify,
 /// * which function and span in that file,
 /// * and what type of mutation to apply.
+#[derive(Serialize)]
 pub struct Mutation {
     // TODO: Generalize to mutations that don't replace a whole function.
+    #[serde(skip)]
     pub source_file: SourceFile,
-    pub op: MutationOp,
+
     /// The function that's being mutated.
     function_name: String,
+
+    /// The type of change to apply.
+    pub op: MutationOp,
+
+    /// The mutated textual region.
+    #[serde(skip)]
     span: Span,
 }
 

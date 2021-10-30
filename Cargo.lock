@@ -122,6 +122,8 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
+ "serde",
+ "serde_json",
  "similar 2.0.0",
  "syn",
  "tempfile",

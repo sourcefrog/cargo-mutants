@@ -7,6 +7,7 @@ use std::rc::Rc;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
+use serde::Serialize;
 use syn::visit::Visit;
 
 use crate::mutate::{DiscoveryVisitor, Mutation};
@@ -18,11 +19,16 @@ use crate::mutate::{DiscoveryVisitor, Mutation};
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 pub struct SourceFile {
+    /// Path relative to the root of the tree.
     tree_relative: PathBuf,
+
+    /// Path that will open this file in the original source tree.
     pub full_path: PathBuf,
+
     /// Full copy of the source.
+    #[serde(skip)]
     pub code: Rc<String>,
 }
 

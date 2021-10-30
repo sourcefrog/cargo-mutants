@@ -10,6 +10,7 @@ mod output;
 mod source;
 mod textedit;
 
+use std::io;
 #[allow(unused)]
 use std::io::Write;
 use std::path::PathBuf;
@@ -49,6 +50,10 @@ struct Mutants {
     #[argh(switch)]
     list_mutants: bool,
 
+    /// output json (only for --list-mutants).
+    #[argh(switch)]
+    json: bool,
+
     /// show the mutation diffs.
     #[argh(switch)]
     diff: bool,
@@ -56,17 +61,23 @@ struct Mutants {
 
 fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
-    let Command::Mutants(sub) = args.command;
-    let source_tree = SourceTree::new(&sub.dir)?;
-    if sub.list_mutants {
-        for mutation in source_tree.mutations()? {
-            println!(
-                "{}: {}",
-                mutation.describe_location(),
-                mutation.describe_change(),
-            );
-            if sub.diff {
-                println!("{}", mutation.diff());
+    let Command::Mutants(opts) = args.command;
+    let source_tree = SourceTree::new(&opts.dir)?;
+    if opts.list_mutants {
+        let mutations = source_tree.mutations()?;
+        if opts.json {
+            // TODO: diffs in json?
+            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutations)?;
+        } else {
+            for mutation in mutations {
+                println!(
+                    "{}: {}",
+                    mutation.describe_location(),
+                    mutation.describe_change(),
+                );
+                if opts.diff {
+                    println!("{}", mutation.diff());
+                }
             }
         }
     } else {
