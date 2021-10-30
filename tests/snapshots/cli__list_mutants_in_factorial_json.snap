@@ -5,13 +5,15 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
-    "source_file": "src/bin/main.rs",
-    "function_name": "main",
+    "file": "src/bin/main.rs",
+    "line": 1,
+    "function": "main",
     "op": "Unit"
   },
   {
-    "source_file": "src/bin/main.rs",
-    "function_name": "factorial",
+    "file": "src/bin/main.rs",
+    "line": 7,
+    "function": "factorial",
     "op": "Default"
   }
 ]

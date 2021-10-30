@@ -7,7 +7,6 @@ use std::rc::Rc;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
-use serde::{Serialize, Serializer};
 use syn::visit::Visit;
 
 use crate::mutate::{DiscoveryVisitor, Mutation};
@@ -60,16 +59,6 @@ impl SourceFile {
     // TODO: Maybe let the caller do this.
     pub fn within_dir(&self, dir: &Path) -> PathBuf {
         dir.join(&self.tree_relative)
-    }
-}
-
-impl Serialize for SourceFile {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Serialize the path by hand to get forward slashes.
-        serializer.serialize_str(&self.tree_relative_slashes())
     }
 }
 

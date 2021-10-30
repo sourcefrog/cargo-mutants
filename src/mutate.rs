@@ -8,6 +8,7 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
+use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
 use syn::Attribute;
@@ -62,7 +63,6 @@ impl MutationOp {
 /// * which file to modify,
 /// * which function and span in that file,
 /// * and what type of mutation to apply.
-#[derive(Serialize)]
 pub struct Mutation {
     pub source_file: SourceFile,
 
@@ -70,7 +70,6 @@ pub struct Mutation {
     function_name: String,
 
     /// The mutated textual region.
-    #[serde(skip)]
     span: Span,
 
     /// The type of change to apply.
@@ -183,6 +182,21 @@ impl fmt::Display for Mutation {
             self.describe_change(),
             self.describe_location(),
         )
+    }
+}
+
+impl Serialize for Mutation {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // custom serialize to omit inessential info
+        let mut ss = serializer.serialize_struct("Mutation", 4)?;
+        ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
+        ss.serialize_field("line", &self.span.start.line)?;
+        ss.serialize_field("function", &self.function_name)?;
+        ss.serialize_field("op", &self.op)?;
+        ss.end()
     }
 }
 

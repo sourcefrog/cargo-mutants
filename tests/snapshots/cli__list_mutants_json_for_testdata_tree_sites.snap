@@ -5,38 +5,45 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
-    "source_file": "src/lib.rs",
-    "function_name": "returns_unit",
+    "file": "src/lib.rs",
+    "line": 12,
+    "function": "returns_unit",
     "op": "Unit"
   },
   {
-    "source_file": "src/lib.rs",
-    "function_name": "returns_42u32",
+    "file": "src/lib.rs",
+    "line": 17,
+    "function": "returns_42u32",
     "op": "Default"
   },
   {
-    "source_file": "src/lib.rs",
-    "function_name": "returns_true",
+    "file": "src/lib.rs",
+    "line": 22,
+    "function": "returns_true",
     "op": "True"
   },
   {
-    "source_file": "src/lib.rs",
-    "function_name": "returns_true",
+    "file": "src/lib.rs",
+    "line": 22,
+    "function": "returns_true",
     "op": "False"
   },
   {
-    "source_file": "src/lib.rs",
-    "function_name": "returns_ok_unit",
+    "file": "src/lib.rs",
+    "line": 26,
+    "function": "returns_ok_unit",
     "op": "Default"
   },
   {
-    "source_file": "src/lib.rs",
-    "function_name": "double_string",
+    "file": "src/lib.rs",
+    "line": 35,
+    "function": "double_string",
     "op": "EmptyString"
   },
   {
-    "source_file": "src/lib.rs",
-    "function_name": "double_string",
+    "file": "src/lib.rs",
+    "line": 35,
+    "function": "double_string",
     "op": "Xyzzy"
   }
 ]
