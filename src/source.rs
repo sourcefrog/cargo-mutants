@@ -24,15 +24,15 @@ pub struct SourceFile {
     /// Path relative to the root of the tree.
     tree_relative: PathBuf,
 
-    /// Path that will open this file in the original source tree.
-    pub full_path: PathBuf,
-
     /// Full copy of the source.
     #[serde(skip)]
     pub code: Rc<String>,
 }
 
 impl SourceFile {
+    /// Construct a SourceFile representing a file within a tree.
+    ///
+    /// This eagerly loads the text of the file.
     pub fn new(tree_path: &Path, tree_relative: &Path) -> Result<SourceFile> {
         let full_path = tree_path.join(tree_relative);
         let code = std::fs::read_to_string(&full_path)
@@ -40,7 +40,6 @@ impl SourceFile {
             .replace("\r\n", "\n");
         Ok(SourceFile {
             tree_relative: tree_relative.to_owned(),
-            full_path,
             code: Rc::new(code),
         })
     }
@@ -143,10 +142,6 @@ mod test {
             .source_files()
             .collect::<Vec<SourceFile>>();
         assert_eq!(source_paths.len(), 1);
-        assert_eq!(
-            source_paths[0].full_path,
-            PathBuf::from("testdata/tree/factorial/src/bin/main.rs")
-        );
         assert_eq!(
             source_paths[0].tree_relative,
             PathBuf::from("src/bin/main.rs"),
