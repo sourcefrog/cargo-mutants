@@ -8,7 +8,6 @@ use std::path::Path;
 
 use anyhow::Context;
 use anyhow::Result;
-use proc_macro2::Span;
 use serde::Serialize;
 use similar::TextDiff;
 use syn::Attribute;
@@ -18,7 +17,7 @@ use syn::ItemFn;
 use syn::visit::Visit;
 
 use crate::source::SourceFile;
-use crate::textedit::replace_region;
+use crate::textedit::{replace_region, Span};
 
 /// A comment marker inserted next to changes, so they can be easily found.
 const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
@@ -85,7 +84,7 @@ impl Mutation {
             source_file: source_file.clone(),
             op,
             function_name: item_fn.sig.ident.to_string(),
-            span: item_fn.block.brace_token.span,
+            span: item_fn.block.brace_token.span.into(),
         }
     }
 
@@ -93,8 +92,8 @@ impl Mutation {
     pub fn mutated_code(&self) -> String {
         replace_region(
             &self.source_file.code,
-            &self.span.start(),
-            &self.span.end(),
+            &self.span.start,
+            &self.span.end,
             &format!(
                 "{{\n{} {}\n}}\n",
                 self.op.replacement(),
@@ -110,11 +109,10 @@ impl Mutation {
 
     /// Return a "file:line" description of the location of this mutation.
     pub fn describe_location(&self) -> String {
-        let start = self.span.start();
         format!(
             "{}:{}",
             self.source_file.tree_relative_slashes(),
-            start.line,
+            self.span.start.line,
         )
     }
 
@@ -170,8 +168,9 @@ impl fmt::Debug for Mutation {
         f.debug_struct("Mutation")
             .field("op", &self.op)
             .field("function_name", &self.function_name())
-            .field("start", &(self.span.start().line, self.span.start().column))
-            .field("end", &(self.span.end().line, self.span.end().column))
+            // more concise display of spans
+            .field("start", &(self.span.start.line, self.span.start.column))
+            .field("end", &(self.span.end.line, self.span.end.column))
             .finish()
     }
 }
@@ -308,11 +307,11 @@ mod test {
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            "Mutation { op: Unit, function_name: \"main\", start: (1, 10), end: (5, 1) }"
+            "Mutation { op: Unit, function_name: \"main\", start: (1, 11), end: (5, 2) }"
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            "Mutation { op: Default, function_name: \"factorial\", start: (7, 28), end: (13, 1) }"
+            "Mutation { op: Default, function_name: \"factorial\", start: (7, 29), end: (13, 2) }"
         );
     }
 

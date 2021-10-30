@@ -2,15 +2,51 @@
 
 //! Edit source code.
 
-use proc_macro2::LineColumn;
+use serde::Serialize;
+
+/// A (line, column) position in a source file.
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Serialize)]
+pub struct LineColumn {
+    /// 1-based line number.
+    pub line: usize,
+
+    /// 1-based column, measured in chars.
+    pub column: usize,
+}
+
+impl From<proc_macro2::LineColumn> for LineColumn {
+    fn from(l: proc_macro2::LineColumn) -> Self {
+        LineColumn {
+            line: l.line,
+            column: l.column + 1,
+        }
+    }
+}
+
+/// A contiguous text span in a file.
+///
+/// TODO: Perhaps a semi-open range that can represent an empty span would be more general?
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Serialize)]
+pub struct Span {
+    /// The inclusive position where the span starts.
+    pub start: LineColumn,
+    /// The inclusive position where the span ends.
+    pub end: LineColumn,
+}
+
+impl From<proc_macro2::Span> for Span {
+    fn from(s: proc_macro2::Span) -> Self {
+        Span {
+            start: s.start().into(),
+            end: s.end().into(),
+        }
+    }
+}
 
 /// Replace a subregion of text.
 ///
 /// Returns a copy of `s` with the region between `start` and `end` inclusive replaced by
 /// `replacement`.
-///
-/// In `LineColumn`, lines are 1-indexed, and inclusive; columns are 0-indexed
-/// in UTF-8 characters (presumably really code points) and inclusive.
 pub(crate) fn replace_region(
     s: &str,
     start: &LineColumn,
@@ -20,7 +56,7 @@ pub(crate) fn replace_region(
     // dbg!(start, end);
     let mut r = String::with_capacity(s.len() + replacement.len());
     let mut line_no = 1;
-    let mut col_no = 0;
+    let mut col_no = 1;
     for c in s.chars() {
         if line_no < start.line
             || line_no > end.line
@@ -33,7 +69,7 @@ pub(crate) fn replace_region(
         }
         if c == '\n' {
             line_no += 1;
-            col_no = 0;
+            col_no = 1;
         } else if c == '\r' {
             // counts as part of the last column, not a separate column
         } else {
@@ -55,8 +91,11 @@ mod test {
         assert_eq!(
             replace_region(
                 source,
-                &LineColumn { line: 1, column: 9 },
-                &LineColumn { line: 3, column: 1 },
+                &LineColumn {
+                    line: 1,
+                    column: 10
+                },
+                &LineColumn { line: 3, column: 2 },
                 "{}\r\n"
             ),
             "fn foo() {}\r\n//hey!\r\n"
@@ -77,8 +116,11 @@ const BAR: u32 = 32;
         assert_eq!(
             replace_region(
                 &source,
-                &LineColumn { line: 2, column: 9 },
-                &LineColumn { line: 5, column: 0 },
+                &LineColumn {
+                    line: 2,
+                    column: 10
+                },
+                &LineColumn { line: 5, column: 1 },
                 "{ /* body deleted */ }"
             ),
             "
@@ -94,11 +136,11 @@ const BAR: u32 = 32;
                 &source,
                 &LineColumn {
                     line: 7,
-                    column: 17
+                    column: 18
                 },
                 &LineColumn {
                     line: 7,
-                    column: 18
+                    column: 19
                 },
                 "69"
             ),
