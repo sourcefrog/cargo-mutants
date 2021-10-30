@@ -65,19 +65,17 @@ impl MutationOp {
 /// * and what type of mutation to apply.
 #[derive(Serialize)]
 pub struct Mutation {
-    // TODO: Generalize to mutations that don't replace a whole function.
-    #[serde(skip)]
     pub source_file: SourceFile,
 
     /// The function that's being mutated.
     function_name: String,
 
-    /// The type of change to apply.
-    pub op: MutationOp,
-
     /// The mutated textual region.
     #[serde(skip)]
     span: Span,
+
+    /// The type of change to apply.
+    pub op: MutationOp,
 }
 
 impl Mutation {

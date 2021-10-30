@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
-use serde::Serialize;
+use serde::{Serialize, Serializer};
 use syn::visit::Visit;
 
 use crate::mutate::{DiscoveryVisitor, Mutation};
@@ -19,13 +19,12 @@ use crate::mutate::{DiscoveryVisitor, Mutation};
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Clone, PartialEq, Eq, Serialize)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
     /// Path relative to the root of the tree.
     tree_relative: PathBuf,
 
     /// Full copy of the source.
-    #[serde(skip)]
     pub code: Rc<String>,
 }
 
@@ -61,6 +60,16 @@ impl SourceFile {
     // TODO: Maybe let the caller do this.
     pub fn within_dir(&self, dir: &Path) -> PathBuf {
         dir.join(&self.tree_relative)
+    }
+}
+
+impl Serialize for SourceFile {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Serialize the path by hand to get forward slashes.
+        serializer.serialize_str(&self.tree_relative_slashes())
     }
 }
 
