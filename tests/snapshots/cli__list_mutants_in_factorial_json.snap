@@ -8,12 +8,12 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/bin/main.rs",
     "line": 1,
     "function": "main",
-    "op": "Unit"
+    "replacement": "()"
   },
   {
     "file": "src/bin/main.rs",
     "line": 7,
     "function": "factorial",
-    "op": "Default"
+    "replacement": "Default::default()"
   }
 ]

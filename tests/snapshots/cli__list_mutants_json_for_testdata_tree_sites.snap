@@ -8,48 +8,48 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",
-    "op": "Default"
+    "replacement": "Default::default()"
   },
   {
     "file": "src/lib.rs",
     "line": 14,
     "function": "returns_unit",
-    "op": "Unit"
+    "replacement": "()"
   },
   {
     "file": "src/lib.rs",
     "line": 19,
     "function": "returns_42u32",
-    "op": "Default"
+    "replacement": "Default::default()"
   },
   {
     "file": "src/lib.rs",
     "line": 24,
     "function": "returns_true",
-    "op": "True"
+    "replacement": "true"
   },
   {
     "file": "src/lib.rs",
     "line": 24,
     "function": "returns_true",
-    "op": "False"
+    "replacement": "false"
   },
   {
     "file": "src/lib.rs",
     "line": 28,
     "function": "returns_ok_unit",
-    "op": "Default"
+    "replacement": "Default::default()"
   },
   {
     "file": "src/lib.rs",
     "line": 37,
     "function": "double_string",
-    "op": "EmptyString"
+    "replacement": "\"\".into()"
   },
   {
     "file": "src/lib.rs",
     "line": 37,
     "function": "double_string",
-    "op": "Xyzzy"
+    "replacement": "\"xyzzy\".into()"
   }
 ]

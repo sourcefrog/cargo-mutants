@@ -185,7 +185,7 @@ impl Serialize for Mutation {
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name)?;
-        ss.serialize_field("op", &self.op)?;
+        ss.serialize_field("replacement", self.op.replacement())?;
         ss.end()
     }
 }
