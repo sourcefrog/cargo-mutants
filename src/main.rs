@@ -10,6 +10,7 @@ mod output;
 mod source;
 mod textedit;
 
+use std::env;
 use std::io;
 use std::path::PathBuf;
 use std::process::exit;
@@ -48,17 +49,26 @@ struct Args {
 /// cargo-mutants' own test suite) might want to distinguish are distinct.
 ///
 /// These are also described in README.md.
-enum ExitCode {
+mod exit_code {
     #[allow(dead_code)]
-    Success = 0,
+    pub const SUCCESS: i32 = 0;
 
     /// The wrong arguments, etc.
     /// 
     /// (1 is also the value returned by argh.)
-    Usage = 1,
+    pub const USAGE: i32 = 1;
 }
 
 fn main() -> Result<()> {
+    if let Some(subcommand) = env::args().nth(1) {
+        if subcommand != "mutants" {
+        eprintln!("unrecognized cargo subcommand {:?}", subcommand);
+        exit(exit_code::USAGE);
+        }
+    } else {
+            eprintln!("usage: cargo mutants <ARGS>\n   or: cargo-mutants mutants <ARGS>");
+            exit(exit_code::USAGE);
+    }
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;
     if args.list {
@@ -66,7 +76,7 @@ fn main() -> Result<()> {
         if args.json {
             if args.diff {
                 eprintln!("--list --diff --json is not (yet) supported");
-                exit(ExitCode::Usage as i32);
+                exit(exit_code::USAGE);
             }
             serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutations)?;
         } else {
