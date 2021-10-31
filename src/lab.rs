@@ -104,12 +104,11 @@ impl<'s> Lab<'s> {
 
     /// Test with one mutation applied.
     pub fn test_mutation(&self, mutation: &Mutation) -> Result<()> {
-        let mutation_name = format!("{}", &mutation);
-        let activity = Activity::start(&mutation_name);
+        let activity = Activity::start_mutation(mutation);
         // TODO: Maybe an object representing the applied mutation that reverts
         // on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
-        let test_result = self.run_cargo_test(&mutation_name, &activity);
+        let test_result = self.run_cargo_test(&mutation.to_string(), &activity);
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;

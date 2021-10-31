@@ -26,6 +26,10 @@ impl Activity {
         }
     }
 
+    pub fn start_mutation(mutation: &Mutation) -> Activity {
+        Activity::start(&style_mutation(mutation))
+    }
+
     pub fn succeed(self, msg: &str) {
         println!("{} in {}", style(msg).green(), self.format_elapsed());
     }
@@ -58,14 +62,18 @@ impl Activity {
 
 pub fn list_mutations(mutations: &[Mutation], show_diffs: bool) {
     for mutation in mutations {
-        println!(
-            "{}: replace {} with {}",
-            mutation.describe_location(),
-            style(mutation.function_name()).bright().magenta(),
-            style(mutation.replacement_text()).yellow(),
-        );
+        println!("{}", style_mutation(mutation));
         if show_diffs {
             println!("{}", mutation.diff());
         }
     }
+}
+
+fn style_mutation(mutation: &Mutation) -> String {
+        format!(
+            "{}: replace {} with {}",
+            mutation.describe_location(),
+            style(mutation.function_name()).bright().magenta(),
+            style(mutation.replacement_text()).yellow(),
+        )
 }

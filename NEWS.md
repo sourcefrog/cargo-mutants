@@ -15,7 +15,7 @@
 
 * Very basic mutation of `Result<_, _>` to return `Ok(Default::default())`.
 
-* Colored output in `--list`.
+* Colored output makes test names and mutations easier to read (for me at least.)
 
 ## 0.0.2
 
