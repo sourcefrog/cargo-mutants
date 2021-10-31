@@ -64,6 +64,12 @@ To mark functions so they are not mutated:
 The crate is tiny and the attribute has no effect on the compiled code. It only
 flags the function for cargo-mutants.
 
+### Exit codes
+
+* **0**: Success. No mutants were found that weren't caught by tests.
+
+* **1**: Usage error: bad command-line arguments etc.
+
 ### Tips
 
 * Trees that `deny` style lints such as unused parameters are likely to fail to
@@ -209,6 +215,11 @@ It's an interesting insight that mutation at the level of a whole function is a
 practical sweet-spot to discover missing tests, while (at least at
 moderate-size trees) still making it feasible to exhaustively generate every
 mutant.
+
+## Stability
+
+cargo-mutants is in alpha and behavior, output formats, command-line syntax,
+etc, may change from one release to the next.
 
 ### Mutagen
 

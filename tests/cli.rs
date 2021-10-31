@@ -43,6 +43,15 @@ impl CommandInstaExt for std::process::Command {
 }
 
 #[test]
+fn list_diff_json_not_yet_supported() {
+    run_assert_cmd().args(["mutants", "--list-mutants", "--json", "--diff"])
+        .assert()
+        .code(1)
+        .stderr("--list-mutants --diff --json is not (yet) supported\n")
+        .stdout("");
+}
+
+#[test]
 fn list_mutants_in_factorial() {
     run()
         .arg("mutants")

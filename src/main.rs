@@ -11,9 +11,8 @@ mod source;
 mod textedit;
 
 use std::io;
-#[allow(unused)]
-use std::io::Write;
 use std::path::PathBuf;
+use std::process::exit;
 
 use anyhow::Result;
 use argh::FromArgs;
@@ -59,6 +58,22 @@ struct Mutants {
     diff: bool,
 }
 
+/// Exit codes from cargo-mutants.
+///
+/// These are assigned so that different cases that CI or other automation (or
+/// cargo-mutants' own test suite) might want to distinguish are distinct.
+///
+/// These are also described in README.md.
+enum ExitCode {
+    #[allow(dead_code)]
+    Success = 0,
+
+    /// The wrong arguments, etc.
+    /// 
+    /// (1 is also the value returned by argh.)
+    Usage = 1,
+}
+
 fn main() -> Result<()> {
     let args: TopArgs = argh::from_env();
     let Command::Mutants(opts) = args.command;
@@ -66,7 +81,10 @@ fn main() -> Result<()> {
     if opts.list_mutants {
         let mutations = source_tree.mutations()?;
         if opts.json {
-            // TODO: diffs in json?
+            if opts.diff {
+                eprintln!("--list-mutants --diff --json is not (yet) supported");
+                exit(ExitCode::Usage as i32);
+            }
             serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutations)?;
         } else {
             for mutation in mutations {
