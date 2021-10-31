@@ -219,7 +219,7 @@ impl<'sf> DiscoveryVisitor<'sf> {
         }
     }
 
-    fn collect_mutation(&mut self, op:MutationOp, item_fn: &ItemFn) {
+    fn collect_mutation(&mut self, op: MutationOp, item_fn: &ItemFn) {
         self.namespace_stack.push(item_fn.sig.ident.to_string());
         let function_name = self.namespace_stack.join("::");
         self.mutations.push(Mutation {
@@ -265,7 +265,8 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
                 _ => ops.push(MutationOp::Default),
             },
         }
-        ops.into_iter().for_each(|op| self.collect_mutation(op, item_fn));
+        ops.into_iter()
+            .for_each(|op| self.collect_mutation(op, item_fn));
         syn::visit::visit_item_fn(self, item_fn);
     }
 
@@ -282,7 +283,10 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
 }
 
 fn path_is_result(path: &syn::Path) -> bool {
-    path.segments.last().map(|segment| segment.ident == "Result").unwrap_or_default()
+    path.segments
+        .last()
+        .map(|segment| segment.ident == "Result")
+        .unwrap_or_default()
 }
 
 /// True if any of the attrs indicate that we should skip this node and everything inside it.

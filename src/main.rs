@@ -54,7 +54,7 @@ mod exit_code {
     pub const SUCCESS: i32 = 0;
 
     /// The wrong arguments, etc.
-    /// 
+    ///
     /// (1 is also the value returned by argh.)
     pub const USAGE: i32 = 1;
 }
@@ -62,12 +62,12 @@ mod exit_code {
 fn main() -> Result<()> {
     if let Some(subcommand) = env::args().nth(1) {
         if subcommand != "mutants" {
-        eprintln!("unrecognized cargo subcommand {:?}", subcommand);
-        exit(exit_code::USAGE);
+            eprintln!("unrecognized cargo subcommand {:?}", subcommand);
+            exit(exit_code::USAGE);
         }
     } else {
-            eprintln!("usage: cargo mutants <ARGS>\n   or: cargo-mutants mutants <ARGS>");
-            exit(exit_code::USAGE);
+        eprintln!("usage: cargo mutants <ARGS>\n   or: cargo-mutants mutants <ARGS>");
+        exit(exit_code::USAGE);
     }
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;

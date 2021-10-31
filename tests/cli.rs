@@ -45,31 +45,25 @@ impl CommandInstaExt for std::process::Command {
 #[test]
 fn detect_incorrect_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
-    run_assert_cmd()
-        .arg("wibble")
-        .assert()
-        .code(1);
+    run_assert_cmd().arg("wibble").assert().code(1);
 }
 
 #[test]
 fn detect_missing_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
-    run_assert_cmd()
-        .assert()
-        .code(1);
+    run_assert_cmd().assert().code(1);
 }
 
 #[test]
 fn detect_option_in_place_of_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
-    run_assert_cmd().args(["--list"])
-        .assert()
-        .code(1);
+    run_assert_cmd().args(["--list"]).assert().code(1);
 }
 
 #[test]
 fn list_diff_json_not_yet_supported() {
-    run_assert_cmd().args(["mutants", "--list", "--json", "--diff"])
+    run_assert_cmd()
+        .args(["mutants", "--list", "--json", "--diff"])
         .assert()
         .code(1)
         .stderr("--list --diff --json is not (yet) supported\n")

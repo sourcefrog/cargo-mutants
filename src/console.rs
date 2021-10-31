@@ -70,10 +70,10 @@ pub fn list_mutations(mutations: &[Mutation], show_diffs: bool) {
 }
 
 fn style_mutation(mutation: &Mutation) -> String {
-        format!(
-            "{}: replace {} with {}",
-            mutation.describe_location(),
-            style(mutation.function_name()).bright().magenta(),
-            style(mutation.replacement_text()).yellow(),
-        )
+    format!(
+        "{}: replace {} with {}",
+        mutation.describe_location(),
+        style(mutation.function_name()).bright().magenta(),
+        style(mutation.replacement_text()).yellow(),
+    )
 }

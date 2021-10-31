@@ -10,7 +10,7 @@ fn error_if_negative(a: i32) -> Result<(), ()> {
     if a < 0 {
         Err(())
     } else {
-    Ok(())
+        Ok(())
     }
 }
 
