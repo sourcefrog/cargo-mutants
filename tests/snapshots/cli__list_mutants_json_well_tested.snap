@@ -12,37 +12,37 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "file": "src/lib.rs",
-    "line": 15,
+    "line": 20,
     "function": "returns_unit",
     "replacement": "()"
   },
   {
     "file": "src/lib.rs",
-    "line": 20,
+    "line": 25,
     "function": "returns_42u32",
     "replacement": "Default::default()"
   },
   {
     "file": "src/lib.rs",
-    "line": 25,
+    "line": 30,
     "function": "returns_true",
     "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "line": 25,
+    "line": 30,
     "function": "returns_true",
     "replacement": "false"
   },
   {
     "file": "src/lib.rs",
-    "line": 34,
+    "line": 39,
     "function": "double_string",
     "replacement": "\"\".into()"
   },
   {
     "file": "src/lib.rs",
-    "line": 34,
+    "line": 39,
     "function": "double_string",
     "replacement": "\"xyzzy\".into()"
   },

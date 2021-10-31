@@ -1,5 +1,10 @@
 //!  An example tree for `cargo-mutants` with examples of sites where mutants could be, or
 //!  shouldn't be, applied.
+//!
+//! In this well-tested tree:
+//!
+//! 1. The tests should all pass in a clean tree.
+//! 2. Every mutant is caught.
 
 #![allow(unused, dead_code)]
 
@@ -29,7 +34,7 @@ fn returns_true() -> bool {
 /// Return `s` repeated twice.
 ///
 /// ```
-/// assert_eq!(cargo_mutants_testdata_sites::double_string("cat"), "catcat");
+/// assert_eq!(cargo_mutants_testdata_well_tested::double_string("cat"), "catcat");
 /// ```
 pub fn double_string(s: &str) -> String {
     let mut r = s.to_owned();

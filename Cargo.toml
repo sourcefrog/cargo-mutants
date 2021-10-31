@@ -52,5 +52,5 @@ members = [
     # "testdata/tree/already_failing_tests",
     "testdata/tree/could_hang/",
     "testdata/tree/factorial",
-    "testdata/tree/sites",
+    "testdata/tree/well_tested",
 ]
