@@ -24,23 +24,7 @@ use source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
 #[derive(FromArgs, PartialEq, Debug)]
-struct TopArgs {
-    #[argh(subcommand)]
-    command: Command,
-}
-
-// Cargo always runs external subcommands passing argv[1] as the name of the subcommand:
-// <https://doc.rust-lang.org/cargo/reference/external-tools.html>
-#[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand)]
-enum Command {
-    Mutants(Mutants),
-}
-
-/// Find inadequately-tested code that can be removed without any tests failing.
-#[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "mutants")]
-struct Mutants {
+struct Args {
     /// rust crate directory to examine.
     #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
     dir: PathBuf,
@@ -75,13 +59,12 @@ enum ExitCode {
 }
 
 fn main() -> Result<()> {
-    let args: TopArgs = argh::from_env();
-    let Command::Mutants(opts) = args.command;
-    let source_tree = SourceTree::new(&opts.dir)?;
-    if opts.list_mutants {
+    let args: Args = argh::cargo_from_env();
+    let source_tree = SourceTree::new(&args.dir)?;
+    if args.list_mutants {
         let mutations = source_tree.mutations()?;
-        if opts.json {
-            if opts.diff {
+        if args.json {
+            if args.diff {
                 eprintln!("--list-mutants --diff --json is not (yet) supported");
                 exit(ExitCode::Usage as i32);
             }
@@ -93,7 +76,7 @@ fn main() -> Result<()> {
                     mutation.describe_location(),
                     mutation.describe_change(),
                 );
-                if opts.diff {
+                if args.diff {
                     println!("{}", mutation.diff());
                 }
             }
