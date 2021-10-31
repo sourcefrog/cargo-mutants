@@ -4,6 +4,7 @@
 #![allow(unused, dead_code)]
 
 mod inside_mod;
+mod result;
 
 /// This function is only built for tests so shouldn't be mutated.
 #[cfg(test)]
@@ -23,10 +24,6 @@ fn returns_42u32() -> u32 {
 /// Can be mutated to return bool::default.
 fn returns_true() -> bool {
     true
-}
-
-fn returns_ok_unit() -> std::io::Result<()> {
-    Ok(())
 }
 
 /// Return `s` repeated twice.

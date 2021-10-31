@@ -40,6 +40,8 @@ pub enum MutationOp {
     EmptyString,
     /// Return `"xyzzy"`.
     Xyzzy,
+    /// Return `Ok(Default::default())`
+    OkDefault,
 }
 
 impl MutationOp {
@@ -53,6 +55,7 @@ impl MutationOp {
             False => "false",
             EmptyString => "\"\".into()",
             Xyzzy => "\"xyzzy\".into()",
+            OkDefault => "Ok(Default::default())",
         }
     }
 }
@@ -238,6 +241,7 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
             syn::ReturnType::Default => ops.push(MutationOp::Unit),
             syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
                 syn::Type::Path(syn::TypePath { path, .. }) => {
+                    // dbg!(&path);
                     if path.is_ident("bool") {
                         ops.push(MutationOp::True);
                         ops.push(MutationOp::False);
@@ -245,6 +249,10 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
                         // TODO: Detect &str etc.
                         ops.push(MutationOp::EmptyString);
                         ops.push(MutationOp::Xyzzy);
+                    } else if path_is_result(path) {
+                        // TODO: Try this for any path ending in "Result".
+                        // TODO: Recursively generate for types inside the Ok side of the Result.
+                        ops.push(MutationOp::OkDefault);
                     } else {
                         ops.push(MutationOp::Default)
                     }
@@ -266,6 +274,10 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
             assert_eq!(self.namespace_stack.pop(), Some(name));
         }
     }
+}
+
+fn path_is_result(path: &syn::Path) -> bool {
+    path.segments.last().map(|segment| segment.ident == "Result").unwrap_or_default()
 }
 
 /// True if any of the attrs indicate that we should skip this node and everything inside it.
@@ -406,5 +418,11 @@ fn test_factorial() {
 }
 "#
         );
+    }
+
+    #[test]
+    fn path_is_result() {
+        let path: syn::Path = syn::parse_quote! { Result<(), ()> };
+        assert!(super::path_is_result(&path));
     }
 }

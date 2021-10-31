@@ -12,44 +12,50 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "file": "src/lib.rs",
-    "line": 14,
+    "line": 15,
     "function": "returns_unit",
     "replacement": "()"
   },
   {
     "file": "src/lib.rs",
-    "line": 19,
+    "line": 20,
     "function": "returns_42u32",
     "replacement": "Default::default()"
   },
   {
     "file": "src/lib.rs",
-    "line": 24,
+    "line": 25,
     "function": "returns_true",
     "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "line": 24,
+    "line": 25,
     "function": "returns_true",
     "replacement": "false"
   },
   {
     "file": "src/lib.rs",
-    "line": 28,
-    "function": "returns_ok_unit",
-    "replacement": "Default::default()"
-  },
-  {
-    "file": "src/lib.rs",
-    "line": 37,
+    "line": 34,
     "function": "double_string",
     "replacement": "\"\".into()"
   },
   {
     "file": "src/lib.rs",
-    "line": 37,
+    "line": 34,
     "function": "double_string",
     "replacement": "\"xyzzy\".into()"
+  },
+  {
+    "file": "src/result.rs",
+    "line": 5,
+    "function": "simple_result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/result.rs",
+    "line": 9,
+    "function": "error_if_negative",
+    "replacement": "Ok(Default::default())"
   }
 ]

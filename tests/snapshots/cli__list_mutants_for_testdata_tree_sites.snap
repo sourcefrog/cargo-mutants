@@ -4,11 +4,12 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
 src/inside_mod.rs:3: replace outer::inner::name with Default::default()
-src/lib.rs:14: replace returns_unit with ()
-src/lib.rs:19: replace returns_42u32 with Default::default()
-src/lib.rs:24: replace returns_true with true
-src/lib.rs:24: replace returns_true with false
-src/lib.rs:28: replace returns_ok_unit with Default::default()
-src/lib.rs:37: replace double_string with "".into()
-src/lib.rs:37: replace double_string with "xyzzy".into()
+src/lib.rs:15: replace returns_unit with ()
+src/lib.rs:20: replace returns_42u32 with Default::default()
+src/lib.rs:25: replace returns_true with true
+src/lib.rs:25: replace returns_true with false
+src/lib.rs:34: replace double_string with "".into()
+src/lib.rs:34: replace double_string with "xyzzy".into()
+src/result.rs:5: replace simple_result with Ok(Default::default())
+src/result.rs:9: replace error_if_negative with Ok(Default::default())
 
