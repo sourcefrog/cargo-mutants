@@ -31,9 +31,9 @@ struct Args {
 
     /// just list possible mutants, don't run them.
     #[argh(switch)]
-    list_mutants: bool,
+    list: bool,
 
-    /// output json (only for --list-mutants).
+    /// output json (only for --list).
     #[argh(switch)]
     json: bool,
 
@@ -61,11 +61,11 @@ enum ExitCode {
 fn main() -> Result<()> {
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;
-    if args.list_mutants {
+    if args.list {
         let mutations = source_tree.mutations()?;
         if args.json {
             if args.diff {
-                eprintln!("--list-mutants --diff --json is not (yet) supported");
+                eprintln!("--list --diff --json is not (yet) supported");
                 exit(ExitCode::Usage as i32);
             }
             serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutations)?;

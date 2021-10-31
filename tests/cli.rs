@@ -44,10 +44,10 @@ impl CommandInstaExt for std::process::Command {
 
 #[test]
 fn list_diff_json_not_yet_supported() {
-    run_assert_cmd().args(["mutants", "--list-mutants", "--json", "--diff"])
+    run_assert_cmd().args(["mutants", "--list", "--json", "--diff"])
         .assert()
         .code(1)
-        .stderr("--list-mutants --diff --json is not (yet) supported\n")
+        .stderr("--list --diff --json is not (yet) supported\n")
         .stdout("");
 }
 
@@ -55,7 +55,7 @@ fn list_diff_json_not_yet_supported() {
 fn list_mutants_in_factorial() {
     run()
         .arg("mutants")
-        .arg("--list-mutants")
+        .arg("--list")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
 }
@@ -64,7 +64,7 @@ fn list_mutants_in_factorial() {
 fn list_mutants_in_factorial_json() {
     run()
         .arg("mutants")
-        .arg("--list-mutants")
+        .arg("--list")
         .arg("--json")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
@@ -74,7 +74,7 @@ fn list_mutants_in_factorial_json() {
 fn list_mutants_with_dir_option() {
     run()
         .arg("mutants")
-        .arg("--list-mutants")
+        .arg("--list")
         .arg("--dir")
         .arg("testdata/tree/factorial")
         .assert_insta();
@@ -84,7 +84,7 @@ fn list_mutants_with_dir_option() {
 fn list_mutants_with_diffs_in_factorial() {
     run()
         .arg("mutants")
-        .arg("--list-mutants")
+        .arg("--list")
         .arg("--diff")
         .current_dir("testdata/tree/factorial")
         .assert_insta();
@@ -94,7 +94,7 @@ fn list_mutants_with_diffs_in_factorial() {
 fn list_mutants_for_testdata_tree_sites() {
     run()
         .arg("mutants")
-        .arg("--list-mutants")
+        .arg("--list")
         .current_dir("testdata/tree/sites")
         .assert_insta();
 }
@@ -103,7 +103,7 @@ fn list_mutants_for_testdata_tree_sites() {
 fn list_mutants_json_for_testdata_tree_sites() {
     run()
         .arg("mutants")
-        .arg("--list-mutants")
+        .arg("--list")
         .arg("--json")
         .current_dir("testdata/tree/sites")
         .assert_insta();

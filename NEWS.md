@@ -9,7 +9,9 @@
   and `false` for functions that return `bool`, and empty and arbitrary strings
   for functions returning `String`.
 
-* New `--list-mutants --json`.
+* Rename `--list-mutants` to just `--list`.
+
+* New `--list --json`.
 
 ## 0.0.2
 

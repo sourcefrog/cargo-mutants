@@ -53,6 +53,9 @@ indeed untested. The gap was fixed by adding a
 The Cargo output is logged into `target/mutants/` within the original source
 directory, so you can see why individual tests failed.
 
+To see what mutants could be generated without running them, use `--list`.
+`--list` also supports either a `--json` or `--diff` option.
+
 ### Skipping functions
 
 To mark functions so they are not mutated:
