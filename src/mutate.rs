@@ -77,16 +77,6 @@ pub struct Mutation {
 }
 
 impl Mutation {
-    /// Create a new mutation that replaces an entire function
-    pub fn new(source_file: &SourceFile, item_fn: &ItemFn, op: MutationOp) -> Mutation {
-        Mutation {
-            source_file: source_file.clone(),
-            op,
-            function_name: item_fn.sig.ident.to_string(),
-            span: item_fn.block.brace_token.span.into(),
-        }
-    }
-
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         replace_region(
