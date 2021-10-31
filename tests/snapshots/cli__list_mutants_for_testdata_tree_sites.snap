@@ -3,11 +3,12 @@ source: tests/cli.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
-src/lib.rs:12: replace returns_unit with ()
-src/lib.rs:17: replace returns_42u32 with Default::default()
-src/lib.rs:22: replace returns_true with true
-src/lib.rs:22: replace returns_true with false
-src/lib.rs:26: replace returns_ok_unit with Default::default()
-src/lib.rs:35: replace double_string with "".into()
-src/lib.rs:35: replace double_string with "xyzzy".into()
+src/inside_mod.rs:3: replace outer::inner::name with Default::default()
+src/lib.rs:14: replace returns_unit with ()
+src/lib.rs:19: replace returns_42u32 with Default::default()
+src/lib.rs:24: replace returns_true with true
+src/lib.rs:24: replace returns_true with false
+src/lib.rs:28: replace returns_ok_unit with Default::default()
+src/lib.rs:37: replace double_string with "".into()
+src/lib.rs:37: replace double_string with "xyzzy".into()
 

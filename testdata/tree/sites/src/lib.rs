@@ -3,6 +3,8 @@
 
 #![allow(unused, dead_code)]
 
+mod inside_mod;
+
 /// This function is only built for tests so shouldn't be mutated.
 #[cfg(test)]
 fn outer_test_helper() {

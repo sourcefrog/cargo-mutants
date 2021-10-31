@@ -5,44 +5,50 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
+    "file": "src/inside_mod.rs",
+    "line": 3,
+    "function": "outer::inner::name",
+    "op": "Default"
+  },
+  {
     "file": "src/lib.rs",
-    "line": 12,
+    "line": 14,
     "function": "returns_unit",
     "op": "Unit"
   },
   {
     "file": "src/lib.rs",
-    "line": 17,
+    "line": 19,
     "function": "returns_42u32",
     "op": "Default"
   },
   {
     "file": "src/lib.rs",
-    "line": 22,
+    "line": 24,
     "function": "returns_true",
     "op": "True"
   },
   {
     "file": "src/lib.rs",
-    "line": 22,
+    "line": 24,
     "function": "returns_true",
     "op": "False"
   },
   {
     "file": "src/lib.rs",
-    "line": 26,
+    "line": 28,
     "function": "returns_ok_unit",
     "op": "Default"
   },
   {
     "file": "src/lib.rs",
-    "line": 35,
+    "line": 37,
     "function": "double_string",
     "op": "EmptyString"
   },
   {
     "file": "src/lib.rs",
-    "line": 35,
+    "line": 37,
     "function": "double_string",
     "op": "Xyzzy"
   }
