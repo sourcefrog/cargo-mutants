@@ -5,15 +5,15 @@
 * Skip functions or modules marked `#[test]`, `#[cfg(test)]` or
   `#[mutants::skip]`.
 
-* Early steps towards type-guided mutations: generate mutations of `true`
-  and `false` for functions that return `bool`, and empty and arbitrary strings
-  for functions returning `String`.
+* Early steps towards type-guided mutations: 
+
+  * Generate mutations of `true` and `false` for functions that return `bool`
+  * Empty and arbitrary strings for functions returning `String`.
+  * Return `Ok(Default::default())` for functions that return `Result<_, _>`.
 
 * Rename `--list-mutants` to just `--list`.
 
 * New `--list --json`.
-
-* Very basic mutation of `Result<_, _>` to return `Ok(Default::default())`.
 
 * Colored output makes test names and mutations easier to read (for me at least.)
 
