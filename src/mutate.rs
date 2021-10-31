@@ -117,6 +117,11 @@ impl Mutation {
         )
     }
 
+    /// Return the text inserted for this mutation.
+    pub fn replacement_text(&self) -> &'static str {
+        self.op.replacement()
+    }
+
     /// Return the name of the function to be mutated.
     ///
     /// Note that this will often not be unique: the same name can be reused

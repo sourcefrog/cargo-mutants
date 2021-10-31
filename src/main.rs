@@ -80,16 +80,7 @@ fn main() -> Result<()> {
             }
             serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutations)?;
         } else {
-            for mutation in mutations {
-                println!(
-                    "{}: {}",
-                    mutation.describe_location(),
-                    mutation.describe_change(),
-                );
-                if args.diff {
-                    println!("{}", mutation.diff());
-                }
-            }
+            console::list_mutations(&mutations, args.diff);
         }
     } else {
         Lab::new(&source_tree)?.run()?;

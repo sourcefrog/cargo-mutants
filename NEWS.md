@@ -15,6 +15,8 @@
 
 * Very basic mutation of `Result<_, _>` to return `Ok(Default::default())`.
 
+* Colored output in `--list`.
+
 ## 0.0.2
 
 * Functions that should not be mutated can be marked with `#[mutants::skip]`

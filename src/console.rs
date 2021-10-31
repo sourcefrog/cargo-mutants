@@ -8,6 +8,7 @@ use std::time::Instant;
 use atty::Stream;
 use console::style;
 
+use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Status};
 
 pub(crate) struct Activity {
@@ -52,5 +53,19 @@ impl Activity {
 
     fn format_elapsed(&self) -> String {
         format!("{:.3}s", &self.start_time.elapsed().as_secs_f64())
+    }
+}
+
+pub fn list_mutations(mutations: &[Mutation], show_diffs: bool) {
+    for mutation in mutations {
+        println!(
+            "{}: replace {} with {}",
+            mutation.describe_location(),
+            style(mutation.function_name()).bright().magenta(),
+            style(mutation.replacement_text()).yellow(),
+        );
+        if show_diffs {
+            println!("{}", mutation.diff());
+        }
     }
 }
