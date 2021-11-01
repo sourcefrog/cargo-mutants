@@ -48,10 +48,12 @@ impl Activity {
     }
 
     pub fn outcome(self, outcome: &Outcome) {
+        use Status::*;
         match outcome.status {
-            Status::Failed => self.succeed("caught"),
-            Status::Passed => self.fail("NOT CAUGHT"),
-            Status::Timeout => self.fail("TIMEOUT"),
+            Failed => self.succeed("caught"),
+            Passed => self.fail("NOT CAUGHT"),
+            Timeout => self.fail("TIMEOUT"),
+            CleanTestsFailed => self.fail("FAILED"),
         }
     }
 

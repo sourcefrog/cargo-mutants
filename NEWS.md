@@ -2,25 +2,28 @@
 
 ## unreleased
 
-* Skip functions or modules marked `#[test]`, `#[cfg(test)]` or
-  `#[mutants::skip]`.
+  * Skip functions or modules marked `#[test]`, `#[cfg(test)]` or
+    `#[mutants::skip]`.
 
-* Early steps towards type-guided mutations: 
+  * Early steps towards type-guided mutations: 
 
-  * Generate mutations of `true` and `false` for functions that return `bool`
-  * Empty and arbitrary strings for functions returning `String`.
-  * Return `Ok(Default::default())` for functions that return `Result<_, _>`.
+    * Generate mutations of `true` and `false` for functions that return `bool`
+    * Empty and arbitrary strings for functions returning `String`.
+    * Return `Ok(Default::default())` for functions that return `Result<_, _>`.
 
-* Rename `--list-mutants` to just `--list`.
+  * Rename `--list-mutants` to just `--list`.
 
-* New `--list --json`.
+  * New `--list --json`.
 
-* Colored output makes test names and mutations easier to read (for me at least.)
+  * Colored output makes test names and mutations easier to read (for me at least.)
+
+  * Return distinct exit codes for different situations including that uncaught
+    mutations were found.
 
 ## 0.0.2
 
-* Functions that should not be mutated can be marked with `#[mutants::skip]`
-  from the [`mutants`](https://crates.io/crates/mutants) helper crate.
+  * Functions that should not be mutated can be marked with `#[mutants::skip]`
+    from the [`mutants`](https://crates.io/crates/mutants) helper crate.
 
 ## 0.0.1
  

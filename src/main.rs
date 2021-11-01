@@ -3,6 +3,7 @@
 //! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
 
 mod console;
+mod exit_code;
 mod lab;
 mod mutate;
 mod outcome;
@@ -43,22 +44,6 @@ struct Args {
     diff: bool,
 }
 
-/// Exit codes from cargo-mutants.
-///
-/// These are assigned so that different cases that CI or other automation (or
-/// cargo-mutants' own test suite) might want to distinguish are distinct.
-///
-/// These are also described in README.md.
-mod exit_code {
-    #[allow(dead_code)]
-    pub const SUCCESS: i32 = 0;
-
-    /// The wrong arguments, etc.
-    ///
-    /// (1 is also the value returned by argh.)
-    pub const USAGE: i32 = 1;
-}
-
 fn main() -> Result<()> {
     if let Some(subcommand) = env::args().nth(1) {
         if subcommand != "mutants" {
@@ -83,7 +68,8 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        Lab::new(&source_tree)?.run()?;
+        let lab_outcome = Lab::new(&source_tree)?.run()?;
+        exit(lab_outcome.exit_code());
     }
     Ok(())
 }

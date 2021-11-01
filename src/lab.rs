@@ -15,7 +15,7 @@ use tempfile::TempDir;
 
 use crate::console::Activity;
 use crate::mutate::Mutation;
-use crate::outcome::{Outcome, Status};
+use crate::outcome::{LabOutcome, Outcome, Status};
 use crate::output::OutputDir;
 use crate::source::SourceTree;
 
@@ -73,12 +73,14 @@ impl<'s> Lab<'s> {
     ///
     /// Before testing the mutations, the lab checks that the source tree passes its tests with
     /// no mutations applied.
-    pub fn run(&self) -> Result<()> {
-        self.test_clean()?;
+    pub fn run(&self) -> Result<LabOutcome> {
+        let mut lab_outcome = LabOutcome::default();
+        let _outcome = self.test_clean()?;
+        // TODO: Handle failure of clean build by returning a result?
         for mutation in self.source.mutations()? {
-            self.test_mutation(&mutation)?;
+            lab_outcome.add(&self.test_mutation(&mutation)?);
         }
-        Ok(())
+        Ok(lab_outcome)
     }
 
     /// Test building the unmodified source.
@@ -88,12 +90,14 @@ impl<'s> Lab<'s> {
     pub fn test_clean(&self) -> Result<()> {
         let activity = Activity::start("baseline test with no mutations");
         let outcome = self.run_cargo_test("baseline", &activity)?;
+        use Status::*;
+
         match outcome.status {
-            Status::Passed => {
+            Passed => {
                 activity.succeed("ok");
                 Ok(())
             }
-            Status::Failed | Status::Timeout => {
+            CleanTestsFailed | Failed | Timeout => {
                 activity.fail(&format!("{:?}", outcome.status));
                 // println!("error: baseline tests in clean tree failed; tests won't continue");
                 print!("{}", &outcome.log_content);
@@ -103,7 +107,7 @@ impl<'s> Lab<'s> {
     }
 
     /// Test with one mutation applied.
-    pub fn test_mutation(&self, mutation: &Mutation) -> Result<()> {
+    pub fn test_mutation(&self, mutation: &Mutation) -> Result<Outcome> {
         let activity = Activity::start_mutation(mutation);
         // TODO: Maybe an object representing the applied mutation that reverts
         // on Drop?
@@ -113,7 +117,7 @@ impl<'s> Lab<'s> {
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;
         activity.outcome(&outcome);
-        Ok(())
+        Ok(outcome)
     }
 
     fn run_cargo_test(&self, scenario_name: &str, activity: &Activity) -> Result<Outcome> {

@@ -73,6 +73,13 @@ flags the function for cargo-mutants.
 
 * **1**: Usage error: bad command-line arguments etc.
 
+* **2**: Found some mutants that were not covered by tests.
+
+* **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
+  or the timeout is too low.
+
+* **4**: The tests are already failing in a copy of the clean tree, so no mutations were tested.
+
 ### Tips
 
 * Trees that `deny` style lints such as unused parameters are likely to fail to

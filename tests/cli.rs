@@ -133,7 +133,7 @@ fn test_factorial() {
     // TODO: This writes logs into the testdata directory, which is not ideal...
     let tree = Path::new("testdata/tree/factorial");
     let output = run().arg("mutants").current_dir(tree).output().unwrap();
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(2));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let cleaned_stdout = Regex::new(r"in \d+\.\d{3}s")
         .unwrap()
