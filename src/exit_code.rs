@@ -25,4 +25,3 @@ pub const TIMEOUT: i32 = 3;
 
 /// The tests are already failing in a copy of the clean tree.
 pub const CLEAN_TESTS_FAILED: i32 = 4;
-

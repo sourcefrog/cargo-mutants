@@ -44,11 +44,11 @@ impl LabOutcome {
     /// Return the overall program exit code reflecting this outcome.
     pub fn exit_code(&self) -> i32 {
         use Status::*;
-        if self.count(CleanTestsFailed) > 0 {
+        if self.count(CleanTestFailed) > 0 {
             exit_code::CLEAN_TESTS_FAILED
         } else if self.count(Timeout) > 0 {
             exit_code::TIMEOUT
-        } else if self.count(Failed) > 0 {
+        } else if self.count(MutantMissed) > 0 {
             exit_code::FOUND_PROBLEMS
         } else {
             exit_code::SUCCESS
@@ -59,23 +59,34 @@ impl LabOutcome {
 /// The bottom line of running a test: it passed, failed, timed out, etc.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Status {
-    Failed,
-    /// The tests passed. This is desired in a clean tree and undesired in a
-    /// mutated tree.
-    Passed,
+    /// The mutation was caught by tests.
+    MutantCaught,
+    /// The mutation was not caught by any tests.
+    MutantMissed,
     /// Test ran too long and was killed. Maybe the mutation caused an infinite
     /// loop.
     Timeout,
     /// The tests are already failing in a clean tree.
-    CleanTestsFailed,
+    CleanTestFailed,
+    /// Tests passed in a clean tree.
+    CleanTestPassed,
 }
 
-impl From<process::ExitStatus> for Status {
-    fn from(status: process::ExitStatus) -> Status {
-        if status.success() {
-            Status::Passed
+impl Status {
+    pub fn from_mutant_test(exit_status: process::ExitStatus) -> Status {
+        // TODO: Detect signals and cargo failures other than test failures.
+        if exit_status.success() {
+            Status::MutantMissed
         } else {
-            Status::Failed
+            Status::MutantCaught
+        }
+    }
+
+    pub fn from_clean_test(exit_status: process::ExitStatus) -> Status {
+        if exit_status.success() {
+            Status::CleanTestPassed
+        } else {
+            Status::CleanTestFailed
         }
     }
 }

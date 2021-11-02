@@ -89,17 +89,11 @@ impl<'s> Lab<'s> {
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<()> {
         let activity = Activity::start("baseline test with no mutations");
-        let outcome = self.run_cargo_test("baseline", &activity)?;
-        use Status::*;
-
+        let outcome = self.run_cargo_test("baseline", &activity, Status::from_clean_test)?;
+        activity.outcome(&outcome);
         match outcome.status {
-            Passed => {
-                activity.succeed("ok");
-                Ok(())
-            }
-            CleanTestsFailed | Failed | Timeout => {
-                activity.fail(&format!("{:?}", outcome.status));
-                // println!("error: baseline tests in clean tree failed; tests won't continue");
+            Status::CleanTestPassed => Ok(()),
+            _ => {
                 print!("{}", &outcome.log_content);
                 Err(anyhow!("build in clean tree failed"))
             }
@@ -112,7 +106,8 @@ impl<'s> Lab<'s> {
         // TODO: Maybe an object representing the applied mutation that reverts
         // on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
-        let test_result = self.run_cargo_test(&mutation.to_string(), &activity);
+        let test_result =
+            self.run_cargo_test(&mutation.to_string(), &activity, Status::from_mutant_test);
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;
@@ -120,7 +115,12 @@ impl<'s> Lab<'s> {
         Ok(outcome)
     }
 
-    fn run_cargo_test(&self, scenario_name: &str, activity: &Activity) -> Result<Outcome> {
+    fn run_cargo_test(
+        &self,
+        scenario_name: &str,
+        activity: &Activity,
+        status_interpretation: fn(process::ExitStatus) -> Status,
+    ) -> Result<Outcome> {
         let start = Instant::now();
         let mut timed_out = false;
         let mut log_file = self.output_dir.create_log(scenario_name)?;
@@ -154,7 +154,7 @@ impl<'s> Lab<'s> {
             status: if timed_out {
                 Status::Timeout
             } else {
-                exit_status.into()
+                status_interpretation(exit_status)
             },
             log_content: log_file.log_content()?,
             duration: start.elapsed(),
