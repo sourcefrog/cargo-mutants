@@ -167,8 +167,7 @@ fn detect_already_failing_tests() {
         .current_dir(tree)
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .failure()
-        .stderr("Error: build in clean tree failed\n")
+        .code(4)
         .stdout(
             predicate::str::contains("running 1 test\ntest test_factorial ... FAILED").normalize(),
         )

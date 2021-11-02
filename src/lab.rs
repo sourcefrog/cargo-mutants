@@ -9,7 +9,7 @@ use std::process::Command;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
@@ -75,7 +75,11 @@ impl<'s> Lab<'s> {
     /// no mutations applied.
     pub fn run(&self) -> Result<LabOutcome> {
         let mut lab_outcome = LabOutcome::default();
-        let _outcome = self.test_clean()?;
+        let clean_outcome = self.test_clean()?;
+        lab_outcome.add(&clean_outcome);
+        if clean_outcome.status != Status::CleanTestPassed {
+            return Ok(lab_outcome);
+        }
         // TODO: Handle failure of clean build by returning a result?
         for mutation in self.source.mutations()? {
             lab_outcome.add(&self.test_mutation(&mutation)?);
@@ -87,17 +91,14 @@ impl<'s> Lab<'s> {
     ///
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
-    pub fn test_clean(&self) -> Result<()> {
+    pub fn test_clean(&self) -> Result<Outcome> {
         let activity = Activity::start("baseline test with no mutations");
         let outcome = self.run_cargo_test("baseline", &activity, Status::from_clean_test)?;
         activity.outcome(&outcome);
-        match outcome.status {
-            Status::CleanTestPassed => Ok(()),
-            _ => {
-                print!("{}", &outcome.log_content);
-                Err(anyhow!("build in clean tree failed"))
-            }
+        if outcome.status != Status::CleanTestPassed {
+            print!("{}", &outcome.log_content);
         }
+        Ok(outcome)
     }
 
     /// Test with one mutation applied.
