@@ -58,6 +58,7 @@ impl LabOutcome {
 }
 
 /// The bottom line of running a test: it passed, failed, timed out, etc.
+// TODO: Maybe these would be better as an Error type and in the Err branch of a Result?
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 #[must_use]
 pub enum Status {

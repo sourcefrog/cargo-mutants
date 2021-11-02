@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
-use crate::console::Activity;
+use crate::console::{self, Activity};
 use crate::mutate::Mutation;
 use crate::outcome::{LabOutcome, Outcome, Status};
 use crate::output::OutputDir;
@@ -78,6 +78,9 @@ impl<'s> Lab<'s> {
         let clean_outcome = self.test_clean()?;
         lab_outcome.add(&clean_outcome);
         if clean_outcome.status != Status::CleanTestPassed {
+            console::print_error(
+                "tests failed in a clean copy of the tree, so no mutants were tested",
+            );
             return Ok(lab_outcome);
         }
         // TODO: Handle failure of clean build by returning a result?

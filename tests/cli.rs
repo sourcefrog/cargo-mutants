@@ -180,5 +180,8 @@ fn detect_already_failing_tests() {
             .normalize(),
         )
         .stdout(predicate::str::contains("lib.rs:11:5"))
+        .stdout(predicate::str::contains(
+            "tests failed in a clean copy of the tree, so no mutants were tested",
+        ))
         .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
 }

@@ -80,3 +80,7 @@ fn style_mutation(mutation: &Mutation) -> String {
         style(mutation.replacement_text()).yellow(),
     )
 }
+
+pub fn print_error(msg: &str) {
+    println!("{}: {}", style("error").bold().red(), msg);
+}
