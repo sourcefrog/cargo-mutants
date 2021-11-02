@@ -10,6 +10,7 @@ use crate::exit_code;
 
 /// All the data from running one test.
 #[derive(Debug, PartialEq, Eq, Clone)]
+#[must_use]
 pub struct Outcome {
     /// High-level categorization of what happened.
     pub status: Status,
@@ -58,6 +59,7 @@ impl LabOutcome {
 
 /// The bottom line of running a test: it passed, failed, timed out, etc.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[must_use]
 pub enum Status {
     /// The mutation was caught by tests.
     MutantCaught,
