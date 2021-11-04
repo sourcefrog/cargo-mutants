@@ -138,7 +138,12 @@ flags the function for cargo-mutants.
 * Copying the tree to build it doesn't work well if the `Cargo.toml` points to
   dependencies by a relative `path` (other than in subdirectories). This could be handled by an option to mutate in-place (maybe into a copy made by the user) or possibly an option to copy a larger containing directory. You can work around this by editing `Cargo.toml` to make the paths absolute, before running `cargo mutants`.
   
-* Copying a Rust tree and its `target/` directory seems to cause a full build the first time `cargo test` runs there, even if mtimes are preserved. (Perhaps the path is part of the calculation whether files need to be rebuilt?) Later incremental builds are faster. [`sccache`](https://crates.io/crates/sccache) might help with this but I have not yet tested it.
+* Copying a Rust tree and its `target/` directory seems to cause a full build
+  the first time `cargo test` runs there, even if mtimes are preserved. (Perhaps
+  the path is part of the calculation whether files need to be rebuilt?) Later
+  incremental builds are faster. [`sccache`](https://crates.io/crates/sccache)
+  might help with this but I have not yet tested it. However, copying `target/`
+  is still generally faster than not copying it.
 
 * It should skip functions with `#[cfg(...)]` attributes that don't match the
   current platform, but it does not yet.

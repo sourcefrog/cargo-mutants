@@ -44,7 +44,10 @@ impl<'s> Lab<'s> {
         let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
         let activity = Activity::start("copy source to scratch directory");
-        match cp_r::copy_tree(source.root(), &build_dir, &cp_r::CopyOptions::new())
+        // I thought perhaps we could skip copying `/target` here, because Cargo
+        // seems to rebuild some things even when given a full copy of the
+        // target directory, with mtimes preserved. However, it does seem to
+        // speed up the initial build enough to generally be worthwhile.
             .context("copy source tree to lab directory")
         {
             Ok(stats) => activity.succeed(&format!("{} MB", stats.file_bytes / 1_000_000)),
