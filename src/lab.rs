@@ -43,10 +43,15 @@ impl<'s> Lab<'s> {
     pub fn new(source: &'s SourceTree) -> Result<Lab<'s>> {
         let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
-        let activity = Activity::start("copy source to scratch directory");
+        let mut activity = Activity::start("copy source to scratch directory");
         // I thought we could skip copying /target here, but it turns out that copying
         // it does speed up the first build.
         match cp_r::CopyOptions::new()
+            .after_entry_copied(|_path, _ft, stats| {
+                if stats.files & 63 == 0 {
+                    activity.tick_message(&format!("{} MB", stats.file_bytes / 1_000_000));
+                }
+            })
             .copy_tree(source.root(), &build_dir)
             .context("copy source tree to lab directory")
         {
@@ -98,8 +103,8 @@ impl<'s> Lab<'s> {
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<Outcome> {
-        let activity = Activity::start("baseline test with no mutations");
-        let outcome = self.run_cargo_test("baseline", &activity, Status::from_clean_test)?;
+        let mut activity = Activity::start("baseline test with no mutations");
+        let outcome = self.run_cargo_test("baseline", &mut activity, Status::from_clean_test)?;
         activity.outcome(&outcome);
         if outcome.status != Status::CleanTestPassed {
             print!("{}", &outcome.log_content);
@@ -109,12 +114,15 @@ impl<'s> Lab<'s> {
 
     /// Test with one mutation applied.
     pub fn test_mutation(&self, mutation: &Mutation) -> Result<Outcome> {
-        let activity = Activity::start_mutation(mutation);
+        let mut activity = Activity::start_mutation(mutation);
         // TODO: Maybe an object representing the applied mutation that reverts
         // on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
-        let test_result =
-            self.run_cargo_test(&mutation.to_string(), &activity, Status::from_mutant_test);
+        let test_result = self.run_cargo_test(
+            &mutation.to_string(),
+            &mut activity,
+            Status::from_mutant_test,
+        );
         // Revert even if there was an error running cargo test
         mutation.revert_in_dir(&self.build_dir)?;
         let outcome = test_result?;
@@ -125,7 +133,7 @@ impl<'s> Lab<'s> {
     fn run_cargo_test(
         &self,
         scenario_name: &str,
-        activity: &Activity,
+        activity: &mut Activity,
         status_interpretation: fn(process::ExitStatus) -> Status,
     ) -> Result<Outcome> {
         let start = Instant::now();

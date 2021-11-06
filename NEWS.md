@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## unreleased
+
+  * Show progress while copying the tree.
+
 ## 0.0.3
 
 Released 2021-11-06
