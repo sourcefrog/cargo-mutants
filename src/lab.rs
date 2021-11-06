@@ -46,7 +46,8 @@ impl<'s> Lab<'s> {
         let activity = Activity::start("copy source to scratch directory");
         // I thought we could skip copying /target here, but it turns out that copying
         // it does speed up the first build.
-        match cp_r::copy_tree(source.root(), &build_dir, &cp_r::CopyOptions::new())
+        match cp_r::CopyOptions::new()
+            .copy_tree(source.root(), &build_dir)
             .context("copy source tree to lab directory")
         {
             Ok(stats) => activity.succeed(&format!("{} MB", stats.file_bytes / 1_000_000)),

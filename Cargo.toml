@@ -25,7 +25,7 @@ serde = "1.0.130"
 serde_json = "1.0.68"
 
 [dependencies.cp_r]
-version = "0.2"
+version = "0.3"
 # path = "../cp_r"
 
 [dependencies.syn]
