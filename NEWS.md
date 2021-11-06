@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## unreleased
+## 0.0.3
+
+Released 2021-11-06
 
   * Skip functions or modules marked `#[test]`, `#[cfg(test)]` or
     `#[mutants::skip]`.
