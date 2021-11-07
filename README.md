@@ -4,6 +4,7 @@ https://github.com/sourcefrog/cargo-mutants
 
 [![Tests](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml/badge.svg)](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml)
 [![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
+![Maturity: Alpha](https://img.shields.io/badge/maturity-alpha-yellow.svg)
 
 cargo-mutants is a mutation testing tool for Rust. It guides you to missing
 test coverage by finding functions whose implementation could be replaced by
