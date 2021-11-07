@@ -88,6 +88,29 @@ flags the function for cargo-mutants.
   I suggest you don't statically deny warnings in your source code, but rather
   set `RUSTFLAGS` when you do want to check this.
 
+* Anything you can do to make the `cargo build` and `cargo test` suite faster
+  will have a multiplicative effect on `cargo mutants` run time, and of course
+  will also make normal development more pleasant. There's lots of good advice
+  on the web.
+
+### Hard-to-test cases
+
+Some functions don't cause a test suite failure if emptied, but also cannot be
+removed. For example, functions to do with managing caches or that have other
+performance side effects.
+
+Ideally, these should be tested, but doing so in a way that's not flaky can be
+difficult. cargo-mutants can help in a few ways:
+
+* It helps to at least highlight to the developer that the function is not
+  covered by tests, and so should perhaps be treated with extra care, or tested
+  manually.
+* A `#[mutants::skip]` annotation can be added to suppress warnings and explain
+  the decision.
+* Sometimes these effects can be tested by making the side-effect observable
+  with, for example, a counter of the number of memory allocations or cache
+  misses/hits.
+
 ## Goals
 
 **The overall goal for cargo-mutants is: when run on an arbitrary Rust source tree where
@@ -233,21 +256,6 @@ Being *easy* to use means:
 * Mutated functions could discard all parameters to avoid strict warnings about
   them being unused. (I haven't seen any crates yet that enforce this.)
 
-## Hard-to-test cases
-
-Some functions don't cause a test suite failure if emptied, but also cannot be
-removed. For example, functions to do with managing caches or that have other
-performance side effects.
-
-Ideally, these should be tested, but doing so in a way that's not flaky can be
-difficult. cargo-mutants can help in a few ways:
-
-* It helps to at least highlight to the developer that the function is not covered by tests, and
-  so should perhaps be treated with extra care, or tested manually.
-* A `#[mutants::skip]` annotation can be added to suppress warnings and explain the decision.
-* Sometimes these effects can be tested by making the side-effect observable with, for example,
-  a counter of the number of memory allocations or cache misses/hits.
-
 ## How it works
 
 The basic approach is:
@@ -318,9 +326,11 @@ Some differences are:
   On the up side building for each mutation gives cargo-mutants the freedom to
   try mutations it's not sure will compile.
 
-* Mutagen has a neat system to use coverage information to run only the tests that could possibly be affected. This could potentially be ported.
+* Mutagen has a neat system to use coverage information to run only the tests
+  that could possibly be affected. This could potentially be ported.
 
-* Mutagen needs a nightly compiler; cargo-mutants should work with any reasonably-recent compiler and is tested on stable.
+* Mutagen needs a nightly compiler; cargo-mutants should work with any
+  reasonably-recent compiler and is tested on stable.
 
 * (Probably there are more. Please let me know.)
 
