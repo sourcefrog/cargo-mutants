@@ -166,55 +166,72 @@ Being *easy* to use means:
 
 ## Limitations, caveats, known bugs, and future enhancements
 
-* In this version, the _only_ mutation it applies is to return
-  `Default::default()`. For many functions, and in particular for the common
-  case of returning a `Result`, this will fail to build, which is not an
-  interesting result.
+* cargo-mutants has a limited repertoire of mutations it can generate. As this
+  improves, it will generate more interesting results, and I expect this can
+  incrementally improve over time.
 
-  cargo-mutants can see the return type in the tree, so
-  it's possible to do much better by returning `Ok(Default::default())` and so
-  on for other return types. I expect to fix this soon.
+* It also currently has a limited understanding of function return types, and so
+  sometimes generates "unviable" mutants that won't build, which wastes some
+  time. These also seem easy to improve. In particular:
 
-  cargo-mutants sees the AST of the tree but doesn't fully "understand" the types, so it may always have some limitations in generating good mutants.
+  * It should skip functions with `#[cfg(...)]` attributes that don't match the
+    current platform, but it does not yet.
 
-* It might be helpful to distinguish whether the build failed, or the mutation was caught by tests. Ideally, cargo-mutants would never generate code that just won't build, firstly because it's a waste of time, and secondly because it may indicate a missed opportunity to generate more interesting mutants that would build.
+  * It should also probably skip `unsafe` functions, and maybe functions
+    containing `unsafe {}` blocks.
 
-* Some mutations will cause the program to hang or spin, for example if the mutation causes the condition of a `while` loop to always be true.
-  For now, you'll need to notice and interrupt `cargo mutants` yourself, but I plan to add a
-  timeout. (On
-  Unix we need to run the build in a process group so that the actual test process is terminated.)
+  * I can't think of a good mutation that returns `&mut`, so functions returning
+    mutable references should be skipped.
+
+  * (There are several others.)
+
+* It currently only mutates "item" (top-level) functions, not methods. This
+  should be easy to add.
+
+* cargo-mutants sees the AST of the tree but doesn't fully "understand" the
+  types. Possibly it could learn to get type information from the compiler (or
+  rust-analyzer?), which would help it generate more interesting viable mutants,
+  and fewer unviable mutants.
+
+* It might be helpful to distinguish whether the build failed, or the mutation
+  was caught by tests. Ideally, cargo-mutants would never generate code that
+  just won't build, firstly because it's a waste of time, and secondly because
+  it may indicate a missed opportunity to generate more interesting mutants that
+  would build.
+
+* Some mutations will cause the program to hang or spin, for example if the
+  mutation causes the condition of a `while` loop to always be true. For now,
+  you'll need to notice and interrupt `cargo mutants` yourself, but I plan to
+  add a timeout. (On Unix we need to run the build in a process group so that
+  the actual test process is terminated.)
 
 * Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path` (other than in subdirectories). This could be handled by an option to mutate in-place (maybe into a copy made by the user) or possibly an option to copy a larger containing directory. You can work around this by editing `Cargo.toml` to make the paths absolute, before running `cargo mutants`.
+  dependencies by a relative `path` (other than in subdirectories). This could
+  be handled by an option to mutate in-place (maybe into a copy made by the
+  user) or possibly an option to copy a larger containing directory. You can
+  work around this by editing `Cargo.toml` to make the paths absolute, before
+  running `cargo mutants`.
 
-* Copying a Rust tree and its `target/` directory seems to cause a full build
-  the first time `cargo test` runs there, even if mtimes are preserved. (Perhaps
-  the path is part of the calculation whether files need to be rebuilt?) Later
-  incremental builds are faster. [`sccache`](https://crates.io/crates/sccache)
-  might help with this but I have not yet tested it. However, copying `target/`
-  is still generally faster than not copying it.
-
-* It should skip functions with `#[cfg(...)]` attributes that don't match the
-  current platform, but it does not yet.
-
-* It should also probably skip `unsafe` functions, and maybe functions
-  containing `unsafe {}` blocks.
-
-* Some mutations will cause the program to hang or spin, for example if called
-  as the condition of a `while` loop. Enucleate currently detects this but does
-  not kill the test process, so you'll need to find and kill it yourself. (On
-  Unix we might need to use `setpgrp`.)
+* Copying a Rust tree and its `target/` directory seems to cause the first build
+  to be slower than an incremental build in the source directory, even while
+  mtimes are preserved. (Perhaps the path is part of the calculation whether
+  files need to be rebuilt?) Later incremental builds are faster.
+  [`sccache`](https://crates.io/crates/sccache) might help with this but I have
+  not yet tested it. However, copying `target/` is still generally faster than
+  not copying it.
 
 * To make this faster on large trees, we could keep several scratch trees and
   test them in parallel, which is likely to exploit CPU resources more
   thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
-  down to a single task during linking, and often comes down to running a single straggler test at a time.
+  down to a single task during linking, and often comes down to running a single
+  straggler test at a time.
 
 * It currently assumes all the source is in `src/` of the directory, but Cargo
   doesn't require that, and some crates have their source in a different
   directory. This could be fixed by reading `cargo metadata`.
 
-* It could discard all parameters to avoid strict warnings about them being unused. (I haven't seen any crates yet that enforce this.)
+* Mutated functions could discard all parameters to avoid strict warnings about
+  them being unused. (I haven't seen any crates yet that enforce this.)
 
 ## Hard-to-test cases
 
