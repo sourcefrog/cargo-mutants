@@ -1,30 +1,30 @@
 // Copyright 2021 Martin Pool
 
-//! Print messages to the terminal.
+//! Print messages and progress bars on the terminal.
 
-use std::io::{stdout, Write};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use atty::Stream;
 use console::style;
+use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Status};
 
 pub(crate) struct Activity {
     pub start_time: Instant,
-    atty: bool,
-    last_tick: Instant,
+    progress_bar: ProgressBar,
+    task: String,
 }
 
 impl Activity {
     pub fn start(msg: &str) -> Activity {
-        print!("{} ... ", msg);
-        stdout().flush().unwrap();
+        let progress_bar = ProgressBar::new(0).with_message(msg.to_owned()).with_style(
+            ProgressStyle::default_spinner().template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
+        );
         Activity {
+            task: msg.to_owned(),
+            progress_bar,
             start_time: Instant::now(),
-            atty: atty::is(Stream::Stdout),
-            last_tick: Instant::now(),
         }
     }
 
@@ -33,30 +33,34 @@ impl Activity {
     }
 
     pub fn succeed(self, msg: &str) {
-        println!("{} in {}", style(msg).green(), self.format_elapsed());
+        self.progress_bar.finish_and_clear();
+        // The progress bar was drawn to stdout but this message goes to stdout even if it's not a tty.
+        println!(
+            "{} ... {} in {}",
+            self.task,
+            style(msg).green(),
+            self.format_elapsed()
+        );
     }
 
     pub fn fail(self, msg: &str) {
-        println!("{} in {}", style(msg).red().bold(), self.format_elapsed());
+        self.progress_bar.finish_and_clear();
+        println!(
+            "{} ... {} in {}",
+            self.task,
+            style(msg).red().bold(),
+            self.format_elapsed()
+        );
     }
 
     pub fn tick(&mut self) {
-        self.tick_message("");
+        self.progress_bar.tick();
     }
 
     pub fn tick_message(&mut self, message: &str) {
-        let now = Instant::now();
-        if self.atty && now.duration_since(self.last_tick) > Duration::from_millis(100) {
-            self.last_tick = now;
-            let mut buf = format!("{}s", self.start_time.elapsed().as_secs());
-            if !message.is_empty() {
-                use std::fmt::Write;
-                write!(buf, " {}", message).unwrap();
-            }
-            let backspace = "\x08".repeat(buf.len());
-            print!("{}{}", buf, backspace);
-            stdout().flush().unwrap();
-        }
+        self.progress_bar
+            .set_message(format!("{}... {}", self.task, message));
+        self.progress_bar.tick();
     }
 
     pub fn outcome(self, outcome: &Outcome) {

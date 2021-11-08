@@ -13,7 +13,6 @@ categories = ["development-tools::testing"]
 [dependencies]
 anyhow = "1.0"
 argh = "0.1.6"
-atty = "0.2"
 console = "0.14"
 itertools = "0.10"
 path-slash = "0.1.4"
@@ -23,6 +22,7 @@ tempfile = "3.2"
 walkdir = "2.3"
 serde = "1.0.130"
 serde_json = "1.0.68"
+indicatif = "0.16"
 
 [dependencies.cp_r]
 version = "0.3.1"
