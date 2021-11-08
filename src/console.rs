@@ -4,7 +4,7 @@
 
 use std::time::Instant;
 
-use console::style;
+use console::{style, StyledObject};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::mutate::Mutation;
@@ -33,22 +33,20 @@ impl Activity {
     }
 
     pub fn succeed(self, msg: &str) {
-        self.progress_bar.finish_and_clear();
-        // The progress bar was drawn to stdout but this message goes to stdout even if it's not a tty.
-        println!(
-            "{} ... {} in {}",
-            self.task,
-            style(msg).green(),
-            self.format_elapsed()
-        );
+        self.finish(style(msg).green());
     }
 
     pub fn fail(self, msg: &str) {
+        self.finish(style(msg).bold().red());
+    }
+
+    /// Finish the progress bar, and print a concluding message to stdout.
+    fn finish(self, styled_status: StyledObject<&str>) {
         self.progress_bar.finish_and_clear();
         println!(
             "{} ... {} in {}",
             self.task,
-            style(msg).red().bold(),
+            styled_status,
             self.format_elapsed()
         );
     }
@@ -64,18 +62,23 @@ impl Activity {
     }
 
     pub fn outcome(self, outcome: &Outcome) {
-        use Status::*;
-        match outcome.status {
-            MutantCaught => self.succeed("caught"),
-            MutantMissed => self.fail("NOT CAUGHT"),
-            Timeout => self.fail("TIMEOUT"),
-            CleanTestFailed => self.fail("FAILED"),
-            CleanTestPassed => self.succeed("ok"),
-        }
+        self.finish(style_status(outcome.status));
     }
 
     fn format_elapsed(&self) -> String {
         format!("{:.3}s", &self.start_time.elapsed().as_secs_f64())
+    }
+}
+
+/// Return a styled string reflecting the moral value of this outcome.
+pub fn style_status(status: Status) -> StyledObject<&'static str> {
+    use Status::*;
+    match status {
+        MutantCaught => style("caught").green(),
+        MutantMissed => style("NOT CAUGHT").red().bold(),
+        Timeout => style("TIMEOUT").red().bold(),
+        CleanTestFailed => style("FAILED").red().bold(),
+        CleanTestPassed => style("ok").green(),
     }
 }
 
