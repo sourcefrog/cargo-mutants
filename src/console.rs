@@ -21,6 +21,7 @@ impl Activity {
         let progress_bar = ProgressBar::new(0).with_message(msg.to_owned()).with_style(
             ProgressStyle::default_spinner().template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
         );
+        progress_bar.set_draw_rate(5); // updates per second
         Activity {
             task: msg.to_owned(),
             progress_bar,
