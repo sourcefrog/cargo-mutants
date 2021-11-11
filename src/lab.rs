@@ -3,6 +3,8 @@
 //! A lab directory in which to test mutations to the source code, and control
 //! over running `cargo`.
 
+use std::borrow::Cow;
+use std::env;
 use std::path::PathBuf;
 use std::process;
 use std::process::Command;
@@ -139,14 +141,21 @@ impl<'s> Lab<'s> {
         let start = Instant::now();
         let mut timed_out = false;
         let mut log_file = self.output_dir.create_log(scenario_name)?;
-        let mut child = Command::new("cargo")
-            .arg("test")
+        // When run as a Cargo subcommand, which is the usual/intended case,
+        // $CARGO tells us the right way to call back into it, so that we get
+        // the matching toolchain etc.
+        let cargo_bin: Cow<str> = env::var("CARGO")
+            .map(Cow::from)
+            .unwrap_or(Cow::Borrowed("cargo"));
+        let cargo_subcommand = "test";
+        let mut child = Command::new(cargo_bin.as_ref())
+            .arg(cargo_subcommand)
             .current_dir(&self.build_dir)
             .stdout(log_file.file.try_clone()?)
             .stderr(log_file.file.try_clone()?)
             .stdin(process::Stdio::null())
             .spawn()
-            .context("spawn cargo test")?;
+            .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_subcommand))?;
         let exit_status = loop {
             if start.elapsed() > TEST_TIMEOUT {
                 // eprintln!("bored! killing child...");

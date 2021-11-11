@@ -61,6 +61,22 @@ fn detect_option_in_place_of_cargo_subcommand() {
 }
 
 #[test]
+fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
+    let bogus_cargo = "NOTHING_NONEXISTENT_VOID";
+    run_assert_cmd()
+        .env("CARGO", bogus_cargo)
+        .args(["mutants", "-d", "testdata/tree/well_tested"])
+        .assert()
+        .stderr(
+            predicates::str::contains("No such file or directory")
+                .and(predicates::str::contains(bogus_cargo)),
+        )
+        .code(1);
+    // TODO: Preferably there would be a more specific exit code for the
+    // clean build failing.
+}
+
+#[test]
 fn list_diff_json_not_yet_supported() {
     run_assert_cmd()
         .args(["mutants", "--list", "--json", "--diff"])

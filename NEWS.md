@@ -7,6 +7,10 @@
 
   * Show progress while copying the tree.
 
+  * Respect the `$CARGO` environment variable so that the same toolchain is
+    used to run tests as was used to invoke `cargo mutants`. Concretely, `cargo
+    +nightly mutants` should work correctly.
+
 ## 0.0.3
 
 Released 2021-11-06
