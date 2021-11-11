@@ -1,0 +1,11 @@
+[package]
+name = "nightly_only"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[workspace]
+# This isn't included in cargo-mutants overall workspace, because it would break builds on other toolchains
