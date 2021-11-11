@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## unreleased
+## 0.0.4
+
+Released 2021-11-10
 
   * Fixed `cargo install cargo-mutants` (sometimes?) failing due to the
     `derive` feature not getting set on the `serde` dependency.
