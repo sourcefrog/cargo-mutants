@@ -68,8 +68,10 @@ fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
         .args(["mutants", "-d", "testdata/tree/well_tested"])
         .assert()
         .stderr(
-            predicates::str::contains("No such file or directory")
-                .and(predicates::str::contains(bogus_cargo)),
+            (predicates::str::contains("No such file or directory").or(predicates::str::contains(
+                "The system cannot find the file specified",
+            )))
+            .and(predicates::str::contains(bogus_cargo)),
         )
         .code(1);
     // TODO: Preferably there would be a more specific exit code for the
