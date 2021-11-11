@@ -2,6 +2,9 @@
 
 ## unreleased
 
+  * Fixed `cargo install cargo-mutants` (sometimes?) failing due to the
+    `derive` feature not getting set on the `serde` dependency.
+
   * Show progress while copying the tree.
 
 ## 0.0.3
