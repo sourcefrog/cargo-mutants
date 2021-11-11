@@ -151,10 +151,7 @@ fn list_mutants_json_well_tested() {
 fn copy_of_testdata(tree_name: &str) -> TempDir {
     let tmp_src_dir = tempdir().unwrap();
     cp_r::CopyOptions::new()
-        .copy_tree(
-            &Path::new("testdata/tree").join(tree_name),
-            &tmp_src_dir.path(),
-        )
+        .copy_tree(Path::new("testdata/tree").join(tree_name), &tmp_src_dir)
         .unwrap();
     tmp_src_dir
 }
