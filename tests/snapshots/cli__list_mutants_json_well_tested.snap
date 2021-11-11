@@ -25,13 +25,13 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "file": "src/lib.rs",
     "line": 30,
-    "function": "returns_true",
+    "function": "divisible_by_three",
     "replacement": "true"
   },
   {
     "file": "src/lib.rs",
     "line": 30,
-    "function": "returns_true",
+    "function": "divisible_by_three",
     "replacement": "false"
   },
   {

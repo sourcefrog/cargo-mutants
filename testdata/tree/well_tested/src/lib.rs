@@ -27,8 +27,8 @@ fn returns_42u32() -> u32 {
 }
 
 /// Can be mutated to return bool::default.
-fn returns_true() -> bool {
-    true
+fn divisible_by_three(a: u32) -> bool {
+    a % 3 == 0
 }
 
 /// Return `s` repeated twice.
@@ -61,7 +61,10 @@ mod tests {
     #[test]
     fn test_mutatable_functions() {
         assert_eq!(returns_42u32(), 42);
-        assert!(returns_true());
+
+        assert!(divisible_by_three(0));
+        assert!(divisible_by_three(9));
+        assert!(!divisible_by_three(20));
 
         let mut a = 0;
         returns_unit(&mut a);

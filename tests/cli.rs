@@ -11,6 +11,7 @@ use itertools::Itertools;
 // use assert_cmd::Command;
 use predicates::prelude::*;
 use regex::Regex;
+use tempfile::{tempdir, TempDir};
 
 use lazy_static::lazy_static;
 
@@ -146,11 +147,39 @@ fn list_mutants_json_well_tested() {
         .assert_insta();
 }
 
+// Copy the source because output is written into target/mutants.
+fn copy_of_testdata(tree_name: &str) -> TempDir {
+    let tmp_src_dir = tempdir().unwrap();
+    cp_r::CopyOptions::new()
+        .copy_tree(
+            &Path::new("testdata/tree").join(tree_name),
+            &tmp_src_dir.path(),
+        )
+        .unwrap();
+    tmp_src_dir
+}
+
+#[test]
+fn well_tested_tree_finds_no_problems() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    run_assert_cmd()
+        .arg("mutants")
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success();
+    // TODO: Check some structured output or summary json?
+}
+
 #[test]
 fn test_factorial() {
     // TODO: This writes logs into the testdata directory, which is not ideal...
-    let tree = Path::new("testdata/tree/factorial");
-    let output = run().arg("mutants").current_dir(tree).output().unwrap();
+    let tmp_src_dir = copy_of_testdata("factorial");
+    let output = run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .output()
+        .unwrap();
     assert_eq!(output.status.code(), Some(2));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let cleaned_stdout = Regex::new(r"in \d+\.\d{3}s")
@@ -163,7 +192,7 @@ fn test_factorial() {
     assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
 
     // Some log files should have been created
-    let log_dir = tree.join("target/mutants/log");
+    let log_dir = tmp_src_dir.path().join("target/mutants/log");
     assert!(log_dir.is_dir());
 
     let mut names = fs::read_dir(log_dir)
@@ -179,10 +208,10 @@ fn test_factorial() {
 #[test]
 fn detect_already_failing_tests() {
     // The detailed text output contains some noisy parts
-    let tree = Path::new("testdata/tree/already_failing_tests");
+    let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run_assert_cmd()
         .arg("mutants")
-        .current_dir(tree)
+        .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(4)
