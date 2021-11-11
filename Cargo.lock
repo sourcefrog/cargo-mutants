@@ -149,9 +149,8 @@ dependencies = [
 
 [[package]]
 name = "cp_r"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8eb59b7929d053af01d1e0b232d9ac1b02a8e9b2d0e69b832dd3d93c27e62a2"
+version = "0.4.0-pre"
+source = "git+https://github.com/sourcefrog/cp_r#de67481063132950cac694c61878da0a549e3b59"
 dependencies = [
  "filetime",
 ]
