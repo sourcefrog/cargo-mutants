@@ -189,7 +189,7 @@ fn test_factorial() {
     assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
 
     // Some log files should have been created
-    let log_dir = tmp_src_dir.path().join("target/mutants/log");
+    let log_dir = tmp_src_dir.path().join("mutants.out/log");
     assert!(log_dir.is_dir());
 
     let mut names = fs::read_dir(log_dir)

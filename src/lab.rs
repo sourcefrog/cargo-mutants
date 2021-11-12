@@ -69,8 +69,7 @@ impl<'s> Lab<'s> {
                 return Err(err);
             }
         }
-        let output_dir = OutputDir::new(source)?;
-        output_dir.delete_logs()?;
+        let output_dir = OutputDir::new(source.root())?;
         Ok(Lab {
             source,
             tmp,
