@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::env;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 use std::process::Command;
 use std::thread::sleep;
@@ -112,8 +112,9 @@ impl<'s> Lab<'s> {
         let scenario_name = "baseline";
         let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
         writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-        let outcome = self.run_cargo_test(
-            scenario_name,
+        let outcome = run_cargo(
+            "test",
+            &self.build_dir,
             &mut activity,
             out_file,
             log_file,
@@ -137,8 +138,9 @@ impl<'s> Lab<'s> {
         writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
         writeln!(out_file, "{}", mutation.diff())?;
 
-        let test_result = self.run_cargo_test(
-            scenario_name,
+        let test_result = run_cargo(
+            "test",
+            &self.build_dir,
             &mut activity,
             out_file,
             log_file,
@@ -150,71 +152,70 @@ impl<'s> Lab<'s> {
         activity.outcome(&outcome);
         Ok(outcome)
     }
+}
 
-    fn run_cargo_test(
-        &self,
-        _scenario_name: &str,
-        activity: &mut Activity,
-        mut out_file: File,
-        log_file: LogFile,
-        status_interpretation: fn(process::ExitStatus) -> Status,
-    ) -> Result<Outcome> {
-        let start = Instant::now();
-        let mut timed_out = false;
-        // When run as a Cargo subcommand, which is the usual/intended case,
-        // $CARGO tells us the right way to call back into it, so that we get
-        // the matching toolchain etc.
-        let cargo_bin: Cow<str> = env::var("CARGO")
-            .map(Cow::from)
-            .unwrap_or(Cow::Borrowed("cargo"));
-        let cargo_subcommand = "test";
-        writeln!(
-            out_file,
-            "\n{} run {} {}",
-            LOG_MARKER, cargo_bin, cargo_subcommand
-        )?;
+fn run_cargo(
+    cargo_subcommand: &str,
+    in_dir: &Path,
+    activity: &mut Activity,
+    mut out_file: File,
+    log_file: LogFile,
+    status_interpretation: fn(process::ExitStatus) -> Status,
+) -> Result<Outcome> {
+    let start = Instant::now();
+    let mut timed_out = false;
+    // When run as a Cargo subcommand, which is the usual/intended case,
+    // $CARGO tells us the right way to call back into it, so that we get
+    // the matching toolchain etc.
+    let cargo_bin: Cow<str> = env::var("CARGO")
+        .map(Cow::from)
+        .unwrap_or(Cow::Borrowed("cargo"));
+    writeln!(
+        out_file,
+        "\n{} run {} {}",
+        LOG_MARKER, cargo_bin, cargo_subcommand
+    )?;
 
-        let mut child = Command::new(cargo_bin.as_ref())
-            .arg(cargo_subcommand)
-            .current_dir(&self.build_dir)
-            .stdout(out_file.try_clone()?)
-            .stderr(out_file.try_clone()?)
-            .stdin(process::Stdio::null())
-            .spawn()
-            .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_subcommand))?;
-        let exit_status = loop {
-            if start.elapsed() > TEST_TIMEOUT {
-                // eprintln!("bored! killing child...");
-                if let Err(e) = child.kill() {
-                    // most likely we raced and it's already gone
-                    eprintln!("failed to kill child after timeout: {}", e);
-                }
-                timed_out = true;
-                // Give it a bit of time to exit, then keep signalling until it
-                // does stop.
-                sleep(Duration::from_millis(200));
+    let mut child = Command::new(cargo_bin.as_ref())
+        .arg(cargo_subcommand)
+        .current_dir(in_dir)
+        .stdout(out_file.try_clone()?)
+        .stderr(out_file.try_clone()?)
+        .stdin(process::Stdio::null())
+        .spawn()
+        .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_subcommand))?;
+    let exit_status = loop {
+        if start.elapsed() > TEST_TIMEOUT {
+            // eprintln!("bored! killing child...");
+            if let Err(e) = child.kill() {
+                // most likely we raced and it's already gone
+                eprintln!("failed to kill child after timeout: {}", e);
             }
-            match child.try_wait()? {
-                Some(status) => break status,
-                None => sleep(Duration::from_millis(200)),
-            }
-            activity.tick();
-        };
-        let status = if timed_out {
-            Status::Timeout
-        } else {
-            status_interpretation(exit_status)
-        };
-        let duration = start.elapsed();
-        writeln!(
-            out_file,
-            "\n{} cargo result: {:?}, {:?} in {:?}",
-            LOG_MARKER, exit_status, status, duration
-        )?;
-        Ok(Outcome {
-            status,
-            log_file,
-            duration,
-        })
-    }
+            timed_out = true;
+            // Give it a bit of time to exit, then keep signalling until it
+            // does stop.
+            sleep(Duration::from_millis(200));
+        }
+        match child.try_wait()? {
+            Some(status) => break status,
+            None => sleep(Duration::from_millis(200)),
+        }
+        activity.tick();
+    };
+    let status = if timed_out {
+        Status::Timeout
+    } else {
+        status_interpretation(exit_status)
+    };
+    let duration = start.elapsed();
+    writeln!(
+        out_file,
+        "\n{} cargo result: {:?}, {:?} in {:?}",
+        LOG_MARKER, exit_status, status, duration
+    )?;
+    Ok(Outcome {
+        status,
+        log_file,
+        duration,
+    })
 }
