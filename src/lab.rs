@@ -35,8 +35,7 @@ pub struct Lab<'s> {
     source: &'s SourceTree,
 
     /// Top-level temporary directory for this lab.
-    #[allow(unused)] // Needed to set tmpdir lifetime.
-    tmp: TempDir,
+    _tmp: TempDir,
 
     /// Path (within tmp) holding a copy of the source that can be modified and built.
     build_dir: PathBuf,
@@ -76,7 +75,7 @@ impl<'s> Lab<'s> {
         let output_dir = OutputDir::new(source.root())?;
         Ok(Lab {
             source,
-            tmp,
+            _tmp: tmp,
             build_dir,
             output_dir,
         })
