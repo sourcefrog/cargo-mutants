@@ -5,6 +5,8 @@
 
 use std::borrow::Cow;
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process;
 use std::process::Command;
@@ -18,12 +20,14 @@ use tempfile::TempDir;
 use crate::console::{self, Activity};
 use crate::mutate::Mutation;
 use crate::outcome::{LabOutcome, Outcome, Status};
-use crate::output::OutputDir;
+use crate::output::{LogFile, OutputDir};
 use crate::source::SourceTree;
 
 // Until we can reliably stop the grandchild test binaries, by killing a process
 // group, timeouts are disabled.
 const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(60);
+
+const LOG_MARKER: &str = "***";
 
 /// Holds scratch directories in which files can be mutated and tests executed.
 #[derive(Debug)]
@@ -105,7 +109,16 @@ impl<'s> Lab<'s> {
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<Outcome> {
         let mut activity = Activity::start("baseline test with no mutations");
-        let outcome = self.run_cargo_test("baseline", &mut activity, Status::from_clean_test)?;
+        let scenario_name = "baseline";
+        let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
+        writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
+        let outcome = self.run_cargo_test(
+            scenario_name,
+            &mut activity,
+            out_file,
+            log_file,
+            Status::from_clean_test,
+        )?;
         activity.outcome(&outcome);
         if outcome.status != Status::CleanTestPassed {
             print!("{}", outcome.log_file.log_content()?);
@@ -119,9 +132,16 @@ impl<'s> Lab<'s> {
         // TODO: Maybe an object representing the applied mutation that reverts
         // on Drop?
         mutation.apply_in_dir(&self.build_dir)?;
+        let scenario_name = &mutation.to_string();
+        let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
+        writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
+        writeln!(out_file, "{}", mutation.diff())?;
+
         let test_result = self.run_cargo_test(
-            &mutation.to_string(),
+            scenario_name,
             &mut activity,
+            out_file,
+            log_file,
             Status::from_mutant_test,
         );
         // Revert even if there was an error running cargo test
@@ -133,13 +153,14 @@ impl<'s> Lab<'s> {
 
     fn run_cargo_test(
         &self,
-        scenario_name: &str,
+        _scenario_name: &str,
         activity: &mut Activity,
+        mut out_file: File,
+        log_file: LogFile,
         status_interpretation: fn(process::ExitStatus) -> Status,
     ) -> Result<Outcome> {
         let start = Instant::now();
         let mut timed_out = false;
-        let (out_file, log_file) = self.output_dir.create_log(scenario_name)?;
         // When run as a Cargo subcommand, which is the usual/intended case,
         // $CARGO tells us the right way to call back into it, so that we get
         // the matching toolchain etc.
@@ -147,11 +168,17 @@ impl<'s> Lab<'s> {
             .map(Cow::from)
             .unwrap_or(Cow::Borrowed("cargo"));
         let cargo_subcommand = "test";
+        writeln!(
+            out_file,
+            "\n{} run {} {}",
+            LOG_MARKER, cargo_bin, cargo_subcommand
+        )?;
+
         let mut child = Command::new(cargo_bin.as_ref())
             .arg(cargo_subcommand)
             .current_dir(&self.build_dir)
             .stdout(out_file.try_clone()?)
-            .stderr(out_file)
+            .stderr(out_file.try_clone()?)
             .stdin(process::Stdio::null())
             .spawn()
             .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_subcommand))?;
@@ -173,14 +200,21 @@ impl<'s> Lab<'s> {
             }
             activity.tick();
         };
+        let status = if timed_out {
+            Status::Timeout
+        } else {
+            status_interpretation(exit_status)
+        };
+        let duration = start.elapsed();
+        writeln!(
+            out_file,
+            "\n{} cargo result: {:?}, {:?} in {:?}",
+            LOG_MARKER, exit_status, status, duration
+        )?;
         Ok(Outcome {
-            status: if timed_out {
-                Status::Timeout
-            } else {
-                status_interpretation(exit_status)
-            },
+            status,
             log_file,
-            duration: start.elapsed(),
+            duration,
         })
     }
 }
