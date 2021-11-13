@@ -5,7 +5,6 @@
 
 use std::borrow::Cow;
 use std::env;
-use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process;
@@ -115,7 +114,6 @@ impl<'s> Lab<'s> {
             "test",
             &self.build_dir,
             &mut activity,
-            out_file,
             log_file,
             Status::from_clean_test,
         )?;
@@ -129,24 +127,19 @@ impl<'s> Lab<'s> {
     /// Test with one mutation applied.
     pub fn test_mutation(&self, mutation: &Mutation) -> Result<Outcome> {
         let mut activity = Activity::start_mutation(mutation);
-        // TODO: Maybe an object representing the applied mutation that reverts
-        // on Drop?
-        mutation.apply_in_dir(&self.build_dir)?;
         let scenario_name = &mutation.to_string();
         let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
         writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
         writeln!(out_file, "{}", mutation.diff())?;
-
-        let test_result = run_cargo(
-            "test",
-            &self.build_dir,
-            &mut activity,
-            out_file,
-            log_file,
-            Status::from_mutant_test,
-        );
-        // Revert even if there was an error running cargo test
-        mutation.revert_in_dir(&self.build_dir)?;
+        let test_result = mutation.with_mutation_applied(&self.build_dir, || {
+            run_cargo(
+                "test",
+                &self.build_dir,
+                &mut activity,
+                log_file.clone(),
+                Status::from_mutant_test,
+            )
+        });
         let outcome = test_result?;
         activity.outcome(&outcome);
         Ok(outcome)
@@ -157,7 +150,6 @@ fn run_cargo(
     cargo_subcommand: &str,
     in_dir: &Path,
     activity: &mut Activity,
-    mut out_file: File,
     log_file: LogFile,
     status_interpretation: fn(process::ExitStatus) -> Status,
 ) -> Result<Outcome> {
@@ -169,6 +161,7 @@ fn run_cargo(
     let cargo_bin: Cow<str> = env::var("CARGO")
         .map(Cow::from)
         .unwrap_or(Cow::Borrowed("cargo"));
+    let mut out_file = log_file.open_append()?;
     writeln!(
         out_file,
         "\n{} run {} {}",

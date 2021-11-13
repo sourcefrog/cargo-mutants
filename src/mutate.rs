@@ -142,13 +142,25 @@ impl Mutation {
     }
 
     /// Change the file affected by this mutation in the given directory.
-    pub fn apply_in_dir(&self, dir: &Path) -> Result<()> {
+    fn apply_in_dir(&self, dir: &Path) -> Result<()> {
         self.write_in_dir(dir, &self.mutated_code())
     }
 
     /// Restore the file affected by this mutation to its original text.
-    pub fn revert_in_dir(&self, dir: &Path) -> Result<()> {
+    fn revert_in_dir(&self, dir: &Path) -> Result<()> {
         self.write_in_dir(dir, self.original_code())
+    }
+
+    /// Run a function with this mutation applied, then revert it afterwards, even if the function
+    /// returns an error.
+    pub fn with_mutation_applied<F, T>(&self, dir: &Path, mut func: F) -> Result<T>
+    where
+        F: FnMut() -> Result<T>,
+    {
+        self.apply_in_dir(dir)?;
+        let r = func();
+        self.revert_in_dir(dir)?;
+        r
     }
 
     fn write_in_dir(&self, dir: &Path, code: &str) -> Result<()> {

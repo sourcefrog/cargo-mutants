@@ -5,7 +5,7 @@
 //! *CAUTION:* This currently doesn't interact with Cargo locking, and if two `cargo-mutants`
 //! processes access the same directory they'll tread on each other...
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -92,7 +92,7 @@ fn clean_filename(s: &str) -> String {
 }
 
 /// A log file for execution of a single test
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LogFile {
     pub path: PathBuf,
 }
@@ -104,6 +104,13 @@ impl LogFile {
             .and_then(|mut f| f.read_to_end(&mut buf))
             .with_context(|| format!("read log file {}", self.path.display()))?;
         Ok(String::from_utf8_lossy(&buf).into_owned())
+    }
+
+    pub fn open_append(&self) -> Result<File> {
+        OpenOptions::new()
+            .append(true)
+            .open(&self.path)
+            .with_context(|| format!("open {} for append", self.path.display()))
     }
 }
 
