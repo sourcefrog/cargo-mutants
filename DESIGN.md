@@ -14,6 +14,8 @@ The interface to the `console` and `indicatif` crates is localized here.
 the interface to the `syn` crate's AST, but that should split
 out.
 
+`outcome.rs` -- the result of running a single test or build.
+
 `output.rs` -- manages the `mutants.out` directory.
 
 `source.rs` -- a source tree and files within it.

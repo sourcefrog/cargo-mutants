@@ -7,15 +7,16 @@ use std::process;
 use std::time::Duration;
 
 use crate::exit_code;
+use crate::output::LogFile;
 
 /// All the data from running one test.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug)]
 #[must_use]
 pub struct Outcome {
     /// High-level categorization of what happened.
     pub status: Status,
-    // TODO: Maybe just remember the file name and load it on demand; this overlaps a bit with log file handling.
-    pub log_content: String,
+    /// A file holding the text output from running this test.
+    pub log_file: LogFile,
     pub duration: Duration,
 }
 

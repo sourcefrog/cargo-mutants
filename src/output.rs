@@ -6,7 +6,7 @@
 //! processes access the same directory they'll tread on each other...
 
 use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
@@ -44,7 +44,10 @@ impl OutputDir {
     }
 
     /// Create a new log for a given scenario.
-    pub fn create_log(&self, scenario_name: &str) -> Result<TestLog> {
+    ///
+    /// Returns the [File] to which subprocess output should be sent, and a LogFile to read it
+    /// later.
+    pub fn create_log(&self, scenario_name: &str) -> Result<(File, LogFile)> {
         // TODO: Maybe remember what files have already been created to avoid this loop, although
         // realistically it seems unlikely to be hit often...
         let basename = clean_filename(scenario_name);
@@ -61,7 +64,7 @@ impl OutputDir {
                 .create_new(true)
                 .open(&path)
             {
-                Ok(file) => return Ok(TestLog { path, file }),
+                Ok(file) => return Ok((file, LogFile { path })),
                 Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
                 Err(e) => return Err(anyhow::Error::from(e).context("create test log file")),
             }
@@ -90,17 +93,17 @@ fn clean_filename(s: &str) -> String {
 
 /// A log file for execution of a single test
 #[derive(Debug)]
-pub struct TestLog {
+pub struct LogFile {
     pub path: PathBuf,
-    pub file: File,
 }
 
-impl TestLog {
-    pub fn log_content(&mut self) -> Result<String> {
-        self.file.rewind()?;
-        let mut bytes = Vec::new();
-        self.file.read_to_end(&mut bytes)?;
-        Ok(String::from_utf8_lossy(&bytes).into_owned())
+impl LogFile {
+    pub fn log_content(&self) -> Result<String> {
+        let mut buf: Vec<u8> = Vec::new();
+        File::open(&self.path)
+            .and_then(|mut f| f.read_to_end(&mut buf))
+            .with_context(|| format!("read log file {}", self.path.display()))?;
+        Ok(String::from_utf8_lossy(&buf).into_owned())
     }
 }
 

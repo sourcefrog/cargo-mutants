@@ -108,7 +108,7 @@ impl<'s> Lab<'s> {
         let outcome = self.run_cargo_test("baseline", &mut activity, Status::from_clean_test)?;
         activity.outcome(&outcome);
         if outcome.status != Status::CleanTestPassed {
-            print!("{}", &outcome.log_content);
+            print!("{}", outcome.log_file.log_content()?);
         }
         Ok(outcome)
     }
@@ -139,7 +139,7 @@ impl<'s> Lab<'s> {
     ) -> Result<Outcome> {
         let start = Instant::now();
         let mut timed_out = false;
-        let mut log_file = self.output_dir.create_log(scenario_name)?;
+        let (out_file, log_file) = self.output_dir.create_log(scenario_name)?;
         // When run as a Cargo subcommand, which is the usual/intended case,
         // $CARGO tells us the right way to call back into it, so that we get
         // the matching toolchain etc.
@@ -150,8 +150,8 @@ impl<'s> Lab<'s> {
         let mut child = Command::new(cargo_bin.as_ref())
             .arg(cargo_subcommand)
             .current_dir(&self.build_dir)
-            .stdout(log_file.file.try_clone()?)
-            .stderr(log_file.file.try_clone()?)
+            .stdout(out_file.try_clone()?)
+            .stderr(out_file)
             .stdin(process::Stdio::null())
             .spawn()
             .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_subcommand))?;
@@ -179,7 +179,7 @@ impl<'s> Lab<'s> {
             } else {
                 status_interpretation(exit_status)
             },
-            log_content: log_file.log_content()?,
+            log_file,
             duration: start.elapsed(),
         })
     }
