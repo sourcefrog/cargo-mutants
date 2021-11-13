@@ -134,7 +134,6 @@ mod test {
                     .strip_prefix(path)
                     .unwrap()
                     .to_slash_lossy()
-                    .to_string()
             })
             .collect_vec()
     }

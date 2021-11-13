@@ -341,8 +341,8 @@ mod test {
     #[test]
     fn discover_mutations() {
         let source_file = SourceFile::new(
-            &Path::new("testdata/tree/factorial"),
-            &Path::new("src/bin/main.rs"),
+            Path::new("testdata/tree/factorial"),
+            Path::new("src/bin/main.rs"),
         )
         .unwrap();
         let muts = source_file.mutations().unwrap();
@@ -360,8 +360,8 @@ mod test {
     #[test]
     fn filter_by_attributes() {
         let source_file = SourceFile::new(
-            &Path::new("testdata/tree/could_hang"),
-            &Path::new("src/lib.rs"),
+            Path::new("testdata/tree/could_hang"),
+            Path::new("src/lib.rs"),
         )
         .unwrap();
         let muts = source_file.mutations().unwrap();
@@ -376,7 +376,7 @@ mod test {
     fn mutate_factorial() {
         let source_file = SourceFile::new(
             Path::new("testdata/tree/factorial"),
-            &Path::new("src/bin/main.rs"),
+            Path::new("src/bin/main.rs"),
         )
         .unwrap();
         let muts = source_file.mutations().unwrap();

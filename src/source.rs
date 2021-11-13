@@ -166,7 +166,7 @@ mod test {
             .unwrap()
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
-        let source_file = SourceFile::new(&temp.path(), Path::new(file_name)).unwrap();
+        let source_file = SourceFile::new(temp.path(), Path::new(file_name)).unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 }

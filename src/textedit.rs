@@ -115,7 +115,7 @@ const BAR: u32 = 32;
         // typical multi-line case
         assert_eq!(
             replace_region(
-                &source,
+                source,
                 &LineColumn {
                     line: 2,
                     column: 10
@@ -133,7 +133,7 @@ const BAR: u32 = 32;
         // single-line case
         assert_eq!(
             replace_region(
-                &source,
+                source,
                 &LineColumn {
                     line: 7,
                     column: 18
