@@ -10,12 +10,10 @@ use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
 use predicates::prelude::*;
-use regex::Regex;
 use tempfile::{tempdir, TempDir};
 
 use lazy_static::lazy_static;
 
-#[allow(unused)]
 use pretty_assertions::assert_eq;
 
 lazy_static! {
@@ -169,24 +167,23 @@ fn well_tested_tree_finds_no_problems() {
 
 #[test]
 fn test_factorial() {
-    // TODO: This writes logs into the testdata directory, which is not ideal...
     let tmp_src_dir = copy_of_testdata("factorial");
-    let output = run()
+
+    let output_re = r"copy source to scratch directory \.\.\. \d MB in \d\.\d\d\ds
+baseline test with no mutations \.\.\. ok in \d\.\d\d\ds
+src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d\.\d\d\ds
+src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in \d\.\d\d\ds
+";
+
+    run_assert_cmd()
         .arg("mutants")
+        // .arg("--all-logs")
         .arg("-d")
         .arg(&tmp_src_dir.path())
-        .output()
-        .unwrap();
-    assert_eq!(output.status.code(), Some(2));
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let cleaned_stdout = Regex::new(r"in \d+\.\d{3}s")
-        .unwrap()
-        .replace_all(&stdout, "in x.xxxs");
-    let cleaned_stdout = Regex::new(r"\d+ MB")
-        .unwrap()
-        .replace_all(&cleaned_stdout, "xxx MB");
-    insta::assert_snapshot!(cleaned_stdout);
-    assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
+        .assert()
+        .code(2)
+        .stderr("")
+        .stdout(predicate::str::is_match(output_re).unwrap());
 
     // Some log files should have been created
     let log_dir = tmp_src_dir.path().join("mutants.out/log");
