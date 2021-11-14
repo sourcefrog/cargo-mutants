@@ -7,6 +7,9 @@ Unreleased
   * Logs and other information are written into `mutants.out` in the source
     directory, rather than `target/mutants`.
 
+  * New `--all-logs` option prints all Cargo output to stdout, which is very
+    verbose but may be useful for example in CI.
+
 ## 0.0.4
 
 Released 2021-11-10

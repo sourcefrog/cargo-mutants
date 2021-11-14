@@ -41,10 +41,13 @@ pub struct Lab<'s> {
 
     /// Output directory, holding logs.
     output_dir: OutputDir,
+
+    /// Print all cargo logs.
+    show_all_logs: bool,
 }
 
 impl<'s> Lab<'s> {
-    pub fn new(source: &'s SourceTree) -> Result<Lab<'s>> {
+    pub fn new(source: &'s SourceTree, show_all_logs: bool) -> Result<Lab<'s>> {
         let tmp = TempDir::new()?;
         let build_dir = tmp.path().join("build");
         let mut activity = Activity::start("copy source to scratch directory");
@@ -77,6 +80,7 @@ impl<'s> Lab<'s> {
             _tmp: tmp,
             build_dir,
             output_dir,
+            show_all_logs,
         })
     }
 
@@ -118,7 +122,7 @@ impl<'s> Lab<'s> {
             Status::from_clean_test,
         )?;
         activity.outcome(&outcome);
-        if outcome.status != Status::CleanTestPassed {
+        if outcome.status != Status::CleanTestPassed || self.show_all_logs {
             print!("{}", outcome.log_file.log_content()?);
         }
         Ok(outcome)
@@ -142,6 +146,9 @@ impl<'s> Lab<'s> {
         });
         let outcome = test_result?;
         activity.outcome(&outcome);
+        if self.show_all_logs {
+            print!("{}", outcome.log_file.log_content()?);
+        }
         Ok(outcome)
     }
 }

@@ -42,6 +42,10 @@ struct Args {
     /// show the mutation diffs.
     #[argh(switch)]
     diff: bool,
+
+    /// show cargo output for all invocations (very verbose).
+    #[argh(switch)]
+    all_logs: bool,
 }
 
 fn main() -> Result<()> {
@@ -68,7 +72,7 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        let lab_outcome = Lab::new(&source_tree)?.run()?;
+        let lab_outcome = Lab::new(&source_tree, args.all_logs)?.run()?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

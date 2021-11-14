@@ -177,7 +177,6 @@ src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in
 
     run_assert_cmd()
         .arg("mutants")
-        // .arg("--all-logs")
         .arg("-d")
         .arg(&tmp_src_dir.path())
         .assert()
@@ -197,6 +196,30 @@ src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in
     names.sort_unstable();
 
     insta::assert_debug_snapshot!("factorial__log_names", &names);
+}
+
+#[test]
+fn factorial_mutants_with_all_logs() {
+    // Skip the details of the cargo output, which is very unpredictable, but it should exist.
+    let output_re = r"copy source to scratch directory \.\.\. \d MB in \d\.\d\d\ds
+baseline test with no mutations \.\.\. ok in \d\.\d\d\ds
+(?s).*
+src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d\.\d\d\ds
+.*
+src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in \d\.\d\d\ds
+.*
+";
+
+    let tmp_src_dir = copy_of_testdata("factorial");
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--all-logs")
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .assert()
+        .code(2)
+        .stderr("")
+        .stdout(predicate::str::is_match(output_re).unwrap());
 }
 
 #[test]
