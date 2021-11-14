@@ -86,7 +86,8 @@ flags the function for cargo-mutants.
 * Trees that `deny` style lints such as unused parameters are likely to fail to
   build when mutated, without really saying much about the value of the tests.
   I suggest you don't statically deny warnings in your source code, but rather
-  set `RUSTFLAGS` when you do want to check this.
+  set `RUSTFLAGS` when you do want to check this -- and don't do this when
+  running `cargo mutants`.
 
 * Anything you can do to make the `cargo build` and `cargo test` suite faster
   will have a multiplicative effect on `cargo mutants` run time, and of course
