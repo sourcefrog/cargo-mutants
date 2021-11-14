@@ -11,7 +11,7 @@ env:
   CARGO_NET_RETRY: 10
   CI: 1
   RUST_BACKTRACE: short
-  RUSTFLAGS: "-D warnings -W rust-2021-compatibility"
+  RUSTFLAGS: "-W rust-2021-compatibility"
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
