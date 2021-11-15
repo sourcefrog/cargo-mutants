@@ -4,11 +4,11 @@
 //! over running `cargo`.
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::env;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process;
-use std::process::Command;
+use std::process::{self, Command, ExitStatus};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -17,8 +17,8 @@ use path_slash::PathExt;
 use tempfile::TempDir;
 
 use crate::console::{self, Activity};
+use crate::exit_code;
 use crate::mutate::Mutation;
-use crate::outcome::{LabOutcome, Outcome, Status};
 use crate::output::{LogFile, OutputDir};
 use crate::source::SourceTree;
 
@@ -27,6 +27,83 @@ use crate::source::SourceTree;
 const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(60);
 
 const LOG_MARKER: &str = "***";
+
+/// The bottom line of trying a mutation: it was caught, missed, failed to build, etc.
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[must_use]
+pub enum Status {
+    // TODO: Maybe these would be better as an Error type and in the Err branch of a Result?
+    /// The mutation was caught by tests.
+    MutantCaught,
+    /// The mutation was not caught by any tests.
+    MutantMissed,
+    /// Test ran too long and was killed. Maybe the mutation caused an infinite
+    /// loop.
+    Timeout,
+    /// The tests are already failing in a clean tree.
+    CleanTestFailed,
+    /// Tests passed in a clean tree.
+    CleanTestPassed,
+    CheckFailed,
+    BuildFailed,
+}
+
+impl Status {
+    pub fn from_mutant_test(exit_status: process::ExitStatus) -> Status {
+        // TODO: Detect signals and cargo failures other than test failures.
+        if exit_status.success() {
+            Status::MutantMissed
+        } else {
+            Status::MutantCaught
+        }
+    }
+
+    pub fn from_clean_test(exit_status: process::ExitStatus) -> Status {
+        if exit_status.success() {
+            Status::CleanTestPassed
+        } else {
+            Status::CleanTestFailed
+        }
+    }
+}
+
+/// The outcome from a whole lab run containing multiple mutants.
+#[derive(Debug, Default)]
+pub struct LabOutcome {
+    count_by_status: HashMap<Status, usize>,
+}
+
+impl LabOutcome {
+    /// Record the event of one test.
+    pub fn add(&mut self, outcome: &Outcome) {
+        self.count_by_status
+            .entry(outcome.status)
+            .and_modify(|c| *c += 1)
+            .or_insert(1);
+    }
+
+    /// Return the count of tests that failed with the given status.
+    pub fn count(&self, status: Status) -> usize {
+        self.count_by_status
+            .get(&status)
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Return the overall program exit code reflecting this outcome.
+    pub fn exit_code(&self) -> i32 {
+        use Status::*;
+        if self.count(CleanTestFailed) > 0 {
+            exit_code::CLEAN_TESTS_FAILED
+        } else if self.count(Timeout) > 0 {
+            exit_code::TIMEOUT
+        } else if self.count(MutantMissed) > 0 {
+            exit_code::FOUND_PROBLEMS
+        } else {
+            exit_code::SUCCESS
+        }
+    }
+}
 
 /// Holds scratch directories in which files can be mutated and tests executed.
 #[derive(Debug)]
@@ -110,17 +187,12 @@ impl<'s> Lab<'s> {
     /// If there are already-failing tests, proceeding to test mutations
     /// won't give a clear signal.
     pub fn test_clean(&self) -> Result<Outcome> {
-        let mut activity = Activity::start("baseline test with no mutations");
+        let base_task = "baseline test with no mutations";
+        let mut activity = Activity::start(base_task);
         let scenario_name = "baseline";
         let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
         writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-        let outcome = run_cargo(
-            "test",
-            &self.build_dir,
-            &mut activity,
-            log_file,
-            Status::from_clean_test,
-        )?;
+        let outcome = run_scenario(&self.build_dir, &mut activity, &log_file, true)?;
         activity.outcome(&outcome);
         if outcome.status != Status::CleanTestPassed || self.show_all_logs {
             print!("{}", outcome.log_file.log_content()?);
@@ -135,16 +207,9 @@ impl<'s> Lab<'s> {
         let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
         writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
         writeln!(out_file, "{}", mutation.diff())?;
-        let test_result = mutation.with_mutation_applied(&self.build_dir, || {
-            run_cargo(
-                "test",
-                &self.build_dir,
-                &mut activity,
-                log_file.clone(),
-                Status::from_mutant_test,
-            )
-        });
-        let outcome = test_result?;
+        let outcome = mutation.with_mutation_applied(&self.build_dir, || {
+            run_scenario(&self.build_dir, &mut activity, &log_file, false)
+        })?;
         activity.outcome(&outcome);
         if self.show_all_logs {
             print!("{}", outcome.log_file.log_content()?);
@@ -153,13 +218,79 @@ impl<'s> Lab<'s> {
     }
 }
 
+/// The result of running one mutation scenario.
+#[derive(Debug)]
+#[must_use]
+pub struct Outcome {
+    /// High-level categorization of what happened.
+    pub status: Status,
+    /// A file holding the text output from running this test.
+    pub log_file: LogFile,
+    pub duration: Duration,
+}
+
+impl Outcome {
+    pub fn new(log_file: &LogFile, start_time: &Instant, status: Status) -> Outcome {
+        Outcome {
+            log_file: log_file.clone(),
+            duration: start_time.elapsed(),
+            status,
+        }
+    }
+}
+
+/// Successively run cargo check, build, test, and return the overall outcome.
+fn run_scenario(
+    build_dir: &Path,
+    activity: &mut Activity,
+    log_file: &LogFile,
+    is_clean: bool,
+) -> Result<Outcome> {
+    // TODO: Maybe separate launching and collecting the result, so
+    // that we can run several in parallel.
+
+    let start = Instant::now();
+
+    activity.set_phase("check");
+    if !run_cargo("check", &build_dir, activity, &log_file)?.success() {
+        return Ok(Outcome::new(log_file, &start, Status::CheckFailed));
+    }
+
+    // TODO: Actually `build --tests`, etc?
+    activity.set_phase("build");
+    if !run_cargo("build", &build_dir, activity, &log_file)?.success() {
+        return Ok(Outcome::new(log_file, &start, Status::BuildFailed));
+    }
+
+    activity.set_phase("test");
+    let test_result = run_cargo("test", &build_dir, activity, &log_file)?;
+    let status = if is_clean {
+        Status::from_clean_test(test_result.exit_status)
+    } else {
+        Status::from_mutant_test(test_result.exit_status)
+    };
+
+    Ok(Outcome::new(log_file, &start, status))
+}
+
+/// The result of running a single Cargo command.
+struct CargoResult {
+    timed_out: bool,
+    exit_status: ExitStatus,
+}
+
+impl CargoResult {
+    fn success(&self) -> bool {
+        !self.timed_out && self.exit_status.success()
+    }
+}
+
 fn run_cargo(
     cargo_subcommand: &str,
     in_dir: &Path,
     activity: &mut Activity,
-    log_file: LogFile,
-    status_interpretation: fn(process::ExitStatus) -> Status,
-) -> Result<Outcome> {
+    log_file: &LogFile,
+) -> Result<CargoResult> {
     let start = Instant::now();
     let mut timed_out = false;
     // When run as a Cargo subcommand, which is the usual/intended case,
@@ -201,20 +332,14 @@ fn run_cargo(
         }
         activity.tick();
     };
-    let status = if timed_out {
-        Status::Timeout
-    } else {
-        status_interpretation(exit_status)
-    };
     let duration = start.elapsed();
     writeln!(
         out_file,
-        "\n{} cargo result: {:?}, {:?} in {:?}",
-        LOG_MARKER, exit_status, status, duration
+        "\n{} cargo result: {:?} in {:?}",
+        LOG_MARKER, exit_status, duration
     )?;
-    Ok(Outcome {
-        status,
-        log_file,
-        duration,
+    Ok(CargoResult {
+        timed_out,
+        exit_status,
     })
 }

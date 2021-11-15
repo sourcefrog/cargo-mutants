@@ -6,7 +6,6 @@ mod console;
 mod exit_code;
 mod lab;
 mod mutate;
-mod outcome;
 mod output;
 mod source;
 mod textedit;

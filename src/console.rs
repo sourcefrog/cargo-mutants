@@ -7,8 +7,8 @@ use std::time::Instant;
 use console::{style, StyledObject};
 use indicatif::{ProgressBar, ProgressStyle};
 
+use crate::lab::{Outcome, Status};
 use crate::mutate::Mutation;
-use crate::outcome::{Outcome, Status};
 
 pub(crate) struct Activity {
     pub start_time: Instant,
@@ -17,16 +17,24 @@ pub(crate) struct Activity {
 }
 
 impl Activity {
-    pub fn start(msg: &str) -> Activity {
-        let progress_bar = ProgressBar::new(0).with_message(msg.to_owned()).with_style(
-            ProgressStyle::default_spinner().template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
-        );
+    pub fn start(task: &str) -> Activity {
+        let progress_bar = ProgressBar::new(0)
+            .with_message(task.to_owned())
+            .with_style(
+                ProgressStyle::default_spinner()
+                    .template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
+            );
         progress_bar.set_draw_rate(5); // updates per second
         Activity {
-            task: msg.to_owned(),
+            task: task.to_owned(),
             progress_bar,
             start_time: Instant::now(),
         }
+    }
+
+    pub fn set_phase(&mut self, phase: &'static str) {
+        self.progress_bar
+            .set_message(format!("{} ({})", self.task, phase));
     }
 
     pub fn start_mutation(mutation: &Mutation) -> Activity {
@@ -75,11 +83,16 @@ impl Activity {
 pub fn style_status(status: Status) -> StyledObject<&'static str> {
     use Status::*;
     match status {
+        // good statuses
         MutantCaught => style("caught").green(),
+        CleanTestPassed => style("ok").green(),
+        // neutral/inconclusive
+        CheckFailed => style("check failed").yellow().bold(),
+        BuildFailed => style("build failed").yellow().bold(),
+        // bad statuses
         MutantMissed => style("NOT CAUGHT").red().bold(),
         Timeout => style("TIMEOUT").red().bold(),
         CleanTestFailed => style("FAILED").red().bold(),
-        CleanTestPassed => style("ok").green(),
     }
 }
 

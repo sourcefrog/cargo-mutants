@@ -55,7 +55,35 @@ The Cargo output is logged into `mutants.out` within the original source
 directory, so you can see why individual tests failed.
 
 To see what mutants could be generated without running them, use `--list`.
-`--list` also supports either a `--json` or `--diff` option.
+`--list` also supports a `--json` option to make the output more
+machine-readable, and a `--diff` option to show the replacement.
+
+### Understanding the results
+
+If tests fail in a clean copy of the tree, there might be an (intermittent)
+failure in the source directory, or there might be some problem that stops them
+passing when run from a different location, such as a relative `path` in
+`Cargo.toml`. Fix this first.
+
+Otherwise, cargo mutants generates every mutant it can and prints the result of
+trying each one:
+
+* **caught** -- A test failed with this mutant applied. This is a good sign
+  about test coverage. You can look in `mutants.out/log` to see which tests
+  failed.
+
+* **not caught** -- No test failed with this mutation applied, which seems to
+  indicate a gap in test coverage. Or, it may be that the mutant is
+  undistinguishable from the correct code. You may wish to add a better test,
+  or mark that the function should be skipped.
+
+ * **check failed** -- `cargo check` failed on the mutated code, probably
+   because the mutation does not typecheck. This is inconclusive about test
+   coverage and no action is needed, but indicates an opportunity for
+   cargo-mutants to either generate better mutants, or at least not generate
+   unviable mutants.
+
+ * **build failed** -- Similarly, but `cargo build` failed. This should be rare.
 
 ### Skipping functions
 

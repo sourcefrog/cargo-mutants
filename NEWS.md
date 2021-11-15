@@ -10,6 +10,9 @@ Unreleased
   * New `--all-logs` option prints all Cargo output to stdout, which is very
     verbose but may be useful for example in CI.
 
+  * The output distinguishes check or build failures (probably due to an
+    unviable mutant) from test failures (probably due to lacking coverage.)
+
 ## 0.0.4
 
 Released 2021-11-10
