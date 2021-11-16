@@ -126,29 +126,7 @@ pub struct Lab<'s> {
 impl<'s> Lab<'s> {
     pub fn new(source: &'s SourceTree, show_all_logs: bool) -> Result<Lab<'s>> {
         let tmp = TempDir::new()?;
-        let build_dir = tmp.path().join("build");
-        let mut activity = Activity::start("copy source to scratch directory");
-        // I thought we could skip copying /target here, but it turns out that copying
-        // it does speed up the first build.
-        match cp_r::CopyOptions::new()
-            .after_entry_copied(|_path, _ft, stats| {
-                activity.tick_message(&format!("{} MB", stats.file_bytes / 1_000_000));
-            })
-            .copy_tree(source.root(), &build_dir)
-            .context("copy source tree to lab directory")
-        {
-            Ok(stats) => activity.succeed(&format!("{} MB", stats.file_bytes / 1_000_000)),
-            Err(err) => {
-                activity.fail("failed");
-                eprintln!(
-                    "error copying source tree {} to {}: {:?}",
-                    &source.root().to_slash_lossy(),
-                    &build_dir.to_slash_lossy(),
-                    err
-                );
-                return Err(err);
-            }
-        }
+        let build_dir = copy_source_to_scratch(source, &tmp.path())?;
         let output_dir = OutputDir::new(source.root())?;
         Ok(Lab {
             source,
@@ -340,4 +318,31 @@ fn run_cargo(
         timed_out,
         exit_status,
     })
+}
+
+fn copy_source_to_scratch(source: &SourceTree, tmp_path: &Path) -> Result<PathBuf> {
+    let build_dir = tmp_path.join("build");
+    let mut activity = Activity::start("copy source to scratch directory");
+    // I thought we could skip copying /target here, but it turns out that copying
+    // it does speed up the first build.
+    match cp_r::CopyOptions::new()
+        .after_entry_copied(|_path, _ft, stats| {
+            activity.tick_message(&format!("{} MB", stats.file_bytes / 1_000_000));
+        })
+        .copy_tree(source.root(), &build_dir)
+        .context("copy source tree to lab directory")
+    {
+        Ok(stats) => activity.succeed(&format!("{} MB", stats.file_bytes / 1_000_000)),
+        Err(err) => {
+            activity.fail("failed");
+            eprintln!(
+                "error copying source tree {} to {}: {:?}",
+                &source.root().to_slash_lossy(),
+                &build_dir.to_slash_lossy(),
+                err
+            );
+            return Err(err);
+        }
+    }
+    Ok(build_dir)
 }
