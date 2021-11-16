@@ -126,7 +126,7 @@ pub struct Lab<'s> {
 impl<'s> Lab<'s> {
     pub fn new(source: &'s SourceTree, show_all_logs: bool) -> Result<Lab<'s>> {
         let tmp = TempDir::new()?;
-        let build_dir = copy_source_to_scratch(source, &tmp.path())?;
+        let build_dir = copy_source_to_scratch(source, tmp.path())?;
         let output_dir = OutputDir::new(source.root())?;
         Ok(Lab {
             source,
@@ -228,18 +228,18 @@ fn run_scenario(
     let start = Instant::now();
 
     activity.set_phase("check");
-    if !run_cargo("check", &build_dir, activity, &log_file)?.success() {
+    if !run_cargo("check", build_dir, activity, log_file)?.success() {
         return Ok(Outcome::new(log_file, &start, Status::CheckFailed));
     }
 
     // TODO: Actually `build --tests`, etc?
     activity.set_phase("build");
-    if !run_cargo("build", &build_dir, activity, &log_file)?.success() {
+    if !run_cargo("build", build_dir, activity, log_file)?.success() {
         return Ok(Outcome::new(log_file, &start, Status::BuildFailed));
     }
 
     activity.set_phase("test");
-    let test_result = run_cargo("test", &build_dir, activity, &log_file)?;
+    let test_result = run_cargo("test", build_dir, activity, log_file)?;
     let status = if is_clean {
         Status::from_clean_test(test_result.exit_status)
     } else {
