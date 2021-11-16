@@ -169,10 +169,10 @@ fn well_tested_tree_finds_no_problems() {
 fn test_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
-    let output_re = r"copy source to scratch directory \.\.\. \d MB in \d\.\d\d\ds
-baseline test with no mutations \.\.\. ok in \d\.\d\d\ds
-src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d\.\d\d\ds
-src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in \d\.\d\d\ds
+    let output_re = r"copy source to scratch directory \.\.\. \d+ MB in \d\.\d\d\ds
+baseline test with no mutations \.\.\. ok in \d+\.\d\d\ds
+src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds
+src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds
 ";
 
     run_assert_cmd()
