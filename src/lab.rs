@@ -132,9 +132,7 @@ impl<'s> Lab<'s> {
         // it does speed up the first build.
         match cp_r::CopyOptions::new()
             .after_entry_copied(|_path, _ft, stats| {
-                if stats.files & 63 == 0 {
-                    activity.tick_message(&format!("{} MB", stats.file_bytes / 1_000_000));
-                }
+                activity.tick_message(&format!("{} MB", stats.file_bytes / 1_000_000));
             })
             .copy_tree(source.root(), &build_dir)
             .context("copy source tree to lab directory")
