@@ -196,18 +196,17 @@ fn run_scenario(
     let start = Instant::now();
 
     activity.set_phase("check");
-    if !run_cargo("check", build_dir, activity, log_file)?.success() {
+    if !run_cargo(&["check"], build_dir, activity, log_file)?.success() {
         return Ok(Outcome::new(log_file, &start, Status::CheckFailed));
     }
 
-    // TODO: Actually `build --tests`, etc?
     activity.set_phase("build");
-    if !run_cargo("build", build_dir, activity, log_file)?.success() {
+    if !run_cargo(&["build", "--tests"], build_dir, activity, log_file)?.success() {
         return Ok(Outcome::new(log_file, &start, Status::BuildFailed));
     }
 
     activity.set_phase("test");
-    let test_result = run_cargo("test", build_dir, activity, log_file)?;
+    let test_result = run_cargo(&["test"], build_dir, activity, log_file)?;
     let status = if is_clean {
         Status::from_clean_test(test_result.exit_status)
     } else {
@@ -230,7 +229,7 @@ impl CargoResult {
 }
 
 fn run_cargo(
-    cargo_subcommand: &str,
+    cargo_args: &[&str],
     in_dir: &Path,
     activity: &mut Activity,
     log_file: &LogFile,
@@ -246,18 +245,18 @@ fn run_cargo(
     let mut out_file = log_file.open_append()?;
     writeln!(
         out_file,
-        "\n{} run {} {}",
-        LOG_MARKER, cargo_bin, cargo_subcommand
+        "\n{} run {} {:?}",
+        LOG_MARKER, cargo_bin, cargo_args,
     )?;
 
     let mut child = Command::new(cargo_bin.as_ref())
-        .arg(cargo_subcommand)
+        .args(cargo_args)
         .current_dir(in_dir)
         .stdout(out_file.try_clone()?)
         .stderr(out_file.try_clone()?)
         .stdin(process::Stdio::null())
         .spawn()
-        .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_subcommand))?;
+        .with_context(|| format!("failed to spawn {} {:?}", cargo_bin, cargo_args))?;
     let exit_status = loop {
         if start.elapsed() > TEST_TIMEOUT {
             // eprintln!("bored! killing child...");
