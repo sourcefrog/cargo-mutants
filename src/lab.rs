@@ -16,7 +16,7 @@ use anyhow::{Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
-use crate::console::{self, Activity};
+use crate::console::{self, Activity, Console};
 use crate::exit_code;
 use crate::mutate::Mutation;
 use crate::output::{LogFile, OutputDir};
@@ -33,13 +33,13 @@ const LOG_MARKER: &str = "***";
 ///
 /// Before testing the mutations, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn experiment(source_tree: &SourceTree, show_all_logs: bool) -> Result<LabOutcome> {
+pub fn experiment(source_tree: &SourceTree, console: &Console) -> Result<LabOutcome> {
     let tmp_dir = TempDir::new()?;
-    let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path())?;
+    let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path(), console)?;
     let output_dir = OutputDir::new(source_tree.root())?;
     let mut lab_outcome = LabOutcome::default();
 
-    let clean_outcome = test_clean(&build_dir, &output_dir, show_all_logs)?;
+    let clean_outcome = test_clean(&build_dir, &output_dir, console)?;
     lab_outcome.add(&clean_outcome);
     if clean_outcome.status != Status::CleanTestPassed {
         console::print_error("tests failed in a clean copy of the tree, so no mutants were tested");
@@ -47,12 +47,7 @@ pub fn experiment(source_tree: &SourceTree, show_all_logs: bool) -> Result<LabOu
     }
 
     for mutation in source_tree.mutations()? {
-        lab_outcome.add(&test_mutation(
-            &mutation,
-            &build_dir,
-            &output_dir,
-            show_all_logs,
-        )?);
+        lab_outcome.add(&test_mutation(&mutation, &build_dir, &output_dir, console)?);
     }
     Ok(lab_outcome)
 }
@@ -138,17 +133,13 @@ impl LabOutcome {
 ///
 /// If there are already-failing tests, proceeding to test mutations
 /// won't give a clear signal.
-fn test_clean(build_dir: &Path, output_dir: &OutputDir, show_all_logs: bool) -> Result<Outcome> {
-    let base_task = "baseline test with no mutations";
-    let mut activity = Activity::start(base_task);
+fn test_clean(build_dir: &Path, output_dir: &OutputDir, console: &Console) -> Result<Outcome> {
+    let mut activity = console.start_activity("baseline test with no mutations");
     let scenario_name = "baseline";
     let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
     let outcome = run_scenario(build_dir, &mut activity, &log_file, true)?;
-    activity.outcome(&outcome);
-    if outcome.status != Status::CleanTestPassed || show_all_logs {
-        print!("{}", outcome.log_file.log_content()?);
-    }
+    activity.outcome(&outcome)?;
     Ok(outcome)
 }
 
@@ -157,9 +148,9 @@ fn test_mutation(
     mutation: &Mutation,
     build_dir: &Path,
     output_dir: &OutputDir,
-    show_all_logs: bool,
+    console: &Console,
 ) -> Result<Outcome> {
-    let mut activity = Activity::start_mutation(mutation);
+    let mut activity = console.start_mutation(mutation);
     let scenario_name = &mutation.to_string();
     let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
@@ -167,11 +158,7 @@ fn test_mutation(
     let outcome = mutation.with_mutation_applied(build_dir, || {
         run_scenario(build_dir, &mut activity, &log_file, false)
     })?;
-    activity.outcome(&outcome);
-    if show_all_logs {
-        // TODO: Move this into the Activity, conditional on a setting there.
-        print!("{}", outcome.log_file.log_content()?);
-    }
+    activity.outcome(&outcome)?;
     Ok(outcome)
 }
 
@@ -301,9 +288,13 @@ fn run_cargo(
     })
 }
 
-fn copy_source_to_scratch(source: &SourceTree, tmp_path: &Path) -> Result<PathBuf> {
+fn copy_source_to_scratch(
+    source: &SourceTree,
+    tmp_path: &Path,
+    console: &Console,
+) -> Result<PathBuf> {
     let build_dir = tmp_path.join("build");
-    let mut activity = Activity::start("copy source to scratch directory");
+    let mut activity = console.start_activity("copy source to scratch directory");
     // I thought we could skip copying /target here, but it turns out that copying
     // it does speed up the first build.
     match cp_r::CopyOptions::new()

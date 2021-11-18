@@ -58,6 +58,7 @@ fn main() -> Result<()> {
     }
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;
+    let console = console::Console::new(args.all_logs);
     if args.list {
         let mutations = source_tree.mutations()?;
         if args.json {
@@ -70,7 +71,7 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        let lab_outcome = lab::experiment(&source_tree, args.all_logs)?;
+        let lab_outcome = lab::experiment(&source_tree, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

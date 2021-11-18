@@ -4,20 +4,32 @@
 
 use std::time::Instant;
 
+use anyhow::Result;
 use console::{style, StyledObject};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::lab::{Outcome, Status};
 use crate::mutate::Mutation;
 
-pub(crate) struct Activity {
-    pub start_time: Instant,
-    progress_bar: ProgressBar,
-    task: String,
+/// Top-level UI object that manages the state of an interactive console: mostly progress bars and
+/// messages.
+pub struct Console {
+    pub show_all_logs: bool,
 }
 
-impl Activity {
-    pub fn start(task: &str) -> Activity {
+impl Console {
+    /// Construct a new rich text UI.
+    pub fn new(show_all_logs: bool) -> Console {
+        Console { show_all_logs }
+    }
+
+    /// Create an Activity for a new mutation.
+    pub fn start_mutation(&self, mutation: &Mutation) -> Activity {
+        self.start_activity(&style_mutation(mutation))
+    }
+
+    /// Start a general-purpose activity.
+    pub fn start_activity(&self, task: &str) -> Activity {
         let progress_bar = ProgressBar::new(0)
             .with_message(task.to_owned())
             .with_style(
@@ -29,16 +41,22 @@ impl Activity {
             task: task.to_owned(),
             progress_bar,
             start_time: Instant::now(),
+            show_all_logs: self.show_all_logs,
         }
     }
+}
 
+pub struct Activity {
+    pub start_time: Instant,
+    progress_bar: ProgressBar,
+    task: String,
+    show_all_logs: bool,
+}
+
+impl Activity {
     pub fn set_phase(&mut self, phase: &'static str) {
         self.progress_bar
             .set_message(format!("{} ({})", self.task, phase));
-    }
-
-    pub fn start_mutation(mutation: &Mutation) -> Activity {
-        Activity::start(&style_mutation(mutation))
     }
 
     pub fn succeed(self, msg: &str) {
@@ -70,8 +88,16 @@ impl Activity {
         self.progress_bar.tick();
     }
 
-    pub fn outcome(self, outcome: &Outcome) {
+    /// Report the outcome of a scenario.
+    ///
+    /// Prints the log content if appropriate.
+    pub fn outcome(self, outcome: &Outcome) -> Result<()> {
+        let show_all_logs = self.show_all_logs; // survive consumption by finish
         self.finish(style_status(outcome.status));
+        if outcome.status == Status::CleanTestFailed || show_all_logs {
+            print!("{}", outcome.log_file.log_content()?);
+        }
+        Ok(())
     }
 
     fn format_elapsed(&self) -> String {
