@@ -44,6 +44,11 @@ impl Console {
             show_all_logs: self.show_all_logs,
         }
     }
+
+    /// Start an Activity for copying a tree.
+    pub fn start_copy_activity(&self, name: &str) -> CopyActivity {
+        CopyActivity::new(name)
+    }
 }
 
 pub struct Activity {
@@ -57,14 +62,6 @@ impl Activity {
     pub fn set_phase(&mut self, phase: &'static str) {
         self.progress_bar
             .set_message(format!("{} ({})", self.task, phase));
-    }
-
-    pub fn succeed(self, msg: &str) {
-        self.finish(style(msg).green());
-    }
-
-    pub fn fail(self, msg: &str) {
-        self.finish(style(msg).bold().red());
     }
 
     /// Finish the progress bar, and print a concluding message to stdout.
@@ -82,12 +79,6 @@ impl Activity {
         self.progress_bar.tick();
     }
 
-    pub fn tick_message(&mut self, message: &str) {
-        self.progress_bar
-            .set_message(format!("{}... {}", self.task, message));
-        self.progress_bar.tick();
-    }
-
     /// Report the outcome of a scenario.
     ///
     /// Prints the log content if appropriate.
@@ -101,7 +92,51 @@ impl Activity {
     }
 
     fn format_elapsed(&self) -> String {
-        format!("{:.3}s", &self.start_time.elapsed().as_secs_f64())
+        format_elapsed(self.start_time)
+    }
+}
+
+pub struct CopyActivity {
+    name: String,
+    progress_bar: ProgressBar,
+    start_time: Instant,
+}
+
+impl CopyActivity {
+    fn new(name: &str) -> CopyActivity {
+        let progress_bar = ProgressBar::new(0)
+            .with_message(name.to_owned())
+            .with_style(ProgressStyle::default_spinner().template("{msg}"));
+        progress_bar.set_draw_rate(5); // updates per second
+        CopyActivity {
+            name: name.to_owned(),
+            progress_bar,
+            start_time: Instant::now(),
+        }
+    }
+
+    pub fn bytes_copied(&mut self, bytes_copied: u64) {
+        self.progress_bar.set_message(self.format(bytes_copied))
+    }
+
+    pub fn succeed(self, bytes_copied: u64) {
+        self.progress_bar.finish_and_clear();
+        // Print to stdout even if progress bars weren't drawn.
+        println!("{}", self.format(bytes_copied));
+    }
+
+    pub fn fail(self) {
+        self.progress_bar.finish_and_clear();
+        println!("{} ... {}", self.name, style("failed").bold().red(),);
+    }
+
+    fn format(&self, bytes_copied: u64) -> String {
+        format!(
+            "{} ... {} in {}",
+            self.name,
+            style_mb(bytes_copied),
+            style(format_elapsed(self.start_time)).cyan(),
+        )
     }
 }
 
@@ -142,4 +177,16 @@ fn style_mutation(mutation: &Mutation) -> String {
 
 pub fn print_error(msg: &str) {
     println!("{}: {}", style("error").bold().red(), msg);
+}
+
+fn format_elapsed(since: Instant) -> String {
+    format!("{:.3}s", since.elapsed().as_secs_f64())
+}
+
+fn format_mb(bytes: u64) -> String {
+    format!("{} MB", bytes / 1_000_000)
+}
+
+fn style_mb(bytes: u64) -> StyledObject<String> {
+    style(format_mb(bytes)).cyan()
 }

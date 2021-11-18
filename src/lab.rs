@@ -294,19 +294,19 @@ fn copy_source_to_scratch(
     console: &Console,
 ) -> Result<PathBuf> {
     let build_dir = tmp_path.join("build");
-    let mut activity = console.start_activity("copy source to scratch directory");
+    let mut activity = console.start_copy_activity("copy source to scratch directory");
     // I thought we could skip copying /target here, but it turns out that copying
     // it does speed up the first build.
     match cp_r::CopyOptions::new()
         .after_entry_copied(|_path, _ft, stats| {
-            activity.tick_message(&format!("{} MB", stats.file_bytes / 1_000_000));
+            activity.bytes_copied(stats.file_bytes);
         })
         .copy_tree(source.root(), &build_dir)
         .context("copy source tree to lab directory")
     {
-        Ok(stats) => activity.succeed(&format!("{} MB", stats.file_bytes / 1_000_000)),
+        Ok(stats) => activity.succeed(stats.file_bytes),
         Err(err) => {
-            activity.fail("failed");
+            activity.fail();
             eprintln!(
                 "error copying source tree {} to {}: {:?}",
                 &source.root().to_slash_lossy(),
