@@ -20,7 +20,6 @@ use argh::FromArgs;
 #[allow(unused)]
 use path_slash::PathExt;
 
-use lab::Lab;
 use source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
@@ -71,7 +70,7 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        let lab_outcome = Lab::new(&source_tree, args.all_logs)?.run()?;
+        let lab_outcome = lab::experiment(&source_tree, args.all_logs)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

@@ -26,7 +26,36 @@ use crate::source::SourceTree;
 // group, timeouts are disabled.
 const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(60);
 
+/// Text inserted in log files to make important sections more visible.
 const LOG_MARKER: &str = "***";
+
+/// Run all possible mutation experiments.
+///
+/// Before testing the mutations, the lab checks that the source tree passes its tests with no
+/// mutations applied.
+pub fn experiment(source_tree: &SourceTree, show_all_logs: bool) -> Result<LabOutcome> {
+    let tmp_dir = TempDir::new()?;
+    let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path())?;
+    let output_dir = OutputDir::new(source_tree.root())?;
+    let mut lab_outcome = LabOutcome::default();
+
+    let clean_outcome = test_clean(&build_dir, &output_dir, show_all_logs)?;
+    lab_outcome.add(&clean_outcome);
+    if clean_outcome.status != Status::CleanTestPassed {
+        console::print_error("tests failed in a clean copy of the tree, so no mutants were tested");
+        return Ok(lab_outcome); // TODO: Maybe should be Err?
+    }
+
+    for mutation in source_tree.mutations()? {
+        lab_outcome.add(&test_mutation(
+            &mutation,
+            &build_dir,
+            &output_dir,
+            show_all_logs,
+        )?);
+    }
+    Ok(lab_outcome)
+}
 
 /// The bottom line of trying a mutation: it was caught, missed, failed to build, etc.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -105,93 +134,45 @@ impl LabOutcome {
     }
 }
 
-/// Holds scratch directories in which files can be mutated and tests executed.
-#[derive(Debug)]
-pub struct Lab<'s> {
-    source: &'s SourceTree,
-
-    /// Top-level temporary directory for this lab.
-    _tmp: TempDir,
-
-    /// Path (within tmp) holding a copy of the source that can be modified and built.
-    build_dir: PathBuf,
-
-    /// Output directory, holding logs.
-    output_dir: OutputDir,
-
-    /// Print all cargo logs.
-    show_all_logs: bool,
+/// Test building the unmodified source.
+///
+/// If there are already-failing tests, proceeding to test mutations
+/// won't give a clear signal.
+fn test_clean(build_dir: &Path, output_dir: &OutputDir, show_all_logs: bool) -> Result<Outcome> {
+    let base_task = "baseline test with no mutations";
+    let mut activity = Activity::start(base_task);
+    let scenario_name = "baseline";
+    let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
+    writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
+    let outcome = run_scenario(build_dir, &mut activity, &log_file, true)?;
+    activity.outcome(&outcome);
+    if outcome.status != Status::CleanTestPassed || show_all_logs {
+        print!("{}", outcome.log_file.log_content()?);
+    }
+    Ok(outcome)
 }
 
-impl<'s> Lab<'s> {
-    pub fn new(source: &'s SourceTree, show_all_logs: bool) -> Result<Lab<'s>> {
-        let tmp = TempDir::new()?;
-        let build_dir = copy_source_to_scratch(source, tmp.path())?;
-        let output_dir = OutputDir::new(source.root())?;
-        Ok(Lab {
-            source,
-            _tmp: tmp,
-            build_dir,
-            output_dir,
-            show_all_logs,
-        })
+/// Test with one mutation applied.
+fn test_mutation(
+    mutation: &Mutation,
+    build_dir: &Path,
+    output_dir: &OutputDir,
+    show_all_logs: bool,
+) -> Result<Outcome> {
+    let mut activity = Activity::start_mutation(mutation);
+    let scenario_name = &mutation.to_string();
+    let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
+    writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
+    writeln!(out_file, "{}", mutation.diff())?;
+    let outcome = mutation.with_mutation_applied(build_dir, || {
+        run_scenario(build_dir, &mut activity, &log_file, false)
+    })?;
+    activity.outcome(&outcome);
+    if show_all_logs {
+        // TODO: Move this into the Activity, conditional on a setting there.
+        print!("{}", outcome.log_file.log_content()?);
     }
-
-    /// Run all possible mutations in this lab.
-    ///
-    /// Before testing the mutations, the lab checks that the source tree passes its tests with
-    /// no mutations applied.
-    pub fn run(&self) -> Result<LabOutcome> {
-        let mut lab_outcome = LabOutcome::default();
-        let clean_outcome = self.test_clean()?;
-        lab_outcome.add(&clean_outcome);
-        if clean_outcome.status != Status::CleanTestPassed {
-            console::print_error(
-                "tests failed in a clean copy of the tree, so no mutants were tested",
-            );
-            return Ok(lab_outcome);
-        }
-        // TODO: Handle failure of clean build by returning a result?
-        for mutation in self.source.mutations()? {
-            lab_outcome.add(&self.test_mutation(&mutation)?);
-        }
-        Ok(lab_outcome)
-    }
-
-    /// Test building the unmodified source.
-    ///
-    /// If there are already-failing tests, proceeding to test mutations
-    /// won't give a clear signal.
-    pub fn test_clean(&self) -> Result<Outcome> {
-        let base_task = "baseline test with no mutations";
-        let mut activity = Activity::start(base_task);
-        let scenario_name = "baseline";
-        let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
-        writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-        let outcome = run_scenario(&self.build_dir, &mut activity, &log_file, true)?;
-        activity.outcome(&outcome);
-        if outcome.status != Status::CleanTestPassed || self.show_all_logs {
-            print!("{}", outcome.log_file.log_content()?);
-        }
-        Ok(outcome)
-    }
-
-    /// Test with one mutation applied.
-    pub fn test_mutation(&self, mutation: &Mutation) -> Result<Outcome> {
-        let mut activity = Activity::start_mutation(mutation);
-        let scenario_name = &mutation.to_string();
-        let (mut out_file, log_file) = self.output_dir.create_log(scenario_name)?;
-        writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-        writeln!(out_file, "{}", mutation.diff())?;
-        let outcome = mutation.with_mutation_applied(&self.build_dir, || {
-            run_scenario(&self.build_dir, &mut activity, &log_file, false)
-        })?;
-        activity.outcome(&outcome);
-        if self.show_all_logs {
-            print!("{}", outcome.log_file.log_content()?);
-        }
-        Ok(outcome)
-    }
+    Ok(outcome)
 }
 
 /// The result of running one mutation scenario.
