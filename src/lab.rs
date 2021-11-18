@@ -29,6 +29,9 @@ const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(60);
 /// Text inserted in log files to make important sections more visible.
 const LOG_MARKER: &str = "***";
 
+/// How frequently to check if cargo finished.
+const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
+
 /// Run all possible mutation experiments.
 ///
 /// Before testing the mutations, the lab checks that the source tree passes its tests with no
@@ -271,7 +274,7 @@ fn run_cargo(
         }
         match child.try_wait()? {
             Some(status) => break status,
-            None => sleep(Duration::from_millis(200)),
+            None => sleep(WAIT_POLL_INTERVAL),
         }
         activity.tick();
     };
