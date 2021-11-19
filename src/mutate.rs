@@ -67,6 +67,9 @@ pub struct Mutation {
     /// The function that's being mutated.
     function_name: String,
 
+    /// The return type of the function, as a fragment of Rust syntax.
+    return_type: String,
+
     /// The mutated textual region.
     span: Span,
 
@@ -79,12 +82,14 @@ impl Mutation {
         source_file: SourceFile,
         op: MutationOp,
         function_name: String,
+        return_type: String,
         span: Span,
     ) -> Mutation {
         Mutation {
             source_file,
             op,
             function_name,
+            return_type,
             span,
         }
     }
@@ -106,6 +111,10 @@ impl Mutation {
     /// Return the original code for the entire file affected by this mutation.
     pub fn original_code(&self) -> &str {
         &self.source_file.code
+    }
+
+    pub fn return_type(&self) -> &str {
+        &self.return_type
     }
 
     /// Return a "file:line" description of the location of this mutation.
@@ -186,6 +195,7 @@ impl fmt::Debug for Mutation {
         f.debug_struct("Mutation")
             .field("op", &self.op)
             .field("function_name", &self.function_name())
+            .field("return_type", &self.return_type)
             // more concise display of spans
             .field("start", &(self.span.start.line, self.span.start.column))
             .field("end", &(self.span.end.line, self.span.end.column))
@@ -214,6 +224,7 @@ impl Serialize for Mutation {
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name)?;
+        ss.serialize_field("return_type", &self.return_type)?;
         ss.serialize_field("replacement", self.op.replacement())?;
         ss.end()
     }
@@ -239,11 +250,11 @@ mod test {
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            "Mutation { op: Unit, function_name: \"main\", start: (1, 11), end: (5, 2) }"
+            r#"Mutation { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2) }"#
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            "Mutation { op: Default, function_name: \"factorial\", start: (7, 29), end: (13, 2) }"
+            r#"Mutation { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2) }"#
         );
     }
 

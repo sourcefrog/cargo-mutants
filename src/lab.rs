@@ -160,8 +160,8 @@ fn test_mutation(
     console: &Console,
 ) -> Result<Outcome> {
     let mut activity = console.start_mutation(mutation);
-    let scenario_name = &mutation.to_string();
-    let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
+    let scenario_name = mutation.to_string();
+    let (mut out_file, log_file) = output_dir.create_log(&scenario_name)?;
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
     writeln!(out_file, "{}", mutation.diff())?;
     let outcome = mutation.with_mutation_applied(build_dir, || {

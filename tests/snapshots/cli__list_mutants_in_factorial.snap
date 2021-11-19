@@ -4,5 +4,5 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
 src/bin/main.rs:1: replace main with ()
-src/bin/main.rs:7: replace factorial with Default::default()
+src/bin/main.rs:7: replace factorial -> u32 with Default::default()
 

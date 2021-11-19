@@ -15,6 +15,9 @@ Unreleased
 
   * A new file `mutants.out/mutants.json` lists all the generated mutants.
 
+  * Show function return types in some places, to make it easier to understand
+    whether the mutants were useful or viable.
+
 ## 0.0.4
 
 Released 2021-11-10

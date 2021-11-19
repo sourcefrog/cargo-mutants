@@ -4,6 +4,7 @@
 //!
 //! Knowledge of the syn API is localized here.
 
+use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
 use syn::ItemFn;
@@ -35,10 +36,12 @@ impl<'sf> DiscoveryVisitor<'sf> {
     fn collect_mutation(&mut self, op: MutationOp, item_fn: &ItemFn) {
         self.namespace_stack.push(item_fn.sig.ident.to_string());
         let function_name = self.namespace_stack.join("::");
+        let return_type = format!("{}", item_fn.sig.output.to_token_stream());
         self.mutations.push(Mutation::new(
             self.source_file.clone(),
             op,
             function_name,
+            return_type,
             item_fn.block.brace_token.span.into(),
         ));
         self.namespace_stack.pop();
