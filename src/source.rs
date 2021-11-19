@@ -9,7 +9,8 @@ use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 use syn::visit::Visit;
 
-use crate::mutate::{DiscoveryVisitor, Mutation};
+use crate::mutate::Mutation;
+use crate::visit::DiscoveryVisitor;
 
 /// A Rust source file within a source tree.
 ///

@@ -9,6 +9,7 @@ mod mutate;
 mod output;
 mod source;
 mod textedit;
+mod visit;
 
 use std::env;
 use std::io;
