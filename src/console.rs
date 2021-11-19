@@ -148,8 +148,8 @@ pub fn style_status(status: Status) -> StyledObject<&'static str> {
         MutantCaught => style("caught").green(),
         CleanTestPassed => style("ok").green(),
         // neutral/inconclusive
-        CheckFailed => style("check failed").yellow().bold(),
-        BuildFailed => style("build failed").yellow().bold(),
+        CheckFailed => style("check failed").yellow(),
+        BuildFailed => style("build failed").yellow(),
         // bad statuses
         MutantMissed => style("NOT CAUGHT").red().bold(),
         Timeout => style("TIMEOUT").red().bold(),
