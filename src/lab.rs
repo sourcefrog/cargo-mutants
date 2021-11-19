@@ -1,7 +1,6 @@
 // Copyright 2021 Martin Pool
 
-//! A lab directory in which to test mutations to the source code, and control
-//! over running `cargo`.
+//! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
