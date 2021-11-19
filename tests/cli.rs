@@ -61,10 +61,12 @@ fn detect_option_in_place_of_cargo_subcommand() {
 
 #[test]
 fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
     let bogus_cargo = "NOTHING_NONEXISTENT_VOID";
     run_assert_cmd()
         .env("CARGO", bogus_cargo)
-        .args(["mutants", "-d", "testdata/tree/well_tested"])
+        .args(["mutants", "-d"])
+        .arg(tmp_src_dir.path())
         .assert()
         .stderr(
             (predicates::str::contains("No such file or directory").or(predicates::str::contains(
@@ -145,13 +147,29 @@ fn list_mutants_json_well_tested() {
         .assert_insta();
 }
 
-// Copy the source because output is written into target/mutants.
+// Copy the source because output is written into mutants.out.
 fn copy_of_testdata(tree_name: &str) -> TempDir {
     let tmp_src_dir = tempdir().unwrap();
     cp_r::CopyOptions::new()
+        .filter(|path, _stat| {
+            Ok(["target", "mutants.out", "mutants.out.old"]
+                .iter()
+                .all(|p| !path.starts_with(p)))
+        })
         .copy_tree(Path::new("testdata/tree").join(tree_name), &tmp_src_dir)
         .unwrap();
     tmp_src_dir
+}
+
+#[test]
+fn copy_testdata_doesnt_include_build_artifacts() {
+    // If there is a target or mutants.out in the source directory, we don't want it in the copy,
+    // so that the tests are (more) hermetic.
+    let tmp_src_dir = copy_of_testdata("factorial");
+    assert!(!tmp_src_dir.path().join("mutants.out").exists());
+    assert!(!tmp_src_dir.path().join("target").exists());
+    assert!(!tmp_src_dir.path().join("mutants.out.old").exists());
+    assert!(tmp_src_dir.path().join("Cargo.toml").exists());
 }
 
 #[test]
