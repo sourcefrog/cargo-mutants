@@ -1,0 +1,19 @@
+---
+source: tests/cli.rs
+expression: mutants_json
+
+---
+[
+  {
+    "file": "src/bin/main.rs",
+    "line": 1,
+    "function": "main",
+    "replacement": "()"
+  },
+  {
+    "file": "src/bin/main.rs",
+    "line": 7,
+    "function": "factorial",
+    "replacement": "Default::default()"
+  }
+]

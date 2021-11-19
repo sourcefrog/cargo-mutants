@@ -6,7 +6,8 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::env;
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::{self, Command, ExitStatus};
 use std::thread::sleep;
@@ -49,7 +50,12 @@ pub fn experiment(source_tree: &SourceTree, console: &Console) -> Result<LabOutc
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
 
-    for mutation in source_tree.mutations()? {
+    let mutations = source_tree.mutations()?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
+        &mutations,
+    )?;
+    for mutation in mutations {
         lab_outcome.add(&test_mutation(&mutation, &build_dir, &output_dir, console)?);
     }
     Ok(lab_outcome)

@@ -13,6 +13,8 @@ Unreleased
   * The output distinguishes check or build failures (probably due to an
     unviable mutant) from test failures (probably due to lacking coverage.)
 
+  * A new file `mutants.out/mutants.json` lists all the generated mutants.
+
 ## 0.0.4
 
 Released 2021-11-10

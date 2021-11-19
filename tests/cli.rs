@@ -196,6 +196,11 @@ src/bin/main\.rs:7: replace factorial with Default::default\(\) \.\.\. caught in
     names.sort_unstable();
 
     insta::assert_debug_snapshot!("factorial__log_names", &names);
+
+    // A mutants.json is in the mutants.out directory.
+    let mutants_json =
+        fs::read_to_string(tmp_src_dir.path().join("mutants.out/mutants.json")).unwrap();
+    insta::assert_snapshot!(mutants_json);
 }
 
 #[test]

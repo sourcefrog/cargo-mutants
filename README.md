@@ -51,9 +51,6 @@ In this version of the `unix_mode` crate, the `is_block_device` function was
 indeed untested. The gap was fixed by adding a
 [doctest](https://github.com/sourcefrog/unix_mode/blob/07e098c1f06d9971f26fe05afa65c3e36135e81f/src/lib.rs#L239-L242).
 
-The Cargo output is logged into `mutants.out` within the original source
-directory, so you can see why individual tests failed.
-
 To see what mutants could be generated without running them, use `--list`.
 `--list` also supports a `--json` option to make the output more
 machine-readable, and a `--diff` option to show the replacement.
@@ -108,6 +105,16 @@ flags the function for cargo-mutants.
   or the timeout is too low.
 
 * **4**: The tests are already failing in a copy of the clean tree, so no mutations were tested.
+
+### `mutants.out`
+
+A `mutants.out` directory is created in the source directory. It contains:
+
+* A `logs/` directory, with one log file for each mutation plus the baseline
+  unmutated case. The log contains the diff of the mutation plus the output
+  from cargo.
+
+* A `mutants.json` file describing all the generated mutants.
 
 ### Tips
 
