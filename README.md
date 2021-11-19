@@ -149,14 +149,15 @@ difficult. cargo-mutants can help in a few ways:
 
 ## Goals
 
-**The overall goal for cargo-mutants is: when run on an arbitrary Rust source tree where
-`cargo test` passes, it will tell you something *interesting* about areas where
-bugs might be lurking or the tests might be insufficient.**
+**cargo-mutants it *easy* to run on any Rust source tree, and will tell you
+something *interesting* about areas where bugs might be lurking or the tests
+might be insufficient.**
 
 Being *easy* to use means:
 
 * It requires no changes to the source tree or other setup: just install and
-  run.
+  run. So, if it does not find anything interesting to say about a well-tested
+  tree, it didn't cost you much.
 
 * There's no effect on the operation of the program other than when run under
   `cargo mutants`.
