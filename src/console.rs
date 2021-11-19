@@ -85,7 +85,7 @@ impl Activity {
     pub fn outcome(self, outcome: &Outcome) -> Result<()> {
         let show_all_logs = self.show_all_logs; // survive consumption by finish
         self.finish(style_status(outcome.status));
-        if outcome.status == Status::CleanTestFailed || show_all_logs {
+        if outcome.status.should_show_logs() || show_all_logs {
             print!("{}", outcome.log_file.log_content()?);
         }
         Ok(())
@@ -146,14 +146,14 @@ pub fn style_status(status: Status) -> StyledObject<&'static str> {
     match status {
         // good statuses
         MutantCaught => style("caught").green(),
-        CleanTestPassed => style("ok").green(),
+        SourceBuildPassed | CleanTestPassed => style("ok").green(),
         // neutral/inconclusive
         CheckFailed => style("check failed").yellow(),
         BuildFailed => style("build failed").yellow(),
         // bad statuses
         MutantMissed => style("NOT CAUGHT").red().bold(),
         Timeout => style("TIMEOUT").red().bold(),
-        CleanTestFailed => style("FAILED").red().bold(),
+        SourceBuildFailed | CleanTestFailed => style("FAILED").red().bold(),
     }
 }
 

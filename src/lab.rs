@@ -12,7 +12,7 @@ use std::process::{self, Command, ExitStatus};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
@@ -37,10 +37,12 @@ const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 /// Before testing the mutations, the lab checks that the source tree passes its tests with no
 /// mutations applied.
 pub fn experiment(source_tree: &SourceTree, console: &Console) -> Result<LabOutcome> {
+    let mut lab_outcome = LabOutcome::default();
+    let output_dir = OutputDir::new(source_tree.root())?;
+    build_source_tree(source_tree, &output_dir, console)?;
+
     let tmp_dir = TempDir::new()?;
     let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path(), console)?;
-    let output_dir = OutputDir::new(source_tree.root())?;
-    let mut lab_outcome = LabOutcome::default();
 
     let clean_outcome = test_clean(&build_dir, &output_dir, console)?;
     lab_outcome.add(&clean_outcome);
@@ -78,6 +80,10 @@ pub enum Status {
     CleanTestPassed,
     CheckFailed,
     BuildFailed,
+    /// Build failed in the original source tree.
+    SourceBuildFailed,
+    /// Build passed in the original source tree.
+    SourceBuildPassed,
 }
 
 impl Status {
@@ -96,6 +102,13 @@ impl Status {
         } else {
             Status::CleanTestFailed
         }
+    }
+
+    /// True if this status indicates the user definitely needs to see the logs, because a task
+    /// failed that should not have.
+    pub fn should_show_logs(&self) -> bool {
+        use Status::*;
+        matches!(self, CleanTestFailed | SourceBuildFailed)
     }
 }
 
@@ -125,7 +138,7 @@ impl LabOutcome {
     /// Return the overall program exit code reflecting this outcome.
     pub fn exit_code(&self) -> i32 {
         use Status::*;
-        if self.count(CleanTestFailed) > 0 {
+        if self.count(CleanTestFailed) > 0 || self.count(SourceBuildFailed) > 4 {
             exit_code::CLEAN_TESTS_FAILED
         } else if self.count(Timeout) > 0 {
             exit_code::TIMEOUT
@@ -134,6 +147,43 @@ impl LabOutcome {
         } else {
             exit_code::SUCCESS
         }
+    }
+}
+
+/// Build tests in the original source tree.
+///
+/// This brings the source `target` directory basically up to date with any changes to the source,
+/// dependencies, or the Rust toolchain. We do this in the source so that repeated runs of `cargo
+/// mutants` won't have to repeat this work in every scratch directory.
+fn build_source_tree(
+    source_tree: &SourceTree,
+    output_dir: &OutputDir,
+    console: &Console,
+) -> Result<()> {
+    let mut activity = console.start_activity("build source tree");
+    let scenario_name = "build source";
+    let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
+    writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
+    let start = Instant::now();
+
+    activity.set_phase("build");
+    let test_result = run_cargo(
+        &["build", "--tests"],
+        source_tree.root(),
+        &mut activity,
+        &log_file,
+    )?;
+    let status = if test_result.success() {
+        Status::SourceBuildPassed
+    } else {
+        Status::SourceBuildFailed
+    };
+    let outcome = Outcome::new(&log_file, &start, status);
+    activity.outcome(&outcome)?;
+    if test_result.success() {
+        Ok(())
+    } else {
+        Err(anyhow!("build in source tree failed, not continuing"))
     }
 }
 
@@ -253,8 +303,10 @@ fn run_cargo(
     let mut out_file = log_file.open_append()?;
     writeln!(
         out_file,
-        "\n{} run {} {:?}",
-        LOG_MARKER, cargo_bin, cargo_args,
+        "\n{} run {} {}",
+        LOG_MARKER,
+        cargo_bin,
+        cargo_args.join(" "),
     )?;
 
     let mut child = Command::new(cargo_bin.as_ref())
@@ -264,7 +316,7 @@ fn run_cargo(
         .stderr(out_file.try_clone()?)
         .stdin(process::Stdio::null())
         .spawn()
-        .with_context(|| format!("failed to spawn {} {:?}", cargo_bin, cargo_args))?;
+        .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
     let exit_status = loop {
         if start.elapsed() > TEST_TIMEOUT {
             // eprintln!("bored! killing child...");

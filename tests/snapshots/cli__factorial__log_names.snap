@@ -5,6 +5,7 @@ expression: "&names"
 ---
 [
     "baseline.log",
+    "build_source.log",
     "replace_factorial_with_Default__default()_in_src_bin_main.rs_7.log",
     "replace_main_with_()_in_src_bin_main.rs_1.log",
 ]

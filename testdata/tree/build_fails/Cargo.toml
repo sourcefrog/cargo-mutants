@@ -1,5 +1,5 @@
 [package]
-name = "mutants-testdata-already-failing-tests"
+name = "mutants-testdata-build-fails"
 edition = "2018"
 version = "0.0.0"
 authors = ["Martin Pool"]

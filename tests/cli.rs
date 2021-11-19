@@ -187,11 +187,12 @@ fn well_tested_tree_finds_no_problems() {
 fn test_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
-    let output_re = r"copy source to scratch directory \.\.\. \d+ MB in \d\.\d\d\ds
+    let output_re = r"^build source tree \.\.\. ok in \d+\.\d\d\ds
+copy source to scratch directory \.\.\. \d+ MB in \d\.\d\d\ds
 baseline test with no mutations \.\.\. ok in \d+\.\d\d\ds
 src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds
 src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds
-";
+$";
 
     run_assert_cmd()
         .arg("mutants")
@@ -223,16 +224,9 @@ src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. ca
 
 #[test]
 fn factorial_mutants_with_all_logs() {
-    // Skip the details of the cargo output, which is very unpredictable, but it should exist.
-    let output_re = r"copy source to scratch directory \.\.\. \d MB in \d+\.\d\d\ds
-baseline test with no mutations \.\.\. ok in \d+\.\d\d\ds
-(?s).*
-src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds
-.*
-src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds
-.*
-";
-
+    // The log contains a lot of build output, which is hard to deal with, but let's check that
+    // some key lines are there.
+    use predicate::str::is_match;
     let tmp_src_dir = copy_of_testdata("factorial");
     run_assert_cmd()
         .arg("mutants")
@@ -242,12 +236,23 @@ src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. ca
         .assert()
         .code(2)
         .stderr("")
-        .stdout(predicate::str::is_match(output_re).unwrap());
+        .stdout(is_match(r"build source tree \.\.\. ok in \d+\.\d\d\ds").unwrap())
+        .stdout(is_match(
+r"copy source to scratch directory \.\.\. \d+ MB in \d+\.\d\d\ds"
+        ).unwrap())
+        .stdout(is_match(
+r"baseline test with no mutations \.\.\. ok in \d+\.\d\d\ds"
+        ).unwrap())
+        .stdout(is_match(
+r"src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
+        ).unwrap())
+        .stdout(is_match(
+r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
+        ).unwrap());
 }
 
 #[test]
 fn detect_already_failing_tests() {
-    // The detailed text output contains some noisy parts
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run_assert_cmd()
         .arg("mutants")
@@ -271,4 +276,25 @@ fn detect_already_failing_tests() {
             "tests failed in a clean copy of the tree, so no mutants were tested",
         ))
         .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
+}
+
+#[test]
+fn source_tree_build_fails() {
+    let tmp_src_dir = copy_of_testdata("build_fails");
+    use predicate::str::{contains, is_match};
+    run_assert_cmd()
+        .arg("mutants")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .failure() // TODO: This should be a distinct error code
+        .stdout(is_match(r"build source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
+        .stdout(contains(r"This isn't Rust").name("The problem source line"))
+        .stdout(contains("*** build source"))
+        .stdout(contains("build --tests"))
+        .stdout(contains("lib.rs:1:6"))
+        .stdout(contains("*** cargo result: "))
+        .stderr(predicate::str::contains(
+            "build in source tree failed, not continuing",
+        ));
 }

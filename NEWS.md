@@ -18,6 +18,9 @@ Unreleased
   * Show function return types in some places, to make it easier to understand
     whether the mutants were useful or viable.
 
+  * Run `cargo build --tests` in the source directory to freshen the build and
+    download any dependencies, before copying it to a scratch directory.
+
 ## 0.0.4
 
 Released 2021-11-10
