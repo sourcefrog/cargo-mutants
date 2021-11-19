@@ -104,6 +104,14 @@ impl Status {
         }
     }
 
+    pub fn from_source_build(exit_status: process::ExitStatus) -> Status {
+        if exit_status.success() {
+            Status::SourceBuildPassed
+        } else {
+            Status::SourceBuildFailed
+        }
+    }
+
     /// True if this status indicates the user definitely needs to see the logs, because a task
     /// failed that should not have.
     pub fn should_show_logs(&self) -> bool {
@@ -166,6 +174,18 @@ fn build_source_tree(
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
     let start = Instant::now();
 
+    activity.set_phase("check");
+    let test_result = run_cargo(
+        &["check", "--tests"],
+        source_tree.root(),
+        &mut activity,
+        &log_file,
+    )?;
+    if !test_result.success() {
+        activity.outcome(&Outcome::new(&log_file, &start, Status::SourceBuildFailed))?;
+        return Err(anyhow!("check failed in source tree, not continuing"));
+    }
+
     activity.set_phase("build");
     let test_result = run_cargo(
         &["build", "--tests"],
@@ -173,17 +193,13 @@ fn build_source_tree(
         &mut activity,
         &log_file,
     )?;
-    let status = if test_result.success() {
-        Status::SourceBuildPassed
-    } else {
-        Status::SourceBuildFailed
-    };
+    let status = Status::from_source_build(test_result.exit_status);
     let outcome = Outcome::new(&log_file, &start, status);
     activity.outcome(&outcome)?;
     if test_result.success() {
         Ok(())
     } else {
-        Err(anyhow!("build in source tree failed, not continuing"))
+        Err(anyhow!("build failed in source tree, not continuing"))
     }
 }
 
