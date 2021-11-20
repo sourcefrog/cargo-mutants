@@ -45,6 +45,10 @@ struct Args {
     /// show cargo output for all invocations (very verbose).
     #[argh(switch)]
     all_logs: bool,
+
+    /// cargo check generated mutants, but don't run tests.
+    #[argh(switch)]
+    check: bool,
 }
 
 fn main() -> Result<()> {
@@ -60,6 +64,9 @@ fn main() -> Result<()> {
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;
     let console = console::Console::new(args.all_logs);
+    let options = lab::ExperimentOptions {
+        check_only: args.check,
+    };
     if args.list {
         let mutations = source_tree.mutations()?;
         if args.json {
@@ -72,7 +79,7 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        let lab_outcome = lab::experiment(&source_tree, &console)?;
+        let lab_outcome = lab::experiment(&source_tree, &options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

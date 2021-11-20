@@ -218,7 +218,7 @@ checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 name = "enucleate-testdata-could-hang"
 version = "0.1.0"
 dependencies = [
- "mutants 0.0.3",
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

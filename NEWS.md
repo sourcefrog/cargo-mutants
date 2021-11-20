@@ -7,8 +7,9 @@ Unreleased
   * Logs and other information are written into `mutants.out` in the source
     directory, rather than `target/mutants`.
 
-  * New `--all-logs` option prints all Cargo output to stdout, which is very
-    verbose but may be useful for example in CI.
+  * New `--all-logs` option prints all Cargo output to stdout, which is verbose
+    but useful for example in CI, by making all the output directly available
+    in captured stdout.
 
   * The output distinguishes check or build failures (probably due to an
     unviable mutant) from test failures (probably due to lacking coverage.)
@@ -21,6 +22,10 @@ Unreleased
   * Run `cargo check --tests` and `cargo build --tests` in the source directory
     to freshen the build and download any dependencies, before copying it to a
     scratch directory.
+
+  * New `--check` option runs `cargo check` on generated mutants to see if they
+    are viable, without actually running the tests. This is useful in tuning
+    cargo-mutants to generate better mutants.
 
 ## 0.0.4
 

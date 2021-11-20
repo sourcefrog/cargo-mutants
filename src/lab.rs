@@ -32,21 +32,32 @@ const LOG_MARKER: &str = "***";
 /// How frequently to check if cargo finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
+/// Options for running experiments.
+#[derive(Default, Debug)]
+pub struct ExperimentOptions {
+    /// Don't run the tests, just see if each mutant builds.
+    pub check_only: bool,
+}
+
 /// Run all possible mutation experiments.
 ///
 /// Before testing the mutations, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn experiment(source_tree: &SourceTree, console: &Console) -> Result<LabOutcome> {
+pub fn experiment(
+    source_tree: &SourceTree,
+    options: &ExperimentOptions,
+    console: &Console,
+) -> Result<LabOutcome> {
     let mut lab_outcome = LabOutcome::default();
     let output_dir = OutputDir::new(source_tree.root())?;
-    build_source_tree(source_tree, &output_dir, console)?;
+    build_source_tree(source_tree, &output_dir, options, console)?;
 
     let tmp_dir = TempDir::new()?;
     let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path(), console)?;
 
-    let clean_outcome = test_clean(&build_dir, &output_dir, console)?;
+    let clean_outcome = test_clean(&build_dir, &output_dir, options, console)?;
     lab_outcome.add(&clean_outcome);
-    if clean_outcome.status != Status::CleanTestPassed {
+    if !clean_outcome.status.passed() {
         console::print_error("tests failed in a clean copy of the tree, so no mutants were tested");
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
@@ -57,7 +68,13 @@ pub fn experiment(source_tree: &SourceTree, console: &Console) -> Result<LabOutc
         &mutations,
     )?;
     for mutation in mutations {
-        lab_outcome.add(&test_mutation(&mutation, &build_dir, &output_dir, console)?);
+        lab_outcome.add(&test_mutation(
+            &mutation,
+            &build_dir,
+            &output_dir,
+            options,
+            console,
+        )?);
     }
     Ok(lab_outcome)
 }
@@ -79,6 +96,8 @@ pub enum Status {
     /// Tests passed in a clean tree.
     CleanTestPassed,
     CheckFailed,
+    /// Only `cargo check` was run, and it passed.
+    CheckPassed,
     BuildFailed,
     /// Build failed in the original source tree.
     SourceBuildFailed,
@@ -117,6 +136,16 @@ impl Status {
     pub fn should_show_logs(&self) -> bool {
         use Status::*;
         matches!(self, CleanTestFailed | SourceBuildFailed)
+    }
+
+    /// True if the scenario succeeded.
+    pub fn passed(&self) -> bool {
+        use Status::*;
+        match self {
+            MutantCaught | CheckPassed | CleanTestPassed | SourceBuildPassed => true,
+            MutantMissed | CheckFailed | CleanTestFailed | SourceBuildFailed | Timeout
+            | BuildFailed => false,
+        }
     }
 }
 
@@ -166,10 +195,15 @@ impl LabOutcome {
 fn build_source_tree(
     source_tree: &SourceTree,
     output_dir: &OutputDir,
+    options: &ExperimentOptions,
     console: &Console,
 ) -> Result<()> {
-    let mut activity = console.start_activity("build source tree");
-    let scenario_name = "build source";
+    let scenario_name = if options.check_only {
+        "check source tree"
+    } else {
+        "build source tree"
+    };
+    let mut activity = console.start_activity(scenario_name);
     let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
     let start = Instant::now();
@@ -184,6 +218,10 @@ fn build_source_tree(
     if !test_result.success() {
         activity.outcome(&Outcome::new(&log_file, &start, Status::SourceBuildFailed))?;
         return Err(anyhow!("check failed in source tree, not continuing"));
+    }
+    if options.check_only {
+        activity.outcome(&Outcome::new(&log_file, &start, Status::CheckPassed))?;
+        return Ok(());
     }
 
     activity.set_phase("build");
@@ -207,12 +245,17 @@ fn build_source_tree(
 ///
 /// If there are already-failing tests, proceeding to test mutations
 /// won't give a clear signal.
-fn test_clean(build_dir: &Path, output_dir: &OutputDir, console: &Console) -> Result<Outcome> {
+fn test_clean(
+    build_dir: &Path,
+    output_dir: &OutputDir,
+    options: &ExperimentOptions,
+    console: &Console,
+) -> Result<Outcome> {
     let mut activity = console.start_activity("baseline test with no mutations");
     let scenario_name = "baseline";
     let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-    let outcome = run_scenario(build_dir, &mut activity, &log_file, true)?;
+    let outcome = run_scenario(build_dir, &mut activity, &log_file, options, true)?;
     activity.outcome(&outcome)?;
     Ok(outcome)
 }
@@ -222,6 +265,7 @@ fn test_mutation(
     mutation: &Mutation,
     build_dir: &Path,
     output_dir: &OutputDir,
+    options: &ExperimentOptions,
     console: &Console,
 ) -> Result<Outcome> {
     let mut activity = console.start_mutation(mutation);
@@ -230,7 +274,7 @@ fn test_mutation(
     writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
     writeln!(out_file, "{}", mutation.diff())?;
     let outcome = mutation.with_mutation_applied(build_dir, || {
-        run_scenario(build_dir, &mut activity, &log_file, false)
+        run_scenario(build_dir, &mut activity, &log_file, options, false)
     })?;
     activity.outcome(&outcome)?;
     Ok(outcome)
@@ -262,6 +306,7 @@ fn run_scenario(
     build_dir: &Path,
     activity: &mut Activity,
     log_file: &LogFile,
+    options: &ExperimentOptions,
     is_clean: bool,
 ) -> Result<Outcome> {
     // TODO: Maybe separate launching and collecting the result, so
@@ -272,6 +317,9 @@ fn run_scenario(
     activity.set_phase("check");
     if !run_cargo(&["check"], build_dir, activity, log_file)?.success() {
         return Ok(Outcome::new(log_file, &start, Status::CheckFailed));
+    }
+    if options.check_only {
+        return Ok(Outcome::new(log_file, &start, Status::CheckPassed));
     }
 
     activity.set_phase("build");

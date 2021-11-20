@@ -184,6 +184,17 @@ fn well_tested_tree_finds_no_problems() {
 }
 
 #[test]
+fn well_tested_tree_check_only() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    run_assert_cmd()
+        .args(["mutants", "--check"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success();
+    // TODO: Check some structured output or summary json?
+}
+
+#[test]
 fn test_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
@@ -249,6 +260,32 @@ r"src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
         .stdout(is_match(
 r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
         ).unwrap());
+}
+
+#[test]
+fn check_tree_that_builds_with_failing_tests_succeeds() {
+    // It doesn't actually run the tests so won't discover that they fail.
+    let tmp_src_dir = copy_of_testdata("already_failing_tests");
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--check")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success();
+}
+
+#[test]
+fn check_tree_with_mutants_skip() {
+    // It doesn't actually run the tests so won't discover that they fail.
+    let tmp_src_dir = copy_of_testdata("could_hang");
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--check")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success();
 }
 
 #[test]

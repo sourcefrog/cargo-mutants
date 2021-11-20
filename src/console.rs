@@ -147,6 +147,7 @@ pub fn style_status(status: Status) -> StyledObject<&'static str> {
         // good statuses
         MutantCaught => style("caught").green(),
         SourceBuildPassed | CleanTestPassed => style("ok").green(),
+        CheckPassed => style("check ok").green(),
         // neutral/inconclusive
         CheckFailed => style("check failed").yellow(),
         BuildFailed => style("build failed").yellow(),
