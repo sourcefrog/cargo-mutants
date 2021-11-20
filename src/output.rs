@@ -91,13 +91,14 @@ fn clean_filename(s: &str) -> String {
         .collect::<String>()
 }
 
-/// A log file for execution of a single test
+/// A log file for execution of a single scenario.
 #[derive(Debug, Clone)]
 pub struct LogFile {
     pub path: PathBuf,
 }
 
 impl LogFile {
+    /// Return the full content of the log as a string.
     pub fn log_content(&self) -> Result<String> {
         let mut buf: Vec<u8> = Vec::new();
         File::open(&self.path)
@@ -106,6 +107,7 @@ impl LogFile {
         Ok(String::from_utf8_lossy(&buf).into_owned())
     }
 
+    /// Open the log file to append more content.
     pub fn open_append(&self) -> Result<File> {
         OpenOptions::new()
             .append(true)
