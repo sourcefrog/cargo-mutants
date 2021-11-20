@@ -13,7 +13,7 @@ categories = ["development-tools::testing"]
 [dependencies]
 anyhow = "1.0"
 argh = "0.1.6"
-console = "0.14"
+console = "0.15"
 itertools = "0.10"
 path-slash = "0.1.4"
 quote = "1.0"
