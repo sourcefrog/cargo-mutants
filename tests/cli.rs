@@ -41,6 +41,20 @@ impl CommandInstaExt for std::process::Command {
     }
 }
 
+// Copy the source because output is written into mutants.out.
+fn copy_of_testdata(tree_name: &str) -> TempDir {
+    let tmp_src_dir = tempdir().unwrap();
+    cp_r::CopyOptions::new()
+        .filter(|path, _stat| {
+            Ok(["target", "mutants.out", "mutants.out.old"]
+                .iter()
+                .all(|p| !path.starts_with(p)))
+        })
+        .copy_tree(Path::new("testdata/tree").join(tree_name), &tmp_src_dir)
+        .unwrap();
+    tmp_src_dir
+}
+
 #[test]
 fn detect_incorrect_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
@@ -147,20 +161,6 @@ fn list_mutants_json_well_tested() {
         .assert_insta();
 }
 
-// Copy the source because output is written into mutants.out.
-fn copy_of_testdata(tree_name: &str) -> TempDir {
-    let tmp_src_dir = tempdir().unwrap();
-    cp_r::CopyOptions::new()
-        .filter(|path, _stat| {
-            Ok(["target", "mutants.out", "mutants.out.old"]
-                .iter()
-                .all(|p| !path.starts_with(p)))
-        })
-        .copy_tree(Path::new("testdata/tree").join(tree_name), &tmp_src_dir)
-        .unwrap();
-    tmp_src_dir
-}
-
 #[test]
 fn copy_testdata_doesnt_include_build_artifacts() {
     // If there is a target or mutants.out in the source directory, we don't want it in the copy,
@@ -177,21 +177,28 @@ fn well_tested_tree_finds_no_problems() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run_assert_cmd()
         .arg("mutants")
+        .arg("--no-times")
         .current_dir(&tmp_src_dir.path())
         .assert()
-        .success();
-    // TODO: Check some structured output or summary json?
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
 }
 
 #[test]
 fn well_tested_tree_check_only() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run_assert_cmd()
-        .args(["mutants", "--check"])
+        .args(["mutants", "--check", "--no-times"])
         .current_dir(&tmp_src_dir.path())
         .assert()
-        .success();
-    // TODO: Check some structured output or summary json?
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
 }
 
 #[test]
@@ -269,10 +276,15 @@ fn check_tree_that_builds_with_failing_tests_succeeds() {
     run_assert_cmd()
         .arg("mutants")
         .arg("--check")
+        .arg("--no-times")
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .success();
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
 }
 
 #[test]
@@ -282,10 +294,15 @@ fn check_tree_with_mutants_skip() {
     run_assert_cmd()
         .arg("mutants")
         .arg("--check")
+        .arg("--no-times")
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .success();
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
 }
 
 #[test]

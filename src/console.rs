@@ -14,13 +14,28 @@ use crate::mutate::Mutation;
 /// Top-level UI object that manages the state of an interactive console: mostly progress bars and
 /// messages.
 pub struct Console {
-    pub show_all_logs: bool,
+    show_all_logs: bool,
+    show_times: bool,
 }
 
 impl Console {
     /// Construct a new rich text UI.
-    pub fn new(show_all_logs: bool) -> Console {
-        Console { show_all_logs }
+    pub fn new() -> Console {
+        Console {
+            show_all_logs: false,
+            show_times: true,
+        }
+    }
+
+    pub fn show_all_logs(self, show_all_logs: bool) -> Console {
+        Console {
+            show_all_logs,
+            ..self
+        }
+    }
+
+    pub fn show_times(self, show_times: bool) -> Console {
+        Console { show_times, ..self }
     }
 
     /// Create an Activity for a new mutation.
@@ -41,24 +56,24 @@ impl Console {
             task: task.to_owned(),
             progress_bar,
             start_time: Instant::now(),
-            show_all_logs: self.show_all_logs,
+            console: self,
         }
     }
 
     /// Start an Activity for copying a tree.
     pub fn start_copy_activity(&self, name: &str) -> CopyActivity {
-        CopyActivity::new(name)
+        CopyActivity::new(name, self)
     }
 }
 
-pub struct Activity {
+pub struct Activity<'c> {
     pub start_time: Instant,
     progress_bar: ProgressBar,
     task: String,
-    show_all_logs: bool,
+    console: &'c Console,
 }
 
-impl Activity {
+impl<'c> Activity<'c> {
     pub fn set_phase(&mut self, phase: &'static str) {
         self.progress_bar
             .set_message(format!("{} ({})", self.task, phase));
@@ -67,12 +82,12 @@ impl Activity {
     /// Finish the progress bar, and print a concluding message to stdout.
     fn finish(self, styled_status: StyledObject<&str>) {
         self.progress_bar.finish_and_clear();
-        println!(
-            "{} ... {} in {}",
-            self.task,
-            styled_status,
-            self.format_elapsed()
-        );
+        print!("{} ... {}", self.task, styled_status,);
+        if self.console.show_times {
+            println!(" in {}", self.format_elapsed());
+        } else {
+            println!();
+        }
     }
 
     pub fn tick(&mut self) {
@@ -83,7 +98,7 @@ impl Activity {
     ///
     /// Prints the log content if appropriate.
     pub fn outcome(self, outcome: &Outcome) -> Result<()> {
-        let show_all_logs = self.show_all_logs; // survive consumption by finish
+        let show_all_logs = self.console.show_all_logs; // survive consumption by finish
         self.finish(style_status(outcome.status));
         if outcome.status.should_show_logs() || show_all_logs {
             print!("{}", outcome.log_file.log_content()?);
@@ -96,14 +111,15 @@ impl Activity {
     }
 }
 
-pub struct CopyActivity {
+pub struct CopyActivity<'c> {
     name: String,
     progress_bar: ProgressBar,
     start_time: Instant,
+    console: &'c Console,
 }
 
-impl CopyActivity {
-    fn new(name: &str) -> CopyActivity {
+impl<'c> CopyActivity<'c> {
+    fn new(name: &str, console: &'c Console) -> CopyActivity<'c> {
         let progress_bar = ProgressBar::new(0)
             .with_message(name.to_owned())
             .with_style(ProgressStyle::default_spinner().template("{msg}"));
@@ -112,31 +128,38 @@ impl CopyActivity {
             name: name.to_owned(),
             progress_bar,
             start_time: Instant::now(),
+            console,
         }
     }
 
     pub fn bytes_copied(&mut self, bytes_copied: u64) {
-        self.progress_bar.set_message(self.format(bytes_copied))
+        let styled = format!(
+            "{} ... {} in {}",
+            self.name,
+            style_mb(bytes_copied),
+            style(format_elapsed(self.start_time)).cyan(),
+        );
+        self.progress_bar.set_message(styled);
     }
 
     pub fn succeed(self, bytes_copied: u64) {
         self.progress_bar.finish_and_clear();
         // Print to stdout even if progress bars weren't drawn.
-        println!("{}", self.format(bytes_copied));
+        print!("{} ...", self.name);
+        if self.console.show_times {
+            println!(
+                " {} in {}",
+                style_mb(bytes_copied),
+                style(format_elapsed(self.start_time)).cyan(),
+            );
+        } else {
+            println!(" {}", style("done").green());
+        }
     }
 
     pub fn fail(self) {
         self.progress_bar.finish_and_clear();
         println!("{} ... {}", self.name, style("failed").bold().red(),);
-    }
-
-    fn format(&self, bytes_copied: u64) -> String {
-        format!(
-            "{} ... {} in {}",
-            self.name,
-            style_mb(bytes_copied),
-            style(format_elapsed(self.start_time)).cyan(),
-        )
     }
 }
 

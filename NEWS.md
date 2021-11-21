@@ -27,6 +27,9 @@ Unreleased
     are viable, without actually running the tests. This is useful in tuning
     cargo-mutants to generate better mutants.
 
+  * New `--no-times` output hides times (and tree sizes) from stdout, mostly to
+    make the output deterministic and easier to match in tests.
+
 ## 0.0.4
 
 Released 2021-11-10

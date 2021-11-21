@@ -49,6 +49,10 @@ struct Args {
     /// cargo check generated mutants, but don't run tests.
     #[argh(switch)]
     check: bool,
+
+    /// don't print times or tree sizes, to make output deterministic.
+    #[argh(switch)]
+    no_times: bool,
 }
 
 fn main() -> Result<()> {
@@ -63,7 +67,9 @@ fn main() -> Result<()> {
     }
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;
-    let console = console::Console::new(args.all_logs);
+    let console = console::Console::new()
+        .show_all_logs(args.all_logs)
+        .show_times(!args.no_times);
     let options = lab::ExperimentOptions {
         check_only: args.check,
     };
