@@ -56,19 +56,19 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
 }
 
 #[test]
-fn detect_incorrect_cargo_subcommand() {
+fn incorrect_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
     run_assert_cmd().arg("wibble").assert().code(1);
 }
 
 #[test]
-fn detect_missing_cargo_subcommand() {
+fn missing_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
     run_assert_cmd().assert().code(1);
 }
 
 #[test]
-fn detect_option_in_place_of_cargo_subcommand() {
+fn option_in_place_of_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
     run_assert_cmd().args(["--list"]).assert().code(1);
 }
@@ -202,7 +202,7 @@ fn well_tested_tree_check_only() {
 }
 
 #[test]
-fn test_factorial() {
+fn uncaught_mutant_in_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
     let output_re = r"^build source tree \.\.\. ok in \d+\.\d\d\ds
@@ -270,8 +270,8 @@ r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. 
 }
 
 #[test]
-fn check_tree_that_builds_with_failing_tests_succeeds() {
-    // It doesn't actually run the tests so won't discover that they fail.
+fn check_succeds_in_tree_that_builds_but_fails_tests() {
+    // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run_assert_cmd()
         .arg("mutants")
@@ -289,7 +289,6 @@ fn check_tree_that_builds_with_failing_tests_succeeds() {
 
 #[test]
 fn check_tree_with_mutants_skip() {
-    // It doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("could_hang");
     run_assert_cmd()
         .arg("mutants")
@@ -306,7 +305,7 @@ fn check_tree_with_mutants_skip() {
 }
 
 #[test]
-fn detect_already_failing_tests() {
+fn already_failing_tests_are_detected_before_running_mutants() {
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run_assert_cmd()
         .arg("mutants")
