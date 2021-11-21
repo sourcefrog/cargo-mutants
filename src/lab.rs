@@ -417,7 +417,8 @@ fn copy_source_to_scratch(
     console: &Console,
 ) -> Result<PathBuf> {
     let build_dir = tmp_path.join("build");
-    let mut activity = console.start_copy_activity("copy source to scratch directory");
+    let mut activity =
+        console.start_copy_activity("copy source and build products to scratch directory");
     // I thought we could skip copying /target here, but it turns out that copying
     // it does speed up the first build.
     match cp_r::CopyOptions::new()
