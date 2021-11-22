@@ -12,48 +12,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Default::default()"
   },
   {
-    "file": "src/lib.rs",
-    "line": 21,
-    "function": "returns_unit",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "file": "src/lib.rs",
-    "line": 26,
-    "function": "returns_42u32",
-    "return_type": "-> u32",
-    "replacement": "Default::default()"
-  },
-  {
-    "file": "src/lib.rs",
-    "line": 31,
-    "function": "divisible_by_three",
-    "return_type": "-> bool",
-    "replacement": "true"
-  },
-  {
-    "file": "src/lib.rs",
-    "line": 31,
-    "function": "divisible_by_three",
-    "return_type": "-> bool",
-    "replacement": "false"
-  },
-  {
-    "file": "src/lib.rs",
-    "line": 40,
-    "function": "double_string",
-    "return_type": "-> String",
-    "replacement": "\"\".into()"
-  },
-  {
-    "file": "src/lib.rs",
-    "line": 40,
-    "function": "double_string",
-    "return_type": "-> String",
-    "replacement": "\"xyzzy\".into()"
-  },
-  {
     "file": "src/nested_function.rs",
     "line": 1,
     "function": "has_nested",
@@ -80,5 +38,47 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "function": "error_if_negative",
     "return_type": "-> Result < () , () >",
     "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 7,
+    "function": "returns_unit",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 12,
+    "function": "returns_42u32",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 17,
+    "function": "divisible_by_three",
+    "return_type": "-> bool",
+    "replacement": "true"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 17,
+    "function": "divisible_by_three",
+    "return_type": "-> bool",
+    "replacement": "false"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 26,
+    "function": "double_string",
+    "return_type": "-> String",
+    "replacement": "\"\".into()"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 26,
+    "function": "double_string",
+    "return_type": "-> String",
+    "replacement": "\"xyzzy\".into()"
   }
 ]
