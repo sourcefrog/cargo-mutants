@@ -43,6 +43,15 @@ impl From<proc_macro2::Span> for Span {
     }
 }
 
+impl From<&proc_macro2::Span> for Span {
+    fn from(s: &proc_macro2::Span) -> Self {
+        Span {
+            start: s.start().into(),
+            end: s.end().into(),
+        }
+    }
+}
+
 /// Replace a subregion of text.
 ///
 /// Returns a copy of `s` with the region between `start` and `end` inclusive replaced by

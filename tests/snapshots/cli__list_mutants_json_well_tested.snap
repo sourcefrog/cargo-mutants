@@ -12,6 +12,20 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Default::default()"
   },
   {
+    "file": "src/methods.rs",
+    "line": 6,
+    "function": "Foo::new",
+    "return_type": "-> Foo",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 10,
+    "function": "Foo::double",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
     "file": "src/nested_function.rs",
     "line": 1,
     "function": "has_nested",

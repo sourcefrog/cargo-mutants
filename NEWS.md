@@ -30,6 +30,8 @@ Unreleased
   * New `--no-times` output hides times (and tree sizes) from stdout, mostly to
     make the output deterministic and easier to match in tests.
 
+  * Mutate methods too!
+
 ## 0.0.4
 
 Released 2021-11-10

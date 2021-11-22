@@ -242,9 +242,6 @@ Being *easy* to use means:
 
   * (There are several others.)
 
-* It currently only mutates "item" (top-level) functions, not methods. This
-  should be easy to add.
-
 * cargo-mutants sees the AST of the tree but doesn't fully "understand" the
   types. Possibly it could learn to get type information from the compiler (or
   rust-analyzer?), which would help it generate more interesting viable mutants,

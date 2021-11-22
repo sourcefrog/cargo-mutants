@@ -33,18 +33,25 @@ impl<'sf> DiscoveryVisitor<'sf> {
         }
     }
 
-    fn collect_mutation(&mut self, op: MutationOp, item_fn: &ItemFn) {
-        self.namespace_stack.push(item_fn.sig.ident.to_string());
-        let function_name = self.namespace_stack.join("::");
-        let return_type = format!("{}", item_fn.sig.output.to_token_stream());
-        self.mutations.push(Mutation::new(
-            self.source_file.clone(),
-            op,
-            function_name,
-            return_type,
-            item_fn.block.brace_token.span.into(),
-        ));
-        self.namespace_stack.pop();
+    fn collect_fn_mutations(
+        &mut self,
+        ident: &syn::Ident,
+        return_type: &syn::ReturnType,
+        span: &proc_macro2::Span,
+    ) {
+        self.in_namespace(&ident.to_string(), |v| {
+            let function_name = v.namespace_stack.join("::");
+            let return_type_str = format!("{}", return_type.to_token_stream());
+            for op in ops_for_return_type(return_type) {
+                v.mutations.push(Mutation::new(
+                    v.source_file.clone(),
+                    op,
+                    function_name.clone(),
+                    return_type_str.clone(),
+                    span.into(),
+                ))
+            }
+        });
     }
 
     /// Call a function with a namespace pushed onto the stack.
@@ -62,42 +69,35 @@ impl<'sf> DiscoveryVisitor<'sf> {
 }
 
 impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
-    // TODO: Also visit methods and maybe closures.
-
-    fn visit_item_fn(&mut self, item_fn: &'ast ItemFn) {
+    fn visit_item_fn(&mut self, i: &'ast ItemFn) {
         // TODO: Filter out more inapplicable fns.
-        if attrs_excluded(&item_fn.attrs) {
+        if attrs_excluded(&i.attrs) {
             return; // don't look inside it either
         }
-        // Look at the return type and try to work out what values might be valid to return.
-        let mut ops: Vec<MutationOp> = Vec::new();
-        match &item_fn.sig.output {
-            syn::ReturnType::Default => ops.push(MutationOp::Unit),
-            syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
-                syn::Type::Path(syn::TypePath { path, .. }) => {
-                    // dbg!(&path);
-                    if path.is_ident("bool") {
-                        ops.push(MutationOp::True);
-                        ops.push(MutationOp::False);
-                    } else if path.is_ident("String") {
-                        // TODO: Detect &str etc.
-                        ops.push(MutationOp::EmptyString);
-                        ops.push(MutationOp::Xyzzy);
-                    } else if path_is_result(path) {
-                        // TODO: Try this for any path ending in "Result".
-                        // TODO: Recursively generate for types inside the Ok side of the Result.
-                        ops.push(MutationOp::OkDefault);
-                    } else {
-                        ops.push(MutationOp::Default)
-                    }
-                }
-                _ => ops.push(MutationOp::Default),
-            },
+        self.collect_fn_mutations(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
+        self.in_namespace(&i.sig.ident.to_string(), |v| {
+            syn::visit::visit_item_fn(v, i);
+        });
+    }
+
+    /// Visit `impl Foo { ...}` or `impl Debug for Foo { ... }`.
+    fn visit_item_impl(&mut self, i: &'ast syn::ItemImpl) {
+        if attrs_excluded(&i.attrs) {
+            return;
         }
-        ops.into_iter()
-            .for_each(|op| self.collect_mutation(op, item_fn));
-        self.in_namespace(&item_fn.sig.ident.to_string(), |v| {
-            syn::visit::visit_item_fn(v, item_fn);
+        // Make an approximately-right namespace.
+        let name = type_name_string(&i.self_ty);
+        self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
+    }
+
+    /// Visit `fn foo()` within an `impl`.
+    fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        self.collect_fn_mutations(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
+        self.in_namespace(&i.sig.ident.to_string(), |v| {
+            syn::visit::visit_impl_item_method(v, i)
         });
     }
 
@@ -107,6 +107,48 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
                 syn::visit::visit_item_mod(v, node)
             });
         }
+    }
+}
+
+fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
+    let mut ops: Vec<MutationOp> = Vec::new();
+    match return_type {
+        syn::ReturnType::Default => ops.push(MutationOp::Unit),
+        syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
+            syn::Type::Path(syn::TypePath { path, .. }) => {
+                // dbg!(&path);
+                if path.is_ident("bool") {
+                    ops.push(MutationOp::True);
+                    ops.push(MutationOp::False);
+                } else if path.is_ident("String") {
+                    // TODO: Detect &str etc.
+                    ops.push(MutationOp::EmptyString);
+                    ops.push(MutationOp::Xyzzy);
+                } else if path_is_result(path) {
+                    // TODO: Try this for any path ending in "Result".
+                    // TODO: Recursively generate for types inside the Ok side of the Result.
+                    ops.push(MutationOp::OkDefault);
+                } else {
+                    ops.push(MutationOp::Default)
+                }
+            }
+            _ => ops.push(MutationOp::Default),
+        },
+    }
+    ops
+}
+
+fn type_name_string(ty: &syn::Type) -> String {
+    match ty {
+        syn::Type::Path(p) => {
+            if let Some(ident) = p.path.get_ident() {
+                format!("{}", ident)
+            } else {
+                // TODO: Something better here?
+                "<??>".into()
+            }
+        }
+        _ => "<??>".into(),
     }
 }
 
