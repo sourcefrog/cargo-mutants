@@ -227,7 +227,7 @@ Being *easy* to use means:
 ## Limitations, caveats, known bugs, and future enhancements
 
 * cargo-mutants has a limited repertoire of mutations it can generate. As this
-  improves, it will generate more interesting results, and I expect this can
+  improves, it will generate more interesting results, and we expect this can
   incrementally improve over time.
 
 * It also currently has a limited understanding of function return types, and so
@@ -239,9 +239,6 @@ Being *easy* to use means:
 
   * It should also probably skip `unsafe` functions, and maybe functions
     containing `unsafe {}` blocks.
-
-  * I can't think of a good mutation that returns `&mut`, so functions returning
-    mutable references should be skipped.
 
   * (There are several others.)
 
@@ -297,6 +294,8 @@ Being *easy* to use means:
 
 The basic approach is:
 
+* First, run `cargo build --tests` and `cargo check` in the source tree to
+  "freshen" it so that the mutated copies will have a good starting point.
 * Build a list of mutations:
   * Walk all source files and parse each one looking for functions.
   * Skip functions that should not be mutated for any of several reasons:
