@@ -96,7 +96,9 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
         }
         ops.into_iter()
             .for_each(|op| self.collect_mutation(op, item_fn));
-        syn::visit::visit_item_fn(self, item_fn);
+        self.in_namespace(&item_fn.sig.ident.to_string(), |v| {
+            syn::visit::visit_item_fn(v, item_fn);
+        });
     }
 
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {

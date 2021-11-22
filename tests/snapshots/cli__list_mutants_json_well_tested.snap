@@ -63,7 +63,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "file": "src/nested_function.rs",
     "line": 2,
-    "function": "inner",
+    "function": "has_nested::inner",
     "return_type": "-> u32",
     "replacement": "Default::default()"
   },
