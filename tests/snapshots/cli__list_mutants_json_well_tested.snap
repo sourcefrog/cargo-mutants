@@ -13,45 +13,59 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "file": "src/lib.rs",
-    "line": 20,
+    "line": 21,
     "function": "returns_unit",
     "return_type": "",
     "replacement": "()"
   },
   {
     "file": "src/lib.rs",
-    "line": 25,
+    "line": 26,
     "function": "returns_42u32",
     "return_type": "-> u32",
     "replacement": "Default::default()"
   },
   {
     "file": "src/lib.rs",
-    "line": 30,
+    "line": 31,
     "function": "divisible_by_three",
     "return_type": "-> bool",
     "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "line": 30,
+    "line": 31,
     "function": "divisible_by_three",
     "return_type": "-> bool",
     "replacement": "false"
   },
   {
     "file": "src/lib.rs",
-    "line": 39,
+    "line": 40,
     "function": "double_string",
     "return_type": "-> String",
     "replacement": "\"\".into()"
   },
   {
     "file": "src/lib.rs",
-    "line": 39,
+    "line": 40,
     "function": "double_string",
     "return_type": "-> String",
     "replacement": "\"xyzzy\".into()"
+  },
+  {
+    "file": "src/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/nested_function.rs",
+    "line": 2,
+    "function": "inner",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
   },
   {
     "file": "src/result.rs",

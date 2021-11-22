@@ -9,6 +9,7 @@
 #![allow(unused, dead_code)]
 
 mod inside_mod;
+mod nested_function;
 mod result;
 
 /// This function is only built for tests so shouldn't be mutated.
