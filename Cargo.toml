@@ -33,7 +33,7 @@ version = "1.0.130"
 features = ["derive"]
 
 [dependencies.syn]
-version = "1.0.76"
+version = "1.0.81"
 features = ["full", "extra-traits", "visit"]
 
 [dependencies.proc-macro2]
