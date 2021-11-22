@@ -46,6 +46,19 @@ impl<'sf> DiscoveryVisitor<'sf> {
         ));
         self.namespace_stack.pop();
     }
+
+    /// Call a function with a namespace pushed onto the stack.
+    ///
+    /// This is used when recursively descending into a namespace.
+    fn in_namespace<F, T>(&mut self, name: &str, f: F) -> T
+    where
+        F: FnOnce(&mut Self) -> T,
+    {
+        self.namespace_stack.push(name.to_owned());
+        let r = f(self);
+        assert_eq!(self.namespace_stack.pop().unwrap(), name);
+        r
+    }
 }
 
 impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
@@ -87,13 +100,10 @@ impl<'ast, 'sf> Visit<'ast> for DiscoveryVisitor<'sf> {
     }
 
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
-        // TODO: Remember which mods we're inside, and put the path into the name of visited
-        // functions.
         if !attrs_excluded(&node.attrs) {
-            let name = node.ident.to_string();
-            self.namespace_stack.push(name.clone());
-            syn::visit::visit_item_mod(self, node);
-            assert_eq!(self.namespace_stack.pop(), Some(name));
+            self.in_namespace(&node.ident.to_string(), |v| {
+                syn::visit::visit_item_mod(v, node)
+            });
         }
     }
 }
