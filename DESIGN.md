@@ -10,9 +10,7 @@
 progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
 
-`mutate.rs` -- different types of mutations we can apply. Also,
-the interface to the `syn` crate's AST, but that should split
-out.
+`mutate.rs` -- different types of mutations we can apply.
 
 `outcome.rs` -- the result of running a single test or build.
 
@@ -22,3 +20,6 @@ out.
 
 `textedit.rs` -- (line, column) addressing within a source file,
 and edits to the content based on those addresses.
+
+`visit.pr` -- Walk a source file's AST. The interface to the `syn` parser is
+localized here.
