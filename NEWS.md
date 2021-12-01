@@ -1,8 +1,8 @@
 # cargo-mutants changelog
 
-## 0.0.5-pre
+## 0.1.0
 
-Unreleased
+Released 2021-11-30
 
   * Logs and other information are written into `mutants.out` in the source
     directory, rather than `target/mutants`.
