@@ -94,7 +94,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "0.0.5-pre"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "argh",
@@ -162,8 +162,9 @@ dependencies = [
 
 [[package]]
 name = "cp_r"
-version = "0.4.0-pre"
-source = "git+https://github.com/sourcefrog/cp_r#0d3adf1f1a76309948a44974950222d99c3a76c4"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fabdc50d258b6e6585b5723f1d27cac4c1a3216b1af5b48bf6d05c84b6a5ea2"
 dependencies = [
  "filetime",
 ]
