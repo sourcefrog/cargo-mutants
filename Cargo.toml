@@ -12,7 +12,7 @@ categories = ["development-tools::testing"]
 
 [dependencies]
 anyhow = "1.0"
-argh = "0.1.6"
+argh = "0.1"
 console = "0.15"
 itertools = "0.10"
 path-slash = "0.1.4"
@@ -20,7 +20,7 @@ quote = "1.0"
 similar = "2.0"
 tempfile = "3.2"
 walkdir = "2.3"
-serde_json = "1.0.68"
+serde_json = "1"
 indicatif = "0.16"
 
 [dependencies.cp_r]
@@ -29,11 +29,11 @@ version = "0.4.0"
 # git = "https://github.com/sourcefrog/cp_r"
 
 [dependencies.serde]
-version = "1.0.130"
+version = "1"
 features = ["derive"]
 
 [dependencies.syn]
-version = "1.0.81"
+version = "1"
 features = ["full", "extra-traits", "visit"]
 
 [dependencies.proc-macro2]
@@ -44,8 +44,8 @@ version = "1.0.29"
 assert_cmd = "2.0"
 insta = "1.8"
 lazy_static = "1.4"
-predicates = "2.0"
-pretty_assertions = "0.7.2"
+predicates = "2"
+pretty_assertions = "1"
 regex = "1.5"
 
 [workspace]
