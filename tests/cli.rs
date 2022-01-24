@@ -83,9 +83,13 @@ fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
         .arg(tmp_src_dir.path())
         .assert()
         .stderr(
-            (predicates::str::contains("No such file or directory").or(predicates::str::contains(
-                "The system cannot find the file specified",
-            )))
+            (predicates::str::contains("No such file or directory")
+                .or(predicates::str::contains(
+                    "The system cannot find the file specified",
+                ))
+                .or(
+                    predicates::str::contains("program not found"), /* Windows */
+                ))
             .and(predicates::str::contains(bogus_cargo)),
         )
         .code(1);
