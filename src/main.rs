@@ -7,6 +7,7 @@ mod exit_code;
 mod lab;
 mod mutate;
 mod output;
+mod run;
 mod source;
 mod textedit;
 mod visit;

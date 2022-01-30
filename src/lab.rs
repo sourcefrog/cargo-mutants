@@ -1,15 +1,11 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
-use std::borrow::Cow;
 use std::collections::HashMap;
-use std::env;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::process::{self, Command, ExitStatus};
-use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
@@ -20,17 +16,11 @@ use crate::console::{self, Activity, Console};
 use crate::exit_code;
 use crate::mutate::Mutation;
 use crate::output::{LogFile, OutputDir};
+use crate::run::{run_cargo, CargoResult};
 use crate::source::SourceTree;
 
-// Until we can reliably stop the grandchild test binaries, by killing a process
-// group, timeouts are disabled.
-const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(60);
-
 /// Text inserted in log files to make important sections more visible.
-const LOG_MARKER: &str = "***";
-
-/// How frequently to check if cargo finished.
-const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
+pub const LOG_MARKER: &str = "***";
 
 /// Options for running experiments.
 #[derive(Default, Debug)]
@@ -106,28 +96,29 @@ pub enum Status {
 }
 
 impl Status {
-    pub fn from_mutant_test(exit_status: process::ExitStatus) -> Status {
+    pub fn from_mutant_test(cargo_result: &CargoResult) -> Status {
         // TODO: Detect signals and cargo failures other than test failures.
-        if exit_status.success() {
-            Status::MutantMissed
-        } else {
-            Status::MutantCaught
+        match cargo_result {
+            CargoResult::Timeout => Status::Timeout,
+            CargoResult::Success => Status::MutantMissed,
+            CargoResult::Failure => Status::MutantCaught,
         }
     }
 
-    pub fn from_clean_test(exit_status: process::ExitStatus) -> Status {
-        if exit_status.success() {
-            Status::CleanTestPassed
-        } else {
-            Status::CleanTestFailed
+    pub fn from_clean_test(cargo_result: &CargoResult) -> Status {
+        // TODO: Detect signals and cargo failures other than test failures.
+        match cargo_result {
+            CargoResult::Timeout => Status::Timeout,
+            CargoResult::Success => Status::CleanTestPassed,
+            CargoResult::Failure => Status::CleanTestFailed,
         }
     }
 
-    pub fn from_source_build(exit_status: process::ExitStatus) -> Status {
-        if exit_status.success() {
-            Status::SourceBuildPassed
-        } else {
-            Status::SourceBuildFailed
+    pub fn from_source_build(cargo_result: &CargoResult) -> Status {
+        match cargo_result {
+            CargoResult::Timeout => Status::Timeout,
+            CargoResult::Success => Status::SourceBuildPassed,
+            CargoResult::Failure => Status::SourceBuildFailed,
         }
     }
 
@@ -231,7 +222,7 @@ fn build_source_tree(
         &mut activity,
         &log_file,
     )?;
-    let status = Status::from_source_build(test_result.exit_status);
+    let status = Status::from_source_build(&test_result);
     let outcome = Outcome::new(&log_file, &start, status);
     activity.outcome(&outcome)?;
     if test_result.success() {
@@ -330,85 +321,12 @@ fn run_scenario(
     activity.set_phase("test");
     let test_result = run_cargo(&["test"], build_dir, activity, log_file)?;
     let status = if is_clean {
-        Status::from_clean_test(test_result.exit_status)
+        Status::from_clean_test(&test_result)
     } else {
-        Status::from_mutant_test(test_result.exit_status)
+        Status::from_mutant_test(&test_result)
     };
 
     Ok(Outcome::new(log_file, &start, status))
-}
-
-/// The result of running a single Cargo command.
-struct CargoResult {
-    timed_out: bool,
-    exit_status: ExitStatus,
-}
-
-impl CargoResult {
-    fn success(&self) -> bool {
-        !self.timed_out && self.exit_status.success()
-    }
-}
-
-fn run_cargo(
-    cargo_args: &[&str],
-    in_dir: &Path,
-    activity: &mut Activity,
-    log_file: &LogFile,
-) -> Result<CargoResult> {
-    let start = Instant::now();
-    let mut timed_out = false;
-    // When run as a Cargo subcommand, which is the usual/intended case,
-    // $CARGO tells us the right way to call back into it, so that we get
-    // the matching toolchain etc.
-    let cargo_bin: Cow<str> = env::var("CARGO")
-        .map(Cow::from)
-        .unwrap_or(Cow::Borrowed("cargo"));
-    let mut out_file = log_file.open_append()?;
-    writeln!(
-        out_file,
-        "\n{} run {} {}",
-        LOG_MARKER,
-        cargo_bin,
-        cargo_args.join(" "),
-    )?;
-
-    let mut child = Command::new(cargo_bin.as_ref())
-        .args(cargo_args)
-        .current_dir(in_dir)
-        .stdout(out_file.try_clone()?)
-        .stderr(out_file.try_clone()?)
-        .stdin(process::Stdio::null())
-        .spawn()
-        .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
-    let exit_status = loop {
-        if start.elapsed() > TEST_TIMEOUT {
-            // eprintln!("bored! killing child...");
-            if let Err(e) = child.kill() {
-                // most likely we raced and it's already gone
-                eprintln!("failed to kill child after timeout: {}", e);
-            }
-            timed_out = true;
-            // Give it a bit of time to exit, then keep signalling until it
-            // does stop.
-            sleep(Duration::from_millis(200));
-        }
-        match child.try_wait()? {
-            Some(status) => break status,
-            None => sleep(WAIT_POLL_INTERVAL),
-        }
-        activity.tick();
-    };
-    let duration = start.elapsed();
-    writeln!(
-        out_file,
-        "\n{} cargo result: {:?} in {:?}",
-        LOG_MARKER, exit_status, duration
-    )?;
-    Ok(CargoResult {
-        timed_out,
-        exit_status,
-    })
 }
 
 fn copy_source_to_scratch(
