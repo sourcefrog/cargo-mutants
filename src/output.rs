@@ -1,16 +1,13 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! A `mutants.out` directory holding logs and other output.
-//!
-//! *CAUTION:* This currently doesn't interact with Cargo locking, and if two `cargo-mutants`
-//! processes access the same directory they'll tread on each other...
 
-use std::fs::{File, OpenOptions};
-use std::io::Read;
+use std::fs::{self};
 use std::path::{Path, PathBuf};
-use std::{fs, io};
 
 use anyhow::{Context, Result};
+
+use crate::log_file::LogFile;
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
@@ -47,72 +44,14 @@ impl OutputDir {
     ///
     /// Returns the [File] to which subprocess output should be sent, and a LogFile to read it
     /// later.
-    pub fn create_log(&self, scenario_name: &str) -> Result<(File, LogFile)> {
-        // TODO: Maybe remember what files have already been created to avoid this loop, although
-        // realistically it seems unlikely to be hit often...
-        let basename = clean_filename(scenario_name);
-        for i in 0..1000 {
-            let t = if i == 0 {
-                format!("{}.log", basename)
-            } else {
-                format!("{}_{:03}.log", basename, i)
-            };
-            let path = self.log_dir.join(t);
-            match fs::OpenOptions::new()
-                .write(true)
-                .read(true)
-                .create_new(true)
-                .open(&path)
-            {
-                Ok(file) => return Ok((file, LogFile { path })),
-                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-                Err(e) => return Err(anyhow::Error::from(e).context("create test log file")),
-            }
-        }
-        unreachable!(
-            "couldn't create any test log in {:?} for {:?}",
-            self, scenario_name,
-        );
+    pub fn create_log(&self, scenario_name: &str) -> Result<LogFile> {
+        LogFile::create_in(&self.log_dir, scenario_name)
     }
 
     #[allow(dead_code)]
     /// Return the path of the `mutants.out` directory.
     pub fn path(&self) -> &Path {
         &self.path
-    }
-}
-
-fn clean_filename(s: &str) -> String {
-    s.chars()
-        .map(|c| match c {
-            '/' | '\\' | ' ' | ':' | '<' | '>' | '?' | '*' | '|' | '"' => '_',
-            c => c,
-        })
-        .collect::<String>()
-}
-
-/// A log file for execution of a single scenario.
-#[derive(Debug, Clone)]
-pub struct LogFile {
-    pub path: PathBuf,
-}
-
-impl LogFile {
-    /// Return the full content of the log as a string.
-    pub fn get_log_content(&self) -> Result<String> {
-        let mut buf: Vec<u8> = Vec::new();
-        File::open(&self.path)
-            .and_then(|mut f| f.read_to_end(&mut buf))
-            .with_context(|| format!("read log file {}", self.path.display()))?;
-        Ok(String::from_utf8_lossy(&buf).into_owned())
-    }
-
-    /// Open the log file to append more content.
-    pub fn open_append(&self) -> Result<File> {
-        OpenOptions::new()
-            .append(true)
-            .open(&self.path)
-            .with_context(|| format!("open {} for append", self.path.display()))
     }
 }
 

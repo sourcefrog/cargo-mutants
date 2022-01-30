@@ -101,7 +101,7 @@ impl<'c> Activity<'c> {
         let show_all_logs = self.console.show_all_logs; // survive consumption by finish
         self.finish(style_status(outcome.status));
         if outcome.status.should_show_logs() || show_all_logs {
-            print!("{}", outcome.log_file.get_log_content()?);
+            print!("{}", outcome.get_log_content()?);
         }
         Ok(())
     }

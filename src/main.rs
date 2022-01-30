@@ -1,10 +1,11 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
 
 mod console;
 mod exit_code;
 mod lab;
+mod log_file;
 mod mutate;
 mod output;
 mod run;

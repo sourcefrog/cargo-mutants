@@ -3,8 +3,8 @@
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::fs::{self, File};
+use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -14,13 +14,11 @@ use tempfile::TempDir;
 
 use crate::console::{self, Activity, Console};
 use crate::exit_code;
+use crate::log_file::LogFile;
 use crate::mutate::Mutation;
-use crate::output::{LogFile, OutputDir};
+use crate::output::OutputDir;
 use crate::run::{run_cargo, CargoResult};
 use crate::source::SourceTree;
-
-/// Text inserted in log files to make important sections more visible.
-pub const LOG_MARKER: &str = "***";
 
 /// Options for running experiments.
 #[derive(Default, Debug)]
@@ -195,8 +193,8 @@ fn build_source_tree(
         "build source tree"
     };
     let mut activity = console.start_activity(scenario_name);
-    let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
-    writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
+    let mut log_file = output_dir.create_log(scenario_name)?;
+    log_file.message(scenario_name);
     let start = Instant::now();
 
     activity.set_phase("check");
@@ -204,7 +202,7 @@ fn build_source_tree(
         &["check", "--tests"],
         source_tree.root(),
         &mut activity,
-        &log_file,
+        &mut log_file,
     )?;
     if !test_result.success() {
         activity.outcome(&Outcome::new(&log_file, &start, Status::SourceBuildFailed))?;
@@ -220,7 +218,7 @@ fn build_source_tree(
         &["build", "--tests"],
         source_tree.root(),
         &mut activity,
-        &log_file,
+        &mut log_file,
     )?;
     let status = Status::from_source_build(&test_result);
     let outcome = Outcome::new(&log_file, &start, status);
@@ -244,9 +242,9 @@ fn test_clean(
 ) -> Result<Outcome> {
     let mut activity = console.start_activity("baseline test with no mutations");
     let scenario_name = "baseline";
-    let (mut out_file, log_file) = output_dir.create_log(scenario_name)?;
-    writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-    let outcome = run_scenario(build_dir, &mut activity, &log_file, options, true)?;
+    let mut log_file = output_dir.create_log(scenario_name)?;
+    log_file.message(scenario_name);
+    let outcome = run_scenario(build_dir, &mut activity, &mut log_file, options, true)?;
     activity.outcome(&outcome)?;
     Ok(outcome)
 }
@@ -261,11 +259,10 @@ fn test_mutation(
 ) -> Result<Outcome> {
     let mut activity = console.start_mutation(mutation);
     let scenario_name = mutation.to_string();
-    let (mut out_file, log_file) = output_dir.create_log(&scenario_name)?;
-    writeln!(out_file, "{} {}", LOG_MARKER, scenario_name)?;
-    writeln!(out_file, "{}", mutation.diff())?;
+    let mut log_file = output_dir.create_log(&scenario_name)?;
+    log_file.message(&format!("{}\n{}", scenario_name, mutation.diff()));
     let outcome = mutation.with_mutation_applied(build_dir, || {
-        run_scenario(build_dir, &mut activity, &log_file, options, false)
+        run_scenario(build_dir, &mut activity, &mut log_file, options, false)
     })?;
     activity.outcome(&outcome)?;
     Ok(outcome)
@@ -278,17 +275,21 @@ pub struct Outcome {
     /// High-level categorization of what happened.
     pub status: Status,
     /// A file holding the text output from running this test.
-    pub log_file: LogFile,
+    log_path: PathBuf,
     pub duration: Duration,
 }
 
 impl Outcome {
     pub fn new(log_file: &LogFile, start_time: &Instant, status: Status) -> Outcome {
         Outcome {
-            log_file: log_file.clone(),
+            log_path: log_file.path().to_owned(),
             duration: start_time.elapsed(),
             status,
         }
+    }
+
+    pub fn get_log_content(&self) -> Result<String> {
+        fs::read_to_string(&self.log_path).context("read log file")
     }
 }
 
@@ -296,7 +297,7 @@ impl Outcome {
 fn run_scenario(
     build_dir: &Path,
     activity: &mut Activity,
-    log_file: &LogFile,
+    log_file: &mut LogFile,
     options: &ExperimentOptions,
     is_clean: bool,
 ) -> Result<Outcome> {
@@ -307,15 +308,15 @@ fn run_scenario(
 
     activity.set_phase("check");
     if !run_cargo(&["check"], build_dir, activity, log_file)?.success() {
-        return Ok(Outcome::new(log_file, &start, Status::CheckFailed));
+        return Ok(Outcome::new(&log_file, &start, Status::CheckFailed));
     }
     if options.check_only {
-        return Ok(Outcome::new(log_file, &start, Status::CheckPassed));
+        return Ok(Outcome::new(&log_file, &start, Status::CheckPassed));
     }
 
     activity.set_phase("build");
     if !run_cargo(&["build", "--tests"], build_dir, activity, log_file)?.success() {
-        return Ok(Outcome::new(log_file, &start, Status::BuildFailed));
+        return Ok(Outcome::new(&log_file, &start, Status::BuildFailed));
     }
 
     activity.set_phase("test");
@@ -326,7 +327,7 @@ fn run_scenario(
         Status::from_mutant_test(&test_result)
     };
 
-    Ok(Outcome::new(log_file, &start, status))
+    Ok(Outcome::new(&log_file, &start, status))
 }
 
 fn copy_source_to_scratch(
