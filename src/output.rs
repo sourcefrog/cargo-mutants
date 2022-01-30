@@ -99,7 +99,7 @@ pub struct LogFile {
 
 impl LogFile {
     /// Return the full content of the log as a string.
-    pub fn log_content(&self) -> Result<String> {
+    pub fn get_log_content(&self) -> Result<String> {
         let mut buf: Vec<u8> = Vec::new();
         File::open(&self.path)
             .and_then(|mut f| f.read_to_end(&mut buf))
