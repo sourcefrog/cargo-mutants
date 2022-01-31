@@ -43,7 +43,7 @@ pub fn experiment(
     let tmp_dir = TempDir::new()?;
     let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path(), console)?;
 
-    let clean_outcome = test_clean(&build_dir, &output_dir, options, console)?;
+    let clean_outcome = test_baseline(&build_dir, &output_dir, options, console)?;
     lab_outcome.add(&clean_outcome);
     if !clean_outcome.status.passed() {
         console::print_error("tests failed in a clean copy of the tree, so no mutants were tested");
@@ -234,7 +234,7 @@ fn build_source_tree(
 ///
 /// If there are already-failing tests, proceeding to test mutations
 /// won't give a clear signal.
-fn test_clean(
+fn test_baseline(
     build_dir: &Path,
     output_dir: &OutputDir,
     options: &ExperimentOptions,
