@@ -2,7 +2,7 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::fs::{self};
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
