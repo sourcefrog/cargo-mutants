@@ -73,9 +73,8 @@ pub fn run_cargo(
             stdin: Redirection::None,
             stdout: Redirection::File(out_file.try_clone()?),
             stderr: Redirection::Merge,
-            setpgid: true,
             cwd: Some(in_dir.as_os_str().to_owned()),
-            ..Default::default()
+            ..setpgid_on_unix()
         },
     )
     .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
@@ -117,4 +116,17 @@ pub fn run_cargo(
     } else {
         Ok(CargoResult::Failure)
     }
+}
+
+#[cfg(unix)]
+fn setpgid_on_unix() -> PopenConfig {
+    PopenConfig {
+        setpgid: true,
+        ..Default::default()
+    }
+}
+
+#[cfg(not(unix))]
+fn setpgid_on_unix() -> PopenConfig {
+    Default::default()
 }
