@@ -94,5 +94,5 @@ fn setpgid_on_unix() -> PopenConfig {
 
 #[cfg(not(unix))]
 fn setpgid_on_unix() -> PopenConfig {
-    ..Default::default()
+    Default::default()
 }
