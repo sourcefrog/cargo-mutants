@@ -14,7 +14,7 @@ use crate::log_file::LogFile;
 use crate::Result;
 
 /// What type of build, check, or test was this?
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub enum Scenario {
     /// Build in the original source tree.
     SourceTree,
@@ -25,7 +25,7 @@ pub enum Scenario {
 }
 
 /// The result of running a single Cargo command.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum CargoResult {
     // Note: This is not, for now, a Result, because it seems like there is
     // no clear "normal" success: sometimes a non-zero exit is what we want, etc.
@@ -51,14 +51,19 @@ pub enum Phase {
     Test,
 }
 
+impl Phase {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Phase::Check => "check",
+            Phase::Build => "build",
+            Phase::Test => "test",
+        }
+    }
+}
+
 impl fmt::Display for Phase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Phase::*;
-        match self {
-            Check => f.write_str("check"),
-            Build => f.write_str("build"),
-            Test => f.write_str("test"),
-        }
+        f.write_str(self.name())
     }
 }
 

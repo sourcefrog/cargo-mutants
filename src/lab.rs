@@ -88,42 +88,23 @@ fn check_build_test_dir(
 ) -> Result<Outcome> {
     // TODO: Maybe separate launching and collecting the result, so
     // that we can run several in parallel.
-
     let start_time = Instant::now();
-
-    activity.set_phase("check");
-    let cargo_result = run_cargo(&["check"], build_dir, activity, log_file)?;
-    if options.check_only || !cargo_result.success() {
-        return Ok(Outcome::new(
-            &log_file,
-            &start_time,
-            scenario,
-            cargo_result,
-            Phase::Check,
-        ));
+    let mut last_outcome = None;
+    for phase in [Phase::Check, Phase::Build, Phase::Test] {
+        activity.set_phase(&phase.name());
+        let cargo_args: &[&str] = match phase {
+            Phase::Check => &["check"],
+            Phase::Build => &["build", "--tests"],
+            Phase::Test => &["test"],
+        };
+        let cargo_result = run_cargo(cargo_args, build_dir, activity, log_file)?;
+        let outcome = Outcome::new(&log_file, &start_time, scenario, cargo_result, phase);
+        if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
+            return Ok(outcome);
+        }
+        last_outcome = Some(outcome);
     }
-
-    activity.set_phase("build");
-    let cargo_result = run_cargo(&["build", "--tests"], build_dir, activity, log_file)?;
-    if !cargo_result.success() {
-        return Ok(Outcome::new(
-            &log_file,
-            &start_time,
-            scenario,
-            cargo_result,
-            Phase::Build,
-        ));
-    }
-
-    activity.set_phase("test");
-    let cargo_result = run_cargo(&["test"], build_dir, activity, log_file)?;
-    Ok(Outcome::new(
-        &log_file,
-        &start_time,
-        scenario,
-        cargo_result,
-        Phase::Test,
-    ))
+    Ok(last_outcome.unwrap())
 }
 
 fn copy_source_to_scratch(
