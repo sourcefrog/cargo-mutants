@@ -8,8 +8,8 @@ use anyhow::Result;
 use console::{style, StyledObject};
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::lab::{Outcome, Status};
 use crate::mutate::Mutation;
+use crate::outcome::{CargoResult, Outcome, Phase, Scenario};
 
 /// Top-level UI object that manages the state of an interactive console: mostly progress bars and
 /// messages.
@@ -99,8 +99,8 @@ impl<'c> Activity<'c> {
     /// Prints the log content if appropriate.
     pub fn outcome(self, outcome: &Outcome) -> Result<()> {
         let show_all_logs = self.console.show_all_logs; // survive consumption by finish
-        self.finish(style_status(outcome.status));
-        if outcome.status.should_show_logs() || show_all_logs {
+        self.finish(style_outcome(outcome));
+        if outcome.should_show_logs() || show_all_logs {
             print!("{}", outcome.get_log_content()?);
         }
         Ok(())
@@ -164,20 +164,24 @@ impl<'c> CopyActivity<'c> {
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
-pub fn style_status(status: Status) -> StyledObject<&'static str> {
-    use Status::*;
-    match status {
-        // good statuses
-        MutantCaught => style("caught").green(),
-        SourceBuildPassed | CleanTestPassed => style("ok").green(),
-        CheckPassed => style("check ok").green(),
-        // neutral/inconclusive
-        CheckFailed => style("check failed").yellow(),
-        BuildFailed => style("build failed").yellow(),
-        // bad statuses
-        MutantMissed => style("NOT CAUGHT").red().bold(),
-        Timeout => style("TIMEOUT").red().bold(),
-        SourceBuildFailed | CleanTestFailed => style("FAILED").red().bold(),
+pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
+    use CargoResult::*;
+    use Scenario::*;
+    match outcome.scenario {
+        SourceTree | Baseline => match outcome.cargo_result {
+            Success => style("ok").green(),
+            Failure => style("FAILED").red().bold(),
+            Timeout => style("TIMEOUT").red().bold(),
+        },
+        Mutant => match (&outcome.phase, &outcome.cargo_result) {
+            (Phase::Test, Failure) => style("caught").green(),
+            (Phase::Test, Success) => style("NOT CAUGHT").red().bold(),
+            (Phase::Build, Success) => style("build ok").green(),
+            (Phase::Check, Success) => style("check ok").green(),
+            (Phase::Build, Failure) => style("build failed").yellow(),
+            (Phase::Check, Failure) => style("check failed").yellow(),
+            (_, Timeout) => style("TIMEOUT").red().bold(),
+        },
     }
 }
 

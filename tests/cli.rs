@@ -330,7 +330,7 @@ fn already_failing_tests_are_detected_before_running_mutants() {
         )
         .stdout(predicate::str::contains("lib.rs:11:5"))
         .stdout(predicate::str::contains(
-            "tests failed in a clean copy of the tree, so no mutants were tested",
+            "test failed in a clean copy of the tree, so no mutants were tested",
         ))
         .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
 }
@@ -351,7 +351,5 @@ fn source_tree_build_fails() {
         .stdout(contains("check --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:1:6"))
         .stdout(contains("*** cargo result: "))
-        .stderr(predicate::str::contains(
-            "check failed in source tree, not continuing",
-        ));
+        .stdout(contains("check failed in source tree, not continuing"));
 }

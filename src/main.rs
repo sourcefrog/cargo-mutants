@@ -7,6 +7,7 @@ mod exit_code;
 mod lab;
 mod log_file;
 mod mutate;
+mod outcome;
 mod output;
 mod run;
 mod source;
@@ -87,7 +88,7 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        let lab_outcome = lab::experiment(&source_tree, &options, &console)?;
+        let lab_outcome = lab::test_clean_then_all_mutants(&source_tree, &options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

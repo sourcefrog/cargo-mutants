@@ -1,10 +1,11 @@
 ---
 source: tests/cli.rs
+assertion_line: 306
 expression: stdout
 
 ---
-check source tree ... check ok
+check source tree ... ok
 copy source and build products to scratch directory ... done
-baseline test with no mutations ... check ok
+baseline test with no mutations ... ok
 src/lib.rs:12: replace controlled_loop with () ... check ok
 

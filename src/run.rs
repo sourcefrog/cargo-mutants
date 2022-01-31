@@ -4,7 +4,6 @@
 
 use std::borrow::Cow;
 use std::env;
-
 use std::path::Path;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -14,6 +13,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 
 use crate::console::Activity;
 use crate::log_file::LogFile;
+use crate::outcome::CargoResult;
 
 // Until we can reliably stop the grandchild test binaries, by killing a process
 // group, timeouts are disabled.
@@ -21,24 +21,6 @@ const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(1);
 
 /// How frequently to check if cargo finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
-
-/// The result of running a single Cargo command.
-pub enum CargoResult {
-    // Note: This is not, for now, a Result, because it seems like there is
-    // no clear "normal" success: sometimes a non-zero exit is what we want, etc.
-    // They seem to be all on the same level as far as how the caller should respond.
-    // However, failing to even start Cargo is simply an Error, and should
-    // probably stop the cargo-mutants job.
-    Timeout,
-    Success,
-    Failure,
-}
-
-impl CargoResult {
-    pub fn success(&self) -> bool {
-        matches!(self, CargoResult::Success)
-    }
-}
 
 pub fn run_cargo(
     cargo_args: &[&str],
