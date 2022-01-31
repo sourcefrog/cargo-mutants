@@ -75,6 +75,7 @@ pub fn run_cargo(
                 "timeout after {}s, killing cargo process...",
                 start.elapsed().as_secs_f32()
             ));
+            // TODO: Maybe terminate rather than kill.
             if let Err(e) = child.kill() {
                 // most likely we raced and it's already gone
                 log_file.message(&format!("failed to kill child after timeout: {}", e));
