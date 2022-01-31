@@ -57,6 +57,7 @@ pub fn run_cargo(
                 start.elapsed().as_secs_f32()
             ));
             // TODO: Maybe terminate rather than kill.
+            // TODO: On Unix, kill the process group rather than just the one child.
             if let Err(e) = child.kill() {
                 // most likely we raced and it's already gone
                 log_file.message(&format!("failed to kill child after timeout: {}", e));
