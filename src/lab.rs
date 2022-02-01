@@ -17,14 +17,7 @@ use crate::mutate::Mutation;
 use crate::outcome::{LabOutcome, Outcome, Phase, Scenario};
 use crate::output::OutputDir;
 use crate::run::run_cargo;
-use crate::source::SourceTree;
-
-/// Options for running experiments.
-#[derive(Default, Debug)]
-pub struct ExperimentOptions {
-    /// Don't run the tests, just see if each mutant builds.
-    pub check_only: bool,
-}
+use crate::*;
 
 /// Run all possible mutation experiments.
 ///
@@ -32,7 +25,7 @@ pub struct ExperimentOptions {
 /// mutations applied.
 pub fn test_clean_then_all_mutants(
     source_tree: &SourceTree,
-    options: &ExperimentOptions,
+    options: &Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let mut lab_outcome = LabOutcome::default();
@@ -83,7 +76,7 @@ fn check_build_test_dir(
     build_dir: &Path,
     activity: &mut Activity,
     log_file: &mut LogFile,
-    options: &ExperimentOptions,
+    options: &Options,
     scenario: Scenario,
 ) -> Result<Outcome> {
     // TODO: Maybe separate launching and collecting the result, so
@@ -147,7 +140,7 @@ fn copy_source_to_scratch(
 fn check_and_build_source_tree(
     source_tree: &SourceTree,
     output_dir: &OutputDir,
-    options: &ExperimentOptions,
+    options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
     let scenario_name = if options.check_only {
@@ -193,7 +186,7 @@ fn check_and_build_source_tree(
 fn test_baseline(
     build_dir: &Path,
     output_dir: &OutputDir,
-    options: &ExperimentOptions,
+    options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
     let mut activity = console.start_activity("baseline test with no mutations");
@@ -216,7 +209,7 @@ fn test_mutation(
     mutation: &Mutation,
     build_dir: &Path,
     output_dir: &OutputDir,
-    options: &ExperimentOptions,
+    options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
     let mut activity = console.start_mutation(mutation);

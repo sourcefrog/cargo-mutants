@@ -7,6 +7,7 @@ mod exit_code;
 mod lab;
 mod log_file;
 mod mutate;
+mod options;
 mod outcome;
 mod output;
 mod run;
@@ -24,7 +25,9 @@ use argh::FromArgs;
 #[allow(unused)]
 use path_slash::PathExt;
 
-use source::SourceTree;
+// Imports of public names from this crate.
+use crate::options::Options;
+use crate::source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
 #[derive(FromArgs, PartialEq, Debug)]
@@ -73,9 +76,7 @@ fn main() -> Result<()> {
     let console = console::Console::new()
         .show_all_logs(args.all_logs)
         .show_times(!args.no_times);
-    let options = lab::ExperimentOptions {
-        check_only: args.check,
-    };
+    let options = Options::from(&args);
     if args.list {
         let mutations = source_tree.mutations()?;
         if args.json {
