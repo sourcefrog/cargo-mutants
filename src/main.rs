@@ -59,6 +59,10 @@ struct Args {
     /// don't print times or tree sizes, to make output deterministic.
     #[argh(switch)]
     no_times: bool,
+
+    /// maximum run time for all cargo commands.
+    #[argh(option)]
+    timeout: Option<f64>,
 }
 
 fn main() -> Result<()> {

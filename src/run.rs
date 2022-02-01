@@ -14,10 +14,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use crate::console::Activity;
 use crate::log_file::LogFile;
 use crate::outcome::CargoResult;
-
-// Until we can reliably stop the grandchild test binaries, by killing a process
-// group, timeouts are disabled.
-const TEST_TIMEOUT: Duration = Duration::MAX; // Duration::from_secs(1);
+use crate::*;
 
 /// How frequently to check if cargo finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -27,6 +24,7 @@ pub fn run_cargo(
     in_dir: &Path,
     activity: &mut Activity,
     log_file: &mut LogFile,
+    options: &Options,
 ) -> Result<CargoResult> {
     let start = Instant::now();
     // When run as a Cargo subcommand, which is the usual/intended case,
@@ -51,7 +49,7 @@ pub fn run_cargo(
     )
     .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
     let exit_status = loop {
-        if start.elapsed() > TEST_TIMEOUT {
+        if start.elapsed() > options.timeout() {
             log_file.message(&format!(
                 "timeout after {}s, killing cargo process...",
                 start.elapsed().as_secs_f32()
