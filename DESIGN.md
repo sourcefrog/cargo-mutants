@@ -1,25 +1,36 @@
 # cargo-mutants design
 
-## Physical structure
+## Physical structure / source tree overview
 
 `main.rs` -- the `cargo mutants` entry point and command-line parsing.
 
-`lab.rs` -- a mutants "lab": manages generating and testing mutants.
-
-`console.rs` -- colored output to the console including drawing
-progress bars.
+`console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
 
-`mutate.rs` -- different types of mutations we can apply.
+`lab.rs` -- A mutants "lab": manages generating and testing mutants. Contains
+effectively the main loop of the program: build and test every mutant.
 
-`outcome.rs` -- the result of running a single test or build.
+`log_file.rs` -- Manage one log file per mutant scenario, within the output dir.
 
-`output.rs` -- manages the `mutants.out` directory.
+`mutate.rs` -- Different types of mutations we can apply, based on the AST from
+`visit.rs`, including generating a diff for the mutation and generating a tree
+with the mutation applied.
 
-`source.rs` -- a source tree and files within it.
+`options.rs` -- Global options for timeouts, etc.
 
-`textedit.rs` -- (line, column) addressing within a source file,
-and edits to the content based on those addresses.
+`outcome.rs` -- The result of running a single test or build, including
+distinguishing which type of command was run (check/build/test), where the log
+file is, what happened (success/failure/timeout/etc), and whether a mutation was
+applied.
 
-`visit.pr` -- Walk a source file's AST. The interface to the `syn` parser is
+`output.rs` -- Manages the `mutants.out` directory.
+
+`run.rs` -- Run Cargo subprocesses, including dealing with timeouts.
+
+`source.rs` -- A source tree and files within it.
+
+`textedit.rs` -- A (line, column) addressing within a source file, and edits to
+the content based on those addresses.
+
+`visit.rs` -- Walk a source file's AST. The interface to the `syn` parser is
 localized here.
