@@ -8,7 +8,7 @@ use std::path::Path;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use subprocess::{Popen, PopenConfig, Redirection};
 
 use crate::console::Activity;
@@ -49,11 +49,19 @@ pub fn run_cargo(
     )
     .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
     let exit_status = loop {
-        if start.elapsed() > options.timeout() {
+        let stop = if start.elapsed() > options.timeout() {
             log_file.message(&format!(
-                "timeout after {}s, killing cargo process...",
+                "timeout after {}s, killing cargo process...\n",
                 start.elapsed().as_secs_f32()
             ));
+            true
+        } else if was_interrupted() {
+            log_file.message("interrupted\n");
+            true
+        } else {
+            false
+        };
+        if stop {
             // TODO: Maybe terminate rather than kill.
             // TODO: On Unix, kill the process group rather than just the one child.
             if let Err(e) = child.kill() {
@@ -64,8 +72,12 @@ pub fn run_cargo(
             // does stop.
             sleep(Duration::from_millis(500));
             child.wait().context("wait for child after kill")?;
-            return Ok(CargoResult::Timeout);
-        }
+            if was_interrupted() {
+                return Err(anyhow!("interrupted"));
+            } else {
+                return Ok(CargoResult::Timeout);
+            }
+        };
         if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
             break status;
         }
@@ -76,7 +88,9 @@ pub fn run_cargo(
         "cargo result: {:?} in {:?}",
         exit_status, duration
     ));
-    if exit_status.success() {
+    if was_interrupted() {
+        Err(anyhow!("interrupted"))
+    } else if exit_status.success() {
         Ok(CargoResult::Success)
     } else {
         Ok(CargoResult::Failure)

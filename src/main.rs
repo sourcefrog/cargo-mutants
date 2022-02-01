@@ -11,6 +11,7 @@ mod options;
 mod outcome;
 mod output;
 mod run;
+mod signal;
 mod source;
 mod textedit;
 mod visit;
@@ -27,6 +28,7 @@ use path_slash::PathExt;
 
 // Imports of public names from this crate.
 use crate::options::Options;
+use crate::signal::was_interrupted;
 use crate::source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
@@ -81,6 +83,7 @@ fn main() -> Result<()> {
         .show_all_logs(args.all_logs)
         .show_times(!args.no_times);
     let options = Options::from(&args);
+    signal::install_handler();
     if args.list {
         let mutations = source_tree.mutations()?;
         if args.json {

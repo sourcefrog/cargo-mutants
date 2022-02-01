@@ -29,6 +29,8 @@ applied.
 
 `run.rs` -- Run Cargo subprocesses, including dealing with timeouts.
 
+`signal.rs` -- Handle Ctrl-C signals.
+
 `source.rs` -- A source tree and files within it.
 
 `textedit.rs` -- A (line, column) addressing within a source file, and edits to

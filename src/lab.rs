@@ -113,6 +113,7 @@ fn copy_source_to_scratch(
     match cp_r::CopyOptions::new()
         .after_entry_copied(|_path, _ft, stats| {
             activity.bytes_copied(stats.file_bytes);
+            // TODO: check was_interrupted.
         })
         .copy_tree(source.root(), &build_dir)
         .context("copy source tree to lab directory")
