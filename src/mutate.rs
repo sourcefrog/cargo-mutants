@@ -261,7 +261,7 @@ mod test {
     #[test]
     fn filter_by_attributes() {
         let source_file = SourceFile::new(
-            Path::new("testdata/tree/could_hang"),
+            Path::new("testdata/tree/hang_avoided_by_attr"),
             Path::new("src/lib.rs"),
         )
         .unwrap();

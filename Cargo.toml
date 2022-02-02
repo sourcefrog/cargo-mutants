@@ -57,7 +57,7 @@ members = [
     # TODO: Re-enable this when the tests are checked by the real integration tests, but
     # skipped by `cargo test --workspace`. (It's complicated!)
     # "testdata/tree/already_failing_tests",
-    "testdata/tree/could_hang/",
+    "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/factorial",
     "testdata/tree/well_tested",
 ]

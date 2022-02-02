@@ -293,7 +293,7 @@ fn check_succeds_in_tree_that_builds_but_fails_tests() {
 
 #[test]
 fn check_tree_with_mutants_skip() {
-    let tmp_src_dir = copy_of_testdata("could_hang");
+    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
     run_assert_cmd()
         .arg("mutants")
         .arg("--check")
