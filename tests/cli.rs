@@ -330,7 +330,7 @@ fn already_failing_tests_are_detected_before_running_mutants() {
         )
         .stdout(predicate::str::contains("lib.rs:11:5"))
         .stdout(predicate::str::contains(
-            "test failed in a clean copy of the tree, so no mutants were tested",
+            "cargo test failed in a clean copy of the tree, so no mutants were tested",
         ))
         .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
 }
@@ -352,4 +352,22 @@ fn source_tree_build_fails() {
         .stdout(contains("lib.rs:1:6"))
         .stdout(contains("*** cargo result: "))
         .stdout(contains("check failed in source tree, not continuing"));
+}
+
+#[test]
+fn timeout_when_clean_tree_test_hangs() {
+    let tmp_src_dir = copy_of_testdata("already_hangs");
+    use predicate::str::{contains, is_match};
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--timeout", "0.9"])
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .failure() // TODO: This should be a distinct error code
+        .stdout(is_match(r"baseline test with no mutations \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
+        .stdout(contains("timeout"))
+        .stdout(contains(
+            "cargo test failed in a clean copy of the tree, so no mutants were tested",
+        ));
 }

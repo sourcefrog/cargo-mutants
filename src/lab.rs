@@ -47,7 +47,7 @@ pub fn test_clean_then_all_mutants(
     lab_outcome.add(&outcome);
     if !outcome.cargo_result.success() {
         console::print_error(&format!(
-            "{} failed in a clean copy of the tree, so no mutants were tested",
+            "cargo {} failed in a clean copy of the tree, so no mutants were tested",
             outcome.phase,
         ));
         return Ok(lab_outcome); // TODO: Maybe should be Err?

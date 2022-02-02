@@ -54,10 +54,11 @@ regex = "1.5"
 [workspace]
 members = [
     "mutants_attrs",
-    # TODO: Re-enable this when the tests are checked by the real integration tests, but
-    # skipped by `cargo test --workspace`. (It's complicated!)
-    # "testdata/tree/already_failing_tests",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/factorial",
     "testdata/tree/well_tested",
 ]
+
+# TODO: Re-enable these when the tests are checked by the real integration tests, but
+# skipped by `cargo test --workspace`. (It's complicated!)
+exclude = ["testdata/tree/already_hangs", "testdata/tree/already_failing_tests"]
