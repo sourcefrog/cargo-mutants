@@ -106,6 +106,7 @@ dependencies = [
  "insta",
  "itertools",
  "lazy_static",
+ "nix",
  "path-slash",
  "predicates",
  "pretty_assertions",

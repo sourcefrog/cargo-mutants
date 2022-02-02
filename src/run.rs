@@ -3,6 +3,7 @@
 //! Run Cargo as a subprocess.
 
 use std::borrow::Cow;
+use std::convert::TryInto;
 use std::env;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -78,11 +79,34 @@ pub fn run_cargo(
     }
 }
 
+#[cfg(unix)]
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
-    // TODO: On Unix, terminate the process group rather than just the one child.
+    use nix::errno::Errno;
+    use nix::sys::signal::{killpg, Signal};
+
+    let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
+    if let Err(errno) = killpg(pid, Signal::SIGTERM) {
+        if errno == Errno::ESRCH {
+            // most likely we raced and it's already gone
+            return Ok(());
+        } else {
+            let message = format!("failed to terminate child: {}", errno);
+            log_file.message(&message);
+            return Err(anyhow!(message));
+        }
+    }
+    child
+        .wait()
+        .context("wait for child after terminating pgroup")?;
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
         log_file.message(&format!("failed to terminate child: {}", e));
+        return Err(e.context("terminate child"));
     }
     child.wait().context("wait for child after kill")?;
     Ok(())
