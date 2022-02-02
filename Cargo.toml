@@ -54,8 +54,9 @@ regex = "1.5"
 [workspace]
 members = [
     "mutants_attrs",
-    "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/factorial",
+    "testdata/tree/hang_avoided_by_attr/",
+    "testdata/tree/hang_when_mutated",
     "testdata/tree/well_tested",
 ]
 

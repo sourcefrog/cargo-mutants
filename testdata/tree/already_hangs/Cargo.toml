@@ -1,5 +1,5 @@
 [package]
-name = "enucleate-testdata-could-hang"
+name = "enucleate-testdata-already-hangs"
 version = "0.1.0"
 edition = "2018"
 

@@ -229,15 +229,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
-name = "enucleate-testdata-could-hang"
+name = "enucleate-testdata-factorial"
+version = "0.0.0"
+
+[[package]]
+name = "enucleate-testdata-hang-avoided-by-attr"
 version = "0.1.0"
 dependencies = [
  "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "enucleate-testdata-factorial"
-version = "0.0.0"
+name = "enucleate-testdata-hang-when-mutated"
+version = "0.1.0"
+dependencies = [
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "filetime"

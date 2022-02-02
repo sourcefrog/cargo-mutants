@@ -1,6 +1,6 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021,2022 Martin Pool
 
-//! Tests for CLI layer.
+//! Tests for cargo-mutants CLI layer.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,12 +9,11 @@ use std::process::Command;
 use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
-use predicates::prelude::*;
-use tempfile::{tempdir, TempDir};
-
 use lazy_static::lazy_static;
-
+use predicate::str::{contains, is_match};
+use predicates::prelude::*;
 use pretty_assertions::assert_eq;
+use tempfile::{tempdir, TempDir};
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
@@ -223,7 +222,7 @@ $";
         .assert()
         .code(2)
         .stderr("")
-        .stdout(predicate::str::is_match(output_re).unwrap());
+        .stdout(is_match(output_re).unwrap());
 
     // Some log files should have been created
     let log_dir = tmp_src_dir.path().join("mutants.out/log");
@@ -248,7 +247,6 @@ $";
 fn factorial_mutants_with_all_logs() {
     // The log contains a lot of build output, which is hard to deal with, but let's check that
     // some key lines are there.
-    use predicate::str::is_match;
     let tmp_src_dir = copy_of_testdata("factorial");
     run_assert_cmd()
         .arg("mutants")
@@ -338,7 +336,6 @@ fn already_failing_tests_are_detected_before_running_mutants() {
 #[test]
 fn source_tree_build_fails() {
     let tmp_src_dir = copy_of_testdata("build_fails");
-    use predicate::str::{contains, is_match};
     run_assert_cmd()
         .arg("mutants")
         .current_dir(&tmp_src_dir.path())
@@ -357,7 +354,6 @@ fn source_tree_build_fails() {
 #[test]
 fn timeout_when_clean_tree_test_hangs() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
-    use predicate::str::{contains, is_match};
     run_assert_cmd()
         .arg("mutants")
         .args(["--timeout", "0.9"])
@@ -369,5 +365,23 @@ fn timeout_when_clean_tree_test_hangs() {
         .stdout(contains("timeout"))
         .stdout(contains(
             "cargo test failed in a clean copy of the tree, so no mutants were tested",
+        ));
+}
+
+#[test]
+fn hang_when_mutated() {
+    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--timeout", "0.9"])
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .code(3) // "TIMEOUT"
+        .stdout(contains(
+            "replace should_stop -> bool with false ... TIMEOUT",
+        ))
+        .stdout(contains(
+            "replace should_stop -> bool with true ... NOT CAUGHT",
         ));
 }
