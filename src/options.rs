@@ -12,13 +12,15 @@ pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
-    /// Maximum run time for each cargo command.
-    timeout: Duration,
+    test_timeout: Duration,
 }
 
 impl Options {
-    pub fn timeout(&self) -> Duration {
-        self.timeout
+    /// Return the maximum run time for `cargo test` commands.
+    ///
+    /// Build and check are not affected.
+    pub fn test_timeout(&self) -> Duration {
+        self.test_timeout
     }
 }
 
@@ -26,7 +28,7 @@ impl From<&Args> for Options {
     fn from(args: &Args) -> Options {
         Options {
             check_only: args.check,
-            timeout: args
+            test_timeout: args
                 .timeout
                 .map(Duration::from_secs_f64)
                 .unwrap_or(Duration::MAX),

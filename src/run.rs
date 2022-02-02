@@ -24,7 +24,7 @@ pub fn run_cargo(
     in_dir: &Path,
     activity: &mut Activity,
     log_file: &mut LogFile,
-    options: &Options,
+    timeout: Duration,
 ) -> Result<CargoResult> {
     let start = Instant::now();
     // When run as a Cargo subcommand, which is the usual/intended case,
@@ -49,7 +49,7 @@ pub fn run_cargo(
     )
     .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
     let exit_status = loop {
-        if start.elapsed() > options.timeout() {
+        if start.elapsed() > timeout {
             log_file.message(&format!(
                 "timeout after {:.3}s, terminating cargo process...\n",
                 start.elapsed().as_secs_f32()

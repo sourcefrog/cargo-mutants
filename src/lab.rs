@@ -5,7 +5,7 @@
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::{Path, PathBuf};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use path_slash::PathExt;
@@ -90,7 +90,11 @@ fn check_build_test_dir(
             Phase::Build => &["build", "--tests"],
             Phase::Test => &["test"],
         };
-        let cargo_result = run_cargo(cargo_args, build_dir, activity, log_file, options)?;
+        let timeout = match phase {
+            Phase::Test => options.test_timeout(),
+            _ => Duration::MAX,
+        };
+        let cargo_result = run_cargo(cargo_args, build_dir, activity, log_file, timeout)?;
         let outcome = Outcome::new(&log_file, &start_time, scenario, cargo_result, phase);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             return Ok(outcome);
@@ -161,7 +165,7 @@ fn check_and_build_source_tree(
         source_tree.root(),
         &mut activity,
         &mut log_file,
-        options,
+        Duration::MAX,
     )?;
     if options.check_only || !test_result.success() {
         let outcome = Outcome::new(&log_file, &start, scenario, test_result, Phase::Check);
@@ -175,7 +179,7 @@ fn check_and_build_source_tree(
         source_tree.root(),
         &mut activity,
         &mut log_file,
-        options,
+        Duration::MAX,
     )?;
     let outcome = Outcome::new(&log_file, &start, scenario, test_result, Phase::Build);
     activity.outcome(&outcome)?;
