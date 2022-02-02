@@ -137,7 +137,7 @@ impl<'c> CopyActivity<'c> {
             "{} ... {} in {}",
             self.name,
             style_mb(bytes_copied),
-            style(format_elapsed(self.start_time)).cyan(),
+            style(format!("{}s", self.start_time.elapsed().as_secs())).cyan(),
         );
         self.progress_bar.set_message(styled);
     }
