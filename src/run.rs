@@ -1,9 +1,8 @@
 // Copyright 2021, 2022 Martin Pool
 
-//! Run Cargo as a subprocess.
+//! Run Cargo as a subprocess, including timeouts and propagating signals.
 
 use std::borrow::Cow;
-use std::convert::TryInto;
 use std::env;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -83,6 +82,7 @@ pub fn run_cargo(
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     use nix::errno::Errno;
     use nix::sys::signal::{killpg, Signal};
+    use std::convert::TryInto;
 
     let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
     if let Err(errno) = killpg(pid, Signal::SIGTERM) {
@@ -105,8 +105,9 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
-        log_file.message(&format!("failed to terminate child: {}", e));
-        return Err(e.context("terminate child"));
+        let message = format!("failed to terminate child: {}", e);
+        log_file.message(&message);
+        return Err(anyhow!(message));
     }
     child.wait().context("wait for child after kill")?;
     Ok(())
