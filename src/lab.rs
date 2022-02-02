@@ -84,7 +84,7 @@ fn check_build_test_dir(
     let start_time = Instant::now();
     let mut last_outcome = None;
     for phase in [Phase::Check, Phase::Build, Phase::Test] {
-        activity.set_phase(&phase.name());
+        activity.set_phase(phase.name());
         let cargo_args: &[&str] = match phase {
             Phase::Check => &["check"],
             Phase::Build => &["build", "--tests"],
@@ -95,7 +95,7 @@ fn check_build_test_dir(
             _ => Duration::MAX,
         };
         let cargo_result = run_cargo(cargo_args, build_dir, activity, log_file, timeout)?;
-        let outcome = Outcome::new(&log_file, &start_time, scenario, cargo_result, phase);
+        let outcome = Outcome::new(log_file, &start_time, scenario, cargo_result, phase);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             return Ok(outcome);
         }
