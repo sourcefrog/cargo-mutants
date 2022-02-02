@@ -5,7 +5,6 @@
 use std::borrow::Cow;
 use std::env;
 use std::path::Path;
-use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
@@ -49,44 +48,26 @@ pub fn run_cargo(
     )
     .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
     let exit_status = loop {
-        let stop = if start.elapsed() > options.timeout() {
+        if start.elapsed() > options.timeout() {
             log_file.message(&format!(
-                "timeout after {}s, killing cargo process...\n",
+                "timeout after {:.3}s, terminating cargo process...\n",
                 start.elapsed().as_secs_f32()
             ));
-            true
+            terminate_child(child, log_file)?;
+            return Ok(CargoResult::Timeout);
         } else if was_interrupted() {
             log_file.message("interrupted\n");
-            true
-        } else {
-            false
-        };
-        if stop {
-            // TODO: Maybe terminate rather than kill.
-            // TODO: On Unix, kill the process group rather than just the one child.
-            if let Err(e) = child.kill() {
-                // most likely we raced and it's already gone
-                log_file.message(&format!("failed to kill child after timeout: {}", e));
-            }
-            // Give it a bit of time to exit, then keep signalling until it
-            // does stop.
-            sleep(Duration::from_millis(500));
-            child.wait().context("wait for child after kill")?;
-            if was_interrupted() {
-                return Err(anyhow!("interrupted"));
-            } else {
-                return Ok(CargoResult::Timeout);
-            }
-        };
-        if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
+            terminate_child(child, log_file)?;
+            return Err(anyhow!("interrupted"));
+        } else if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
             break status;
         }
         activity.tick();
     };
-    let duration = start.elapsed();
     log_file.message(&format!(
-        "cargo result: {:?} in {:?}",
-        exit_status, duration
+        "cargo result: {:?} in {:3}s",
+        exit_status,
+        start.elapsed().as_secs_f64()
     ));
     if was_interrupted() {
         Err(anyhow!("interrupted"))
@@ -95,6 +76,16 @@ pub fn run_cargo(
     } else {
         Ok(CargoResult::Failure)
     }
+}
+
+fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
+    // TODO: On Unix, terminate the process group rather than just the one child.
+    if let Err(e) = child.terminate() {
+        // most likely we raced and it's already gone
+        log_file.message(&format!("failed to terminate child: {}", e));
+    }
+    child.wait().context("wait for child after kill")?;
+    Ok(())
 }
 
 #[cfg(unix)]
