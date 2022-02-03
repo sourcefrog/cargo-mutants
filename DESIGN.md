@@ -98,6 +98,4 @@ processes: cargo mutants would stop but the test process that's actually chewing
 up the CPU will continue.
 
 Therefore we need to also intercept the signal to cargo-mutants and manually
-pass it on to the subprocesses.
-
-TODO: What about on Windows?
+pass it on to the subprocess group.
