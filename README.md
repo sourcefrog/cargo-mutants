@@ -130,6 +130,11 @@ A `mutants.out` directory is created in the source directory. It contains:
   will also make normal development more pleasant. There's lots of good advice
   on the web.
 
+- In particular, on Linux, using the
+  [Mold linker](https://github.com/rui314/mold) can improve build times
+  significantly: because cargo-mutants does many incremental builds, link time
+  is important.
+
 ### Hard-to-test cases
 
 Some functions don't cause a test suite failure if emptied, but also cannot be
