@@ -360,7 +360,7 @@ fn timeout_when_clean_tree_test_hangs() {
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .failure() // TODO: This should be a distinct error code
+        .code(4) // exit_code::CLEAN_TESTS_FAILED
         .stdout(is_match(r"baseline test with no mutations \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
         .stdout(contains("timeout"))
         .stdout(contains(
