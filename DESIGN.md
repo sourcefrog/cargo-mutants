@@ -7,6 +7,9 @@
 `console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
 
+`interrupt.rs` -- Handle Ctrl-C signals by setting a global atomic flag, which
+is checked during long-running operations.
+
 `lab.rs` -- A mutants "lab": manages generating and testing mutants. Contains
 effectively the main loop of the program: build and test every mutant.
 
@@ -29,9 +32,8 @@ applied.
 
 `run.rs` -- Run Cargo subprocesses, including dealing with timeouts.
 
-`signal.rs` -- Handle Ctrl-C signals.
-
-`source.rs` -- A source tree and files within it.
+`source.rs` -- A source tree and files within it, including visiting each source
+file to find mutations.
 
 `textedit.rs` -- A (line, column) addressing within a source file, and edits to
 the content based on those addresses.
