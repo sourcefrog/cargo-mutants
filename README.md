@@ -104,8 +104,8 @@ flags the function for cargo-mutants.
 - **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
   or the timeout is too low.
 
-- **4**: The tests are already failing in a copy of the clean tree, so no
-  mutations were tested.
+- **4**: The tests are already failing or hanging in a copy of the clean tree,
+  so no mutations were tested.
 
 ### `mutants.out`
 
@@ -132,6 +132,9 @@ this code, cargo-mutants might try changing `should_stop` to always return
 The `--timeout` option lets you set a maximum run time for all tests, so that
 the `cargo mutants` command will not itself get stuck. The fact that the test
 timed out is shown in the output.
+
+The timeout is applied to both the clean and mutated tests. The timeout does not
+apply to `cargo check` or `cargo build`, only `cargo test`.
 
 What to do when a test times out?
 
