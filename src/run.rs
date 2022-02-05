@@ -65,7 +65,7 @@ pub fn run_cargo(
         activity.tick();
     };
     log_file.message(&format!(
-        "cargo result: {:?} in {:3}s",
+        "cargo result: {:?} in {:.3}s",
         exit_status,
         start.elapsed().as_secs_f64()
     ));
