@@ -9,6 +9,7 @@ use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 use syn::visit::Visit;
 
+use crate::interrupt::check_interrupted;
 use crate::mutate::Mutation;
 use crate::visit::DiscoveryVisitor;
 
@@ -85,6 +86,7 @@ impl SourceTree {
     pub fn mutations(&self) -> Result<Vec<Mutation>> {
         let mut r = Vec::new();
         for sf in self.source_files() {
+            check_interrupted()?;
             r.extend(Rc::new(sf).mutations()?);
         }
         Ok(r)
