@@ -356,7 +356,7 @@ fn timeout_when_clean_tree_test_hangs() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
     run_assert_cmd()
         .arg("mutants")
-        .args(["--timeout", "0.9"])
+        .args(["--timeout", "2.9"])
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
@@ -373,7 +373,7 @@ fn hang_when_mutated() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     run_assert_cmd()
         .arg("mutants")
-        .args(["-t", "0.9"])
+        .args(["-t", "1.9"])
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
