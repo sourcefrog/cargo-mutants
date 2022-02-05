@@ -55,10 +55,10 @@ pub fn run_cargo(
             ));
             terminate_child(child, log_file)?;
             return Ok(CargoResult::Timeout);
-        } else if was_interrupted() {
+        } else if let Err(e) = check_interrupted() {
             log_file.message("interrupted\n");
             terminate_child(child, log_file)?;
-            return Err(anyhow!("interrupted"));
+            return Err(e);
         } else if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
             break status;
         }
@@ -69,9 +69,8 @@ pub fn run_cargo(
         exit_status,
         start.elapsed().as_secs_f64()
     ));
-    if was_interrupted() {
-        Err(anyhow!("interrupted"))
-    } else if exit_status.success() {
+    check_interrupted()?;
+    if exit_status.success() {
         Ok(CargoResult::Success)
     } else {
         Ok(CargoResult::Failure)

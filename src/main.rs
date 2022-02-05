@@ -27,7 +27,7 @@ use argh::FromArgs;
 use path_slash::PathExt;
 
 // Imports of public names from this crate.
-use crate::interrupt::was_interrupted;
+use crate::interrupt::check_interrupted;
 use crate::options::Options;
 use crate::source::SourceTree;
 
