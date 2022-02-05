@@ -62,8 +62,8 @@ struct Args {
     #[argh(switch)]
     no_times: bool,
 
-    /// maximum run time for all cargo commands.
-    #[argh(option)]
+    /// maximum run time for all cargo commands, in seconds.
+    #[argh(option, short = 't')]
     timeout: Option<f64>,
 }
 

@@ -373,11 +373,11 @@ fn hang_when_mutated() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     run_assert_cmd()
         .arg("mutants")
-        .args(["--timeout", "0.9"])
+        .args(["-t", "0.9"])
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .code(3) // "TIMEOUT"
+        .code(3) // exit_code::TIMEOUT
         .stdout(contains(
             "replace should_stop -> bool with false ... TIMEOUT",
         ))
