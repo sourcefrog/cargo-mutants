@@ -117,6 +117,31 @@ A `mutants.out` directory is created in the source directory. It contains:
 
 - A `mutants.json` file describing all the generated mutants.
 
+### Hangs and timeouts
+
+Some mutations to the tree can cause the test suite to hang. For example, in
+this code, cargo-mutants might try changing `should_stop` to always return
+`false`:
+
+```rust
+    while !should_stop() {
+      // something
+    }
+```
+
+The `--timeout` option lets you set a maximum run time for all tests, so that
+the `cargo mutants` command will not itself get stuck. The fact that the test
+timed out is shown in the output.
+
+What to do when a test times out?
+
+First, look at the mutation, and consider whether it makes sense that it would
+cause a hang, and whether the function is well tested. Perhaps cargo-mutants is,
+indirectly, pointing to a bug.
+
+Secondly, you can mark the function with `#[mutants::skip]` so that future runs
+don't need to spend so long waiting for the timeout.
+
 ### Tips
 
 - Trees that `deny` style lints such as unused parameters are likely to fail to
@@ -254,11 +279,8 @@ _Interesting results_ mean:
   it may indicate a missed opportunity to generate more interesting mutants that
   would build.
 
-- Some mutations will cause the program to hang or spin, for example if the
-  mutation causes the condition of a `while` loop to always be true. For now,
-  you'll need to notice and interrupt `cargo mutants` yourself, but I plan to
-  add a timeout. (On Unix we need to run the build in a process group so that
-  the actual test process is terminated.)
+- You need to set a timeout yourself: ideally cargo-mutants would set one
+  automatically from the duration of the clean tests.
 
 - Copying the tree to build it doesn't work well if the `Cargo.toml` points to
   dependencies by a relative `path` (other than in subdirectories). This could
