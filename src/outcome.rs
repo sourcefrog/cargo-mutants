@@ -59,6 +59,8 @@ impl Phase {
             Phase::Test => "test",
         }
     }
+
+    pub const ALL: &'static [Phase] = &[Phase::Check, Phase::Build, Phase::Test];
 }
 
 impl fmt::Display for Phase {
@@ -152,5 +154,9 @@ impl Outcome {
     /// failed that should not have.
     pub fn should_show_logs(&self) -> bool {
         self.scenario != Scenario::Mutant && !self.cargo_result.success()
+    }
+
+    pub fn success(&self) -> bool {
+        self.cargo_result.success()
     }
 }

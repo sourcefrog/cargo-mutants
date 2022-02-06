@@ -32,7 +32,7 @@ pub fn test_unmutated_then_all_mutants(
     let output_dir = OutputDir::new(source_tree.root())?;
     let outcome = check_and_build_source_tree(source_tree, &output_dir, options, console)?;
     lab_outcome.add(&outcome);
-    if !outcome.cargo_result.success() {
+    if !outcome.success() {
         console::print_error(&format!(
             "{} failed in source tree, not continuing",
             outcome.phase,
@@ -45,7 +45,7 @@ pub fn test_unmutated_then_all_mutants(
 
     let outcome = test_baseline(&build_dir, &output_dir, options, console)?;
     lab_outcome.add(&outcome);
-    if !outcome.cargo_result.success() {
+    if !outcome.success() {
         console::print_error(&format!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
             outcome.phase,
@@ -72,21 +72,26 @@ pub fn test_unmutated_then_all_mutants(
 
 /// Successively run cargo check, build, test, and return the overall outcome in a build
 /// directory, which might have a mutation applied or not.
-fn check_build_test_dir(
+///
+/// This runs the given phases in order until one fails.
+///
+/// Return the outcome of the last phase run.
+fn run_cargo_phases(
     build_dir: &Path,
     activity: &mut Activity,
     log_file: &mut LogFile,
     options: &Options,
     scenario: Scenario,
+    phases: &[Phase],
 ) -> Result<Outcome> {
     // TODO: Maybe separate launching and collecting the result, so
     // that we can run several in parallel.
     let start_time = Instant::now();
     let mut last_outcome = None;
-    for phase in [Phase::Check, Phase::Build, Phase::Test] {
+    for &phase in phases {
         activity.set_phase(phase.name());
         let cargo_args: &[&str] = match phase {
-            Phase::Check => &["check"],
+            Phase::Check => &["check", "--tests"],
             Phase::Build => &["build", "--tests"],
             Phase::Test => &["test"],
         };
@@ -157,31 +162,19 @@ fn check_and_build_source_tree(
     let mut activity = console.start_activity(scenario_name);
     let mut log_file = output_dir.create_log(scenario_name)?;
     log_file.message(scenario_name);
-    let start = Instant::now();
-
-    activity.set_phase("check");
-    let test_result = run_cargo(
-        &["check", "--tests"],
+    let phases: &'static [Phase] = if options.check_only {
+        &[Phase::Check]
+    } else {
+        &[Phase::Check, Phase::Build]
+    };
+    let outcome = run_cargo_phases(
         source_tree.root(),
         &mut activity,
         &mut log_file,
-        Duration::MAX,
+        options,
+        scenario,
+        phases,
     )?;
-    if options.check_only || !test_result.success() {
-        let outcome = Outcome::new(&log_file, &start, scenario, test_result, Phase::Check);
-        activity.outcome(&outcome)?;
-        return Ok(outcome);
-    }
-
-    activity.set_phase("build");
-    let test_result = run_cargo(
-        &["build", "--tests"],
-        source_tree.root(),
-        &mut activity,
-        &mut log_file,
-        Duration::MAX,
-    )?;
-    let outcome = Outcome::new(&log_file, &start, scenario, test_result, Phase::Build);
     activity.outcome(&outcome)?;
     Ok(outcome)
 }
@@ -200,12 +193,13 @@ fn test_baseline(
     let scenario_name = "baseline";
     let mut log_file = output_dir.create_log(scenario_name)?;
     log_file.message(scenario_name);
-    let outcome = check_build_test_dir(
+    let outcome = run_cargo_phases(
         build_dir,
         &mut activity,
         &mut log_file,
         options,
         Scenario::Baseline,
+        Phase::ALL,
     )?;
     activity.outcome(&outcome)?;
     Ok(outcome)
@@ -224,12 +218,13 @@ fn test_mutation(
     let mut log_file = output_dir.create_log(&scenario_name)?;
     log_file.message(&format!("{}\n{}", scenario_name, mutation.diff()));
     let outcome = mutation.with_mutation_applied(build_dir, || {
-        check_build_test_dir(
+        run_cargo_phases(
             build_dir,
             &mut activity,
             &mut log_file,
             options,
             Scenario::Mutant,
+            Phase::ALL,
         )
     })?;
     activity.outcome(&outcome)?;
