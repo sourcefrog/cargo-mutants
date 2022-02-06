@@ -6,6 +6,6 @@ expression: stdout
 ---
 check source tree ... ok
 copy source and build products to scratch directory ... done
-baseline test with no mutations ... ok
+unmutated baseline ... ok
 src/lib.rs:1: replace factorial -> u32 with Default::default() ... check ok
 

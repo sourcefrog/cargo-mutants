@@ -6,6 +6,6 @@ expression: stdout
 ---
 check source tree ... ok
 copy source and build products to scratch directory ... done
-baseline test with no mutations ... ok
+unmutated baseline ... ok
 src/lib.rs:12: replace controlled_loop with () ... check ok
 

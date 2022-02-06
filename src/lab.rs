@@ -23,7 +23,7 @@ use crate::*;
 ///
 /// Before testing the mutations, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn test_clean_then_all_mutants(
+pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
     options: &Options,
     console: &Console,
@@ -47,7 +47,7 @@ pub fn test_clean_then_all_mutants(
     lab_outcome.add(&outcome);
     if !outcome.cargo_result.success() {
         console::print_error(&format!(
-            "cargo {} failed in a clean copy of the tree, so no mutants were tested",
+            "cargo {} failed in an unmutated tree, so no mutants were tested",
             outcome.phase,
         ));
         return Ok(lab_outcome); // TODO: Maybe should be Err?
@@ -196,7 +196,7 @@ fn test_baseline(
     options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
-    let mut activity = console.start_activity("baseline test with no mutations");
+    let mut activity = console.start_activity("unmutated baseline");
     let scenario_name = "baseline";
     let mut log_file = output_dir.create_log(scenario_name)?;
     log_file.message(scenario_name);

@@ -210,7 +210,7 @@ fn uncaught_mutant_in_factorial() {
 
     let output_re = r"^build source tree \.\.\. ok in \d+\.\d\d\ds
 copy source and build products to scratch directory \.\.\. \d+ MB in \d\.\d\d\ds
-baseline test with no mutations \.\.\. ok in \d+\.\d\d\ds
+unmutated baseline \.\.\. ok in \d+\.\d\d\ds
 src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds
 src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds
 $";
@@ -261,7 +261,7 @@ fn factorial_mutants_with_all_logs() {
 r"copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
-r"baseline test with no mutations \.\.\. ok in \d+\.\d\d\ds"
+r"unmutated baseline \.\.\. ok in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
 r"src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
@@ -328,7 +328,7 @@ fn already_failing_tests_are_detected_before_running_mutants() {
         )
         .stdout(predicate::str::contains("lib.rs:11:5"))
         .stdout(predicate::str::contains(
-            "cargo test failed in a clean copy of the tree, so no mutants were tested",
+            "cargo test failed in an unmutated tree, so no mutants were tested",
         ))
         .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
 }
@@ -352,7 +352,7 @@ fn source_tree_build_fails() {
 }
 
 #[test]
-fn timeout_when_clean_tree_test_hangs() {
+fn timeout_when_unmutated_tree_test_hangs() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
     run_assert_cmd()
         .arg("mutants")
@@ -361,10 +361,10 @@ fn timeout_when_clean_tree_test_hangs() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
-        .stdout(is_match(r"baseline test with no mutations \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
+        .stdout(is_match(r"unmutated baseline \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
         .stdout(contains("timeout"))
         .stdout(contains(
-            "cargo test failed in a clean copy of the tree, so no mutants were tested",
+            "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
 }
 

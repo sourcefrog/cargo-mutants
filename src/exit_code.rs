@@ -23,5 +23,5 @@ pub const FOUND_PROBLEMS: i32 = 2;
 /// One or more tests timed out: probably the mutant caused an infinite loop, or the timeout is too low.
 pub const TIMEOUT: i32 = 3;
 
-/// The tests are already failing in a copy of the clean tree.
+/// The tests are already failing in an unmutated tree.
 pub const CLEAN_TESTS_FAILED: i32 = 4;
