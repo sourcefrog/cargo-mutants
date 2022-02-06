@@ -4,7 +4,7 @@
 
 use std::fs::File;
 use std::io::BufWriter;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
@@ -40,10 +40,9 @@ pub fn test_unmutated_then_all_mutants(
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
 
-    let tmp_dir = TempDir::new()?;
-    let build_dir = copy_source_to_scratch(source_tree, tmp_dir.path(), console)?;
+    let build_dir = copy_source_to_scratch(source_tree, console)?;
 
-    let outcome = test_baseline(&build_dir, &output_dir, options, console)?;
+    let outcome = test_baseline(&build_dir.path(), &output_dir, options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
         console::print_error(&format!(
@@ -61,7 +60,7 @@ pub fn test_unmutated_then_all_mutants(
     for mutation in mutations {
         lab_outcome.add(&test_mutation(
             &mutation,
-            &build_dir,
+            &build_dir.path(),
             &output_dir,
             options,
             console,
@@ -109,12 +108,8 @@ fn run_cargo_phases(
     Ok(last_outcome.unwrap())
 }
 
-fn copy_source_to_scratch(
-    source: &SourceTree,
-    tmp_path: &Path,
-    console: &Console,
-) -> Result<PathBuf> {
-    let build_dir = tmp_path.join("build");
+fn copy_source_to_scratch(source: &SourceTree, console: &Console) -> Result<TempDir> {
+    let temp_dir = TempDir::new()?;
     let mut activity =
         console.start_copy_activity("copy source and build products to scratch directory");
     // I thought we could skip copying /target here, but it turns out that copying
@@ -124,7 +119,7 @@ fn copy_source_to_scratch(
             activity.bytes_copied(stats.file_bytes);
             // TODO: check was_interrupted.
         })
-        .copy_tree(source.root(), &build_dir)
+        .copy_tree(source.root(), &temp_dir.path())
         .context("copy source tree to lab directory")
     {
         Ok(stats) => activity.succeed(stats.file_bytes),
@@ -133,13 +128,13 @@ fn copy_source_to_scratch(
             eprintln!(
                 "error copying source tree {} to {}: {:?}",
                 &source.root().to_slash_lossy(),
-                &build_dir.to_slash_lossy(),
+                &temp_dir.path().to_slash_lossy(),
                 err
             );
             return Err(err);
         }
     }
-    Ok(build_dir)
+    Ok(temp_dir)
 }
 
 /// Build tests in the original source tree.
