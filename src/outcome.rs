@@ -11,26 +11,7 @@ use anyhow::Context;
 
 use crate::exit_code;
 use crate::log_file::LogFile;
-use crate::{Result, Scenario};
-
-/// The result of running a single Cargo command.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum CargoResult {
-    // Note: This is not, for now, a Result, because it seems like there is
-    // no clear "normal" success: sometimes a non-zero exit is what we want, etc.
-    // They seem to be all on the same level as far as how the caller should respond.
-    // However, failing to even start Cargo is simply an Error, and should
-    // probably stop the cargo-mutants job.
-    Timeout,
-    Success,
-    Failure,
-}
-
-impl CargoResult {
-    pub fn success(&self) -> bool {
-        matches!(self, CargoResult::Success)
-    }
-}
+use crate::*;
 
 /// What phase of evaluating a tree?
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -74,21 +55,24 @@ impl LabOutcome {
     pub fn exit_code(&self) -> i32 {
         // TODO: Maybe move this into an error returned from experiment()?
         use crate::lab::Scenario::*;
-        use CargoResult::*;
         if self
             .outcomes
             .iter()
             .any(|o| matches!(o.scenario, SourceTree | Baseline) && !o.cargo_result.success())
         {
             exit_code::CLEAN_TESTS_FAILED
-        } else if self.outcomes.iter().any(|o| o.cargo_result == Timeout) {
+        } else if self
+            .outcomes
+            .iter()
+            .any(|o| o.cargo_result == CargoResult::Timeout)
+        {
             exit_code::TIMEOUT
         } else if self.outcomes.iter().any(|o| {
             matches!(
                 o,
                 Outcome {
                     scenario: Mutant(_),
-                    cargo_result: Success,
+                    cargo_result: CargoResult::Success,
                     phase: Phase::Test,
                     ..
                 }

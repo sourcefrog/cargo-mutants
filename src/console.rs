@@ -4,13 +4,14 @@
 
 use std::time::Instant;
 
+use ::console::{style, StyledObject};
 use anyhow::Result;
-use console::{style, StyledObject};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::lab::Scenario;
 use crate::mutate::Mutation;
-use crate::outcome::{CargoResult, Outcome, Phase};
+use crate::outcome::{Outcome, Phase};
+use crate::*;
 
 /// Top-level UI object that manages the state of an interactive console: mostly progress bars and
 /// messages.

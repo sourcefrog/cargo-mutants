@@ -30,6 +30,7 @@ use path_slash::PathExt;
 use crate::interrupt::check_interrupted;
 pub use crate::lab::Scenario;
 use crate::options::Options;
+pub use crate::run::CargoResult;
 use crate::source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
