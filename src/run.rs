@@ -8,6 +8,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
+use serde::Serialize;
 use subprocess::{Popen, PopenConfig, Redirection};
 
 use crate::console::Activity;
@@ -18,7 +19,7 @@ use crate::*;
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// The result of running a single Cargo command.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
 pub enum CargoResult {
     // Note: This is not, for now, a Result, because it seems like there is
     // no clear "normal" success: sometimes a non-zero exit is what we want, etc.

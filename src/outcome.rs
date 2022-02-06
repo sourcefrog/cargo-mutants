@@ -8,13 +8,14 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Context;
+use serde::Serialize;
 
 use crate::exit_code;
 use crate::log_file::LogFile;
 use crate::*;
 
 /// What phase of evaluating a tree?
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize)]
 pub enum Phase {
     Check,
     Build,
@@ -40,7 +41,7 @@ impl fmt::Display for Phase {
 }
 
 /// The outcome from a whole lab run containing multiple mutants.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct LabOutcome {
     outcomes: Vec<Outcome>,
 }
@@ -71,7 +72,7 @@ impl LabOutcome {
 }
 
 /// The result of running one mutation scenario.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 #[must_use]
 pub struct Outcome {
     /// A file holding the text output from running this test.

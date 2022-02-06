@@ -117,6 +117,8 @@ A `mutants.out` directory is created in the source directory. It contains:
 
 - A `mutants.json` file describing all the generated mutants.
 
+- An `outcomes.json` file describing the results of all tests.
+
 ### Hangs and timeouts
 
 Some mutations to the tree can cause the test suite to hang. For example, in

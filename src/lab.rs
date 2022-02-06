@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use path_slash::PathExt;
+use serde::Serialize;
 use tempfile::TempDir;
 
 use crate::console::{self, Console};
@@ -20,7 +21,7 @@ use crate::run::run_cargo;
 use crate::*;
 
 /// What type of build, check, or test was this?
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize)]
 pub enum Scenario {
     /// Build in the original source tree.
     SourceTree,
@@ -92,6 +93,10 @@ pub fn test_unmutated_then_all_mutants(
             console,
         )?);
     }
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create(output_dir.path().join("outcomes.json"))?),
+        &lab_outcome,
+    )?;
     Ok(lab_outcome)
 }
 
@@ -109,8 +114,6 @@ fn run_cargo_phases(
     phases: &[Phase],
     console: &Console,
 ) -> Result<Outcome> {
-    // TODO: Maybe separate launching and collecting the result, so
-    // that we can run several in parallel.
     let scenario_name = scenario.to_string();
     let mut log_file = output_dir.create_log(&scenario_name)?;
     log_file.message(&scenario_name);

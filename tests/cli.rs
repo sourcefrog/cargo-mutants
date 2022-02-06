@@ -188,6 +188,11 @@ fn well_tested_tree_finds_no_problems() {
             insta::assert_snapshot!(stdout);
             true
         }));
+    // The format of outcomes.json is not pinned down yet, but it should exist.
+    assert!(tmp_src_dir
+        .path()
+        .join("mutants.out/outcomes.json")
+        .exists());
 }
 
 #[test]
