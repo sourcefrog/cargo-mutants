@@ -1,4 +1,4 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! Print messages and progress bars on the terminal.
 
@@ -36,8 +36,12 @@ impl Console {
         }
     }
 
-    pub fn show_times(self, show_times: bool) -> Console {
-        Console { show_times, ..self }
+    pub fn show_times(&self) -> bool {
+        self.show_times
+    }
+
+    pub fn set_show_times(&mut self, show_times: bool) {
+        self.show_times = show_times;
     }
 
     /// Create an Activity for a new mutation.

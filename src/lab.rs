@@ -2,6 +2,7 @@
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
+use std::cmp::max;
 use std::fmt;
 use std::fs::File;
 use std::io::BufWriter;
@@ -56,9 +57,10 @@ pub fn test_unmutated_then_all_mutants(
     options: &Options,
     console: &Console,
 ) -> Result<LabOutcome> {
+    let mut options: Options = options.clone();
     let mut lab_outcome = LabOutcome::default();
     let output_dir = OutputDir::new(source_tree.root())?;
-    let outcome = check_and_build_source_tree(source_tree, &output_dir, options, console)?;
+    let outcome = check_and_build_source_tree(source_tree, &output_dir, &options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
         console::print_error(&format!(
@@ -69,7 +71,7 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let build_dir = copy_source_to_scratch(source_tree, console)?;
-    let outcome = test_baseline(build_dir.path(), &output_dir, options, console)?;
+    let outcome = test_baseline(build_dir.path(), &output_dir, &options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
         console::print_error(&format!(
@@ -77,6 +79,22 @@ pub fn test_unmutated_then_all_mutants(
             outcome.last_phase(),
         ));
         return Ok(lab_outcome); // TODO: Maybe should be Err?
+    }
+    if !options.has_test_timeout() {
+        let auto_timeout = max(
+            Duration::from_secs(5),
+            outcome
+                .test_duration()
+                .expect("baseline duration measured")
+                .mul_f32(3.0),
+        );
+        options.set_test_timeout(auto_timeout);
+        if console.show_times() {
+            println!(
+                "auto-set test timeout to {:.1}s",
+                options.test_timeout().as_secs_f32()
+            );
+        }
     }
 
     let mutations = source_tree.mutations()?;
@@ -91,7 +109,7 @@ pub fn test_unmutated_then_all_mutants(
             &mutation,
             build_dir.path(),
             &output_dir,
-            options,
+            &options,
             console,
         )?);
     }
