@@ -116,10 +116,14 @@ impl LabOutcome {
 pub struct Outcome {
     /// A file holding the text output from running this test.
     log_path: PathBuf,
+    /// How long did this take, for all commands put together?
     pub duration: Duration,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     pub cargo_result: CargoResult,
+    /// What was the last phase evaluated for this mutation?
+    ///
+    /// (If it failed during `cargo check` this will be [Phase::Check], etc.)
     pub phase: Phase,
 }
 
