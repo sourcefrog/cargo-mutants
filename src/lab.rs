@@ -68,7 +68,7 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let build_dir = copy_source_to_scratch(source_tree, console)?;
-    let outcome = test_baseline(&build_dir.path(), &output_dir, options, console)?;
+    let outcome = test_baseline(build_dir.path(), &output_dir, options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
         console::print_error(&format!(
@@ -86,7 +86,7 @@ pub fn test_unmutated_then_all_mutants(
     for mutation in mutations {
         lab_outcome.add(&test_mutation(
             &mutation,
-            &build_dir.path(),
+            build_dir.path(),
             &output_dir,
             options,
             console,
