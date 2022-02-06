@@ -8,8 +8,9 @@ use anyhow::Result;
 use console::{style, StyledObject};
 use indicatif::{ProgressBar, ProgressStyle};
 
+use crate::lab::Scenario;
 use crate::mutate::Mutation;
-use crate::outcome::{CargoResult, Outcome, Phase, Scenario};
+use crate::outcome::{CargoResult, Outcome, Phase};
 
 /// Top-level UI object that manages the state of an interactive console: mostly progress bars and
 /// messages.
@@ -167,13 +168,13 @@ impl<'c> CopyActivity<'c> {
 pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
     use CargoResult::*;
     use Scenario::*;
-    match outcome.scenario {
+    match &outcome.scenario {
         SourceTree | Baseline => match outcome.cargo_result {
             Success => style("ok").green(),
             Failure => style("FAILED").red().bold(),
             Timeout => style("TIMEOUT").red().bold(),
         },
-        Mutant => match (&outcome.phase, &outcome.cargo_result) {
+        Mutant(_mutant) => match (&outcome.phase, &outcome.cargo_result) {
             (Phase::Test, Failure) => style("caught").green(),
             (Phase::Test, Success) => style("NOT CAUGHT").red().bold(),
             (Phase::Build, Success) => style("build ok").green(),

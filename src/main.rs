@@ -28,6 +28,7 @@ use path_slash::PathExt;
 
 // Imports of public names from this crate.
 use crate::interrupt::check_interrupted;
+pub use crate::lab::Scenario;
 use crate::options::Options;
 use crate::source::SourceTree;
 

@@ -11,18 +11,7 @@ use anyhow::Context;
 
 use crate::exit_code;
 use crate::log_file::LogFile;
-use crate::Result;
-
-/// What type of build, check, or test was this?
-#[derive(Clone, Copy, Eq, PartialEq, Debug)]
-pub enum Scenario {
-    /// Build in the original source tree.
-    SourceTree,
-    /// Build in a copy of the source tree but with no mutations applied.
-    Baseline,
-    /// Build with a mutant applied.
-    Mutant,
-}
+use crate::{Result, Scenario};
 
 /// The result of running a single Cargo command.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -84,8 +73,8 @@ impl LabOutcome {
     /// Return the overall program exit code reflecting this outcome.
     pub fn exit_code(&self) -> i32 {
         // TODO: Maybe move this into an error returned from experiment()?
+        use crate::lab::Scenario::*;
         use CargoResult::*;
-        use Scenario::*;
         if self
             .outcomes
             .iter()
@@ -98,7 +87,7 @@ impl LabOutcome {
             matches!(
                 o,
                 Outcome {
-                    scenario: Mutant,
+                    scenario: Mutant(_),
                     cargo_result: Success,
                     phase: Phase::Test,
                     ..
@@ -151,9 +140,9 @@ impl Outcome {
     }
 
     /// True if this status indicates the user definitely needs to see the logs, because a task
-    /// failed that should not have.
+    /// failed that should not have failed.
     pub fn should_show_logs(&self) -> bool {
-        self.scenario != Scenario::Mutant && !self.cargo_result.success()
+        !self.scenario.is_mutant() && !self.cargo_result.success()
     }
 
     pub fn success(&self) -> bool {

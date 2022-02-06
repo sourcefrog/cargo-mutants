@@ -344,7 +344,7 @@ fn source_tree_build_fails() {
         .failure() // TODO: This should be a distinct error code
         .stdout(is_match(r"build source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
         .stdout(contains(r"This isn't Rust").name("The problem source line"))
-        .stdout(contains("*** build source"))
+        .stdout(contains("*** source tree"))
         .stdout(contains("check --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:1:6"))
         .stdout(contains("*** cargo result: "))

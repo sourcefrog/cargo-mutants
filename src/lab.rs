@@ -2,6 +2,7 @@
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
+use std::fmt;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -11,13 +12,39 @@ use anyhow::{Context, Result};
 use path_slash::PathExt;
 use tempfile::TempDir;
 
-use crate::console::{self, Activity, Console};
-use crate::log_file::LogFile;
+use crate::console::{self, Console};
 use crate::mutate::Mutation;
-use crate::outcome::{LabOutcome, Outcome, Phase, Scenario};
+use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
 use crate::run::run_cargo;
 use crate::*;
+
+/// What type of build, check, or test was this?
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum Scenario {
+    /// Build in the original source tree.
+    SourceTree,
+    /// Build in a copy of the source tree but with no mutations applied.
+    Baseline,
+    /// Build with a mutant applied.
+    Mutant(Mutation),
+}
+
+impl fmt::Display for Scenario {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Scenario::SourceTree => f.write_str("source tree"),
+            Scenario::Baseline => f.write_str("baseline"),
+            Scenario::Mutant(mutant) => mutant.fmt(f),
+        }
+    }
+}
+
+impl Scenario {
+    pub fn is_mutant(&self) -> bool {
+        matches!(self, Scenario::Mutant(_))
+    }
+}
 
 /// Run all possible mutation experiments.
 ///
@@ -41,7 +68,6 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let build_dir = copy_source_to_scratch(source_tree, console)?;
-
     let outcome = test_baseline(&build_dir.path(), &output_dir, options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
@@ -77,17 +103,33 @@ pub fn test_unmutated_then_all_mutants(
 /// Return the outcome of the last phase run.
 fn run_cargo_phases(
     build_dir: &Path,
-    activity: &mut Activity,
-    log_file: &mut LogFile,
+    output_dir: &OutputDir,
     options: &Options,
     scenario: Scenario,
     phases: &[Phase],
+    console: &Console,
 ) -> Result<Outcome> {
     // TODO: Maybe separate launching and collecting the result, so
     // that we can run several in parallel.
+    let scenario_name = scenario.to_string();
+    let mut log_file = output_dir.create_log(&scenario_name)?;
+    log_file.message(&scenario_name);
+    if let Scenario::Mutant(mutant) = &scenario {
+        log_file.message(&mutant.diff());
+    }
+    let mut activity = match &scenario {
+        Scenario::SourceTree => {
+            console.start_activity(&format!("{} source tree", phases.last().unwrap()))
+        }
+        Scenario::Baseline => console.start_activity("unmutated baseline"),
+        Scenario::Mutant(mutant) => console.start_mutation(mutant),
+    };
     let start_time = Instant::now();
-    let mut last_outcome = None;
+
+    let mut last_cargo_result = None;
+    let mut last_phase = None;
     for &phase in phases {
+        last_phase = Some(phase);
         activity.set_phase(phase.name());
         let cargo_args: &[&str] = match phase {
             Phase::Check => &["check", "--tests"],
@@ -98,14 +140,21 @@ fn run_cargo_phases(
             Phase::Test => options.test_timeout(),
             _ => Duration::MAX,
         };
-        let cargo_result = run_cargo(cargo_args, build_dir, activity, log_file, timeout)?;
-        let outcome = Outcome::new(log_file, &start_time, scenario, cargo_result, phase);
+        let cargo_result = run_cargo(cargo_args, build_dir, &mut activity, &mut log_file, timeout)?;
+        last_cargo_result = Some(cargo_result);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
-            return Ok(outcome);
+            break;
         }
-        last_outcome = Some(outcome);
     }
-    Ok(last_outcome.unwrap())
+    let outcome = Outcome::new(
+        &log_file,
+        &start_time,
+        scenario,
+        last_cargo_result.unwrap(),
+        last_phase.unwrap(),
+    );
+    activity.outcome(&outcome)?;
+    Ok(outcome)
 }
 
 fn copy_source_to_scratch(source: &SourceTree, console: &Console) -> Result<TempDir> {
@@ -148,30 +197,19 @@ fn check_and_build_source_tree(
     options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
-    let scenario_name = if options.check_only {
-        "check source tree"
-    } else {
-        "build source tree"
-    };
-    let scenario = Scenario::SourceTree;
-    let mut activity = console.start_activity(scenario_name);
-    let mut log_file = output_dir.create_log(scenario_name)?;
-    log_file.message(scenario_name);
     let phases: &'static [Phase] = if options.check_only {
         &[Phase::Check]
     } else {
         &[Phase::Check, Phase::Build]
     };
-    let outcome = run_cargo_phases(
+    run_cargo_phases(
         source_tree.root(),
-        &mut activity,
-        &mut log_file,
+        output_dir,
         options,
-        scenario,
+        Scenario::SourceTree,
         phases,
-    )?;
-    activity.outcome(&outcome)?;
-    Ok(outcome)
+        console,
+    )
 }
 
 /// Test building the unmodified source.
@@ -184,20 +222,14 @@ fn test_baseline(
     options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
-    let mut activity = console.start_activity("unmutated baseline");
-    let scenario_name = "baseline";
-    let mut log_file = output_dir.create_log(scenario_name)?;
-    log_file.message(scenario_name);
-    let outcome = run_cargo_phases(
+    run_cargo_phases(
         build_dir,
-        &mut activity,
-        &mut log_file,
+        output_dir,
         options,
         Scenario::Baseline,
         Phase::ALL,
-    )?;
-    activity.outcome(&outcome)?;
-    Ok(outcome)
+        console,
+    )
 }
 
 /// Test with one mutation applied.
@@ -208,20 +240,14 @@ fn test_mutation(
     options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
-    let mut activity = console.start_mutation(mutation);
-    let scenario_name = mutation.to_string();
-    let mut log_file = output_dir.create_log(&scenario_name)?;
-    log_file.message(&format!("{}\n{}", scenario_name, mutation.diff()));
-    let outcome = mutation.with_mutation_applied(build_dir, || {
+    mutation.with_mutation_applied(build_dir, || {
         run_cargo_phases(
             build_dir,
-            &mut activity,
-            &mut log_file,
+            output_dir,
             options,
-            Scenario::Mutant,
+            Scenario::Mutant(mutation.clone()),
             Phase::ALL,
+            console,
         )
-    })?;
-    activity.outcome(&outcome)?;
-    Ok(outcome)
+    })
 }

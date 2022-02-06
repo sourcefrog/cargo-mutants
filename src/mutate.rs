@@ -19,7 +19,7 @@ use crate::textedit::{replace_region, Span};
 const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
 /// A type of mutation operation that could be applied to a source file.
-#[derive(Debug, Eq, PartialEq, Serialize)]
+#[derive(Debug, Eq, Clone, PartialEq, Serialize)]
 pub enum MutationOp {
     /// Return [Default::default].
     Default,
@@ -61,6 +61,7 @@ impl MutationOp {
 /// * which file to modify,
 /// * which function and span in that file,
 /// * and what type of mutation to apply.
+#[derive(Clone, Eq, PartialEq)]
 pub struct Mutation {
     pub source_file: SourceFile,
 
