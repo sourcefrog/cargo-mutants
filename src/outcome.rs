@@ -5,7 +5,7 @@
 use std::fmt;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::Context;
 
@@ -54,30 +54,15 @@ impl LabOutcome {
     /// Return the overall program exit code reflecting this outcome.
     pub fn exit_code(&self) -> i32 {
         // TODO: Maybe move this into an error returned from experiment()?
-        use crate::lab::Scenario::*;
         if self
             .outcomes
             .iter()
-            .any(|o| matches!(o.scenario, SourceTree | Baseline) && !o.cargo_result.success())
+            .any(|o| !o.scenario.is_mutant() && !o.success())
         {
             exit_code::CLEAN_TESTS_FAILED
-        } else if self
-            .outcomes
-            .iter()
-            .any(|o| o.cargo_result == CargoResult::Timeout)
-        {
+        } else if self.outcomes.iter().any(|o| o.has_timeout()) {
             exit_code::TIMEOUT
-        } else if self.outcomes.iter().any(|o| {
-            matches!(
-                o,
-                Outcome {
-                    scenario: Mutant(_),
-                    cargo_result: CargoResult::Success,
-                    phase: Phase::Test,
-                    ..
-                }
-            )
-        }) {
+        } else if self.outcomes.iter().any(|o| o.mutant_missed()) {
             exit_code::FOUND_PROBLEMS
         } else {
             exit_code::SUCCESS
@@ -91,45 +76,62 @@ impl LabOutcome {
 pub struct Outcome {
     /// A file holding the text output from running this test.
     log_path: PathBuf,
-    /// How long did this take, for all commands put together?
-    pub duration: Duration,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
-    pub cargo_result: CargoResult,
-    /// What was the last phase evaluated for this mutation?
-    ///
-    /// (If it failed during `cargo check` this will be [Phase::Check], etc.)
-    pub phase: Phase,
+    /// For each phase, the duration and the cargo result.
+    phase_results: Vec<(Phase, Duration, CargoResult)>,
 }
 
 impl Outcome {
-    pub fn new(
-        log_file: &LogFile,
-        start_time: &Instant,
-        scenario: Scenario,
-        cargo_result: CargoResult,
-        phase: Phase,
-    ) -> Outcome {
+    pub fn new(log_file: &LogFile, scenario: Scenario) -> Outcome {
         Outcome {
             log_path: log_file.path().to_owned(),
-            duration: start_time.elapsed(),
             scenario,
-            cargo_result,
-            phase,
+            phase_results: Vec::new(),
         }
+    }
+
+    pub fn add_phase_result(
+        &mut self,
+        phase: Phase,
+        duration: Duration,
+        cargo_result: CargoResult,
+    ) {
+        self.phase_results.push((phase, duration, cargo_result));
     }
 
     pub fn get_log_content(&self) -> Result<String> {
         fs::read_to_string(&self.log_path).context("read log file")
     }
 
+    pub fn last_phase(&self) -> Phase {
+        self.phase_results.last().unwrap().0
+    }
+
+    pub fn last_phase_result(&self) -> CargoResult {
+        self.phase_results.last().unwrap().2
+    }
+
     /// True if this status indicates the user definitely needs to see the logs, because a task
     /// failed that should not have failed.
     pub fn should_show_logs(&self) -> bool {
-        !self.scenario.is_mutant() && !self.cargo_result.success()
+        !self.scenario.is_mutant() && !self.success()
     }
 
     pub fn success(&self) -> bool {
-        self.cargo_result.success()
+        self.last_phase_result().success()
+    }
+
+    pub fn has_timeout(&self) -> bool {
+        self.phase_results
+            .iter()
+            .any(|(_, _, r)| *r == CargoResult::Timeout)
+    }
+
+    /// True if this outcome is a missed mutant: it's a mutant and the tests succeeded.
+    pub fn mutant_missed(&self) -> bool {
+        self.scenario.is_mutant()
+            && self.last_phase() == Phase::Test
+            && self.last_phase_result().success()
     }
 }

@@ -170,12 +170,12 @@ pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
     use CargoResult::*;
     use Scenario::*;
     match &outcome.scenario {
-        SourceTree | Baseline => match outcome.cargo_result {
+        SourceTree | Baseline => match outcome.last_phase_result() {
             Success => style("ok").green(),
             Failure => style("FAILED").red().bold(),
             Timeout => style("TIMEOUT").red().bold(),
         },
-        Mutant(_mutant) => match (&outcome.phase, &outcome.cargo_result) {
+        Mutant(_mutant) => match (outcome.last_phase(), outcome.last_phase_result()) {
             (Phase::Test, Failure) => style("caught").green(),
             (Phase::Test, Success) => style("NOT CAUGHT").red().bold(),
             (Phase::Build, Success) => style("build ok").green(),

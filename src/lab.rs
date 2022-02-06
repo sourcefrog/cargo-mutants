@@ -62,7 +62,7 @@ pub fn test_unmutated_then_all_mutants(
     if !outcome.success() {
         console::print_error(&format!(
             "{} failed in source tree, not continuing",
-            outcome.phase,
+            outcome.last_phase(),
         ));
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
@@ -73,7 +73,7 @@ pub fn test_unmutated_then_all_mutants(
     if !outcome.success() {
         console::print_error(&format!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
-            outcome.phase,
+            outcome.last_phase(),
         ));
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
@@ -124,12 +124,10 @@ fn run_cargo_phases(
         Scenario::Baseline => console.start_activity("unmutated baseline"),
         Scenario::Mutant(mutant) => console.start_mutation(mutant),
     };
-    let start_time = Instant::now();
 
-    let mut last_cargo_result = None;
-    let mut last_phase = None;
+    let mut outcome = Outcome::new(&log_file, scenario);
     for &phase in phases {
-        last_phase = Some(phase);
+        let phase_start = Instant::now();
         activity.set_phase(phase.name());
         let cargo_args: &[&str] = match phase {
             Phase::Check => &["check", "--tests"],
@@ -141,18 +139,11 @@ fn run_cargo_phases(
             _ => Duration::MAX,
         };
         let cargo_result = run_cargo(cargo_args, build_dir, &mut activity, &mut log_file, timeout)?;
-        last_cargo_result = Some(cargo_result);
+        outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;
         }
     }
-    let outcome = Outcome::new(
-        &log_file,
-        &start_time,
-        scenario,
-        last_cargo_result.unwrap(),
-        last_phase.unwrap(),
-    );
     activity.outcome(&outcome)?;
     Ok(outcome)
 }
