@@ -81,19 +81,15 @@ pub fn test_unmutated_then_all_mutants(
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
     if !options.has_test_timeout() {
-        let auto_timeout = max(
-            Duration::from_secs(5),
-            outcome
-                .test_duration()
-                .expect("baseline duration measured")
-                .mul_f32(3.0),
-        );
-        options.set_test_timeout(auto_timeout);
-        if console.show_times() {
-            println!(
-                "auto-set test timeout to {:.1}s",
-                options.test_timeout().as_secs_f32()
-            );
+        if let Some(baseline_duration) = outcome.test_duration() {
+            let auto_timeout = max(Duration::from_secs(5), baseline_duration.mul_f32(3.0));
+            options.set_test_timeout(auto_timeout);
+            if console.show_times() {
+                println!(
+                    "auto-set test timeout to {:.1}s",
+                    options.test_timeout().as_secs_f32()
+                );
+            }
         }
     }
 
