@@ -80,7 +80,14 @@ pub struct Outcome {
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.
-    phase_results: Vec<(Phase, Duration, CargoResult)>,
+    phase_results: Vec<PhaseResult>,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
+struct PhaseResult {
+    phase: Phase,
+    duration: Duration,
+    cargo_result: CargoResult,
 }
 
 impl Outcome {
@@ -98,7 +105,11 @@ impl Outcome {
         duration: Duration,
         cargo_result: CargoResult,
     ) {
-        self.phase_results.push((phase, duration, cargo_result));
+        self.phase_results.push(PhaseResult {
+            phase,
+            duration,
+            cargo_result,
+        });
     }
 
     pub fn get_log_content(&self) -> Result<String> {
@@ -106,11 +117,11 @@ impl Outcome {
     }
 
     pub fn last_phase(&self) -> Phase {
-        self.phase_results.last().unwrap().0
+        self.phase_results.last().unwrap().phase
     }
 
     pub fn last_phase_result(&self) -> CargoResult {
-        self.phase_results.last().unwrap().2
+        self.phase_results.last().unwrap().cargo_result
     }
 
     /// True if this status indicates the user definitely needs to see the logs, because a task
@@ -126,7 +137,7 @@ impl Outcome {
     pub fn has_timeout(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|(_, _, r)| *r == CargoResult::Timeout)
+            .any(|pr| pr.cargo_result == CargoResult::Timeout)
     }
 
     /// True if this outcome is a missed mutant: it's a mutant and the tests succeeded.

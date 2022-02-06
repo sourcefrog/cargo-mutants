@@ -11,6 +11,8 @@
 - Show a progress bar while looking for mutation opportunities, and show the
   total number found.
 
+- Show how many mutation opportunities were found, before testing begins.
+
 ## 0.1.0
 
 Released 2021-11-30

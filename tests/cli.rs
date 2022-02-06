@@ -216,6 +216,7 @@ fn uncaught_mutant_in_factorial() {
     let output_re = r"^build source tree \.\.\. ok in \d+\.\d\d\ds
 copy source and build products to scratch directory \.\.\. \d+ MB in \d\.\d\d\ds
 unmutated baseline \.\.\. ok in \d+\.\d\d\ds
+found 2 mutations to test
 src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds
 src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds
 $";

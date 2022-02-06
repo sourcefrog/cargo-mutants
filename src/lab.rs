@@ -84,6 +84,8 @@ pub fn test_unmutated_then_all_mutants(
         BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
         &mutations,
     )?;
+    println!("found {} mutations to test", mutations.len());
+
     for mutation in mutations {
         lab_outcome.add(&test_mutation(
             &mutation,
