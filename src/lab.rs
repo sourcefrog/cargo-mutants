@@ -163,7 +163,7 @@ fn run_cargo_phases(
             break;
         }
     }
-    activity.outcome(&outcome, &options)?;
+    activity.outcome(&outcome, options)?;
     Ok(outcome)
 }
 

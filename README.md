@@ -48,8 +48,7 @@ functions that may be inadequately tested:
     ...
 
 In this version of the `unix_mode` crate, the `is_block_device` function was
-indeed untested. The gap was fixed by adding a
-[doctest](https://github.com/sourcefrog/unix_mode/blob/07e098c1f06d9971f26fe05afa65c3e36135e81f/src/lib.rs#L239-L242).
+indeed untested.
 
 To see what mutants could be generated without running them, use `--list`.
 `--list` also supports a `--json` option to make the output more
@@ -104,7 +103,7 @@ flags the function for cargo-mutants.
 - **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
   or the timeout is too low.
 
-- **4**: The tests are already failing or hanging in a copy of the clean tree,
+- **4**: The tests are already failing or hanging before any mutations are applied,
   so no mutations were tested.
 
 ### `mutants.out`
@@ -131,18 +130,18 @@ this code, cargo-mutants might try changing `should_stop` to always return
     }
 ```
 
-The `--timeout` option lets you set a maximum run time for all tests, so that
-the `cargo mutants` command will not itself get stuck. The fact that the test
-timed out is shown in the output.
+`cargo mutants` automatically sets a timeout when running tests with mutations
+applied, and reports mutations that hit a timeout. The automatic timeout is the
+maximum of 5 seconds, or 3x the time to run tests with no mutations.
 
-The timeout is applied to both the clean and mutated tests. The timeout does not
-apply to `cargo check` or `cargo build`, only `cargo test`.
+You can also set an explicit timout with the `--timeout` option. In this case
+the timeout is also applied to tests run with no mutation.
 
-The default timeout is 3x the time to run the tests in an unmutated tree, and
-at least 5 seconds. There is no timeout on tests in the unmutated tree by
-default, but an explicitly set timeout is applied.
+The timeout does not apply to `cargo check` or `cargo build`, only `cargo
+test`.
 
-When a test times out, you can mark it with `#[mutants::skip]` so that future `cargo mutants` runs go faster.
+When a test times out, you can mark it with `#[mutants::skip]` so that future
+`cargo mutants` runs go faster.
 
 ### Tips
 
@@ -152,10 +151,17 @@ When a test times out, you can mark it with `#[mutants::skip]` so that future `c
   `RUSTFLAGS` when you do want to check this -- and don't do this when running
   `cargo mutants`.
 
-- Anything you can do to make the `cargo build` and `cargo test` suite faster
-  will have a multiplicative effect on `cargo mutants` run time, and of course
-  will also make normal development more pleasant. There's lots of good advice
-  on the web.
+### Performance
+
+Anything you can do to make the `cargo build` and `cargo test` suite faster
+will have a multiplicative effect on `cargo mutants` run time, and of course
+will also make normal development more pleasant. There's lots of good advice
+on the web.
+
+In particular, on Linux, using the
+[Mold linker](https://github.com/rui314/mold) can improve build times
+significantly: because cargo-mutants does many incremental builds, link time
+is important.
 
 ### Hard-to-test cases
 
@@ -275,15 +281,6 @@ _Interesting results_ mean:
   rust-analyzer?), which would help it generate more interesting viable mutants,
   and fewer unviable mutants.
 
-- It might be helpful to distinguish whether the build failed, or the mutation
-  was caught by tests. Ideally, cargo-mutants would never generate code that
-  just won't build, firstly because it's a waste of time, and secondly because
-  it may indicate a missed opportunity to generate more interesting mutants that
-  would build.
-
-- You need to set a timeout yourself: ideally cargo-mutants would set one
-  automatically from the duration of the clean tests.
-
 - Copying the tree to build it doesn't work well if the `Cargo.toml` points to
   dependencies by a relative `path` (other than in subdirectories). This could
   be handled by an option to mutate in-place (maybe into a copy made by the
@@ -318,6 +315,13 @@ The basic approach is:
 
 - First, run `cargo build --tests` and `cargo check` in the source tree to
   "freshen" it so that the mutated copies will have a good starting point.
+
+- Make a copy of the whole tree into a scratch directory. The same directory is
+  reused across all the mutations to benefit from incremental builds.
+  - Before applying any mutations, check that `cargo test` succeeds in the
+    scratch directory: perhaps a test is already broken, or perhaps the tree
+    doesn't build when copied because it relies on relative paths to find
+    dependencies, etc.
 - Build a list of mutations:
   - Walk all source files and parse each one looking for functions.
   - Skip functions that should not be mutated for any of several reasons:
@@ -325,12 +329,6 @@ The basic approach is:
     etc.
   - For each function, depending on its return type, generate every mutation
     pattern that produces a result of that type.
-- Make a copy of the whole tree into a scratch directory. The same directory is
-  reused across all the mutations to benefit from incremental builds.
-  - Before applying any mutations, check that `cargo test` succeeds in the
-    scratch directory: perhaps a test is already broken, or perhaps the tree
-    doesn't build when copied because it relies on relative paths to find
-    dependencies, etc.
 - For each mutation:
   - Apply the mutation to the scratch tree by patching the affected file.
   - Run `cargo test` in the tree, saving output to a log file.
@@ -351,6 +349,8 @@ are applied textually, rather than to the token stream, so that unmutated code
 retains its prior formatting, comments, line numbers, etc. This makes it
 possible to show a text diff of the mutation and should make it easier to
 understand any error messages from the build of the mutated code.
+
+For more details, see [DESIGN.md](DESIGN.md).
 
 ## Related work
 
@@ -396,4 +396,4 @@ Some differences are:
 ## Stability
 
 cargo-mutants is in alpha and behavior, output formats, command-line syntax,
-etc, may change from one release to the next.
+json output formats, etc, may change from one release to the next.
