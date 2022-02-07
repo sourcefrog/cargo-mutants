@@ -96,6 +96,12 @@ impl<'c> Activity<'c> {
         }
     }
 
+    /// Mark this activity as interrupted.
+    pub fn interrupted(&mut self) {
+        self.progress_bar.finish_and_clear();
+        println!("{} ... {}", self.task, style("interrupted").bold().red());
+    }
+
     pub fn tick(&mut self) {
         self.progress_bar.tick();
     }

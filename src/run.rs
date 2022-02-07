@@ -41,6 +41,7 @@ impl CargoResult {
     }
 }
 
+/// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
 pub fn run_cargo(
     cargo_args: &[&str],
     in_dir: &Path,
@@ -79,6 +80,7 @@ pub fn run_cargo(
             terminate_child(child, log_file)?;
             return Ok(CargoResult::Timeout);
         } else if let Err(e) = check_interrupted() {
+            activity.interrupted();
             log_file.message("interrupted\n");
             terminate_child(child, log_file)?;
             return Err(e);
