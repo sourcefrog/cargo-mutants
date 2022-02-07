@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## UNRELEASED
+## 0.2.0
+
+Released 2022-02-06
 
 - A new `--timeout SECS` option to limit the runtime of any `cargo test`
   invocation, so that mutations that cause tests to hang don't cause
