@@ -16,32 +16,15 @@ use crate::*;
 /// Top-level UI object that manages the state of an interactive console: mostly progress bars and
 /// messages.
 pub struct Console {
-    show_all_logs: bool,
     show_times: bool,
 }
 
 impl Console {
     /// Construct a new rich text UI.
-    pub fn new() -> Console {
+    pub fn new(options: &Options) -> Console {
         Console {
-            show_all_logs: false,
-            show_times: true,
+            show_times: options.show_times,
         }
-    }
-
-    pub fn show_all_logs(self, show_all_logs: bool) -> Console {
-        Console {
-            show_all_logs,
-            ..self
-        }
-    }
-
-    pub fn show_times(&self) -> bool {
-        self.show_times
-    }
-
-    pub fn set_show_times(&mut self, show_times: bool) {
-        self.show_times = show_times;
     }
 
     /// Create an Activity for a new mutation.
@@ -109,10 +92,9 @@ impl<'c> Activity<'c> {
     /// Report the outcome of a scenario.
     ///
     /// Prints the log content if appropriate.
-    pub fn outcome(self, outcome: &Outcome) -> Result<()> {
-        let show_all_logs = self.console.show_all_logs; // survive consumption by finish
+    pub fn outcome(self, outcome: &Outcome, options: &Options) -> Result<()> {
         self.finish(style_outcome(outcome));
-        if outcome.should_show_logs() || show_all_logs {
+        if outcome.should_show_logs() || options.show_all_logs {
             print!("{}", outcome.get_log_content()?);
         }
         Ok(())

@@ -13,6 +13,11 @@ pub struct Options {
     pub check_only: bool,
 
     test_timeout: Duration,
+
+    pub show_times: bool,
+
+    /// Show logs even from mutants that were caught, or source/unmutated builds.
+    pub show_all_logs: bool,
 }
 
 impl Options {
@@ -40,6 +45,8 @@ impl From<&Args> for Options {
                 .timeout
                 .map(Duration::from_secs_f64)
                 .unwrap_or(Duration::MAX),
+            show_times: !args.no_times,
+            show_all_logs: args.all_logs,
         }
     }
 }

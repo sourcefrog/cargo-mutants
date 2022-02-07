@@ -84,7 +84,7 @@ pub fn test_unmutated_then_all_mutants(
         if let Some(baseline_duration) = outcome.test_duration() {
             let auto_timeout = max(Duration::from_secs(5), baseline_duration.mul_f32(3.0));
             options.set_test_timeout(auto_timeout);
-            if console.show_times() {
+            if options.show_times {
                 println!(
                     "auto-set test timeout to {:.1}s",
                     options.test_timeout().as_secs_f32()
@@ -163,7 +163,7 @@ fn run_cargo_phases(
             break;
         }
     }
-    activity.outcome(&outcome)?;
+    activity.outcome(&outcome, &options)?;
     Ok(outcome)
 }
 
