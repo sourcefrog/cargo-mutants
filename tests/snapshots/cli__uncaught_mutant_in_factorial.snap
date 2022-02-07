@@ -1,21 +1,14 @@
 ---
 source: tests/cli.rs
-expression: mutants_json
+assertion_line: 241
+expression: redact_timestamps(stdout)
 
 ---
-[
-  {
-    "file": "src/bin/main.rs",
-    "line": 1,
-    "function": "main",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "file": "src/bin/main.rs",
-    "line": 7,
-    "function": "factorial",
-    "return_type": "-> u32",
-    "replacement": "Default::default()"
-  }
-]
+build source tree ... ok in x.xxxs
+copy source and build products to scratch directory ... 6 MB in x.xxxs
+unmutated baseline ... ok in x.xxxs
+auto-set test timeout to x.xxxs
+found 2 mutations to test
+src/bin/main.rs:1: replace main with () ... NOT CAUGHT in x.xxxs
+src/bin/main.rs:7: replace factorial -> u32 with Default::default() ... caught in x.xxxs
+

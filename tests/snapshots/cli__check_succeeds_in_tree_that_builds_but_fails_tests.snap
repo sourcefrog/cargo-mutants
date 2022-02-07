@@ -1,6 +1,6 @@
 ---
 source: tests/cli.rs
-assertion_line: 292
+assertion_line: 297
 expression: stdout
 
 ---

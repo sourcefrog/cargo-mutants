@@ -1,0 +1,22 @@
+---
+source: tests/cli.rs
+assertion_line: 253
+expression: mutants_json
+
+---
+[
+  {
+    "file": "src/bin/main.rs",
+    "line": 1,
+    "function": "main",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/bin/main.rs",
+    "line": 7,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]

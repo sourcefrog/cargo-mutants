@@ -2,6 +2,7 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::borrow::Cow;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -13,10 +14,12 @@ use lazy_static::lazy_static;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
+use regex::Regex;
 use tempfile::{tempdir, TempDir};
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
+    static ref DURATION_RE: Regex = Regex::new(r"\d+\.\d{1,3}s").unwrap();
 }
 
 fn run_assert_cmd() -> assert_cmd::Command {
@@ -52,6 +55,12 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
         .copy_tree(Path::new("testdata/tree").join(tree_name), &tmp_src_dir)
         .unwrap();
     tmp_src_dir
+}
+
+/// Remove anything that looks like a duration, since they'll be unpredictable.
+fn redact_timestamps(s: &str) -> Cow<'_, str> {
+    // TODO: Maybe match the number of digits?
+    DURATION_RE.replace_all(s, "x.xxxs")
 }
 
 #[test]
@@ -213,14 +222,6 @@ fn well_tested_tree_check_only() {
 fn uncaught_mutant_in_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
-    let output_re = r"^build source tree \.\.\. ok in \d+\.\d\d\ds
-copy source and build products to scratch directory \.\.\. \d+ MB in \d\.\d\d\ds
-unmutated baseline \.\.\. ok in \d+\.\d\d\ds
-found 2 mutations to test
-src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds
-src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds
-$";
-
     run_assert_cmd()
         .arg("mutants")
         .arg("-d")
@@ -228,7 +229,10 @@ $";
         .assert()
         .code(2)
         .stderr("")
-        .stdout(is_match(output_re).unwrap());
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(redact_timestamps(stdout));
+            true
+        }));
 
     // Some log files should have been created
     let log_dir = tmp_src_dir.path().join("mutants.out/log");
@@ -246,7 +250,7 @@ $";
     // A mutants.json is in the mutants.out directory.
     let mutants_json =
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/mutants.json")).unwrap();
-    insta::assert_snapshot!(mutants_json);
+    insta::assert_snapshot!("mutants.json", mutants_json);
 }
 
 #[test]
@@ -278,7 +282,7 @@ r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. 
 }
 
 #[test]
-fn check_succeds_in_tree_that_builds_but_fails_tests() {
+fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run_assert_cmd()
