@@ -140,6 +140,19 @@ impl Outcome {
             .any(|pr| pr.cargo_result == CargoResult::Timeout)
     }
 
+    pub fn check_or_build_failed(&self) -> bool {
+        self.phase_results
+            .iter()
+            .any(|pr| pr.phase != Phase::Test && pr.cargo_result == CargoResult::Failure)
+    }
+
+    /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
+    pub fn mutant_caught(&self) -> bool {
+        self.scenario.is_mutant()
+            && self.last_phase() == Phase::Test
+            && self.last_phase_result() == CargoResult::Failure
+    }
+
     /// True if this outcome is a missed mutant: it's a mutant and the tests succeeded.
     pub fn mutant_missed(&self) -> bool {
         self.scenario.is_mutant()

@@ -14,6 +14,9 @@ pub struct Options {
 
     test_timeout: Duration,
 
+    pub print_caught: bool,
+    pub print_unviable: bool,
+
     pub show_times: bool,
 
     /// Show logs even from mutants that were caught, or source/unmutated builds.
@@ -46,6 +49,8 @@ impl From<&Args> for Options {
     fn from(args: &Args) -> Options {
         Options {
             check_only: args.check,
+            print_caught: args.caught,
+            print_unviable: args.unviable,
             shuffle: args.shuffle,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,

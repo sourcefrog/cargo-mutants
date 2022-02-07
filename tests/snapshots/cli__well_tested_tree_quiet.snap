@@ -1,0 +1,11 @@
+---
+source: tests/cli.rs
+assertion_line: 198
+expression: stdout
+
+---
+build source tree ... ok
+copy source and build products to scratch directory ... done
+unmutated baseline ... ok
+found 13 mutations to test
+

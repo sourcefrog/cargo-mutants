@@ -68,17 +68,6 @@ impl<'c> Activity<'c> {
             .set_message(format!("{} ({})", self.task, phase));
     }
 
-    /// Finish the progress bar, and print a concluding message to stdout.
-    fn finish(self, styled_status: StyledObject<&str>) {
-        self.progress_bar.finish_and_clear();
-        print!("{} ... {}", self.task, styled_status,);
-        if self.console.show_times {
-            println!(" in {}", self.format_elapsed());
-        } else {
-            println!();
-        }
-    }
-
     /// Mark this activity as interrupted.
     pub fn interrupted(&mut self) {
         self.progress_bar.finish_and_clear();
@@ -93,7 +82,21 @@ impl<'c> Activity<'c> {
     ///
     /// Prints the log content if appropriate.
     pub fn outcome(self, outcome: &Outcome, options: &Options) -> Result<()> {
-        self.finish(style_outcome(outcome));
+        self.progress_bar.finish_and_clear();
+        if (outcome.mutant_caught() && !options.print_caught)
+            || (outcome.scenario.is_mutant()
+                && outcome.check_or_build_failed()
+                && !options.print_unviable)
+        {
+            return Ok(());
+        }
+
+        print!("{} ... {}", self.task, style_outcome(outcome));
+        if self.console.show_times {
+            println!(" in {}", self.format_elapsed());
+        } else {
+            println!();
+        }
         if outcome.should_show_logs() || options.show_all_logs {
             print!("{}", outcome.get_log_content()?);
         }

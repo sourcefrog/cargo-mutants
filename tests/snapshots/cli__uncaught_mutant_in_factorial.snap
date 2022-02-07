@@ -1,6 +1,6 @@
 ---
 source: tests/cli.rs
-assertion_line: 234
+assertion_line: 266
 expression: redact_timestamps_sizes(stdout)
 
 ---
@@ -10,5 +10,4 @@ unmutated baseline ... ok in x.xxxs
 auto-set test timeout to x.xxxs
 found 2 mutations to test
 src/bin/main.rs:1: replace main with () ... NOT CAUGHT in x.xxxs
-src/bin/main.rs:7: replace factorial -> u32 with Default::default() ... caught in x.xxxs
 

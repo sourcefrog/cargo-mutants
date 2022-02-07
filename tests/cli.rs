@@ -186,11 +186,32 @@ fn copy_testdata_doesnt_include_build_artifacts() {
 }
 
 #[test]
+fn well_tested_tree_quiet() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--no-times")
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+    // The format of outcomes.json is not pinned down yet, but it should exist.
+    assert!(tmp_src_dir
+        .path()
+        .join("mutants.out/outcomes.json")
+        .exists());
+}
+
+#[test]
 fn well_tested_tree_finds_no_problems() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run_assert_cmd()
         .arg("mutants")
         .arg("--no-times")
+        .arg("--caught")
         .current_dir(&tmp_src_dir.path())
         .assert()
         .success()
@@ -273,6 +294,8 @@ fn factorial_mutants_with_all_logs() {
     run_assert_cmd()
         .arg("mutants")
         .arg("--all-logs")
+        .arg("-v")
+        .arg("-V")
         .arg("-d")
         .arg(&tmp_src_dir.path())
         .assert()

@@ -36,29 +36,33 @@ use crate::source::SourceTree;
 /// Find inadequately-tested code that can be removed without any tests failing.
 #[derive(FromArgs, PartialEq, Debug)]
 struct Args {
-    /// rust crate directory to examine.
-    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
-    dir: PathBuf,
-
-    /// just list possible mutants, don't run them.
+    /// show cargo output for all invocations (very verbose).
     #[argh(switch)]
-    list: bool,
+    all_logs: bool,
 
-    /// output json (only for --list).
+    /// print mutations that were caught by tests.
+    #[argh(switch, short = 'v')]
+    caught: bool,
+
+    /// cargo check generated mutants, but don't run tests.
     #[argh(switch)]
-    json: bool,
+    check: bool,
 
     /// show the mutation diffs.
     #[argh(switch)]
     diff: bool,
 
-    /// show cargo output for all invocations (very verbose).
-    #[argh(switch)]
-    all_logs: bool,
+    /// rust crate directory to examine.
+    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
+    dir: PathBuf,
 
-    /// cargo check generated mutants, but don't run tests.
+    /// output json (only for --list).
     #[argh(switch)]
-    check: bool,
+    json: bool,
+
+    /// just list possible mutants, don't run them.
+    #[argh(switch)]
+    list: bool,
 
     /// don't print times or tree sizes, to make output deterministic.
     #[argh(switch)]
@@ -71,6 +75,10 @@ struct Args {
     /// maximum run time for all cargo commands, in seconds.
     #[argh(option, short = 't')]
     timeout: Option<f64>,
+
+    /// print mutations that failed to check or build.
+    #[argh(switch, short = 'V')]
+    unviable: bool,
 }
 
 fn main() -> Result<()> {

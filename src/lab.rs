@@ -113,11 +113,14 @@ pub fn test_unmutated_then_all_mutants(
             &options,
             console,
         )?);
+
+        // Rewrite outcomes.json every time, so we can watch it and so it's not lost if the
+        // program stops or is interrupted.
+        serde_json::to_writer_pretty(
+            BufWriter::new(File::create(output_dir.path().join("outcomes.json"))?),
+            &lab_outcome,
+        )?;
     }
-    serde_json::to_writer_pretty(
-        BufWriter::new(File::create(output_dir.path().join("outcomes.json"))?),
-        &lab_outcome,
-    )?;
     Ok(lab_outcome)
 }
 

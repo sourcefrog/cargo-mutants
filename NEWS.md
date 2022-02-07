@@ -20,6 +20,10 @@
 
 - New `--shuffle` option tests mutants in random order.
 
+- By default, the output now only lists mutants that were missed or that timed
+  out. Mutants that were caught, and mutants that did not build, can be printed
+  with `--caught` and `--unviable` respectively.
+
 ## 0.1.0
 
 Released 2021-11-30
