@@ -138,14 +138,11 @@ timed out is shown in the output.
 The timeout is applied to both the clean and mutated tests. The timeout does not
 apply to `cargo check` or `cargo build`, only `cargo test`.
 
-What to do when a test times out?
+The default timeout is 3x the time to run the tests in an unmutated tree, and
+at least 5 seconds. There is no timeout on tests in the unmutated tree by
+default, but an explicitly set timeout is applied.
 
-First, look at the mutation, and consider whether it makes sense that it would
-cause a hang, and whether the function is well tested. Perhaps cargo-mutants is,
-indirectly, pointing to a bug.
-
-Secondly, you can mark the function with `#[mutants::skip]` so that future runs
-don't need to spend so long waiting for the timeout.
+When a test times out, you can mark it with `#[mutants::skip]` so that future `cargo mutants` runs go faster.
 
 ### Tips
 
