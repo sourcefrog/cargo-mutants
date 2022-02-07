@@ -220,6 +220,17 @@ fn well_tested_tree_check_only() {
 }
 
 #[test]
+fn well_tested_tree_check_only_shuffled() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    run_assert_cmd()
+        .args(["mutants", "--check", "--no-times", "--shuffle"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success();
+    // Caution: No assertions about output here, we just check that it runs.
+}
+
+#[test]
 fn uncaught_mutant_in_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 

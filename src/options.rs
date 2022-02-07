@@ -18,6 +18,11 @@ pub struct Options {
 
     /// Show logs even from mutants that were caught, or source/unmutated builds.
     pub show_all_logs: bool,
+
+    /// Test mutants in random order.
+    ///
+    /// (Mostly for development so that we don't always exercise the first few mutants.)
+    pub shuffle: bool,
 }
 
 impl Options {
@@ -41,12 +46,13 @@ impl From<&Args> for Options {
     fn from(args: &Args) -> Options {
         Options {
             check_only: args.check,
+            shuffle: args.shuffle,
+            show_times: !args.no_times,
+            show_all_logs: args.all_logs,
             test_timeout: args
                 .timeout
                 .map(Duration::from_secs_f64)
                 .unwrap_or(Duration::MAX),
-            show_times: !args.no_times,
-            show_all_logs: args.all_logs,
         }
     }
 }

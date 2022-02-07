@@ -64,6 +64,10 @@ struct Args {
     #[argh(switch)]
     no_times: bool,
 
+    /// run mutants in random order.
+    #[argh(switch)]
+    shuffle: bool,
+
     /// maximum run time for all cargo commands, in seconds.
     #[argh(option, short = 't')]
     timeout: Option<f64>,

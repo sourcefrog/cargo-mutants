@@ -18,6 +18,8 @@
 
 - Show how many mutation opportunities were found, before testing begins.
 
+- New `--shuffle` option tests mutants in random order.
+
 ## 0.1.0
 
 Released 2021-11-30

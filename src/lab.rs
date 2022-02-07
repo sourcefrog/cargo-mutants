@@ -11,6 +11,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use path_slash::PathExt;
+use rand::prelude::*;
 use serde::Serialize;
 use tempfile::TempDir;
 
@@ -93,7 +94,11 @@ pub fn test_unmutated_then_all_mutants(
         }
     }
 
-    let mutations = source_tree.mutations()?;
+    let mut mutations = source_tree.mutations()?;
+    if options.shuffle {
+        mutations.shuffle(&mut rand::thread_rng());
+    }
+
     serde_json::to_writer_pretty(
         BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
         &mutations,
