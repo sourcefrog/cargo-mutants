@@ -1,8 +1,7 @@
-// Copyright 2021,2022 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! Tests for cargo-mutants CLI layer.
 
-use std::borrow::Cow;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -20,6 +19,7 @@ use tempfile::{tempdir, TempDir};
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
     static ref DURATION_RE: Regex = Regex::new(r"\d+\.\d{1,3}s").unwrap();
+    static ref SIZE_RE: Regex = Regex::new(r"\d+ MB").unwrap();
 }
 
 fn run_assert_cmd() -> assert_cmd::Command {
@@ -57,10 +57,11 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
     tmp_src_dir
 }
 
-/// Remove anything that looks like a duration, since they'll be unpredictable.
-fn redact_timestamps(s: &str) -> Cow<'_, str> {
+/// Remove anything that looks like a duration or tree size, since they'll be unpredictable.
+fn redact_timestamps_sizes(s: &str) -> String {
     // TODO: Maybe match the number of digits?
-    DURATION_RE.replace_all(s, "x.xxxs")
+    let s = DURATION_RE.replace_all(s, "x.xxxs");
+    SIZE_RE.replace_all(&s, "xxx MB").to_string()
 }
 
 #[test]
@@ -230,7 +231,7 @@ fn uncaught_mutant_in_factorial() {
         .code(2)
         .stderr("")
         .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(redact_timestamps(stdout));
+            insta::assert_snapshot!(redact_timestamps_sizes(stdout));
             true
         }));
 
