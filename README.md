@@ -126,11 +126,14 @@ Command-line options following a `--` delimiter are passed through to
 be slow to build and run):
 
 ```sh
-; cargo mutants -- --all-targets
+cargo mutants -- --all-targets
 ```
 
-(However, at present a second `--` can't be added to pass arguments to the test
-binaries.)
+You can use a second double-dash to pass options through to the test targets:
+
+````sh
+cargo mutants -- -- --test-threads 1 --nocapture
+```
 
 ### Hangs and timeouts
 
@@ -142,7 +145,7 @@ this code, cargo-mutants might try changing `should_stop` to always return
     while !should_stop() {
       // something
     }
-```
+````
 
 `cargo mutants` automatically sets a timeout when running tests with mutations
 applied, and reports mutations that hit a timeout. The automatic timeout is the
