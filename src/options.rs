@@ -26,6 +26,9 @@ pub struct Options {
     ///
     /// (Mostly for development so that we don't always exercise the first few mutants.)
     pub shuffle: bool,
+
+    /// Additional arguments to `cargo test`.
+    pub additional_cargo_test_args: Vec<String>,
 }
 
 impl Options {
@@ -58,6 +61,7 @@ impl From<&Args> for Options {
                 .timeout
                 .map(Duration::from_secs_f64)
                 .unwrap_or(Duration::MAX),
+            additional_cargo_test_args: args.cargo_test_args.clone(),
         }
     }
 }

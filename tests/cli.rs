@@ -379,6 +379,39 @@ fn already_failing_tests_are_detected_before_running_mutants() {
 }
 
 #[test]
+fn already_failing_doctests_are_detected() {
+    let tmp_src_dir = copy_of_testdata("already_failing_doctests");
+    run_assert_cmd()
+        .arg("mutants")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .code(4) // CLEAN_TESTS_FAILED
+        .stdout(contains(
+            "test src/lib.rs - takes_one_arg (line 5) ... FAILED",
+        ))
+        .stdout(contains(
+            "this function takes 1 argument but 3 arguments were supplied",
+        ))
+        .stdout(predicate::str::contains(
+            "cargo test failed in an unmutated tree, so no mutants were tested",
+        ));
+}
+
+#[test]
+fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
+    let tmp_src_dir = copy_of_testdata("already_failing_doctests");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--", "--all-targets"])
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .code(0)
+        .stdout(contains("found 1 mutation to test"));
+}
+
+#[test]
 fn source_tree_build_fails() {
     let tmp_src_dir = copy_of_testdata("build_fails");
     run_assert_cmd()

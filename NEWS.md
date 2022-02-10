@@ -1,19 +1,23 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Arguments to `cargo test` can be passed on the command line after `--`.
+  <https://github.com/sourcefrog/cargo-mutants/issues/15>
+
 ## 0.2.0
 
 Released 2022-02-06
 
 - A new `--timeout SECS` option to limit the runtime of any `cargo test`
   invocation, so that mutations that cause tests to hang don't cause
-  `cargo mutants` to hang. 
+  `cargo mutants` to hang.
 
   A default timeout is set based on the time to run tests in an unmutated tree.
-  There is no timeout by default on the unmutated tree. 
+  There is no timeout by default on the unmutated tree.
 
-  On Unix, the `cargo` subprocesses run in a new process group. As a
-  consequence ctrl-c is explicitly caught and propagated to the child
-  processes.
+  On Unix, the `cargo` subprocesses run in a new process group. As a consequence
+  ctrl-c is explicitly caught and propagated to the child processes.
 
 - Show a progress bar while looking for mutation opportunities, and show the
   total number found.

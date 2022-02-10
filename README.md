@@ -104,8 +104,8 @@ flags the function for cargo-mutants.
 - **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
   or the timeout is too low.
 
-- **4**: The tests are already failing or hanging before any mutations are applied,
-  so no mutations were tested.
+- **4**: The tests are already failing or hanging before any mutations are
+  applied, so no mutations were tested.
 
 ### `mutants.out`
 
@@ -118,6 +118,19 @@ A `mutants.out` directory is created in the source directory. It contains:
 - A `mutants.json` file describing all the generated mutants.
 
 - An `outcomes.json` file describing the results of all tests.
+
+### Passing arguments to `cargo test`
+
+Command-line options following a `--` delimiter are passed through to
+`cargo test`, which can be used for example to exclude doctests (which tend to
+be slow to build and run):
+
+```sh
+; cargo mutants -- --all-targets
+```
+
+(However, at present a second `--` can't be added to pass arguments to the test
+binaries.)
 
 ### Hangs and timeouts
 
@@ -138,8 +151,7 @@ maximum of 5 seconds, or 3x the time to run tests with no mutations.
 You can also set an explicit timout with the `--timeout` option. In this case
 the timeout is also applied to tests run with no mutation.
 
-The timeout does not apply to `cargo check` or `cargo build`, only `cargo
-test`.
+The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.
 
 When a test times out, you can mark it with `#[mutants::skip]` so that future
 `cargo mutants` runs go faster.
@@ -154,15 +166,14 @@ When a test times out, you can mark it with `#[mutants::skip]` so that future
 
 ### Performance
 
-Anything you can do to make the `cargo build` and `cargo test` suite faster
-will have a multiplicative effect on `cargo mutants` run time, and of course
-will also make normal development more pleasant. There's lots of good advice
-on the web.
+Anything you can do to make the `cargo build` and `cargo test` suite faster will
+have a multiplicative effect on `cargo mutants` run time, and of course will
+also make normal development more pleasant. There's lots of good advice on the
+web.
 
-In particular, on Linux, using the
-[Mold linker](https://github.com/rui314/mold) can improve build times
-significantly: because cargo-mutants does many incremental builds, link time
-is important.
+In particular, on Linux, using the [Mold linker](https://github.com/rui314/mold)
+can improve build times significantly: because cargo-mutants does many
+incremental builds, link time is important.
 
 ### Hard-to-test cases
 

@@ -122,8 +122,8 @@ pub fn test_unmutated_then_all_mutants(
             console,
         )?);
 
-        // Rewrite outcomes.json every time, so we can watch it and so it's not lost if the
-        // program stops or is interrupted.
+        // Rewrite outcomes.json every time, so we can watch it and so it's not
+        // lost if the program stops or is interrupted.
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(output_dir.path().join("outcomes.json"))?),
             &lab_outcome,
@@ -164,16 +164,29 @@ fn run_cargo_phases(
     for &phase in phases {
         let phase_start = Instant::now();
         activity.set_phase(phase.name());
-        let cargo_args: &[&str] = match phase {
-            Phase::Check => &["check", "--tests"],
-            Phase::Build => &["build", "--tests"],
-            Phase::Test => &["test"],
+        let cargo_args = match phase {
+            Phase::Check => vec!["check", "--tests"],
+            Phase::Build => vec!["build", "--tests"],
+            Phase::Test => std::iter::once("test")
+                .chain(
+                    options
+                        .additional_cargo_test_args
+                        .iter()
+                        .map(String::as_str),
+                )
+                .collect(),
         };
         let timeout = match phase {
             Phase::Test => options.test_timeout(),
             _ => Duration::MAX,
         };
-        let cargo_result = run_cargo(cargo_args, build_dir, &mut activity, &mut log_file, timeout)?;
+        let cargo_result = run_cargo(
+            &cargo_args,
+            build_dir,
+            &mut activity,
+            &mut log_file,
+            timeout,
+        )?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;

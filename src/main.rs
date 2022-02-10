@@ -34,6 +34,8 @@ pub use crate::run::CargoResult;
 use crate::source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
+///
+/// See <https://github.com/sourcefrog/cargo-mutants> for more information.
 #[derive(FromArgs, PartialEq, Debug)]
 struct Args {
     /// show cargo output for all invocations (very verbose).
@@ -79,6 +81,12 @@ struct Args {
     /// print mutations that failed to check or build.
     #[argh(switch, short = 'V')]
     unviable: bool,
+
+    // The following option captures all the remaining non-option args, to
+    // send to cargo.
+    /// pass remaining arguments to cargo test after all options and after `--`.
+    #[argh(positional)]
+    cargo_test_args: Vec<String>,
 }
 
 fn main() -> Result<()> {
@@ -109,6 +117,8 @@ fn main() -> Result<()> {
         }
     } else {
         let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options, &console)?;
+        // TODO: Perhaps print a text summary of how many were tested and whether they were all
+        // caught?
         exit(lab_outcome.exit_code());
     }
     Ok(())
