@@ -317,6 +317,23 @@ r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. 
 }
 
 #[test]
+fn factorial_mutants_with_all_logs_and_nocapture() {
+    let tmp_src_dir = copy_of_testdata("factorial");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--all-logs", "-v", "-V"])
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .args(["--", "--", "--nocapture"])
+        .assert()
+        .code(2)
+        .stderr("")
+        .stdout(contains("factorial(6) = 720")) // println from the test
+        .stdout(contains("factorial(6) = 0")) // The mutated result
+        ;
+}
+
+#[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
