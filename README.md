@@ -131,7 +131,7 @@ cargo mutants -- --all-targets
 
 You can use a second double-dash to pass options through to the test targets:
 
-````sh
+```sh
 cargo mutants -- -- --test-threads 1 --nocapture
 ```
 
@@ -145,7 +145,7 @@ this code, cargo-mutants might try changing `should_stop` to always return
     while !should_stop() {
       // something
     }
-````
+```
 
 `cargo mutants` automatically sets a timeout when running tests with mutations
 applied, and reports mutations that hit a timeout. The automatic timeout is the
