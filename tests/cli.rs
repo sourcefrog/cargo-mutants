@@ -387,9 +387,7 @@ fn already_failing_doctests_are_detected() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(4) // CLEAN_TESTS_FAILED
-        .stdout(contains(
-            "test src/lib.rs - takes_one_arg (line 5) ... FAILED",
-        ))
+        .stdout(contains("lib.rs - takes_one_arg (line 5) ... FAILED"))
         .stdout(contains(
             "this function takes 1 argument but 3 arguments were supplied",
         ))
