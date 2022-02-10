@@ -2,7 +2,7 @@
 
 https://github.com/sourcefrog/cargo-mutants
 
-[![Tests](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml/badge.svg)](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml)
+[![Tests](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml/badge.svg?branch=main&event=push)](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml?query=branch%3Amain)
 [![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
 ![Maturity: Beta](https://img.shields.io/badge/maturity-beta-blue.svg)
 
