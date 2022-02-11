@@ -1,8 +1,11 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.1
 
-- Arguments to `cargo test` can be passed on the command line after `--`.
+Released 2022-02-10
+
+- Arguments to `cargo test` can be passed on the command line after `--`. This
+  allows, for example, skipping doctests or setting the number of test threads.
   <https://github.com/sourcefrog/cargo-mutants/issues/15>
 
 ## 0.2.0
