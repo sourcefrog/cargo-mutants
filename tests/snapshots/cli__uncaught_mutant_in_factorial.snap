@@ -4,7 +4,7 @@ assertion_line: 266
 expression: redact_timestamps_sizes(stdout)
 
 ---
-build source tree ... ok in x.xxxs
+source tree ... ok in x.xxxs
 copy source and build products to scratch directory ... xxx MB in x.xxxs
 unmutated baseline ... ok in x.xxxs
 auto-set test timeout to x.xxxs

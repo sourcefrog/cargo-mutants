@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## unreleased
+
+- In the progress bar, show which mutant is being tested out of how many total.
+
 ## 0.2.1
 
 Released 2022-02-10

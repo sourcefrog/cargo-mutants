@@ -30,7 +30,13 @@ pub enum Scenario {
     /// Build in a copy of the source tree but with no mutations applied.
     Baseline,
     /// Build with a mutant applied.
-    Mutant(Mutation),
+    Mutant {
+        mutation: Mutation,
+        /// Index of the mutation being applied, to calculate progress.
+        i_mutation: usize,
+        /// Total number of mutations.
+        n_mutations: usize,
+    },
 }
 
 impl fmt::Display for Scenario {
@@ -38,14 +44,14 @@ impl fmt::Display for Scenario {
         match self {
             Scenario::SourceTree => f.write_str("source tree"),
             Scenario::Baseline => f.write_str("baseline"),
-            Scenario::Mutant(mutant) => mutant.fmt(f),
+            Scenario::Mutant { mutation, .. } => mutation.fmt(f),
         }
     }
 }
 
 impl Scenario {
     pub fn is_mutant(&self) -> bool {
-        matches!(self, Scenario::Mutant(_))
+        matches!(self, Scenario::Mutant { .. })
     }
 }
 
@@ -113,9 +119,14 @@ pub fn test_unmutated_then_all_mutants(
         }
     );
 
-    for mutation in mutations {
+    let n_mutations = mutations.len();
+    for (i_mutation, mutation) in mutations.into_iter().enumerate() {
         lab_outcome.add(&test_mutation(
-            &mutation,
+            &Scenario::Mutant {
+                mutation,
+                i_mutation,
+                n_mutations,
+            },
             build_dir.path(),
             &output_dir,
             &options,
@@ -142,25 +153,19 @@ fn run_cargo_phases(
     build_dir: &Path,
     output_dir: &OutputDir,
     options: &Options,
-    scenario: Scenario,
+    scenario: &Scenario,
     phases: &[Phase],
     console: &Console,
 ) -> Result<Outcome> {
     let scenario_name = scenario.to_string();
     let mut log_file = output_dir.create_log(&scenario_name)?;
     log_file.message(&scenario_name);
-    if let Scenario::Mutant(mutant) = &scenario {
-        log_file.message(&mutant.diff());
+    if let Scenario::Mutant { mutation, .. } = scenario {
+        log_file.message(&mutation.diff());
     }
-    let mut activity = match &scenario {
-        Scenario::SourceTree => {
-            console.start_activity(&format!("{} source tree", phases.last().unwrap()))
-        }
-        Scenario::Baseline => console.start_activity("unmutated baseline"),
-        Scenario::Mutant(mutant) => console.start_mutation(mutant),
-    };
+    let mut activity = console.start_scenario(scenario);
 
-    let mut outcome = Outcome::new(&log_file, scenario);
+    let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {
         let phase_start = Instant::now();
         activity.set_phase(phase.name());
@@ -245,7 +250,7 @@ fn check_and_build_source_tree(
         source_tree.root(),
         output_dir,
         options,
-        Scenario::SourceTree,
+        &Scenario::SourceTree,
         phases,
         console,
     )
@@ -265,7 +270,7 @@ fn test_baseline(
         build_dir,
         output_dir,
         options,
-        Scenario::Baseline,
+        &Scenario::Baseline,
         Phase::ALL,
         console,
     )
@@ -273,20 +278,24 @@ fn test_baseline(
 
 /// Test with one mutation applied.
 fn test_mutation(
-    mutation: &Mutation,
+    scenario: &Scenario,
     build_dir: &Path,
     output_dir: &OutputDir,
     options: &Options,
     console: &Console,
 ) -> Result<Outcome> {
-    mutation.with_mutation_applied(build_dir, || {
-        run_cargo_phases(
-            build_dir,
-            output_dir,
-            options,
-            Scenario::Mutant(mutation.clone()),
-            Phase::ALL,
-            console,
-        )
-    })
+    if let Scenario::Mutant { mutation, .. } = scenario {
+        mutation.with_mutation_applied(build_dir, || {
+            run_cargo_phases(
+                build_dir,
+                output_dir,
+                options,
+                scenario,
+                Phase::ALL,
+                console,
+            )
+        })
+    } else {
+        unreachable!()
+    }
 }

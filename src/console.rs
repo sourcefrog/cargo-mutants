@@ -27,9 +27,20 @@ impl Console {
         }
     }
 
-    /// Create an Activity for a new mutation.
-    pub fn start_mutation(&self, mutation: &Mutation) -> Activity {
-        self.start_activity(&style_mutation(mutation))
+    pub fn start_scenario(&self, scenario: &Scenario) -> Activity {
+        match scenario {
+            Scenario::SourceTree => self.start_activity("source tree"),
+            Scenario::Baseline => self.start_activity("unmutated baseline"),
+            Scenario::Mutant {
+                mutation,
+                i_mutation,
+                n_mutations,
+            } => {
+                let mut activity = self.start_activity(&style_mutation(mutation));
+                activity.overall_progress = Some((i_mutation + 1, *n_mutations));
+                activity
+            }
+        }
     }
 
     /// Start a general-purpose activity.
@@ -46,6 +57,7 @@ impl Console {
             progress_bar,
             start_time: Instant::now(),
             console: self,
+            overall_progress: None,
         }
     }
 
@@ -60,12 +72,18 @@ pub struct Activity<'c> {
     progress_bar: ProgressBar,
     task: String,
     console: &'c Console,
+    /// Optionally, progress counter through the overall lab. Shown in the progress bar
+    /// but not on permanent output.
+    overall_progress: Option<(usize, usize)>,
 }
 
 impl<'c> Activity<'c> {
     pub fn set_phase(&mut self, phase: &'static str) {
+        let overall_text = self
+            .overall_progress
+            .map_or(String::new(), |(a, b)| format!("[{}/{}] ", a, b));
         self.progress_bar
-            .set_message(format!("{} ({})", self.task, phase));
+            .set_message(format!("{}{} ({})", overall_text, self.task, phase));
     }
 
     /// Mark this activity as interrupted.
@@ -170,7 +188,7 @@ pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
             Failure => style("FAILED").red().bold(),
             Timeout => style("TIMEOUT").red().bold(),
         },
-        Mutant(_mutant) => match (outcome.last_phase(), outcome.last_phase_result()) {
+        Mutant { .. } => match (outcome.last_phase(), outcome.last_phase_result()) {
             (Phase::Test, Failure) => style("caught").green(),
             (Phase::Test, Success) => style("NOT CAUGHT").red().bold(),
             (Phase::Build, Success) => style("build ok").green(),

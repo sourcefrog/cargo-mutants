@@ -301,7 +301,7 @@ fn factorial_mutants_with_all_logs() {
         .assert()
         .code(2)
         .stderr("")
-        .stdout(is_match(r"build source tree \.\.\. ok in \d+\.\d\d\ds").unwrap())
+        .stdout(is_match(r"source tree \.\.\. ok in \d+\.\d\d\ds").unwrap())
         .stdout(is_match(
 r"copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d\ds"
         ).unwrap())
@@ -435,7 +435,7 @@ fn source_tree_build_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"build source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
+        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
         .stdout(contains(r"This isn't Rust").name("The problem source line"))
         .stdout(contains("*** source tree"))
         .stdout(contains("check --tests")) // Caught at the check phase
