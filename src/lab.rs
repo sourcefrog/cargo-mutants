@@ -89,7 +89,7 @@ pub fn test_unmutated_then_all_mutants(
     }
     if !options.has_test_timeout() {
         if let Some(baseline_duration) = outcome.test_duration() {
-            let auto_timeout = max(Duration::from_secs(5), baseline_duration.mul_f32(3.0));
+            let auto_timeout = max(Duration::from_secs(20), baseline_duration.mul_f32(5.0));
             options.set_test_timeout(auto_timeout);
             if options.show_times {
                 println!(

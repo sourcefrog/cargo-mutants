@@ -4,6 +4,10 @@
 
 - In the progress bar, show which mutant is being tested out of how many total.
 
+- The automatic timeout is now set to the minimum of 20 seconds, or 5x the time
+  of the tests in a baseline tree, to reduce the incidence of false timeouts on
+  machines with variable throughput.
+
 ## 0.2.1
 
 Released 2022-02-10
