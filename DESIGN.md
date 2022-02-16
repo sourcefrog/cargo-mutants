@@ -64,13 +64,15 @@ We want to handle timeouts internally for a few reasons, including:
 - For either CI or interactive use it's better if `cargo mutants` finishes in a
   bounded time.
 
-For now, cargo-mutants has a simple global timeout option (`Options::timeout`).
-Later we could adaptively determine this based on the time for the clean tests
-to run -- while still having an overall default timeout for them.
-
 (We are primarily concerned here with timeouts on tests; let's assume that
 `cargo build` will never get stuck; if it does then the whole environment
 probably has problems that need user investigation.)
+
+The timeout for running tests is controlled by `Options::timeout`.
+
+The timeout can be set by the user with `--timeout`, in which case it's simply
+used as is. If it's not specified, it is auto-set from the time to run the
+baseline tests, with a multiplier and a floor.
 
 Detecting that a program has run too long is simple: we just watch the clock
 while waiting for it to finish. Terminating it, however, is more complicated:
