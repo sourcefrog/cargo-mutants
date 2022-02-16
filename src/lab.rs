@@ -208,9 +208,9 @@ fn copy_source_to_scratch(source: &SourceTree, console: &Console) -> Result<Temp
     // I thought we could skip copying /target here, but it turns out that copying
     // it does speed up the first build.
     match cp_r::CopyOptions::new()
-        .after_entry_copied(|_path, _ft, stats| {
+        .after_entry_copied(|path, _ft, stats| {
             activity.bytes_copied(stats.file_bytes);
-            // TODO: check was_interrupted.
+            check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
         })
         .copy_tree(source.root(), &temp_dir.path())
         .context("copy source tree to lab directory")

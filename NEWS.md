@@ -8,6 +8,9 @@
   of the tests in a baseline tree, to reduce the incidence of false timeouts on
   machines with variable throughput.
 
+- Ctrl-c (or `SIGINT`) interrupts the program during copying the tree.
+  Previously it was not handled until the copy was complete.
+
 ## 0.2.1
 
 Released 2022-02-10
