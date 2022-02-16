@@ -67,17 +67,20 @@ pub fn test_unmutated_then_all_mutants(
     let mut options: Options = options.clone();
     let mut lab_outcome = LabOutcome::default();
     let output_dir = OutputDir::new(source_tree.root())?;
-    let outcome = check_and_build_source_tree(source_tree, &output_dir, &options, console)?;
-    lab_outcome.add(&outcome);
-    if !outcome.success() {
-        console::print_error(&format!(
-            "{} failed in source tree, not continuing",
-            outcome.last_phase(),
-        ));
-        return Ok(lab_outcome); // TODO: Maybe should be Err?
+
+    if options.build_source {
+        let outcome = check_and_build_source_tree(source_tree, &output_dir, &options, console)?;
+        lab_outcome.add(&outcome);
+        if !outcome.success() {
+            console::print_error(&format!(
+                "{} failed in source tree, not continuing",
+                outcome.last_phase(),
+            ));
+            return Ok(lab_outcome); // TODO: Maybe should be Err?
+        }
     }
 
-    let build_dir = copy_source_to_scratch(source_tree, console)?;
+    let build_dir = copy_source_to_scratch(source_tree, console, &options)?;
     let outcome = test_baseline(build_dir.path(), &output_dir, &options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
@@ -201,16 +204,26 @@ fn run_cargo_phases(
     Ok(outcome)
 }
 
-fn copy_source_to_scratch(source: &SourceTree, console: &Console) -> Result<TempDir> {
+fn copy_source_to_scratch(
+    source: &SourceTree,
+    console: &Console,
+    options: &Options,
+) -> Result<TempDir> {
     let temp_dir = TempDir::new()?;
-    let mut activity =
-        console.start_copy_activity("copy source and build products to scratch directory");
-    // I thought we could skip copying /target here, but it turns out that copying
-    // it does speed up the first build.
+    let copy_target = options.copy_target;
+    let mut activity = console.start_copy_activity(if copy_target {
+        "copy source and build products to scratch directory"
+    } else {
+        "copy source to scratch directory"
+    });
+    let target_path = Path::new("target");
     match cp_r::CopyOptions::new()
         .after_entry_copied(|path, _ft, stats| {
             activity.bytes_copied(stats.file_bytes);
             check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
+        })
+        .filter(|path, dir_entry| {
+            Ok(copy_target || !(dir_entry.file_type().unwrap().is_dir() && path == target_path))
         })
         .copy_tree(source.root(), &temp_dir.path())
         .context("copy source tree to lab directory")

@@ -29,6 +29,12 @@ pub struct Options {
 
     /// Additional arguments to `cargo test`.
     pub additional_cargo_test_args: Vec<String>,
+
+    /// Copy the `/target/` directory from the source tree.
+    pub copy_target: bool,
+
+    /// Build the source directory before copying it.
+    pub build_source: bool,
 }
 
 impl Options {
@@ -51,7 +57,9 @@ impl Options {
 impl From<&Args> for Options {
     fn from(args: &Args) -> Options {
         Options {
+            build_source: !args.no_copy_target,
             check_only: args.check,
+            copy_target: !args.no_copy_target,
             print_caught: args.caught,
             print_unviable: args.unviable,
             shuffle: args.shuffle,

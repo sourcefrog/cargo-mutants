@@ -2,7 +2,7 @@
 
 ## unreleased
 
-- In the progress bar, show which mutant is being tested out of how many total.
+- The progress bar now shows which mutant is being tested out of how many total.
 
 - The automatic timeout is now set to the minimum of 20 seconds, or 5x the time
   of the tests in a baseline tree, to reduce the incidence of false timeouts on
@@ -10,6 +10,8 @@
 
 - Ctrl-c (or `SIGINT`) interrupts the program during copying the tree.
   Previously it was not handled until the copy was complete.
+
+- New `--no-copy-target` option.
 
 ## 0.2.1
 

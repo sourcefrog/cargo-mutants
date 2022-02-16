@@ -334,6 +334,23 @@ fn factorial_mutants_with_all_logs_and_nocapture() {
 }
 
 #[test]
+fn factorial_mutants_no_copy_target() {
+    let tmp_src_dir = copy_of_testdata("factorial");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--no-copy-target", "--no-times"])
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .assert()
+        .code(2)
+        .stderr("")
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");

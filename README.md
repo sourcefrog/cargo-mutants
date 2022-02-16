@@ -65,21 +65,20 @@ passing when run from a different location, such as a relative `path` in
 Otherwise, cargo mutants generates every mutant it can and prints the result of
 trying each one:
 
-- **caught** -- A test failed with this mutant applied. This is a good sign
-  about test coverage. You can look in `mutants.out/log` to see which tests
-  failed.
+- **caught** — A test failed with this mutant applied. This is a good sign about
+  test coverage. You can look in `mutants.out/log` to see which tests failed.
 
-- **not caught** -- No test failed with this mutation applied, which seems to
+- **not caught** — No test failed with this mutation applied, which seems to
   indicate a gap in test coverage. Or, it may be that the mutant is
   undistinguishable from the correct code. You may wish to add a better test, or
   mark that the function should be skipped.
 
-- **check failed** -- `cargo check` failed on the mutated code, probably because
+- **check failed** — `cargo check` failed on the mutated code, probably because
   the mutation does not typecheck. This is inconclusive about test coverage and
   no action is needed, but indicates an opportunity for cargo-mutants to either
   generate better mutants, or at least not generate unviable mutants.
 
-- **build failed** -- Similarly, but `cargo build` failed. This should be rare.
+- **build failed** — Similarly, but `cargo build` failed. This should be rare.
 
 ### Skipping functions
 
@@ -164,7 +163,7 @@ When a test times out, you can mark it with `#[mutants::skip]` so that future
 - Trees that `deny` style lints such as unused parameters are likely to fail to
   build when mutated, without really saying much about the value of the tests. I
   suggest you don't statically deny warnings in your source code, but rather set
-  `RUSTFLAGS` when you do want to check this -- and don't do this when running
+  `RUSTFLAGS` when you do want to check this — and don't do this when running
   `cargo mutants`.
 
 ### Performance
@@ -195,6 +194,17 @@ difficult. cargo-mutants can help in a few ways:
 - Sometimes these effects can be tested by making the side-effect observable
   with, for example, a counter of the number of memory allocations or cache
   misses/hits.
+
+### Other options
+
+`--no-copy-target` skips building the source tree and excludes `/target` from
+copying. The effect of this is that the first, baseline, build in the scratch
+directory will be a "clean" build with nothing in `/target`. This will typically
+be slower (which is why `/target` is copied by default) but it might help in
+debugging any issues with the build. (And, in niche cases where there is a very
+large volume of old unreferenced content in `/target`, it might conceivably be
+faster, but that's probably better dealt with by `cargo clean` in the source
+directory.)
 
 ## Goals
 
@@ -320,6 +330,7 @@ _Interesting results_ mean:
 - It currently assumes all the source is in `src/` of the directory, but Cargo
   doesn't require that, and some crates have their source in a different
   directory. This could be fixed by reading `cargo metadata`.
+  <https://github.com/sourcefrog/cargo-mutants/issues/29>
 
 - Mutated functions could discard all parameters to avoid strict warnings about
   them being unused. (I haven't seen any crates yet that enforce this.)
@@ -329,14 +340,18 @@ _Interesting results_ mean:
 The basic approach is:
 
 - First, run `cargo build --tests` and `cargo check` in the source tree to
-  "freshen" it so that the mutated copies will have a good starting point.
+  "freshen" it so that the mutated copies will have a good starting point. (This
+  is skipped with `--no-copy-target`.)
 
-- Make a copy of the whole tree into a scratch directory. The same directory is
-  reused across all the mutations to benefit from incremental builds.
+- Make a copy of the whole tree into a scratch directory, unless
+  `--no-copy-target` is set. The same directory is reused across all the
+  mutations to benefit from incremental builds.
+
   - Before applying any mutations, check that `cargo test` succeeds in the
     scratch directory: perhaps a test is already broken, or perhaps the tree
     doesn't build when copied because it relies on relative paths to find
     dependencies, etc.
+
 - Build a list of mutations:
   - Walk all source files and parse each one looking for functions.
   - Skip functions that should not be mutated for any of several reasons:

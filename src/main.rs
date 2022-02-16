@@ -66,6 +66,10 @@ struct Args {
     #[argh(switch)]
     list: bool,
 
+    /// don't copy the /target directory, and don't build the source tree first.
+    #[argh(switch)]
+    no_copy_target: bool,
+
     /// don't print times or tree sizes, to make output deterministic.
     #[argh(switch)]
     no_times: bool,
