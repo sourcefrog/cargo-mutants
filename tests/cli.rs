@@ -31,14 +31,14 @@ fn run() -> std::process::Command {
 }
 
 trait CommandInstaExt {
-    fn assert_insta(&mut self);
+    fn assert_insta(&mut self, snapshot_name: &str);
 }
 
 impl CommandInstaExt for std::process::Command {
-    fn assert_insta(&mut self) {
+    fn assert_insta(&mut self, snapshot_name: &str) {
         let output = self.output().expect("command completes");
         assert!(output.status.success());
-        insta::assert_snapshot!(String::from_utf8_lossy(&output.stdout));
+        insta::assert_snapshot!(snapshot_name, String::from_utf8_lossy(&output.stdout));
         assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
     }
 }
@@ -122,7 +122,7 @@ fn list_mutants_in_factorial() {
         .arg("mutants")
         .arg("--list")
         .current_dir("testdata/tree/factorial")
-        .assert_insta();
+        .assert_insta("list_mutants_in_factorial");
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn list_mutants_in_factorial_json() {
         .arg("--list")
         .arg("--json")
         .current_dir("testdata/tree/factorial")
-        .assert_insta();
+        .assert_insta("list_mutants_in_factorial_json");
 }
 
 #[test]
@@ -142,7 +142,7 @@ fn list_mutants_with_dir_option() {
         .arg("--list")
         .arg("--dir")
         .arg("testdata/tree/factorial")
-        .assert_insta();
+        .assert_insta("list_mutants_with_dir_option");
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn list_mutants_with_diffs_in_factorial() {
         .arg("--list")
         .arg("--diff")
         .current_dir("testdata/tree/factorial")
-        .assert_insta();
+        .assert_insta("list_mutants_with_diffs_in_factorial");
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn list_mutants_well_tested() {
         .arg("mutants")
         .arg("--list")
         .current_dir("testdata/tree/well_tested")
-        .assert_insta();
+        .assert_insta("list_mutants_well_tested");
 }
 
 #[test]
@@ -171,7 +171,7 @@ fn list_mutants_json_well_tested() {
         .arg("--list")
         .arg("--json")
         .current_dir("testdata/tree/well_tested")
-        .assert_insta();
+        .assert_insta("list_mutants_json_well_tested");
 }
 
 #[test]
