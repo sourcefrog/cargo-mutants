@@ -85,7 +85,8 @@ trying each one:
 To mark functions so they are not mutated:
 
 1. Add a Cargo dependency on the [mutants](https://crates.io/crates/mutants)
-   crate.
+   crate. (Note that this must be a regular `dependency` not a `dev-dependency`,
+   because the annotation will be on non-test code.)
 
 2. Mark functions with `#[mutants::skip]`.
 
