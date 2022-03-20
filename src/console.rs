@@ -123,13 +123,14 @@ impl<'c> Activity<'c> {
 
 pub struct CopyActivity {
     view: nutmeg::View<CopyModel>,
-    options: Options,
 }
 
 struct CopyModel {
     bytes_copied: u64,
     start: Instant,
     name: &'static str,
+    succeeded: bool,
+    show_times: bool,
 }
 
 impl nutmeg::Model for CopyModel {
@@ -141,6 +142,23 @@ impl nutmeg::Model for CopyModel {
             style(format!("{}s", self.start.elapsed().as_secs())).cyan()
         )
     }
+
+    fn final_message(&mut self) -> String {
+        if self.succeeded {
+            if self.show_times {
+                format!(
+                    "{} ... {} in {}",
+                    self.name,
+                    style_mb(self.bytes_copied),
+                    style(format_elapsed(self.start)).cyan(),
+                )
+            } else {
+                format!("{} ... {}", self.name, style("done").green())
+            }
+        } else {
+            format!("{} ... {}", self.name, style("failed").bold().red())
+        }
+    }
 }
 
 impl CopyActivity {
@@ -150,10 +168,12 @@ impl CopyActivity {
                 name,
                 start: Instant::now(),
                 bytes_copied: 0,
+                succeeded: false,
+                show_times: options.show_times,
             },
             nutmeg::Options::default(),
         );
-        CopyActivity { view, options }
+        CopyActivity { view }
     }
 
     pub fn bytes_copied(&mut self, bytes_copied: u64) {
@@ -161,23 +181,15 @@ impl CopyActivity {
     }
 
     pub fn succeed(self, bytes_copied: u64) {
-        let model = self.view.finish();
-        // Print to stdout even if progress bars weren't drawn.
-        print!("{} ...", model.name);
-        if self.options.show_times {
-            println!(
-                " {} in {}",
-                style_mb(bytes_copied),
-                style(format_elapsed(model.start)).cyan(),
-            );
-        } else {
-            println!(" {}", style("done").green());
-        }
+        self.view.update(|model| {
+            model.succeeded = true;
+            model.bytes_copied = bytes_copied;
+        });
+        self.view.finish();
     }
 
     pub fn fail(self) {
-        let model = self.view.finish();
-        println!("{} ... {}", model.name, style("failed").bold().red(),);
+        self.view.finish();
     }
 }
 
