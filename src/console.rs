@@ -1,9 +1,13 @@
 // Copyright 2021, 2022 Martin Pool
 
 //! Print messages and progress bars on the terminal.
+//!
+//! This is modeled as a series of "activities" that each interface to the actual
+//! terminal-drawing in Nutmeg.
 
 use std::borrow::Cow;
 use std::fmt::Write;
+use std::sync::Arc;
 use std::time::Instant;
 
 use ::console::{style, StyledObject};
@@ -14,8 +18,96 @@ use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Phase};
 use crate::*;
 
+/// Overall "run a bunch of experiments activity".
+pub struct LabActivity {
+    view: Arc<nutmeg::View<LabModel>>,
+    options: Options,
+}
+
+impl LabActivity {
+    pub fn new(options: &Options) -> LabActivity {
+        let model = LabModel {
+            lab_start: None,
+            i_mutant: 0,
+            n_mutants: 0,
+            copy_model: None,
+            cargo_model: None,
+        };
+        LabActivity {
+            options: options.clone(),
+            view: Arc::new(nutmeg::View::new(model, nutmeg_options())),
+        }
+    }
+
+    pub fn start_mutants(&mut self, n_mutants: usize) {
+        self.view.update(|model| {
+            model.n_mutants = n_mutants;
+            model.lab_start = Some(Instant::now());
+        })
+    }
+
+    pub fn start_scenario(&mut self, scenario: &Scenario) -> CargoActivity {
+        let cargo_model = CargoModel::new(scenario, self.options.clone());
+        let task = cargo_model.task.clone();
+        if let Scenario::Mutant { i_mutation, .. } = scenario {
+            self.view.update(|model| model.i_mutant = *i_mutation);
+        }
+        self.view
+            .update(|model| model.cargo_model = Some(cargo_model));
+        CargoActivity {
+            lab_view: self.view.clone(),
+            task,
+        }
+    }
+}
+
+/// Description of all current activities in the lab.
+///
+/// At the moment there is either a copy, cargo runs, or nothing.
+/// Later, there might be concurrent activities.
+struct LabModel {
+    copy_model: Option<CopyModel>,
+    cargo_model: Option<CargoModel>,
+    lab_start: Option<Instant>,
+    i_mutant: usize,
+    n_mutants: usize,
+}
+
+impl nutmeg::Model for LabModel {
+    fn render(&mut self, width: usize) -> String {
+        let mut s = String::with_capacity(100);
+        if let Some(copy) = self.copy_model.as_mut() {
+            s.push_str(&copy.render(width));
+        }
+        if let Some(cargo_model) = self.cargo_model.as_mut() {
+            if !s.is_empty() {
+                s.push('\n')
+            }
+            if let Some(lab_start) = self.lab_start {
+                write!(
+                    s,
+                    "Trying mutant {}/{}, {} remaining\n",
+                    self.i_mutant,
+                    self.n_mutants,
+                    nutmeg::estimate_remaining(&lab_start, self.i_mutant, self.n_mutants)
+                )
+                .unwrap();
+            }
+            s.push_str(&cargo_model.render(width));
+        }
+        s
+    }
+}
+
+impl LabModel {
+    fn cargo_model(&mut self) -> &mut CargoModel {
+        self.cargo_model.as_mut().unwrap()
+    }
+}
+
 pub struct CargoActivity {
-    view: nutmeg::View<CargoModel>,
+    lab_view: Arc<nutmeg::View<LabModel>>,
+    task: Cow<'static, str>,
 }
 
 struct CargoModel {
@@ -23,21 +115,11 @@ struct CargoModel {
     options: Options,
     start: Instant,
     phase: Option<&'static str>,
-
-    /// Optionally, progress counter through the overall lab. Shown in the progress bar
-    /// but not on permanent output.
-    overall_progress: Option<(usize, usize)>,
-
-    outcome: Option<Outcome>,
-    interrupted: bool,
 }
 
 impl nutmeg::Model for CargoModel {
     fn render(&mut self, _width: usize) -> String {
-        let mut s = String::new();
-        if let Some((i, n)) = self.overall_progress {
-            write!(s, "[{}/{}] ", i, n).unwrap();
-        }
+        let mut s = String::with_capacity(100);
         write!(s, "{} ", self.task,).unwrap();
         if let Some(phase) = self.phase {
             write!(s, "({}) ", phase).unwrap();
@@ -45,99 +127,75 @@ impl nutmeg::Model for CargoModel {
         write!(s, "... {}", format_elapsed_secs(self.start)).unwrap();
         s
     }
+}
 
-    fn final_message(&mut self) -> String {
-        let mut s = String::with_capacity(100);
-        if self.interrupted {
-            write!(s, "{} ... {}", self.task, style("interrupted").bold().red()).unwrap();
-        } else if let Some(outcome) = self.outcome.as_ref() {
-            if (outcome.mutant_caught() && !self.options.print_caught)
-                || (outcome.scenario.is_mutant()
-                    && outcome.check_or_build_failed()
-                    && !self.options.print_unviable)
-            {
-                return s;
-            }
-            write!(s, "{} ... {}", self.task, style_outcome(outcome)).unwrap();
-            if self.options.show_times {
-                write!(s, " in {}", format_elapsed_millis(self.start)).unwrap();
-            }
+impl CargoModel {
+    fn new(scenario: &Scenario, options: Options) -> CargoModel {
+        let task: Cow<'static, str> = match scenario {
+            Scenario::SourceTree => "freshen source tree".into(),
+            Scenario::Baseline => "unmutated baseline".into(),
+            Scenario::Mutant { mutation, .. } => style_mutation(mutation).into(),
+        };
+        CargoModel {
+            task,
+            options,
+            start: Instant::now(),
+            phase: None,
         }
-        s
     }
 }
 
 impl CargoActivity {
-    pub fn for_scenario(scenario: &Scenario, options: &Options) -> CargoActivity {
-        let options = options.clone();
-        match scenario {
-            Scenario::SourceTree => CargoActivity::new("source tree", options, None),
-            Scenario::Baseline => CargoActivity::new("unmutated baseline", options, None),
-            Scenario::Mutant {
-                mutation,
-                i_mutation,
-                n_mutations,
-            } => CargoActivity::new(
-                style_mutation(mutation),
-                options,
-                Some((i_mutation + 1, *n_mutations)),
-            ),
-        }
-    }
-
-    /// Start a general-purpose activity.
-    fn new<S: Into<Cow<'static, str>>>(
-        task: S,
-        options: Options,
-        overall_progress: Option<(usize, usize)>,
-    ) -> CargoActivity {
-        let task = task.into();
-        let model = CargoModel {
-            task,
-            options,
-            start: Instant::now(),
-            overall_progress,
-            phase: None,
-            outcome: None,
-            interrupted: false,
-        };
-        CargoActivity {
-            view: nutmeg::View::new(model, nutmeg_options()),
-        }
-    }
-
     pub fn set_phase(&mut self, phase: &'static str) {
-        self.view.update(|model| model.phase = Some(phase));
+        self.lab_view
+            .update(|lab_model| lab_model.cargo_model().phase = Some(phase));
     }
 
     /// Mark this activity as interrupted.
     pub fn interrupted(&mut self) {
         // TODO: Unify with outcomes?
-        self.view.update(|model| model.interrupted = true);
+        self.lab_view.update(|lab_model| {
+            lab_model.cargo_model.take();
+        });
+        self.lab_view.message(&format!(
+            "{} ... {}",
+            self.task,
+            style("interrupted").bold().red()
+        ));
     }
 
     pub fn tick(&mut self) {
-        self.view.update(|_| ());
+        self.lab_view.update(|_| ());
     }
 
     /// Report the outcome of a scenario.
     ///
     /// Prints the log content if appropriate.
     pub fn outcome(self, outcome: &Outcome, options: &Options) -> Result<()> {
-        self.view
-            .update(|model| model.outcome = Some(outcome.clone()));
-        self.view.finish();
+        let cargo_model = self
+            .lab_view
+            .update(|model| model.cargo_model.take())
+            .unwrap();
 
-        if (outcome.mutant_caught() && !options.print_caught)
+        let mut s = String::with_capacity(100);
+        if (outcome.mutant_caught() && !cargo_model.options.print_caught)
             || (outcome.scenario.is_mutant()
                 && outcome.check_or_build_failed()
-                && !options.print_unviable)
+                && !cargo_model.options.print_unviable)
         {
             return Ok(());
         }
-        if outcome.should_show_logs() || options.show_all_logs {
-            print!("{}", outcome.get_log_content()?);
+        write!(s, "{} ... {}", cargo_model.task, style_outcome(outcome)).unwrap();
+        if cargo_model.options.show_times {
+            write!(s, " in {}", format_elapsed_millis(cargo_model.start)).unwrap();
         }
+
+        if outcome.should_show_logs() || options.show_all_logs {
+            s.push('\n');
+            write!(s, "{}", outcome.get_log_content()?).unwrap();
+        }
+        s.push('\n');
+        self.lab_view.message(&s);
         Ok(())
     }
 }
