@@ -1,5 +1,13 @@
 # cargo-mutants changelog
 
+## 0.2.3
+
+Not released yet
+
+- Switch from Indicatif to [Nutmeg](https://github.com/sourcefrog/nutmeg) to
+  draw progress bars and output. Fixes a bug where terminal output line-wraps
+  badly.
+
 ## 0.2.2
 
 Released 2022-02-16

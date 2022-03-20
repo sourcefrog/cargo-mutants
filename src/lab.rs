@@ -15,7 +15,7 @@ use rand::prelude::*;
 use serde::Serialize;
 use tempfile::TempDir;
 
-use crate::console::{self, Console, CopyActivity};
+use crate::console::{self, CargoActivity, CopyActivity};
 use crate::mutate::Mutation;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
@@ -62,14 +62,13 @@ impl Scenario {
 pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
     options: &Options,
-    console: &Console,
 ) -> Result<LabOutcome> {
     let mut options: Options = options.clone();
     let mut lab_outcome = LabOutcome::default();
     let output_dir = OutputDir::new(source_tree.root())?;
 
     if options.build_source {
-        let outcome = check_and_build_source_tree(source_tree, &output_dir, &options, console)?;
+        let outcome = check_and_build_source_tree(source_tree, &output_dir, &options)?;
         lab_outcome.add(&outcome);
         if !outcome.success() {
             console::print_error(&format!(
@@ -81,7 +80,7 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let build_dir = copy_source_to_scratch(source_tree, &options)?;
-    let outcome = test_baseline(build_dir.path(), &output_dir, &options, console)?;
+    let outcome = test_baseline(build_dir.path(), &output_dir, &options)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
         console::print_error(&format!(
@@ -133,7 +132,6 @@ pub fn test_unmutated_then_all_mutants(
             build_dir.path(),
             &output_dir,
             &options,
-            console,
         )?);
 
         // Rewrite outcomes.json every time, so we can watch it and so it's not
@@ -158,7 +156,6 @@ fn run_cargo_phases(
     options: &Options,
     scenario: &Scenario,
     phases: &[Phase],
-    console: &Console,
 ) -> Result<Outcome> {
     let scenario_name = scenario.to_string();
     let mut log_file = output_dir.create_log(&scenario_name)?;
@@ -166,7 +163,7 @@ fn run_cargo_phases(
     if let Scenario::Mutant { mutation, .. } = scenario {
         log_file.message(&mutation.diff());
     }
-    let mut activity = console.start_scenario(scenario);
+    let mut activity = CargoActivity::for_scenario(scenario, options);
 
     let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {
@@ -249,7 +246,6 @@ fn check_and_build_source_tree(
     source_tree: &SourceTree,
     output_dir: &OutputDir,
     options: &Options,
-    console: &Console,
 ) -> Result<Outcome> {
     let phases: &'static [Phase] = if options.check_only {
         &[Phase::Check]
@@ -262,7 +258,6 @@ fn check_and_build_source_tree(
         options,
         &Scenario::SourceTree,
         phases,
-        console,
     )
 }
 
@@ -270,19 +265,13 @@ fn check_and_build_source_tree(
 ///
 /// If there are already-failing tests, proceeding to test mutations
 /// won't give a clear signal.
-fn test_baseline(
-    build_dir: &Path,
-    output_dir: &OutputDir,
-    options: &Options,
-    console: &Console,
-) -> Result<Outcome> {
+fn test_baseline(build_dir: &Path, output_dir: &OutputDir, options: &Options) -> Result<Outcome> {
     run_cargo_phases(
         build_dir,
         output_dir,
         options,
         &Scenario::Baseline,
         Phase::ALL,
-        console,
     )
 }
 
@@ -292,18 +281,10 @@ fn test_mutation(
     build_dir: &Path,
     output_dir: &OutputDir,
     options: &Options,
-    console: &Console,
 ) -> Result<Outcome> {
     if let Scenario::Mutant { mutation, .. } = scenario {
         mutation.with_mutation_applied(build_dir, || {
-            run_cargo_phases(
-                build_dir,
-                output_dir,
-                options,
-                scenario,
-                Phase::ALL,
-                console,
-            )
+            run_cargo_phases(build_dir, output_dir, options, scenario, Phase::ALL)
         })
     } else {
         unreachable!()

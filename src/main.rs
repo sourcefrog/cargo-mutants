@@ -106,7 +106,6 @@ fn main() -> Result<()> {
     let args: Args = argh::cargo_from_env();
     let source_tree = SourceTree::new(&args.dir)?;
     let options = Options::from(&args);
-    let console = console::Console::new(&options);
     interrupt::install_handler();
     if args.list {
         let mutations = source_tree.mutations()?;
@@ -120,7 +119,7 @@ fn main() -> Result<()> {
             console::list_mutations(&mutations, args.diff);
         }
     } else {
-        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options, &console)?;
+        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options)?;
         // TODO: Perhaps print a text summary of how many were tested and whether they were all
         // caught?
         exit(lab_outcome.exit_code());

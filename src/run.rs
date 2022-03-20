@@ -11,7 +11,7 @@ use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
 use subprocess::{Popen, PopenConfig, Redirection};
 
-use crate::console::BuildActivity;
+use crate::console::CargoActivity;
 use crate::log_file::LogFile;
 use crate::*;
 
@@ -45,7 +45,7 @@ impl CargoResult {
 pub fn run_cargo(
     cargo_args: &[&str],
     in_dir: &Path,
-    activity: &mut BuildActivity,
+    activity: &mut CargoActivity,
     log_file: &mut LogFile,
     timeout: Duration,
 ) -> Result<CargoResult> {

@@ -2,98 +2,132 @@
 
 //! Print messages and progress bars on the terminal.
 
+use std::borrow::Cow;
+use std::fmt::Write;
 use std::time::Instant;
 
 use ::console::{style, StyledObject};
 use anyhow::Result;
-use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::lab::Scenario;
 use crate::mutate::Mutation;
 use crate::outcome::{Outcome, Phase};
 use crate::*;
 
-/// Top-level UI object that manages the state of an interactive console: mostly progress bars and
-/// messages.
-pub struct Console {
-    show_times: bool,
+pub struct CargoActivity {
+    view: nutmeg::View<CargoModel>,
 }
 
-impl Console {
-    /// Construct a new rich text UI.
-    pub fn new(options: &Options) -> Console {
-        Console {
-            show_times: options.show_times,
+struct CargoModel {
+    task: Cow<'static, str>,
+    options: Options,
+    start: Instant,
+    phase: Option<&'static str>,
+
+    /// Optionally, progress counter through the overall lab. Shown in the progress bar
+    /// but not on permanent output.
+    overall_progress: Option<(usize, usize)>,
+
+    outcome: Option<Outcome>,
+    interrupted: bool,
+}
+
+impl nutmeg::Model for CargoModel {
+    fn render(&mut self, _width: usize) -> String {
+        let mut s = String::new();
+        if let Some((i, n)) = self.overall_progress {
+            write!(s, "[{}/{}] ", i, n).unwrap();
         }
+        write!(s, "{} ", self.task,).unwrap();
+        if let Some(phase) = self.phase {
+            write!(s, "({}) ", phase).unwrap();
+        }
+        write!(s, "... {}", format_elapsed_secs(self.start)).unwrap();
+        s
     }
 
-    pub fn start_scenario(&self, scenario: &Scenario) -> BuildActivity {
+    fn final_message(&mut self) -> String {
+        let mut s = String::with_capacity(100);
+        if self.interrupted {
+            write!(s, "{} ... {}", self.task, style("interrupted").bold().red()).unwrap();
+        } else if let Some(outcome) = self.outcome.as_ref() {
+            if (outcome.mutant_caught() && !self.options.print_caught)
+                || (outcome.scenario.is_mutant()
+                    && outcome.check_or_build_failed()
+                    && !self.options.print_unviable)
+            {
+                return s;
+            }
+            write!(s, "{} ... {}", self.task, style_outcome(outcome)).unwrap();
+            if self.options.show_times {
+                write!(s, " in {}", format_elapsed_millis(self.start)).unwrap();
+            }
+        }
+        s
+    }
+}
+
+impl CargoActivity {
+    pub fn for_scenario(scenario: &Scenario, options: &Options) -> CargoActivity {
+        let options = options.clone();
         match scenario {
-            Scenario::SourceTree => BuildActivity::new("source tree", self.show_times),
-            Scenario::Baseline => BuildActivity::new("unmutated baseline", self.show_times),
+            Scenario::SourceTree => CargoActivity::new("source tree", options, None),
+            Scenario::Baseline => CargoActivity::new("unmutated baseline", options, None),
             Scenario::Mutant {
                 mutation,
                 i_mutation,
                 n_mutations,
-            } => {
-                let mut activity = BuildActivity::new(style_mutation(mutation), self.show_times);
-                activity.overall_progress = Some((i_mutation + 1, *n_mutations));
-                activity
-            }
+            } => CargoActivity::new(
+                style_mutation(mutation),
+                options,
+                Some((i_mutation + 1, *n_mutations)),
+            ),
         }
     }
-}
 
-pub struct BuildActivity {
-    pub start_time: Instant,
-    progress_bar: ProgressBar,
-    task: String,
-    show_times: bool,
-    /// Optionally, progress counter through the overall lab. Shown in the progress bar
-    /// but not on permanent output.
-    overall_progress: Option<(usize, usize)>,
-}
-
-impl BuildActivity {
     /// Start a general-purpose activity.
-    fn new<S: Into<String>>(task: S, show_times: bool) -> BuildActivity {
+    fn new<S: Into<Cow<'static, str>>>(
+        task: S,
+        options: Options,
+        overall_progress: Option<(usize, usize)>,
+    ) -> CargoActivity {
         let task = task.into();
-        let progress_bar = ProgressBar::new(0).with_message(task.clone()).with_style(
-            ProgressStyle::default_spinner().template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
-        );
-        progress_bar.set_draw_rate(5); // updates per second
-        BuildActivity {
-            show_times,
+        let model = CargoModel {
             task,
-            progress_bar,
-            start_time: Instant::now(),
-            overall_progress: None,
+            options,
+            start: Instant::now(),
+            overall_progress,
+            phase: None,
+            outcome: None,
+            interrupted: false,
+        };
+        CargoActivity {
+            view: nutmeg::View::new(model, nutmeg_options()),
         }
     }
 
     pub fn set_phase(&mut self, phase: &'static str) {
-        let overall_text = self
-            .overall_progress
-            .map_or(String::new(), |(a, b)| format!("[{}/{}] ", a, b));
-        self.progress_bar
-            .set_message(format!("{}{} ({})", overall_text, self.task, phase));
+        self.view.update(|model| model.phase = Some(phase));
     }
 
     /// Mark this activity as interrupted.
     pub fn interrupted(&mut self) {
-        self.progress_bar.finish_and_clear();
-        println!("{} ... {}", self.task, style("interrupted").bold().red());
+        // TODO: Unify with outcomes?
+        self.view.update(|model| model.interrupted = true);
     }
 
     pub fn tick(&mut self) {
-        self.progress_bar.tick();
+        self.view.update(|_| ());
     }
 
     /// Report the outcome of a scenario.
     ///
     /// Prints the log content if appropriate.
     pub fn outcome(self, outcome: &Outcome, options: &Options) -> Result<()> {
-        self.progress_bar.finish_and_clear();
+        self.view
+            .update(|model| model.outcome = Some(outcome.clone()));
+        self.view.finish();
+
         if (outcome.mutant_caught() && !options.print_caught)
             || (outcome.scenario.is_mutant()
                 && outcome.check_or_build_failed()
@@ -101,21 +135,10 @@ impl BuildActivity {
         {
             return Ok(());
         }
-
-        print!("{} ... {}", self.task, style_outcome(outcome));
-        if self.show_times {
-            println!(" in {}", self.format_elapsed());
-        } else {
-            println!();
-        }
         if outcome.should_show_logs() || options.show_all_logs {
             print!("{}", outcome.get_log_content()?);
         }
         Ok(())
-    }
-
-    fn format_elapsed(&self) -> String {
-        format_elapsed(self.start_time)
     }
 }
 
@@ -137,7 +160,7 @@ impl nutmeg::Model for CopyModel {
             "{} ... {} in {}",
             self.name,
             style_mb(self.bytes_copied),
-            style(format!("{}s", self.start.elapsed().as_secs())).cyan()
+            format_elapsed_secs(self.start),
         )
     }
 
@@ -148,7 +171,7 @@ impl nutmeg::Model for CopyModel {
                     "{} ... {} in {}",
                     self.name,
                     style_mb(self.bytes_copied),
-                    style(format_elapsed(self.start)).cyan(),
+                    style(format_elapsed_millis(self.start)).cyan(),
                 )
             } else {
                 format!("{} ... {}", self.name, style("done").green())
@@ -169,7 +192,7 @@ impl CopyActivity {
                 succeeded: false,
                 show_times: options.show_times,
             },
-            nutmeg::Options::default(),
+            nutmeg_options(),
         );
         CopyActivity { view }
     }
@@ -189,6 +212,10 @@ impl CopyActivity {
     pub fn fail(self) {
         self.view.finish();
     }
+}
+
+fn nutmeg_options() -> nutmeg::Options {
+    nutmeg::Options::default()
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
@@ -241,7 +268,13 @@ pub fn print_error(msg: &str) {
     println!("{}: {}", style("error").bold().red(), msg);
 }
 
-fn format_elapsed(since: Instant) -> String {
+fn format_elapsed_secs(since: Instant) -> String {
+    style(format!("{}s", since.elapsed().as_secs()))
+        .cyan()
+        .to_string()
+}
+
+fn format_elapsed_millis(since: Instant) -> String {
     format!("{:.3}s", since.elapsed().as_secs_f64())
 }
 
