@@ -27,52 +27,50 @@ impl Console {
         }
     }
 
-    pub fn start_scenario(&self, scenario: &Scenario) -> Activity {
+    pub fn start_scenario(&self, scenario: &Scenario) -> BuildActivity {
         match scenario {
-            Scenario::SourceTree => self.start_activity("source tree"),
-            Scenario::Baseline => self.start_activity("unmutated baseline"),
+            Scenario::SourceTree => BuildActivity::new("source tree", self.show_times),
+            Scenario::Baseline => BuildActivity::new("unmutated baseline", self.show_times),
             Scenario::Mutant {
                 mutation,
                 i_mutation,
                 n_mutations,
             } => {
-                let mut activity = self.start_activity(&style_mutation(mutation));
+                let mut activity = BuildActivity::new(style_mutation(mutation), self.show_times);
                 activity.overall_progress = Some((i_mutation + 1, *n_mutations));
                 activity
             }
         }
     }
-
-    /// Start a general-purpose activity.
-    pub fn start_activity(&self, task: &str) -> Activity {
-        let progress_bar = ProgressBar::new(0)
-            .with_message(task.to_owned())
-            .with_style(
-                ProgressStyle::default_spinner()
-                    .template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
-            );
-        progress_bar.set_draw_rate(5); // updates per second
-        Activity {
-            task: task.to_owned(),
-            progress_bar,
-            start_time: Instant::now(),
-            console: self,
-            overall_progress: None,
-        }
-    }
 }
 
-pub struct Activity<'c> {
+pub struct BuildActivity {
     pub start_time: Instant,
     progress_bar: ProgressBar,
     task: String,
-    console: &'c Console,
+    show_times: bool,
     /// Optionally, progress counter through the overall lab. Shown in the progress bar
     /// but not on permanent output.
     overall_progress: Option<(usize, usize)>,
 }
 
-impl<'c> Activity<'c> {
+impl BuildActivity {
+    /// Start a general-purpose activity.
+    fn new<S: Into<String>>(task: S, show_times: bool) -> BuildActivity {
+        let task = task.into();
+        let progress_bar = ProgressBar::new(0).with_message(task.clone()).with_style(
+            ProgressStyle::default_spinner().template("{msg} ... {elapsed:.cyan} {spinner:.cyan}"),
+        );
+        progress_bar.set_draw_rate(5); // updates per second
+        BuildActivity {
+            show_times,
+            task,
+            progress_bar,
+            start_time: Instant::now(),
+            overall_progress: None,
+        }
+    }
+
     pub fn set_phase(&mut self, phase: &'static str) {
         let overall_text = self
             .overall_progress
@@ -105,7 +103,7 @@ impl<'c> Activity<'c> {
         }
 
         print!("{} ... {}", self.task, style_outcome(outcome));
-        if self.console.show_times {
+        if self.show_times {
             println!(" in {}", self.format_elapsed());
         } else {
             println!();
