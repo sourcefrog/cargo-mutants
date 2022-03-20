@@ -60,11 +60,6 @@ impl Console {
             overall_progress: None,
         }
     }
-
-    /// Start an Activity for copying a tree.
-    pub fn start_copy_activity(&self, name: &str) -> CopyActivity {
-        CopyActivity::new(name, self)
-    }
 }
 
 pub struct Activity<'c> {
@@ -126,46 +121,54 @@ impl<'c> Activity<'c> {
     }
 }
 
-pub struct CopyActivity<'c> {
-    name: String,
-    progress_bar: ProgressBar,
-    start_time: Instant,
-    console: &'c Console,
+pub struct CopyActivity {
+    view: nutmeg::View<CopyModel>,
+    options: Options,
 }
 
-impl<'c> CopyActivity<'c> {
-    fn new(name: &str, console: &'c Console) -> CopyActivity<'c> {
-        let progress_bar = ProgressBar::new(0)
-            .with_message(name.to_owned())
-            .with_style(ProgressStyle::default_spinner().template("{msg}"));
-        progress_bar.set_draw_rate(5); // updates per second
-        CopyActivity {
-            name: name.to_owned(),
-            progress_bar,
-            start_time: Instant::now(),
-            console,
-        }
+struct CopyModel {
+    bytes_copied: u64,
+    start: Instant,
+    name: &'static str,
+}
+
+impl nutmeg::Model for CopyModel {
+    fn render(&mut self, _width: usize) -> String {
+        format!(
+            "{} ... {} in {}",
+            self.name,
+            style_mb(self.bytes_copied),
+            style(format!("{}s", self.start.elapsed().as_secs())).cyan()
+        )
+    }
+}
+
+impl CopyActivity {
+    pub fn new(name: &'static str, options: Options) -> CopyActivity {
+        let view = nutmeg::View::new(
+            CopyModel {
+                name,
+                start: Instant::now(),
+                bytes_copied: 0,
+            },
+            nutmeg::Options::default(),
+        );
+        CopyActivity { view, options }
     }
 
     pub fn bytes_copied(&mut self, bytes_copied: u64) {
-        let styled = format!(
-            "{} ... {} in {}",
-            self.name,
-            style_mb(bytes_copied),
-            style(format!("{}s", self.start_time.elapsed().as_secs())).cyan(),
-        );
-        self.progress_bar.set_message(styled);
+        self.view.update(|model| model.bytes_copied = bytes_copied);
     }
 
     pub fn succeed(self, bytes_copied: u64) {
-        self.progress_bar.finish_and_clear();
+        let model = self.view.finish();
         // Print to stdout even if progress bars weren't drawn.
-        print!("{} ...", self.name);
-        if self.console.show_times {
+        print!("{} ...", model.name);
+        if self.options.show_times {
             println!(
                 " {} in {}",
                 style_mb(bytes_copied),
-                style(format_elapsed(self.start_time)).cyan(),
+                style(format_elapsed(model.start)).cyan(),
             );
         } else {
             println!(" {}", style("done").green());
@@ -173,8 +176,8 @@ impl<'c> CopyActivity<'c> {
     }
 
     pub fn fail(self) {
-        self.progress_bar.finish_and_clear();
-        println!("{} ... {}", self.name, style("failed").bold().red(),);
+        let model = self.view.finish();
+        println!("{} ... {}", model.name, style("failed").bold().red(),);
     }
 }
 

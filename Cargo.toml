@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "0.2.2"
+version = "0.2.3-pre"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -14,23 +14,29 @@ categories = ["development-tools::testing"]
 anyhow = "1.0"
 argh = "0.1"
 console = "0.15"
+ctrlc = "3.2.1"
+indicatif = "0.16"
 itertools = "0.10"
 nix = "0.23"
 path-slash = "0.1.4"
 quote = "1.0"
 rand = "0.8"
+serde_json = "1"
 similar = "2.0"
 subprocess = "0.2.8"
 tempfile = "3.2"
 walkdir = "2.3"
-serde_json = "1"
-indicatif = "0.16"
-ctrlc = "3.2.1"
 
 [dependencies.cp_r]
 version = "0.5.0"
-# path = "../cp_r"
-# git = "https://github.com/sourcefrog/cp_r"
+
+[dependencies.nutmeg]
+version = "0.0.3-pre"
+git = "https://github.com/sourcefrog/nutmeg.git"
+
+[dependencies.proc-macro2]
+features = ["span-locations"]
+version = "1.0.29"
 
 [dependencies.serde]
 version = "1"
@@ -39,10 +45,6 @@ features = ["derive"]
 [dependencies.syn]
 version = "1"
 features = ["full", "extra-traits", "visit"]
-
-[dependencies.proc-macro2]
-features = ["span-locations"]
-version = "1.0.29"
 
 [dev-dependencies]
 assert_cmd = "2.0"

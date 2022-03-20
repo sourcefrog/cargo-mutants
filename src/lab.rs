@@ -15,7 +15,7 @@ use rand::prelude::*;
 use serde::Serialize;
 use tempfile::TempDir;
 
-use crate::console::{self, Console};
+use crate::console::{self, Console, CopyActivity};
 use crate::mutate::Mutation;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
@@ -80,7 +80,7 @@ pub fn test_unmutated_then_all_mutants(
         }
     }
 
-    let build_dir = copy_source_to_scratch(source_tree, console, &options)?;
+    let build_dir = copy_source_to_scratch(source_tree, &options)?;
     let outcome = test_baseline(build_dir.path(), &output_dir, &options, console)?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
@@ -204,18 +204,15 @@ fn run_cargo_phases(
     Ok(outcome)
 }
 
-fn copy_source_to_scratch(
-    source: &SourceTree,
-    console: &Console,
-    options: &Options,
-) -> Result<TempDir> {
+fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<TempDir> {
     let temp_dir = TempDir::new()?;
     let copy_target = options.copy_target;
-    let mut activity = console.start_copy_activity(if copy_target {
+    let name = if copy_target {
         "copy source and build products to scratch directory"
     } else {
         "copy source to scratch directory"
-    });
+    };
+    let mut activity = CopyActivity::new(name, options.clone());
     let target_path = Path::new("target");
     match cp_r::CopyOptions::new()
         .after_entry_copied(|path, _ft, stats| {
