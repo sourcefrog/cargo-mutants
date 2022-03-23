@@ -2,9 +2,8 @@
 source: tests/cli.rs
 assertion_line: 266
 expression: redact_timestamps_sizes(stdout)
-
 ---
-source tree ... ok in x.xxxs
+freshen source tree ... ok in x.xxxs
 copy source and build products to scratch directory ... xxx MB in x.xxxs
 unmutated baseline ... ok in x.xxxs
 auto-set test timeout to x.xxxs
