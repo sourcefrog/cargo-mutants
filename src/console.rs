@@ -157,7 +157,7 @@ impl CargoActivity {
         self.lab_view.update(|lab_model| {
             lab_model.cargo_model.take();
         });
-        self.lab_view.message(&format!(
+        self.lab_view.message(format!(
             "{} ... {}",
             self.task,
             style("interrupted").bold().red()
