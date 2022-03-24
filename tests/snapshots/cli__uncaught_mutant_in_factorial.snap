@@ -1,12 +1,11 @@
 ---
 source: tests/cli.rs
-assertion_line: 266
 expression: redact_timestamps_sizes(stdout)
 ---
-freshen source tree ... ok in x.xxxs
-copy source and build products to scratch directory ... xxx MB in x.xxxs
-unmutated baseline ... ok in x.xxxs
-auto-set test timeout to x.xxxs
-found 2 mutations to test
+Freshen source tree ... ok in x.xxxs
+Copy source and build products to scratch directory ... xxx MB in x.xxxs
+Unmutated baseline ... ok in x.xxxs
+Auto-set test timeout to x.xxxs
+Found 2 mutations to test
 src/bin/main.rs:1: replace main with () ... NOT CAUGHT in x.xxxs
 

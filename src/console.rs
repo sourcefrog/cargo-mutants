@@ -132,8 +132,8 @@ impl nutmeg::Model for CargoModel {
 impl CargoModel {
     fn new(scenario: &Scenario, options: Options) -> CargoModel {
         let task: Cow<'static, str> = match scenario {
-            Scenario::SourceTree => "freshen source tree".into(),
-            Scenario::Baseline => "unmutated baseline".into(),
+            Scenario::SourceTree => "Freshen source tree".into(),
+            Scenario::Baseline => "Unmutated baseline".into(),
             Scenario::Mutant { mutation, .. } => style_mutation(mutation).into(),
         };
         CargoModel {

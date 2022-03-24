@@ -97,7 +97,7 @@ pub fn test_unmutated_then_all_mutants(
             options.set_test_timeout(auto_timeout);
             if options.show_times {
                 println!(
-                    "auto-set test timeout to {:.1}s",
+                    "Auto-set test timeout to {:.1}s",
                     options.test_timeout().as_secs_f32()
                 );
             }
@@ -114,7 +114,7 @@ pub fn test_unmutated_then_all_mutants(
         &mutations,
     )?;
     println!(
-        "found {} {} to test",
+        "Found {} {} to test",
         mutations.len(),
         if mutations.len() == 1 {
             "mutation"
@@ -211,9 +211,9 @@ fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<Temp
     let temp_dir = TempDir::new()?;
     let copy_target = options.copy_target;
     let name = if copy_target {
-        "copy source and build products to scratch directory"
+        "Copy source and build products to scratch directory"
     } else {
-        "copy source to scratch directory"
+        "Copy source to scratch directory"
     };
     let mut activity = CopyActivity::new(name, options.clone());
     let target_path = Path::new("target");

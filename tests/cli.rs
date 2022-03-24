@@ -303,10 +303,10 @@ fn factorial_mutants_with_all_logs() {
         .stderr("")
         .stdout(is_match(r"source tree \.\.\. ok in \d+\.\d\d\ds").unwrap())
         .stdout(is_match(
-r"copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d\ds"
+r"Copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
-r"unmutated baseline \.\.\. ok in \d+\.\d\d\ds"
+r"Unmutated baseline \.\.\. ok in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
 r"src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
@@ -440,7 +440,7 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(0)
-        .stdout(contains("found 1 mutation to test"));
+        .stdout(contains("Found 1 mutation to test"));
 }
 
 #[test]
@@ -471,7 +471,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
-        .stdout(is_match(r"unmutated baseline \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
+        .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
         .stdout(contains("timeout"))
         .stdout(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",

@@ -1,11 +1,10 @@
 ---
 source: tests/cli.rs
-assertion_line: 383
 expression: stdout
 ---
-freshen source tree ... ok
-copy source and build products to scratch directory ... done
-unmutated baseline ... ok
-found 1 mutation to test
+Freshen source tree ... ok
+Copy source and build products to scratch directory ... done
+Unmutated baseline ... ok
+Found 1 mutation to test
 src/lib.rs:12: replace controlled_loop with () ... check ok
 

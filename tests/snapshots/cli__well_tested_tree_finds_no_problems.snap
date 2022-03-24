@@ -1,12 +1,11 @@
 ---
 source: tests/cli.rs
-assertion_line: 219
 expression: stdout
 ---
-freshen source tree ... ok
-copy source and build products to scratch directory ... done
-unmutated baseline ... ok
-found 13 mutations to test
+Freshen source tree ... ok
+Copy source and build products to scratch directory ... done
+Unmutated baseline ... ok
+Found 13 mutations to test
 src/inside_mod.rs:3: replace outer::inner::name -> & 'static str with Default::default() ... caught
 src/methods.rs:6: replace Foo::new -> Foo with Default::default() ... caught
 src/methods.rs:10: replace Foo::double with () ... caught
