@@ -1,12 +1,13 @@
 [package]
 name = "cargo-mutants"
-version = "0.2.3"
+version = "0.2.4-pre"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
 description = "Find inadequately-tested code that can be removed without any tests failing."
 repository = "https://github.com/sourcefrog/cargo-mutants"
 categories = ["development-tools::testing"]
+keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
