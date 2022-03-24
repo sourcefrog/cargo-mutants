@@ -2,7 +2,7 @@
 
 ## 0.2.3
 
-Not released yet
+Released 2022-03-23
 
 - Switch from Indicatif to [Nutmeg](https://github.com/sourcefrog/nutmeg) to
   draw progress bars and output. This fixes a bug where terminal output
