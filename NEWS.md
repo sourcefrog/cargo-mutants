@@ -9,6 +9,12 @@ Not released yet
   line-wraps badly, and adds a projection for the total estimated time to
   completion.
 
+- Change: Mutants are now tested in random order by default, so that repeated
+  runs are more likely to surface interesting new findings early, rather
+  than repeating previous results. The previous behavior of testing mutants
+  in the deterministic order they're encountered in the tree can be restored
+  with `--no-shuffle`.
+
 ## 0.2.2
 
 Released 2022-02-16

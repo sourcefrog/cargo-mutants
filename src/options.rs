@@ -24,7 +24,8 @@ pub struct Options {
 
     /// Test mutants in random order.
     ///
-    /// (Mostly for development so that we don't always exercise the first few mutants.)
+    /// This is now the default, so that repeated partial runs are more likely to find
+    /// interesting results.
     pub shuffle: bool,
 
     /// Additional arguments to `cargo test`.
@@ -62,7 +63,7 @@ impl From<&Args> for Options {
             copy_target: !args.no_copy_target,
             print_caught: args.caught,
             print_unviable: args.unviable,
-            shuffle: args.shuffle,
+            shuffle: !args.no_shuffle,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args

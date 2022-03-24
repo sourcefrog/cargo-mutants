@@ -191,6 +191,7 @@ fn well_tested_tree_quiet() {
     run_assert_cmd()
         .arg("mutants")
         .arg("--no-times")
+        .arg("--no-shuffle")
         .current_dir(&tmp_src_dir.path())
         .assert()
         .success()
@@ -212,6 +213,7 @@ fn well_tested_tree_finds_no_problems() {
         .arg("mutants")
         .arg("--no-times")
         .arg("--caught")
+        .arg("--no-shuffle")
         .current_dir(&tmp_src_dir.path())
         .assert()
         .success()
@@ -230,7 +232,7 @@ fn well_tested_tree_finds_no_problems() {
 fn well_tested_tree_check_only() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run_assert_cmd()
-        .args(["mutants", "--check", "--no-times"])
+        .args(["mutants", "--check", "--no-shuffle", "--no-times"])
         .current_dir(&tmp_src_dir.path())
         .assert()
         .success()
@@ -257,6 +259,7 @@ fn uncaught_mutant_in_factorial() {
 
     run_assert_cmd()
         .arg("mutants")
+        .arg("--no-shuffle")
         .arg("-d")
         .arg(&tmp_src_dir.path())
         .assert()

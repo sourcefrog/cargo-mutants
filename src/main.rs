@@ -80,6 +80,10 @@ struct Args {
     #[argh(switch)]
     shuffle: bool,
 
+    /// run mutants in the fixed order they occur in the source tree.
+    #[argh(switch)]
+    no_shuffle: bool,
+
     /// maximum run time for all cargo commands, in seconds.
     #[argh(option, short = 't')]
     timeout: Option<f64>,
