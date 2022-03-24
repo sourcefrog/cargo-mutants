@@ -28,9 +28,11 @@ use path_slash::PathExt;
 
 // Imports of public names from this crate.
 use crate::interrupt::check_interrupted;
-pub use crate::lab::Scenario;
+use crate::lab::Scenario;
+use crate::mutate::Mutation;
 use crate::options::Options;
-pub use crate::run::CargoResult;
+use crate::outcome::{Outcome, Phase};
+use crate::run::CargoResult;
 use crate::source::SourceTree;
 
 /// Find inadequately-tested code that can be removed without any tests failing.

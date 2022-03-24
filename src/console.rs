@@ -13,28 +13,17 @@ use std::time::Instant;
 use ::console::{style, StyledObject};
 use anyhow::Result;
 
-use crate::lab::Scenario;
-use crate::mutate::Mutation;
-use crate::outcome::{Outcome, Phase};
 use crate::*;
 
 /// Overall "run a bunch of experiments activity".
 pub struct LabActivity {
     view: Arc<nutmeg::View<LabModel>>,
-    options: Options,
 }
 
 impl LabActivity {
-    pub fn new(options: &Options) -> LabActivity {
-        let model = LabModel {
-            lab_start: None,
-            i_mutant: 0,
-            n_mutants: 0,
-            copy_model: None,
-            cargo_model: None,
-        };
+    pub fn new(_options: &Options) -> LabActivity {
+        let model = LabModel::default();
         LabActivity {
-            options: options.clone(),
             view: Arc::new(nutmeg::View::new(model, nutmeg_options())),
         }
     }
@@ -47,8 +36,9 @@ impl LabActivity {
     }
 
     pub fn start_scenario(&mut self, scenario: &Scenario) -> CargoActivity {
-        let cargo_model = CargoModel::new(scenario, self.options.clone());
-        let task = cargo_model.task.clone();
+        let start = Instant::now();
+        let cargo_model = CargoModel::new(scenario, start);
+        let name = cargo_model.name.clone();
         if let Scenario::Mutant { i_mutation, .. } = scenario {
             self.view.update(|model| model.i_mutant = *i_mutation);
         }
@@ -56,7 +46,8 @@ impl LabActivity {
             .update(|model| model.cargo_model = Some(cargo_model));
         CargoActivity {
             lab_view: self.view.clone(),
-            task,
+            name,
+            start,
         }
     }
 }
@@ -65,12 +56,15 @@ impl LabActivity {
 ///
 /// At the moment there is either a copy, cargo runs, or nothing.
 /// Later, there might be concurrent activities.
+#[derive(Default)]
 struct LabModel {
     copy_model: Option<CopyModel>,
     cargo_model: Option<CargoModel>,
     lab_start: Option<Instant>,
     i_mutant: usize,
     n_mutants: usize,
+    mutants_caught: usize,
+    mutants_missed: usize,
 }
 
 impl nutmeg::Model for LabModel {
@@ -84,12 +78,14 @@ impl nutmeg::Model for LabModel {
                 s.push('\n')
             }
             if let Some(lab_start) = self.lab_start {
-                write!(
+                writeln!(
                     s,
-                    "Trying mutant {}/{}, {} done, {} remaining\n",
+                    "Trying mutant {}/{}, {} done, {} caught, {} missed, {} remaining",
                     self.i_mutant,
                     self.n_mutants,
                     nutmeg::percent_done(self.i_mutant, self.n_mutants),
+                    self.mutants_caught,
+                    self.mutants_missed,
                     nutmeg::estimate_remaining(&lab_start, self.i_mutant, self.n_mutants)
                 )
                 .unwrap();
@@ -108,12 +104,12 @@ impl LabModel {
 
 pub struct CargoActivity {
     lab_view: Arc<nutmeg::View<LabModel>>,
-    task: Cow<'static, str>,
+    name: Cow<'static, str>,
+    start: Instant,
 }
 
 struct CargoModel {
-    task: Cow<'static, str>,
-    options: Options,
+    name: Cow<'static, str>,
     start: Instant,
     phase: Option<&'static str>,
 }
@@ -121,7 +117,7 @@ struct CargoModel {
 impl nutmeg::Model for CargoModel {
     fn render(&mut self, _width: usize) -> String {
         let mut s = String::with_capacity(100);
-        write!(s, "{} ", self.task,).unwrap();
+        write!(s, "{} ", self.name).unwrap();
         if let Some(phase) = self.phase {
             write!(s, "({}) ", phase).unwrap();
         }
@@ -131,17 +127,16 @@ impl nutmeg::Model for CargoModel {
 }
 
 impl CargoModel {
-    fn new(scenario: &Scenario, options: Options) -> CargoModel {
-        let task: Cow<'static, str> = match scenario {
+    fn new(scenario: &Scenario, start: Instant) -> CargoModel {
+        let name: Cow<'static, str> = match scenario {
             Scenario::SourceTree => "Freshen source tree".into(),
             Scenario::Baseline => "Unmutated baseline".into(),
             Scenario::Mutant { mutation, .. } => style_mutation(mutation).into(),
         };
         CargoModel {
-            task,
-            options,
-            start: Instant::now(),
+            name,
             phase: None,
+            start,
         }
     }
 }
@@ -160,7 +155,7 @@ impl CargoActivity {
         });
         self.lab_view.message(format!(
             "{} ... {}",
-            self.task,
+            self.name,
             style("interrupted").bold().red()
         ));
     }
@@ -173,24 +168,27 @@ impl CargoActivity {
     ///
     /// Prints the log content if appropriate.
     pub fn outcome(self, outcome: &Outcome, options: &Options) -> Result<()> {
-        let cargo_model = self
-            .lab_view
-            .update(|model| model.cargo_model.take())
-            .unwrap();
+        self.lab_view.update(|model| {
+            if outcome.mutant_caught() {
+                model.mutants_caught += 1
+            } else if outcome.mutant_missed() {
+                model.mutants_missed += 1
+            }
+        });
 
-        let mut s = String::with_capacity(100);
-        if (outcome.mutant_caught() && !cargo_model.options.print_caught)
+        if (outcome.mutant_caught() && !options.print_caught)
             || (outcome.scenario.is_mutant()
                 && outcome.check_or_build_failed()
-                && !cargo_model.options.print_unviable)
+                && !options.print_unviable)
         {
             return Ok(());
         }
-        write!(s, "{} ... {}", cargo_model.task, style_outcome(outcome)).unwrap();
-        if cargo_model.options.show_times {
-            write!(s, " in {}", format_elapsed_millis(cargo_model.start)).unwrap();
-        }
 
+        let mut s = String::with_capacity(100);
+        write!(s, "{} ... {}", self.name, style_outcome(outcome)).unwrap();
+        if options.show_times {
+            write!(s, " in {}", format_elapsed_millis(self.start)).unwrap();
+        }
         if outcome.should_show_logs() || options.show_all_logs {
             s.push('\n');
             write!(s, "{}", outcome.get_log_content()?).unwrap();
