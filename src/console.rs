@@ -86,9 +86,10 @@ impl nutmeg::Model for LabModel {
             if let Some(lab_start) = self.lab_start {
                 write!(
                     s,
-                    "Trying mutant {}/{}, {} remaining\n",
+                    "Trying mutant {}/{}, {} done, {} remaining\n",
                     self.i_mutant,
                     self.n_mutants,
+                    nutmeg::percent_done(self.i_mutant, self.n_mutants),
                     nutmeg::estimate_remaining(&lab_start, self.i_mutant, self.n_mutants)
                 )
                 .unwrap();
