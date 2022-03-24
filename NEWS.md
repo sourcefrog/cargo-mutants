@@ -5,8 +5,9 @@
 Not released yet
 
 - Switch from Indicatif to [Nutmeg](https://github.com/sourcefrog/nutmeg) to
-  draw progress bars and output. Fixes a bug where terminal output line-wraps
-  badly.
+  draw progress bars and output. This fixes a bug where terminal output
+  line-wraps badly, and adds a projection for the total estimated time to
+  completion.
 
 ## 0.2.2
 
