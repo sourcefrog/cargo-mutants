@@ -1,6 +1,6 @@
 # cargo-mutants
 
-https://github.com/sourcefrog/cargo-mutants
+<https://github.com/sourcefrog/cargo-mutants>
 
 [![Tests](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml/badge.svg?branch=main&event=push)](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml?query=branch%3Amain)
 [![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
@@ -9,10 +9,10 @@ https://github.com/sourcefrog/cargo-mutants
 
 cargo-mutants is a mutation testing tool for Rust. It guides you to missing test
 coverage by finding functions whose implementation could be replaced by
-something trivial and the tests would all still pass.
+something trivial without causing any tests to fail.
 
 Coverage measurements can be helpful, but they really tell you what code is
-_reached_ by a test, and not whether the test really assert anything about the
+_reached_ by a test, and not whether the test really _checks_ anything about the
 behavior of the code. Mutation tests give different, perhaps richer information,
 about whether the tests really check the code's behavior.
 
@@ -22,31 +22,29 @@ as writing or deleting files, running it with mutations may be dangerous. Think
 first about what side effects the test suite could possibly have, and/or run it
 in a restricted or disposable environment.
 
-**NOTE:** cargo-mutants is still pretty new! It can find some interesting
-results, but because it has a very basic idea of which functions to mutate and
-how, it generates significant false positives and false negatives. The
-proof-of-concept is successful, though, and I think the results can be
-iteratively improved.
-
 ## Install
 
-    cargo install cargo-mutants
+```sh
+cargo install cargo-mutants
+```
 
 ## Using cargo-mutants
 
 Just run `cargo mutants` in a Rust source directory, and it will point out
 functions that may be inadequately tested:
 
-    % cargo mutants --dir ~/src/unix_mode/
-    baseline test with no mutations ... ok
-    replace type_bits with Default::default() in src/lib.rs:42:32 ... caught
-    replace is_file with Default::default() in src/lib.rs:52:35 ... caught
-    replace is_dir with Default::default() in src/lib.rs:62:34 ... caught
-    replace is_symlink with Default::default() in src/lib.rs:72:38 ... caught
-    replace is_fifo with Default::default() in src/lib.rs:77:35 ... caught
-    replace is_char_device with Default::default() in src/lib.rs:82:42 ... caught
-    replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
-    ...
+```sh
+% cargo mutants --dir ~/src/unix_mode/
+baseline test with no mutations ... ok
+replace type_bits with Default::default() in src/lib.rs:42:32 ... caught
+replace is_file with Default::default() in src/lib.rs:52:35 ... caught
+replace is_dir with Default::default() in src/lib.rs:62:34 ... caught
+replace is_symlink with Default::default() in src/lib.rs:72:38 ... caught
+replace is_fifo with Default::default() in src/lib.rs:77:35 ... caught
+replace is_char_device with Default::default() in src/lib.rs:82:42 ... caught
+replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
+...
+```
 
 In this version of the `unix_mode` crate, the `is_block_device` function was
 indeed untested.
@@ -62,8 +60,8 @@ failure in the source directory, or there might be some problem that stops them
 passing when run from a different location, such as a relative `path` in
 `Cargo.toml`. Fix this first.
 
-Otherwise, cargo mutants generates every mutant it can and prints the result of
-trying each one:
+Otherwise, cargo mutants generates every mutant it can. All mutants fall in to
+one of these categories:
 
 - **caught** — A test failed with this mutant applied. This is a good sign about
   test coverage. You can look in `mutants.out/log` to see which tests failed.
@@ -79,6 +77,9 @@ trying each one:
   generate better mutants, or at least not generate unviable mutants.
 
 - **build failed** — Similarly, but `cargo build` failed. This should be rare.
+
+By default only "not caught" mutants are printed; others can be shown with the
+`-v` and `-V` options.
 
 ### Skipping functions
 
@@ -207,134 +208,107 @@ large volume of old unreferenced content in `/target`, it might conceivably be
 faster, but that's probably better dealt with by `cargo clean` in the source
 directory.)
 
+## How to help
+
+Experience reports in GitHub Discussions or Bugs are very welcome:
+
+- Did it find a bug or important coverage gap?
+- Did it fail to build and test your tree? (Some cases that aren't supported yet
+  are already listed in this doc or the bug tracker.)
+
+It's especially helpful if you can either point to an open source tree that will
+reproduce the problem (or success) or at least describe how to reproduce it.
+
 ## Goals
 
-**cargo-mutants it _easy_ to run on any Rust source tree, and will tell you
-something _interesting_ about areas where bugs might be lurking or the tests
-might be insufficient.**
+**The goal of cargo-mutants is to be _easy_ to run on any Rust source tree, and
+to tell you something _interesting_ about areas where bugs might be lurking or
+the tests might be insufficient.**
 
 Being _easy_ to use means:
 
-- It requires no changes to the source tree or other setup: just install and
-  run. So, if it does not find anything interesting to say about a well-tested
-  tree, it didn't cost you much.
+- cargo-mutants requires no changes to the source tree or other setup: just
+  install and run. So, if it does not find anything interesting to say about a
+  well-tested tree, it didn't cost you much. (This worked out really well:
+  `cargo install cargo-mutants && cargo mutants` will do it.)
 
-- There's no effect on the operation of the program other than when run under
-  `cargo mutants`.
+- There is no chance that running cargo-mutants will change the released
+  behavior of your program (other than by helping you to fix bugs!), because you
+  don't need to change the source to use it.
 
-- It is reasonably fast even on large Rust trees. The overall run time is,
-  roughly, the product of the number of viable mutations multiplied by the time
-  to run the test suite for each mutation. Typically, one `cargo mutants` run
-  will give you all the information it can find about missing test coverage in
-  the tree, and you don't need to run it again as you iterate on tests, so it's
-  relatively OK if it takes a while.
+- cargo-mutants should be reasonably fast even on large Rust trees. The overall
+  run time is, roughly, the product of the number of viable mutations multiplied
+  by the time to run the test suite for each mutation. Typically, one `cargo
+  mutants` run will give you all the information it can find about missing test
+  coverage in the tree, and you don't need to run it again as you iterate on
+  tests, so it's relatively OK if it takes a while. (There is currently very
+  little overhead beyond the cost to do an incremental build and run the tests
+  for each mutant, but that can still be significant for large trees. There's
+  room to improve by testing multiple mutants in parallel.)
 
-- cargo-mutants should avoid generating "unviable" mutants that "obviously"
-  won't compile, because that wastes time. However, when it's uncertain whether
-  the mutant will build, it's worth trying things that _might_ find interesting
-  results even if they might fail to build. Over time, we expect to make it
-  smarter about avoiding useless mutations and generating more interesting
-  mutations.
+- cargo-mutants should run correctly on any Rust source trees that are built and
+  tested by Cargo, that will build and run their tests in a copy of the tree,
+  and that have hermetic tests. (It's not all the way there yet; in particular
+  it assumes the source is in `src/`.)
 
-- It runs correctly on any Rust source trees that are built and tested by Cargo,
-  that will build and run their tests in a copy of the tree, and that have
-  hermetic tests.
+- cargo-mutants shouldn't crash or hang, even if it generates mutants that cause
+  the software under test to crash or hang. (This is generally met today:
+  cargo-mutants runs tests with an automatically set and configurable timeout.)
 
-- cargo-mutants doesn't crash or hang, even if it generates mutants that cause
-  the software under test to crash or hang.
+- The results should be reproducible, assuming the build and test suite is
+  deterministic. (This should be true today; please file a bug if it's not.)
 
-- The results are reproducible, assuming the test suite is deterministic.
+- cargo-mutants should avoid generating unviable mutants that don't compile,
+  because that wastes time. However, when it's uncertain whether the mutant will
+  build, it's worth trying things that _might_ find interesting results even if
+  they might fail to build.  (There is room for improvement here too, but since
+  cargo-mutants runs a cheap `cargo check` on each mutant first, the cost to try
+  unviable mutants is actually not too bad. Most of the time is in running the
+  tests for viable mutants.)
 
-_Interesting results_ mean:
+- Realistically, cargo-mutants may generate some mutants that aren't caught by
+  tests but also aren't interesting, or aren't feasible to test. In those cases
+  it should be easy to permanently dismiss them (e.g. by adding a
+  `#[mutants::skip]` attribute or a config file.) (The attribute exists but
+  there is no config file yet.)
 
-- It tells you about places where the code could be wrong (or might already be
-  wrong) and the test suite wouldn't catch it.
+Showing _interesting results_ mean:
+
+- cargo-mutants should tell you about places where the code could be wrong and
+  the test suite wouldn't catch it. If it doesn't find any interesting results
+  on typical trees, there's no point.
 
 - _Most_, ideally all, findings should indicate something that really should be
-  tested more, or that may already be buggy.
+  tested more, or that may already be buggy, or that's at least worth looking at.
 
-- It complements coverage tools by finding code that might be executed by a test
-  (and show up as covered) but where the test result does not actually _depend
-  on_ the behavior of the code.
+- Mutation testing complements coverage tools by finding code that might be
+  executed by a test (and show up as covered) but where the test result does not
+  actually _depend on_ the behavior of the code, which can happen pretty easily.
 
-- It complements fuzzing or property testing by covering code that might be hard
-  to hook up to a fuzzer interface, or where that work just has not been done
-  yet.
+- Mutation testing also complements fuzzing or property testing by covering code
+  that might be hard to hook up to a fuzzer interface, or where that work just
+  has not been done yet.
 
-- It's easy to understand what the output is telling you. It may take some
+- It should be easy to understand what the output is telling you. It may take some
   thought about how to effectively test the under-tested code, but at least it's
   easy to see the potential bug that wouldn't be caught.
 
 - Although run time matters, it's worth spending more time to generate more
-  mutants that might find interesting results, even if some of them might not
-  compile.
+  mutants that might find interesting results, since developers should not need
+  to run this and wait for results the way they might run their normal test
+  suite. (There's lots of scope to burn more CPU cycles by adding more mutation
+  patterns.)
 
-- Realistically, cargo-mutants may find some mutants that aren't caught by tests
-  but also aren't interesting, or aren't feasible to test. In those cases it
-  should be easy to permanently dismiss them (e.g. by adding a
-  `#[mutants::skip]` attribute or a config file.)
-
-- As much as possible it should avoid generating trivial mutants, where the
-  mutated code is equivalent to the original code, and so it's not interesting
-  that the test suite doesn't catch the change.
+- As much as possible cargo-mutants should avoid generating trivial mutants,
+  where the mutated code is effectively equivalent to the original code, and so
+  it's not interesting that the test suite doesn't catch the change. (Not much
+  has been done here yet.)
 
 - On trees that are already very well-tested, cargo-mutants may find nothing
-  interesting, and then it should just say so.
+  interesting, and then it should just say so. (This seems to be true today.)
 
 - And for trees that are thoroughly tested, you can use `cargo mutants` in CI to
   check that they remain so.
-
-## Limitations, caveats, known bugs, and future enhancements
-
-- cargo-mutants has a limited repertoire of mutations it can generate. As this
-  improves, it will generate more interesting results, and we expect this can
-  incrementally improve over time.
-
-- It also currently has a limited understanding of function return types, and so
-  sometimes generates "unviable" mutants that won't build, which wastes some
-  time. These also seem easy to improve. In particular:
-
-  - It should skip functions with `#[cfg(...)]` attributes that don't match the
-    current platform, but it does not yet.
-
-  - It should also probably skip `unsafe` functions, and maybe functions
-    containing `unsafe {}` blocks.
-
-  - (There are several others.)
-
-- cargo-mutants sees the AST of the tree but doesn't fully "understand" the
-  types. Possibly it could learn to get type information from the compiler (or
-  rust-analyzer?), which would help it generate more interesting viable mutants,
-  and fewer unviable mutants.
-
-- Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path` (other than in subdirectories). This could
-  be handled by an option to mutate in-place (maybe into a copy made by the
-  user) or possibly an option to copy a larger containing directory. You can
-  work around this by editing `Cargo.toml` to make the paths absolute, before
-  running `cargo mutants`.
-
-- Copying a Rust tree and its `target/` directory seems to cause the first build
-  to be slower than an incremental build in the source directory, even while
-  mtimes are preserved. (Perhaps the path is part of the calculation whether
-  files need to be rebuilt?) Later incremental builds are faster.
-  [`sccache`](https://crates.io/crates/sccache) might help with this but I have
-  not yet tested it. However, copying `target/` is still generally faster than
-  not copying it.
-
-- To make this faster on large trees, we could keep several scratch trees and
-  test them in parallel, which is likely to exploit CPU resources more
-  thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
-  down to a single task during linking, and often comes down to running a single
-  straggler test at a time.
-
-- It currently assumes all the source is in `src/` of the directory, but Cargo
-  doesn't require that, and some crates have their source in a different
-  directory. This could be fixed by reading `cargo metadata`.
-  <https://github.com/sourcefrog/cargo-mutants/issues/29>
-
-- Mutated functions could discard all parameters to avoid strict warnings about
-  them being unused. (I haven't seen any crates yet that enforce this.)
 
 ## How it works
 
@@ -344,9 +318,9 @@ The basic approach is:
   "freshen" it so that the mutated copies will have a good starting point. (This
   is skipped with `--no-copy-target`.)
 
-- Make a copy of the whole tree into a scratch directory, unless
-  `--no-copy-target` is set. The same directory is reused across all the
-  mutations to benefit from incremental builds.
+- Make a copy of the source tree into a scratch directory, optionally excluding
+  the `/target` directory. The same directory is reused across all the mutations
+  to benefit from incremental builds.
 
   - Before applying any mutations, check that `cargo test` succeeds in the
     scratch directory: perhaps a test is already broken, or perhaps the tree
@@ -419,12 +393,55 @@ Some differences are:
 - Mutagen has a neat system to use coverage information to run only the tests
   that could possibly be affected. This could potentially be ported.
 
-- Mutagen needs a nightly compiler; cargo-mutants should work with any
-  reasonably-recent compiler and is tested on stable.
+- Mutagen needs a nightly compiler. cargo-mutants can be built with any recent
+  stable (or nightly) compiler and can be used with very old compilers.
 
-- (Probably there are more. Please let me know.)
+Please let me know anything else that should be added or corrected.
 
-## Stability
+## Supported Rust versions
 
-cargo-mutants is in alpha and behavior, output formats, command-line syntax,
-json output formats, etc, may change from one release to the next.
+Building cargo-mutants requires a recent stable Rust toolchain.
+
+After installing cargo-mutants, you should be able to use it to run tests under
+any toolchain, using the standard `+` option to `cargo`:
+
+```sh
+cargo +1.48 mutants
+```
+
+## Project status
+
+cargo-mutants behavior, output formats, command-line syntax, json output
+formats, etc, may change from one release to the next.
+
+The repertoire of generated mutants is smaller than it could be, and
+cargo-mutants generates and tries to build some mutants that it really should
+know won't work out.
+
+## Limitations, caveats, known bugs, and future enhancements
+
+See also the list of goals, above, which has some commentary on where
+cargo-mutants is not yet meeting its goals.
+
+- cargo-mutants sees the AST of the tree but doesn't fully "understand" the
+  types. Possibly it could learn to get type information from the compiler (or
+  rust-analyzer?), which would help it generate more interesting viable mutants,
+  and fewer unviable mutants.
+
+- Copying the tree to build it doesn't work well if the `Cargo.toml` points to
+  dependencies by a relative `path` (other than in subdirectories). This could
+  be handled by an option to mutate in-place (maybe into a copy made by the
+  user) or possibly an option to copy a larger containing directory. You can
+  work around this by editing `Cargo.toml` to make the paths absolute, before
+  running `cargo mutants`
+
+- To make this faster on large trees, we could keep several scratch trees and
+  test them in parallel, which is likely to exploit CPU resources more
+  thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
+  down to a single task during linking, and often comes down to running a single
+  straggler test at a time.
+
+- cargo-mutants currently assumes all the source is in `src/` of the directory, but Cargo
+  doesn't require that, and some crates have their source in a different
+  directory. This could be fixed by reading `cargo metadata`.
+  <https://github.com/sourcefrog/cargo-mutants/issues/29>
