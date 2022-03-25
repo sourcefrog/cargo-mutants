@@ -28,7 +28,7 @@ tempfile = "3.2"
 walkdir = "2.3"
 
 [dependencies.cp_r]
-version = "0.5.0"
+version = "0.5.1"
 
 [dependencies.nutmeg]
 version = "0.1.1"
