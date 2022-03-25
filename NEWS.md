@@ -1,5 +1,12 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Exclude `.git` etc from being copied with the source tree.
+
+- Ignore errors setting file mtimes during copies, which can cause failures on
+  Windows.
+
 ## 0.2.3
 
 Released 2022-03-23

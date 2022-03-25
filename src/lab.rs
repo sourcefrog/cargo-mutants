@@ -22,6 +22,9 @@ use crate::output::OutputDir;
 use crate::run::run_cargo;
 use crate::*;
 
+/// Filenames excluded from being copied with the source.
+const SOURCE_EXCLUDE: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
+
 /// What type of build, check, or test was this?
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
 pub enum Scenario {
@@ -223,7 +226,9 @@ fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<Temp
             check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
         })
         .filter(|path, dir_entry| {
-            Ok(copy_target || !(dir_entry.file_type().unwrap().is_dir() && path == target_path))
+            Ok(!SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex))
+                && (copy_target
+                    || !(dir_entry.file_type().unwrap().is_dir() && path == target_path)))
         })
         .copy_tree(source.root(), &temp_dir.path())
         .context("copy source tree to lab directory")
