@@ -14,6 +14,9 @@ use crate::Result;
 /// Text inserted in log files to make important sections more visible.
 pub const LOG_MARKER: &str = "***";
 
+/// Max file name's length for ecrypt fs. Name growths to 255 during encryption
+const ECRYPTFS_FILE_NAME_LENGTH_LIMIT: usize = 144;
+
 /// A log file for execution of a single scenario.
 #[derive(Debug)]
 pub struct LogFile {
@@ -27,11 +30,7 @@ impl LogFile {
         // realistically it seems unlikely to be hit often...
         let basename = clean_filename(scenario_name);
         for i in 0..1000 {
-            let t = if i == 0 {
-                format!("{}.log", basename)
-            } else {
-                format!("{}_{:03}.log", basename, i)
-            };
+            let t = Self::log_file_name(&basename, i);
             let path = log_dir.join(t);
             match OpenOptions::new()
                 .write(true)
@@ -48,6 +47,20 @@ impl LogFile {
             "couldn't create any test log in {:?} for {:?}",
             log_dir, scenario_name,
         );
+    }
+
+    fn log_file_name(basename: &str, i: i32) -> String {
+        let mut t = if i == 0 {
+            format!("{}.log", basename)
+        } else {
+            format!("{}_{:03}.log", basename, i)
+        };
+        // Reduce filename's length below ecryptfs limits
+        if t.len() > ECRYPTFS_FILE_NAME_LENGTH_LIMIT {
+            let range_end = t.len() - ECRYPTFS_FILE_NAME_LENGTH_LIMIT;
+            t.replace_range(0..=range_end, "");
+        }
+        t
     }
 
     /// Return the full content of the log as a string.
@@ -85,4 +98,17 @@ fn clean_filename(s: &str) -> String {
             c => c,
         })
         .collect::<String>()
+}
+
+#[cfg(test)]
+mod test {
+    use crate::log_file::{ECRYPTFS_FILE_NAME_LENGTH_LIMIT, LogFile};
+
+    #[test]
+    fn should_reduce_file_name_length_below_ecryptfs_limits() {
+        let basename = "X".repeat(ECRYPTFS_FILE_NAME_LENGTH_LIMIT+1);
+        let name = LogFile::log_file_name(&basename, 0);
+        assert!(basename.len() > ECRYPTFS_FILE_NAME_LENGTH_LIMIT);
+        assert!(name.len() < ECRYPTFS_FILE_NAME_LENGTH_LIMIT);
+    }
 }
