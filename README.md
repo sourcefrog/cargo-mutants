@@ -1,6 +1,6 @@
 # cargo-mutants
 
-https://github.com/sourcefrog/cargo-mutants
+<https://github.com/sourcefrog/cargo-mutants>
 
 [![Tests](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml/badge.svg?branch=main&event=push)](https://github.com/sourcefrog/cargo-mutants/actions/workflows/tests.yml?query=branch%3Amain)
 [![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
@@ -30,23 +30,27 @@ iteratively improved.
 
 ## Install
 
-    cargo install cargo-mutants
+```sh
+cargo install cargo-mutants
+```
 
 ## Using cargo-mutants
 
 Just run `cargo mutants` in a Rust source directory, and it will point out
 functions that may be inadequately tested:
 
-    % cargo mutants --dir ~/src/unix_mode/
-    baseline test with no mutations ... ok
-    replace type_bits with Default::default() in src/lib.rs:42:32 ... caught
-    replace is_file with Default::default() in src/lib.rs:52:35 ... caught
-    replace is_dir with Default::default() in src/lib.rs:62:34 ... caught
-    replace is_symlink with Default::default() in src/lib.rs:72:38 ... caught
-    replace is_fifo with Default::default() in src/lib.rs:77:35 ... caught
-    replace is_char_device with Default::default() in src/lib.rs:82:42 ... caught
-    replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
-    ...
+```sh
+% cargo mutants --dir ~/src/unix_mode/
+baseline test with no mutations ... ok
+replace type_bits with Default::default() in src/lib.rs:42:32 ... caught
+replace is_file with Default::default() in src/lib.rs:52:35 ... caught
+replace is_dir with Default::default() in src/lib.rs:62:34 ... caught
+replace is_symlink with Default::default() in src/lib.rs:72:38 ... caught
+replace is_fifo with Default::default() in src/lib.rs:77:35 ... caught
+replace is_char_device with Default::default() in src/lib.rs:82:42 ... caught
+replace is_block_device with Default::default() in src/lib.rs:87:43 ... NOT CAUGHT!
+...
+```
 
 In this version of the `unix_mode` crate, the `is_block_device` function was
 indeed untested.
