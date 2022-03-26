@@ -1,8 +1,12 @@
 # Contributing to cargo-mutants
 
-Pull requests are welcome.
+Pull requests are welcome. If the change is not obvious please feel free to open
+a bug or Github discussion first.
 
-This project is conducted in accord with the Rust Code of Conduct.
+## Code of Conduct
+
+This project is conducted in accord with the [Rust Code of
+Conduct](https://www.rust-lang.org/policies/code-of-conduct).
 
 ## UI Style
 
