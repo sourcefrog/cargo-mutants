@@ -29,6 +29,7 @@ use path_slash::PathExt;
 // Imports of public names from this crate.
 use crate::interrupt::check_interrupted;
 use crate::lab::Scenario;
+use crate::log_file::LogFile;
 use crate::mutate::Mutation;
 use crate::options::Options;
 use crate::outcome::{Outcome, Phase};

@@ -50,6 +50,14 @@ impl Scenario {
     pub fn is_mutant(&self) -> bool {
         matches!(self, Scenario::Mutant { .. })
     }
+
+    pub(crate) fn log_file_name_base(&self) -> String {
+        match self {
+            Scenario::SourceTree => "source_tree".into(),
+            Scenario::Baseline => "baseline".into(),
+            Scenario::Mutant(mutation) => mutation.log_file_name_base(),
+        }
+    }
 }
 
 /// Run all possible mutation experiments.
@@ -81,7 +89,7 @@ pub fn test_unmutated_then_all_mutants(
     let build_dir = copy_source_to_scratch(source_tree, &options)?;
     let outcome = {
         run_cargo_phases(
-            &build_dir.path(),
+            build_dir.path(),
             &output_dir,
             &options,
             &Scenario::Baseline,
@@ -168,9 +176,8 @@ fn run_cargo_phases(
     phases: &[Phase],
     lab_activity: &mut LabActivity,
 ) -> Result<Outcome> {
-    let scenario_name = scenario.to_string();
-    let mut log_file = output_dir.create_log(&scenario_name)?;
-    log_file.message(&scenario_name);
+    let mut log_file = output_dir.create_log(scenario)?;
+    log_file.message(&scenario.to_string());
     if let Scenario::Mutant(mutation) = scenario {
         log_file.message(&mutation.diff());
     }

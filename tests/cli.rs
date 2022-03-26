@@ -2,7 +2,7 @@
 
 //! Tests for cargo-mutants CLI layer.
 
-use std::fs;
+use std::fs::{self, read_dir};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -497,4 +497,38 @@ fn hang_when_mutated() {
         .stdout(contains(
             "replace should_stop -> bool with true ... NOT CAUGHT",
         ));
+}
+
+#[test]
+fn log_file_names_are_short_and_dont_collide() {
+    // The "well-tested" tree can generate multiple mutants from single lines. They get distinct file names.
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    let cmd_assert = run_assert_cmd()
+        .arg("mutants")
+        .args(["--check", "-v", "-V"])
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success();
+    println!(
+        "{}",
+        String::from_utf8_lossy(&cmd_assert.get_output().stdout)
+    );
+    let log_dir = tmp_src_dir.path().join("mutants.out").join("log");
+    let all_log_names = read_dir(&log_dir)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_str().unwrap().to_string())
+        .inspect(|filename| println!("{}", filename))
+        .collect::<Vec<_>>();
+    assert!(all_log_names.len() > 10);
+    assert!(
+        all_log_names.iter().all(|filename| filename.len() < 80),
+        "log file names are too long"
+    );
+    assert!(
+        all_log_names
+            .iter()
+            .any(|filename| filename.ends_with("_001.log")),
+        "log file names are not disambiguated"
+    );
 }

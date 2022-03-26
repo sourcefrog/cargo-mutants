@@ -79,9 +79,10 @@ impl LogFile {
 }
 
 fn clean_filename(s: &str) -> String {
+    let s = s.replace('/', "__");
     s.chars()
         .map(|c| match c {
-            '/' | '\\' | ' ' | ':' | '<' | '>' | '?' | '*' | '|' | '"' => '_',
+            '\\' | ' ' | ':' | '<' | '>' | '?' | '*' | '|' | '"' => '_',
             c => c,
         })
         .collect::<String>()

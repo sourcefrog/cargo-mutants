@@ -1,11 +1,10 @@
 ---
 source: tests/cli.rs
 expression: "&names"
-
 ---
 [
     "baseline.log",
-    "replace_factorial_with_Default__default()_in_src_bin_main.rs_7.log",
-    "replace_main_with_()_in_src_bin_main.rs_1.log",
     "source_tree.log",
+    "src_bin_main.rs_line_1.log",
+    "src_bin_main.rs_line_7.log",
 ]

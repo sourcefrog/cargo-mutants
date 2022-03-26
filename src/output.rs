@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::log_file::LogFile;
+use crate::*;
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
@@ -44,8 +44,8 @@ impl OutputDir {
     ///
     /// Returns the [File] to which subprocess output should be sent, and a LogFile to read it
     /// later.
-    pub fn create_log(&self, scenario_name: &str) -> Result<LogFile> {
-        LogFile::create_in(&self.log_dir, scenario_name)
+    pub fn create_log(&self, scenario: &Scenario) -> Result<LogFile> {
+        LogFile::create_in(&self.log_dir, &scenario.log_file_name_base())
     }
 
     #[allow(dead_code)]
@@ -105,32 +105,47 @@ mod test {
 
         // Create an initial output dir with one log.
         let output_dir = OutputDir::new(&temp_dir).unwrap();
-        output_dir.create_log("one").unwrap();
-        assert!(temp_dir.path().join("mutants.out/log/one.log").is_file());
+        output_dir.create_log(&Scenario::SourceTree).unwrap();
+        assert!(temp_dir
+            .path()
+            .join("mutants.out/log/source_tree.log")
+            .is_file());
 
         // The second time we create it in the same directory, the old one is moved away.
         let output_dir = OutputDir::new(&temp_dir).unwrap();
-        output_dir.create_log("two").unwrap();
+        output_dir.create_log(&Scenario::SourceTree).unwrap();
+        output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
-            .join("mutants.out.old/log/one.log")
+            .join("mutants.out.old/log/source_tree.log")
             .is_file());
-        assert!(temp_dir.path().join("mutants.out/log/two.log").is_file());
-        assert!(!temp_dir.path().join("mutants.out/log/one.log").is_file());
+        assert!(temp_dir
+            .path()
+            .join("mutants.out/log/source_tree.log")
+            .is_file());
+        assert!(temp_dir
+            .path()
+            .join("mutants.out/log/baseline.log")
+            .is_file());
 
         // The third time (and later), the .old directory is removed.
         let output_dir = OutputDir::new(&temp_dir).unwrap();
-        output_dir.create_log("three").unwrap();
-        assert!(temp_dir.path().join("mutants.out/log/three.log").is_file());
-        assert!(!temp_dir.path().join("mutants.out/log/two.log").is_file());
-        assert!(!temp_dir.path().join("mutants.out/log/one.log").is_file());
+        output_dir.create_log(&Scenario::SourceTree).unwrap();
         assert!(temp_dir
             .path()
-            .join("mutants.out.old/log/two.log")
+            .join("mutants.out/log/source_tree.log")
             .is_file());
         assert!(!temp_dir
             .path()
-            .join("mutants.out.old/log/one.log")
+            .join("mutants.out/log/baseline.log")
+            .is_file());
+        assert!(temp_dir
+            .path()
+            .join("mutants.out.old/log/source_tree.log")
+            .is_file());
+        assert!(temp_dir
+            .path()
+            .join("mutants.out.old/log/baseline.log")
             .is_file());
     }
 }

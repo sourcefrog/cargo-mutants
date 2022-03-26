@@ -189,6 +189,14 @@ impl Mutation {
         fs::write(&path, code.as_bytes())
             .with_context(|| format!("failed to write mutated code to {:?}", path))
     }
+
+    pub fn log_file_name_base(&self) -> String {
+        format!(
+            "{}_line_{}",
+            self.source_file.tree_relative_slashes(),
+            self.span.start.line
+        )
+    }
 }
 
 impl fmt::Debug for Mutation {
