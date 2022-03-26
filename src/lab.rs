@@ -33,13 +33,7 @@ pub enum Scenario {
     /// Build in a copy of the source tree but with no mutations applied.
     Baseline,
     /// Build with a mutant applied.
-    Mutant {
-        mutation: Mutation,
-        /// Index of the mutation being applied, to calculate progress.
-        i_mutation: usize,
-        /// Total number of mutations.
-        n_mutations: usize,
-    },
+    Mutant { mutation: Mutation },
 }
 
 impl fmt::Display for Scenario {
@@ -126,15 +120,10 @@ pub fn test_unmutated_then_all_mutants(
         }
     );
 
-    let n_mutations = mutations.len();
-    lab_activity.start_mutants(n_mutations);
-    for (i_mutation, mutation) in mutations.into_iter().enumerate() {
+    lab_activity.start_mutants(mutations.len());
+    for mutation in mutations {
         let outcome = test_mutation(
-            &Scenario::Mutant {
-                mutation,
-                i_mutation,
-                n_mutations,
-            },
+            &Scenario::Mutant { mutation },
             build_dir.path(),
             &output_dir,
             &options,

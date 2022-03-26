@@ -39,8 +39,8 @@ impl LabActivity {
         let start = Instant::now();
         let cargo_model = CargoModel::new(scenario, start);
         let name = cargo_model.name.clone();
-        if let Scenario::Mutant { i_mutation, .. } = scenario {
-            self.view.update(|model| model.i_mutant = *i_mutation);
+        if let Scenario::Mutant { .. } = scenario {
+            self.view.update(|model| model.i_mutant += 1);
         }
         self.view
             .update(|model| model.cargo_model = Some(cargo_model));
