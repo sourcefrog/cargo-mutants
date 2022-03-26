@@ -1,21 +1,25 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.4
 
-- Exclude `.git` etc from being copied with the source tree.
+Released 2022-03-26
 
-- Ignore errors setting file mtimes during copies, which can cause failures on
-  Windows.
+- Fix: Ignore errors setting file mtimes during copies, which can cause failures on
+  Windows if some files are readonly.
+
+- Fix: Log file names now include only the source file relative path, the line
+  number, and a counter, so they are shorter, and shouldn't cause problems on
+  filesystems with length limits.
+
+- Change: version-control directories like `.git` are not copied with the source
+  tree: they should have no effect on the build, so copying them is just a
+  waste.
 
 - Changed/improved json logs in `mutants.out`:
 
   - Show durations as fractional seconds.
 
   - Outcomes include a "summary" field.
-
-- Log file names now include only the source file relative path, the line
-  number, and a counter, so they are shorter, and shouldn't cause problems on
-  filesystems with length limits.
 
 ## 0.2.3
 
