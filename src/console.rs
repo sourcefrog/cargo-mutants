@@ -131,7 +131,7 @@ impl CargoModel {
         let name: Cow<'static, str> = match scenario {
             Scenario::SourceTree => "Freshen source tree".into(),
             Scenario::Baseline => "Unmutated baseline".into(),
-            Scenario::Mutant { mutation, .. } => style_mutation(mutation).into(),
+            Scenario::Mutant(mutation) => style_mutation(mutation).into(),
         };
         CargoModel {
             name,

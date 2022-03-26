@@ -32,8 +32,8 @@ pub enum Scenario {
     SourceTree,
     /// Build in a copy of the source tree but with no mutations applied.
     Baseline,
-    /// Build with a mutant applied.
-    Mutant { mutation: Mutation },
+    /// Build with a mutation applied.
+    Mutant(Mutation),
 }
 
 impl fmt::Display for Scenario {
@@ -41,7 +41,7 @@ impl fmt::Display for Scenario {
         match self {
             Scenario::SourceTree => f.write_str("source tree"),
             Scenario::Baseline => f.write_str("baseline"),
-            Scenario::Mutant { mutation, .. } => mutation.fmt(f),
+            Scenario::Mutant(mutation) => mutation.fmt(f),
         }
     }
 }
@@ -79,11 +79,20 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let build_dir = copy_source_to_scratch(source_tree, &options)?;
-    let outcome = test_baseline(build_dir.path(), &output_dir, &options, &mut lab_activity)?;
+    let outcome = {
+        run_cargo_phases(
+            &build_dir.path(),
+            &output_dir,
+            &options,
+            &Scenario::Baseline,
+            Phase::ALL,
+            &mut lab_activity,
+        )
+    }?;
     lab_outcome.add(&outcome);
     if !outcome.success() {
         console::print_error(&format!(
-            "cargo {} failed in an unmutated tree, so no mutants were tested",
+            "{} failed in an unmutated tree, so no mutants were tested",
             outcome.last_phase(),
         ));
         return Ok(lab_outcome); // TODO: Maybe should be Err?
@@ -122,13 +131,17 @@ pub fn test_unmutated_then_all_mutants(
 
     lab_activity.start_mutants(mutations.len());
     for mutation in mutations {
-        let outcome = test_mutation(
-            &Scenario::Mutant { mutation },
-            build_dir.path(),
-            &output_dir,
-            &options,
-            &mut lab_activity,
-        )?;
+        let scenario = Scenario::Mutant(mutation.clone());
+        let outcome = mutation.with_mutation_applied(build_dir.path(), || {
+            run_cargo_phases(
+                build_dir.path(),
+                &output_dir,
+                &options,
+                &scenario,
+                Phase::ALL,
+                &mut lab_activity,
+            )
+        })?;
         lab_outcome.add(&outcome);
 
         // Rewrite outcomes.json every time, so we can watch it and so it's not
@@ -158,7 +171,7 @@ fn run_cargo_phases(
     let scenario_name = scenario.to_string();
     let mut log_file = output_dir.create_log(&scenario_name)?;
     log_file.message(&scenario_name);
-    if let Scenario::Mutant { mutation, .. } = scenario {
+    if let Scenario::Mutant(mutation) = scenario {
         log_file.message(&mutation.diff());
     }
     let mut cargo_activity = lab_activity.start_scenario(scenario);
@@ -261,48 +274,4 @@ fn check_and_build_source_tree(
         phases,
         lab_activity,
     )
-}
-
-/// Test building the unmodified source.
-///
-/// If there are already-failing tests, proceeding to test mutations
-/// won't give a clear signal.
-fn test_baseline(
-    build_dir: &Path,
-    output_dir: &OutputDir,
-    options: &Options,
-    lab_activity: &mut LabActivity,
-) -> Result<Outcome> {
-    run_cargo_phases(
-        build_dir,
-        output_dir,
-        options,
-        &Scenario::Baseline,
-        Phase::ALL,
-        lab_activity,
-    )
-}
-
-/// Test with one mutation applied.
-fn test_mutation(
-    scenario: &Scenario,
-    build_dir: &Path,
-    output_dir: &OutputDir,
-    options: &Options,
-    lab_activity: &mut LabActivity,
-) -> Result<Outcome> {
-    if let Scenario::Mutant { mutation, .. } = scenario {
-        mutation.with_mutation_applied(build_dir, || {
-            run_cargo_phases(
-                build_dir,
-                output_dir,
-                options,
-                scenario,
-                Phase::ALL,
-                lab_activity,
-            )
-        })
-    } else {
-        unreachable!()
-    }
 }
