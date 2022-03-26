@@ -74,7 +74,7 @@ impl LabOutcome {
 }
 
 /// The result of running one mutation scenario.
-#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[must_use]
 pub struct Outcome {
     /// A file holding the text output from running this test.
@@ -83,6 +83,31 @@ pub struct Outcome {
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.
     phase_results: Vec<PhaseResult>,
+}
+
+impl Serialize for Outcome {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // custom serialize to omit inessential info
+        let mut ss = serializer.serialize_struct("Outcome", 4)?;
+        ss.serialize_field("scenario", &self.scenario)?;
+        ss.serialize_field("log_path", &self.log_path)?;
+        ss.serialize_field("summary", &self.summary())?;
+        ss.serialize_field("phase_results", &self.phase_results)?;
+        ss.end()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
+pub enum SummaryOutcome {
+    Success,
+    CaughtMutant,
+    MissedMutant,
+    Unviable,
+    Failure,
+    Timeout,
 }
 
 impl Outcome {
@@ -163,6 +188,35 @@ impl Outcome {
             }
         }
         None
+    }
+
+    pub fn summary(&self) -> SummaryOutcome {
+        match self.scenario {
+            Scenario::SourceTree | Scenario::Baseline => {
+                if self.has_timeout() {
+                    SummaryOutcome::Timeout
+                } else if self.success() {
+                    SummaryOutcome::Success
+                } else {
+                    SummaryOutcome::Failure
+                }
+            }
+            Scenario::Mutant(_) => {
+                if self.check_or_build_failed() {
+                    SummaryOutcome::Unviable
+                } else if self.has_timeout() {
+                    SummaryOutcome::Timeout
+                } else if self.mutant_caught() {
+                    SummaryOutcome::CaughtMutant
+                } else if self.mutant_missed() {
+                    SummaryOutcome::MissedMutant
+                } else if self.success() {
+                    SummaryOutcome::Success
+                } else {
+                    SummaryOutcome::Failure
+                }
+            }
+        }
     }
 }
 

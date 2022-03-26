@@ -11,6 +11,8 @@
 
   - Show durations as fractional seconds.
 
+  - Outcomes include a "summary" field.
+
 ## 0.2.3
 
 Released 2022-03-23
