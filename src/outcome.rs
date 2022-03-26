@@ -8,7 +8,9 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Context;
+use serde::ser::SerializeStruct;
 use serde::Serialize;
+use serde::Serializer;
 
 use crate::exit_code;
 use crate::log_file::LogFile;
@@ -81,13 +83,6 @@ pub struct Outcome {
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.
     phase_results: Vec<PhaseResult>,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
-struct PhaseResult {
-    phase: Phase,
-    duration: Duration,
-    cargo_result: CargoResult,
 }
 
 impl Outcome {
@@ -168,5 +163,26 @@ impl Outcome {
             }
         }
         None
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+struct PhaseResult {
+    phase: Phase,
+    duration: Duration,
+    cargo_result: CargoResult,
+}
+
+impl Serialize for PhaseResult {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // custom serialize to omit inessential info
+        let mut ss = serializer.serialize_struct("PhaseResult", 3)?;
+        ss.serialize_field("phase", &self.phase)?;
+        ss.serialize_field("duration", &self.duration.as_secs_f64())?;
+        ss.serialize_field("cargo_result", &self.cargo_result)?;
+        ss.end()
     }
 }

@@ -7,6 +7,10 @@
 - Ignore errors setting file mtimes during copies, which can cause failures on
   Windows.
 
+- Changed/improved json logs in `mutants.out`:
+
+  - Show durations as fractional seconds.
+
 ## 0.2.3
 
 Released 2022-03-23
