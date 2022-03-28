@@ -5,6 +5,7 @@
 use std::fmt;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
@@ -58,13 +59,14 @@ impl MutationOp {
 /// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mutant {
-    pub source_file: SourceFile,
+    /// Which file is being mutated.
+    source_file: Arc<SourceFile>,
 
     /// The function that's being mutated.
-    function_name: String,
+    function_name: Arc<String>,
 
     /// The return type of the function, as a fragment of Rust syntax.
-    return_type: String,
+    return_type: Arc<String>,
 
     /// The mutated textual region.
     span: Span,
@@ -75,10 +77,10 @@ pub struct Mutant {
 
 impl Mutant {
     pub fn new(
-        source_file: SourceFile,
+        source_file: Arc<SourceFile>,
         op: MutationOp,
-        function_name: String,
-        return_type: String,
+        function_name: Arc<String>,
+        return_type: Arc<String>,
         span: Span,
     ) -> Mutant {
         Mutant {
@@ -227,8 +229,8 @@ impl Serialize for Mutant {
         let mut ss = serializer.serialize_struct("Mutation", 4)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
-        ss.serialize_field("function", &self.function_name)?;
-        ss.serialize_field("return_type", &self.return_type)?;
+        ss.serialize_field("function", &self.function_name.as_ref())?;
+        ss.serialize_field("return_type", &self.return_type.as_ref())?;
         ss.serialize_field("replacement", self.op.replacement())?;
         ss.end()
     }

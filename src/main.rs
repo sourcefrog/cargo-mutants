@@ -30,11 +30,11 @@ use path_slash::PathExt;
 use crate::interrupt::check_interrupted;
 use crate::lab::Scenario;
 use crate::log_file::LogFile;
-use crate::mutate::Mutant;
+use crate::mutate::{Mutant, MutationOp};
 use crate::options::Options;
 use crate::outcome::{Outcome, Phase};
 use crate::run::CargoResult;
-use crate::source::SourceTree;
+use crate::source::{SourceFile, SourceTree};
 
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///

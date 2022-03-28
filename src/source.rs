@@ -4,6 +4,7 @@
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
@@ -52,7 +53,8 @@ impl SourceFile {
     /// Generate a list of all mutation possibilities within this file.
     pub fn mutants(&self) -> Result<Vec<Mutant>> {
         let syn_file = syn::parse_str::<syn::File>(&self.code)?;
-        let mut v = DiscoveryVisitor::new(self);
+        // TODO: Maybe just directly on Arc<SourceFile>?
+        let mut v = DiscoveryVisitor::new(Arc::new(self.clone()));
         v.visit_file(&syn_file);
         Ok(v.mutants)
     }
