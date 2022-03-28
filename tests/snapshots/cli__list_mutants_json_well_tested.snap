@@ -26,6 +26,13 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Ok(Default::default())"
   },
   {
+    "file": "src/methods.rs",
+    "line": 24,
+    "function": "<impl Debug for & Foo>::fmt",
+    "return_type": "-> fmt :: Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
     "file": "src/nested_function.rs",
     "line": 1,
     "function": "has_nested",

@@ -6,10 +6,11 @@ expression: stdout
 Freshen source tree ... ok
 Copy source and build products to scratch directory ... done
 Unmutated baseline ... ok
-Found 13 mutants to test
+Found 14 mutants to test
 src/inside_mod.rs:3: replace outer::inner::name -> & 'static str with Default::default() ... caught
 src/methods.rs:12: replace Foo::double with () ... caught
 src/methods.rs:18: replace <impl Display for Foo>::fmt -> fmt :: Result with Ok(Default::default()) ... caught
+src/methods.rs:24: replace <impl Debug for & Foo>::fmt -> fmt :: Result with Ok(Default::default()) ... caught
 src/nested_function.rs:1: replace has_nested -> u32 with Default::default() ... caught
 src/nested_function.rs:2: replace has_nested::inner -> u32 with Default::default() ... caught
 src/result.rs:5: replace simple_result -> Result < & 'static str , () > with Ok(Default::default()) ... caught

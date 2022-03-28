@@ -20,6 +20,12 @@ impl fmt::Display for Foo {
     }
 }
 
+impl fmt::Debug for &Foo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "&Foo {}", self.i)
+    }
+}
+
 impl Default for Foo {
     fn default() -> Self {
         Foo::new()
@@ -51,4 +57,9 @@ fn new_foo() {
 #[test]
 fn display_foo() {
     assert_eq!(format!("{}", Foo { i: 123 }), "Foo 123");
+}
+
+#[test]
+fn debug_ref_foo() {
+    assert_eq!(format!("{:?}", &Foo { i: 123 }), "&Foo 123");
 }

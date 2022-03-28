@@ -159,17 +159,7 @@ fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
 }
 
 fn type_name_string(ty: &syn::Type) -> String {
-    match ty {
-        syn::Type::Path(p) => {
-            if let Some(ident) = p.path.get_ident() {
-                format!("{}", ident)
-            } else {
-                // TODO: Something better here?
-                "<??>".into()
-            }
-        }
-        _ => "<??>".into(),
-    }
+    ty.to_token_stream().to_string()
 }
 
 fn return_type_to_string(return_type: &syn::ReturnType) -> String {
