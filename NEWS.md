@@ -6,6 +6,8 @@
   `Default`. cargo-mutants can not yet generate good mutations for these so they
   are generally false positives.
 
+- Better display of `<impl Foo for Bar>::foo`.
+
 ## 0.2.4
 
 Released 2022-03-26

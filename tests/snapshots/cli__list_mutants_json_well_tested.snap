@@ -13,10 +13,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "file": "src/methods.rs",
-    "line": 10,
+    "line": 12,
     "function": "Foo::double",
     "return_type": "",
     "replacement": "()"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 18,
+    "function": "<impl Display for Foo>::fmt",
+    "return_type": "-> fmt :: Result",
+    "replacement": "Ok(Default::default())"
   },
   {
     "file": "src/nested_function.rs",

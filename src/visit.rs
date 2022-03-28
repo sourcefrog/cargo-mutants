@@ -88,6 +88,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             return;
         }
         let type_name = type_name_string(&i.self_ty);
+        let name: String;
         // The trait being implemented.
         if let Some((_, trait_path, _)) = &i.trait_ {
             let trait_name = &trait_path.segments.last().unwrap().ident;
@@ -96,11 +97,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
                 // Default::default.
                 return;
             }
+            name = format!("<impl {} for {}>", trait_name, type_name);
+        } else {
+            name = type_name.clone();
         }
         // Make an approximately-right namespace.
         // TODO: For `impl X for Y` get both X and Y onto the namespace
         // stack so that we can show a more descriptive name.
-        self.in_namespace(&type_name, |v| syn::visit::visit_item_impl(v, i));
+        self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
     }
 
     /// Visit `fn foo()` within an `impl`.

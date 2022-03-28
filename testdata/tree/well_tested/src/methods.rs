@@ -1,3 +1,5 @@
+use std::fmt;
+
 struct Foo {
     i: u32,
 }
@@ -9,6 +11,12 @@ impl Foo {
 
     pub fn double(&mut self) {
         self.i *= 2;
+    }
+}
+
+impl fmt::Display for Foo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Foo {}", self.i)
     }
 }
 
@@ -38,4 +46,9 @@ fn default() {
 fn new_foo() {
     let foo = Foo::new();
     assert_eq!(foo.i, 32);
+}
+
+#[test]
+fn display_foo() {
+    assert_eq!(format!("{}", Foo { i: 123 }), "Foo 123");
 }
