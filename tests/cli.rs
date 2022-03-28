@@ -443,7 +443,7 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(0)
-        .stdout(contains("Found 1 mutation to test"));
+        .stdout(contains("Found 1 mutant to test"));
 }
 
 #[test]

@@ -10,7 +10,7 @@ use path_slash::PathExt;
 use syn::visit::Visit;
 
 use crate::interrupt::check_interrupted;
-use crate::mutate::Mutation;
+use crate::mutate::Mutant;
 use crate::visit::DiscoveryVisitor;
 
 /// A Rust source file within a source tree.
@@ -50,11 +50,11 @@ impl SourceFile {
     }
 
     /// Generate a list of all mutation possibilities within this file.
-    pub fn mutations(&self) -> Result<Vec<Mutation>> {
+    pub fn mutants(&self) -> Result<Vec<Mutant>> {
         let syn_file = syn::parse_str::<syn::File>(&self.code)?;
         let mut v = DiscoveryVisitor::new(self);
         v.visit_file(&syn_file);
-        Ok(v.mutations)
+        Ok(v.mutants)
     }
 
     /// Return the path of this file relative to a given directory.
@@ -83,11 +83,11 @@ impl SourceTree {
     }
 
     /// Return all the mutations that could possibly be applied to this tree.
-    pub fn mutations(&self) -> Result<Vec<Mutation>> {
+    pub fn mutants(&self) -> Result<Vec<Mutant>> {
         let mut r = Vec::new();
         for sf in self.source_files() {
             check_interrupted()?;
-            r.extend(Rc::new(sf).mutations()?);
+            r.extend(Rc::new(sf).mutants()?);
         }
         Ok(r)
     }

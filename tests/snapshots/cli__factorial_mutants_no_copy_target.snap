@@ -4,6 +4,6 @@ expression: stdout
 ---
 Copy source to scratch directory ... done
 Unmutated baseline ... ok
-Found 2 mutations to test
+Found 2 mutants to test
 src/bin/main.rs:1: replace main with () ... NOT CAUGHT
 

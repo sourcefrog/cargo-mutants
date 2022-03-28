@@ -5,6 +5,6 @@ expression: stdout
 Freshen source tree ... ok
 Copy source and build products to scratch directory ... done
 Unmutated baseline ... ok
-Found 1 mutation to test
+Found 1 mutant to test
 src/lib.rs:12: replace controlled_loop with () ... check ok
 

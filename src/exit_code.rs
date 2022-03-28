@@ -17,7 +17,7 @@ pub const SUCCESS: i32 = 0;
 /// (1 is also the value returned by argh.)
 pub const USAGE: i32 = 1;
 
-/// Found one or mutations that were not caught by tests.
+/// Found one or mutants that were not caught by tests.
 pub const FOUND_PROBLEMS: i32 = 2;
 
 /// One or more tests timed out: probably the mutant caused an infinite loop, or the timeout is too low.

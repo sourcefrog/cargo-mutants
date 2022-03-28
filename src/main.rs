@@ -30,7 +30,7 @@ use path_slash::PathExt;
 use crate::interrupt::check_interrupted;
 use crate::lab::Scenario;
 use crate::log_file::LogFile;
-use crate::mutate::Mutation;
+use crate::mutate::Mutant;
 use crate::options::Options;
 use crate::outcome::{Outcome, Phase};
 use crate::run::CargoResult;
@@ -45,7 +45,7 @@ struct Args {
     #[argh(switch)]
     all_logs: bool,
 
-    /// print mutations that were caught by tests.
+    /// print mutants that were caught by tests.
     #[argh(switch, short = 'v')]
     caught: bool,
 
@@ -115,15 +115,15 @@ fn main() -> Result<()> {
     let options = Options::from(&args);
     interrupt::install_handler();
     if args.list {
-        let mutations = source_tree.mutations()?;
+        let mutants = source_tree.mutants()?;
         if args.json {
             if args.diff {
                 eprintln!("--list --diff --json is not (yet) supported");
                 exit(exit_code::USAGE);
             }
-            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutations)?;
+            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutants)?;
         } else {
-            console::list_mutations(&mutations, args.diff);
+            console::list_mutants(&mutants, args.diff);
         }
     } else {
         let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options)?;

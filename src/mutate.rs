@@ -55,14 +55,9 @@ impl MutationOp {
     }
 }
 
-/// A mutation that could possibly be applied to source code.
-///
-/// The Mutation knows:
-/// * which file to modify,
-/// * which function and span in that file,
-/// * and what type of mutation to apply.
+/// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq)]
-pub struct Mutation {
+pub struct Mutant {
     pub source_file: SourceFile,
 
     /// The function that's being mutated.
@@ -78,15 +73,15 @@ pub struct Mutation {
     pub op: MutationOp,
 }
 
-impl Mutation {
+impl Mutant {
     pub fn new(
         source_file: SourceFile,
         op: MutationOp,
         function_name: String,
         return_type: String,
         span: Span,
-    ) -> Mutation {
-        Mutation {
+    ) -> Mutant {
+        Mutant {
             source_file,
             op,
             function_name,
@@ -127,7 +122,7 @@ impl Mutation {
         )
     }
 
-    /// Describe the mutation briefly, not including the location.
+    /// Describe the mutant briefly, not including the location.
     pub fn describe_change(&self) -> String {
         format!(
             "replace {} with {}",
@@ -149,7 +144,7 @@ impl Mutation {
         &self.function_name
     }
 
-    /// Return a unified diff for the mutation.
+    /// Return a unified diff for the mutant.
     pub fn diff(&self) -> String {
         let old_label = self.source_file.tree_relative_slashes();
         let new_label = self.describe_change();
@@ -199,9 +194,9 @@ impl Mutation {
     }
 }
 
-impl fmt::Debug for Mutation {
+impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Mutation")
+        f.debug_struct("Mutant")
             .field("op", &self.op)
             .field("function_name", &self.function_name())
             .field("return_type", &self.return_type)
@@ -212,7 +207,7 @@ impl fmt::Debug for Mutation {
     }
 }
 
-impl fmt::Display for Mutation {
+impl fmt::Display for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -223,7 +218,7 @@ impl fmt::Display for Mutation {
     }
 }
 
-impl Serialize for Mutation {
+impl Serialize for Mutant {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -249,21 +244,21 @@ mod test {
     use super::*;
 
     #[test]
-    fn discover_mutations() {
+    fn discover_mutants() {
         let source_file = SourceFile::new(
             Path::new("testdata/tree/factorial"),
             Path::new("src/bin/main.rs"),
         )
         .unwrap();
-        let muts = source_file.mutations().unwrap();
+        let muts = source_file.mutants().unwrap();
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            r#"Mutation { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2) }"#
+            r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2) }"#
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            r#"Mutation { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2) }"#
+            r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2) }"#
         );
     }
 
@@ -274,8 +269,8 @@ mod test {
             Path::new("src/lib.rs"),
         )
         .unwrap();
-        let muts = source_file.mutations().unwrap();
-        let descriptions = muts.iter().map(Mutation::describe_change).collect_vec();
+        let muts = source_file.mutants().unwrap();
+        let descriptions = muts.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
             @"replace controlled_loop with ()"
@@ -289,7 +284,7 @@ mod test {
             Path::new("src/bin/main.rs"),
         )
         .unwrap();
-        let muts = source_file.mutations().unwrap();
+        let muts = source_file.mutants().unwrap();
         assert_eq!(muts.len(), 2);
 
         let mut mutated_code = muts[0].mutated_code();

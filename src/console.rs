@@ -131,7 +131,7 @@ impl CargoModel {
         let name: Cow<'static, str> = match scenario {
             Scenario::SourceTree => "Freshen source tree".into(),
             Scenario::Baseline => "Unmutated baseline".into(),
-            Scenario::Mutant(mutation) => style_mutation(mutation).into(),
+            Scenario::Mutant(mutant) => style_mutant(mutant).into(),
         };
         CargoModel {
             name,
@@ -297,27 +297,27 @@ pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
     }
 }
 
-pub fn list_mutations(mutations: &[Mutation], show_diffs: bool) {
-    for mutation in mutations {
-        println!("{}", style_mutation(mutation));
+pub fn list_mutants(mutants: &[Mutant], show_diffs: bool) {
+    for mutant in mutants {
+        println!("{}", style_mutant(mutant));
         if show_diffs {
-            println!("{}", mutation.diff());
+            println!("{}", mutant.diff());
         }
     }
 }
 
-fn style_mutation(mutation: &Mutation) -> String {
+fn style_mutant(mutant: &Mutant) -> String {
     format!(
         "{}: replace {}{}{} with {}",
-        mutation.describe_location(),
-        style(mutation.function_name()).bright().magenta(),
-        if mutation.return_type().is_empty() {
+        mutant.describe_location(),
+        style(mutant.function_name()).bright().magenta(),
+        if mutant.return_type().is_empty() {
             ""
         } else {
             " "
         },
-        style(mutation.return_type()).magenta(),
-        style(mutation.replacement_text()).yellow(),
+        style(mutant.return_type()).magenta(),
+        style(mutant.replacement_text()).yellow(),
     )
 }
 

@@ -16,7 +16,7 @@ use serde::Serialize;
 use tempfile::TempDir;
 
 use crate::console::{self, CopyActivity, LabActivity};
-use crate::mutate::Mutation;
+use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
 use crate::run::run_cargo;
@@ -33,7 +33,7 @@ pub enum Scenario {
     /// Build in a copy of the source tree but with no mutations applied.
     Baseline,
     /// Build with a mutation applied.
-    Mutant(Mutation),
+    Mutant(Mutant),
 }
 
 impl fmt::Display for Scenario {
@@ -41,7 +41,7 @@ impl fmt::Display for Scenario {
         match self {
             Scenario::SourceTree => f.write_str("source tree"),
             Scenario::Baseline => f.write_str("baseline"),
-            Scenario::Mutant(mutation) => mutation.fmt(f),
+            Scenario::Mutant(mutant) => mutant.fmt(f),
         }
     }
 }
@@ -55,14 +55,14 @@ impl Scenario {
         match self {
             Scenario::SourceTree => "source_tree".into(),
             Scenario::Baseline => "baseline".into(),
-            Scenario::Mutant(mutation) => mutation.log_file_name_base(),
+            Scenario::Mutant(mutant) => mutant.log_file_name_base(),
         }
     }
 }
 
 /// Run all possible mutation experiments.
 ///
-/// Before testing the mutations, the lab checks that the source tree passes its tests with no
+/// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
@@ -118,29 +118,29 @@ pub fn test_unmutated_then_all_mutants(
         }
     }
 
-    let mut mutations = source_tree.mutations()?;
+    let mut mutants = source_tree.mutants()?;
     if options.shuffle {
-        mutations.shuffle(&mut rand::thread_rng());
+        mutants.shuffle(&mut rand::thread_rng());
     }
 
     serde_json::to_writer_pretty(
         BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
-        &mutations,
+        &mutants,
     )?;
     println!(
         "Found {} {} to test",
-        mutations.len(),
-        if mutations.len() == 1 {
-            "mutation"
+        mutants.len(),
+        if mutants.len() == 1 {
+            "mutant"
         } else {
-            "mutations"
+            "mutants"
         }
     );
 
-    lab_activity.start_mutants(mutations.len());
-    for mutation in mutations {
-        let scenario = Scenario::Mutant(mutation.clone());
-        let outcome = mutation.with_mutation_applied(build_dir.path(), || {
+    lab_activity.start_mutants(mutants.len());
+    for mutant in mutants {
+        let scenario = Scenario::Mutant(mutant.clone());
+        let outcome = mutant.with_mutation_applied(build_dir.path(), || {
             run_cargo_phases(
                 build_dir.path(),
                 &output_dir,
@@ -178,8 +178,8 @@ fn run_cargo_phases(
 ) -> Result<Outcome> {
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
-    if let Scenario::Mutant(mutation) = scenario {
-        log_file.message(&mutation.diff());
+    if let Scenario::Mutant(mutant) = scenario {
+        log_file.message(&mutant.diff());
     }
     let mut cargo_activity = lab_activity.start_scenario(scenario);
 

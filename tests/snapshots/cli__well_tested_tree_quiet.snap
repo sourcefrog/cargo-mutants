@@ -5,5 +5,5 @@ expression: stdout
 Freshen source tree ... ok
 Copy source and build products to scratch directory ... done
 Unmutated baseline ... ok
-Found 13 mutations to test
+Found 13 mutants to test
 

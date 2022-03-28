@@ -39,7 +39,7 @@ Freshen source tree ... ok in 0.031s
 Copy source and build products to scratch directory ... 192 MB in 0.116s
 Unmutated baseline ... ok in 0.235s
 Auto-set test timeout to 20.0s
-Found 17 mutations to test
+Found 17 mutants to test
 src/lib.rs:168: replace <??>::new -> CopyOptions < 'f > with Default::default() ... NOT CAUGHT in 0.736s
 src/lib.rs:386: replace Error::source -> Option < & (dyn std :: error :: Error + 'static) > with Default::default() ... NOT CAUGHT in 0.643s
 src/lib.rs:485: replace copy_symlink -> Result < () > with Ok(Default::default()) ... NOT CAUGHT in 0.767s
