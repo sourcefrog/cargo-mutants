@@ -12,10 +12,9 @@ impl Foo {
     }
 }
 
-#[mutants::skip]
 impl Default for Foo {
     fn default() -> Self {
-        Foo { i: 1 }
+        Foo::new()
     }
 }
 
@@ -27,4 +26,16 @@ fn double() {
     assert_eq!(foo.i, 64);
     foo.double();
     assert_eq!(foo.i, 128);
+}
+
+#[test]
+fn default() {
+    let foo = Foo::default();
+    assert_eq!(foo.i, 32);
+}
+
+#[test]
+fn new_foo() {
+    let foo = Foo::new();
+    assert_eq!(foo.i, 32);
 }

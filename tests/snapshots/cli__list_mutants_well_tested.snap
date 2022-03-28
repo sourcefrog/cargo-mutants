@@ -1,10 +1,9 @@
 ---
 source: tests/cli.rs
+assertion_line: 41
 expression: "String::from_utf8_lossy(&output.stdout)"
-
 ---
 src/inside_mod.rs:3: replace outer::inner::name -> & 'static str with Default::default()
-src/methods.rs:6: replace Foo::new -> Foo with Default::default()
 src/methods.rs:10: replace Foo::double with ()
 src/nested_function.rs:1: replace has_nested -> u32 with Default::default()
 src/nested_function.rs:2: replace has_nested::inner -> u32 with Default::default()

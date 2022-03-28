@@ -1,5 +1,11 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: Don't attempt to mutate functions called `new` or implementations of
+  `Default`. cargo-mutants can not yet generate good mutations for these so they
+  are generally false positives.
+
 ## 0.2.4
 
 Released 2022-03-26

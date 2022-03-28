@@ -1,7 +1,7 @@
 ---
 source: tests/cli.rs
+assertion_line: 41
 expression: "String::from_utf8_lossy(&output.stdout)"
-
 ---
 [
   {
@@ -9,13 +9,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 3,
     "function": "outer::inner::name",
     "return_type": "-> & 'static str",
-    "replacement": "Default::default()"
-  },
-  {
-    "file": "src/methods.rs",
-    "line": 6,
-    "function": "Foo::new",
-    "return_type": "-> Foo",
     "replacement": "Default::default()"
   },
   {

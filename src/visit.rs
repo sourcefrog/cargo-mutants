@@ -43,7 +43,7 @@ impl DiscoveryVisitor {
     ) {
         self.in_namespace(&ident.to_string(), |v| {
             let function_name = Arc::new(v.namespace_stack.join("::"));
-            let return_type_str = Arc::new(format!("{}", return_type.to_token_stream()));
+            let return_type_str = Arc::new(return_type_to_string(return_type));
             for op in ops_for_return_type(return_type) {
                 v.mutants.push(Mutant::new(
                     v.source_file.clone(),
@@ -87,15 +87,28 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
         if attrs_excluded(&i.attrs) {
             return;
         }
+        let type_name = type_name_string(&i.self_ty);
+        // The trait being implemented.
+        if let Some((_, trait_path, _)) = &i.trait_ {
+            let trait_name = &trait_path.segments.last().unwrap().ident;
+            if trait_name == "Default" {
+                // We don't know (yet) how to generate an interestingly-broken
+                // Default::default.
+                return;
+            }
+        }
         // Make an approximately-right namespace.
-        let name = type_name_string(&i.self_ty);
-        self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
+        // TODO: For `impl X for Y` get both X and Y onto the namespace
+        // stack so that we can show a more descriptive name.
+        self.in_namespace(&type_name, |v| syn::visit::visit_item_impl(v, i));
     }
 
     /// Visit `fn foo()` within an `impl`.
     fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
         if attrs_excluded(&i.attrs) {
             return;
+        } else if i.sig.ident == "new" {
+            return; // don't look inside constructors because there's often no good alternative
         }
         self.collect_fn_mutants(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
         self.in_namespace(&i.sig.ident.to_string(), |v| {
@@ -103,6 +116,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
         });
     }
 
+    /// Visit `mod foo { ... }`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
         if !attrs_excluded(&node.attrs) {
             self.in_namespace(&node.ident.to_string(), |v| {
@@ -152,6 +166,11 @@ fn type_name_string(ty: &syn::Type) -> String {
         }
         _ => "<??>".into(),
     }
+}
+
+fn return_type_to_string(return_type: &syn::ReturnType) -> String {
+    // TODO: Remove unnecessary spaces.
+    format!("{}", return_type.to_token_stream())
 }
 
 fn path_is_result(path: &syn::Path) -> bool {
