@@ -243,16 +243,16 @@ mod test {
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
-    use super::*;
+    use crate::*;
 
     #[test]
-    fn discover_mutants() {
+    fn discover_factorial_mutants() {
         let source_file = SourceFile::new(
             Path::new("testdata/tree/factorial"),
             Path::new("src/bin/main.rs"),
         )
         .unwrap();
-        let muts = source_file.mutants().unwrap();
+        let muts = discover_mutants(source_file.into()).unwrap();
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
@@ -271,8 +271,8 @@ mod test {
             Path::new("src/lib.rs"),
         )
         .unwrap();
-        let muts = source_file.mutants().unwrap();
-        let descriptions = muts.iter().map(Mutant::describe_change).collect_vec();
+        let mutants = discover_mutants(source_file.into()).unwrap();
+        let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
             @"replace controlled_loop with ()"
@@ -286,11 +286,11 @@ mod test {
             Path::new("src/bin/main.rs"),
         )
         .unwrap();
-        let muts = source_file.mutants().unwrap();
-        assert_eq!(muts.len(), 2);
+        let mutants = discover_mutants(source_file.into()).unwrap();
+        assert_eq!(mutants.len(), 2);
 
-        let mut mutated_code = muts[0].mutated_code();
-        assert_eq!(muts[0].function_name(), "main");
+        let mut mutated_code = mutants[0].mutated_code();
+        assert_eq!(mutants[0].function_name(), "main");
         mutated_code.retain(|c| c != '\r');
         assert_eq!(
             mutated_code,
@@ -314,8 +314,8 @@ fn test_factorial() {
 "#
         );
 
-        let mut mutated_code = muts[1].mutated_code();
-        assert_eq!(muts[1].function_name(), "factorial");
+        let mut mutated_code = mutants[1].mutated_code();
+        assert_eq!(mutants[1].function_name(), "factorial");
         mutated_code.retain(|c| c != '\r');
         assert_eq!(
             mutated_code,

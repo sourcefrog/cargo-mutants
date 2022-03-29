@@ -35,6 +35,7 @@ use crate::options::Options;
 use crate::outcome::{Outcome, Phase};
 use crate::run::CargoResult;
 use crate::source::{SourceFile, SourceTree};
+use crate::visit::discover_mutants;
 
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///

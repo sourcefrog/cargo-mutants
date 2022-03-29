@@ -1,18 +1,14 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! Access to a Rust source tree and files.
 
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
-use syn::visit::Visit;
 
-use crate::interrupt::check_interrupted;
-use crate::mutate::Mutant;
-use crate::visit::DiscoveryVisitor;
+use crate::*;
 
 /// A Rust source file within a source tree.
 ///
@@ -50,15 +46,6 @@ impl SourceFile {
         self.tree_relative.to_slash_lossy()
     }
 
-    /// Generate a list of all mutation possibilities within this file.
-    pub fn mutants(&self) -> Result<Vec<Mutant>> {
-        let syn_file = syn::parse_str::<syn::File>(&self.code)?;
-        // TODO: Maybe just directly on Arc<SourceFile>?
-        let mut v = DiscoveryVisitor::new(Arc::new(self.clone()));
-        v.visit_file(&syn_file);
-        Ok(v.mutants)
-    }
-
     /// Return the path of this file relative to a given directory.
     // TODO: Maybe let the caller do this.
     pub fn within_dir(&self, dir: &Path) -> PathBuf {
@@ -89,7 +76,7 @@ impl SourceTree {
         let mut r = Vec::new();
         for sf in self.source_files() {
             check_interrupted()?;
-            r.extend(Rc::new(sf).mutants()?);
+            r.extend(discover_mutants(sf.into())?);
         }
         Ok(r)
     }
