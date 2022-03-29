@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- New `--file` command line option to mutate only functions in source files
+  matching a glob.
+
 - Improved: Don't attempt to mutate functions called `new` or implementations of
   `Default`. cargo-mutants can not yet generate good mutations for these so they
   are generally false positives.

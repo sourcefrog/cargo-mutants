@@ -165,6 +165,15 @@ fn list_mutants_well_tested() {
 }
 
 #[test]
+fn list_mutants_well_tested_name_filter() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "nested_function.rs"])
+        .current_dir("testdata/tree/well_tested")
+        .assert_insta("list_mutants_well_tested_name_filter");
+}
+
+#[test]
 fn list_mutants_json_well_tested() {
     run()
         .arg("mutants")

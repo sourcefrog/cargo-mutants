@@ -118,7 +118,7 @@ pub fn test_unmutated_then_all_mutants(
         }
     }
 
-    let mut mutants = source_tree.mutants()?;
+    let mut mutants = source_tree.mutants(&options)?;
     if options.shuffle {
         mutants.shuffle(&mut rand::thread_rng());
     }

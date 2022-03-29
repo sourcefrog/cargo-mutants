@@ -26,6 +26,7 @@ similar = "2.0"
 subprocess = "0.2.8"
 tempfile = "3.2"
 walkdir = "2.3"
+globset = "0.4.8"
 
 [dependencies.cp_r]
 version = "0.5.1"

@@ -16,6 +16,7 @@ mod source;
 mod textedit;
 mod visit;
 
+use std::convert::TryFrom;
 use std::env;
 use std::io;
 use std::path::PathBuf;
@@ -61,6 +62,11 @@ struct Args {
     /// rust crate directory to examine.
     #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
     dir: PathBuf,
+
+    /// glob for files to examine; with no glob, all files are examined; globs containing
+    /// slash match the entire path.
+    #[argh(option, short = 'f')]
+    file: Vec<String>,
 
     /// output json (only for --list).
     #[argh(switch)]
@@ -112,11 +118,11 @@ fn main() -> Result<()> {
         exit(exit_code::USAGE);
     }
     let args: Args = argh::cargo_from_env();
+    let options = Options::try_from(&args)?;
     let source_tree = SourceTree::new(&args.dir)?;
-    let options = Options::from(&args);
     interrupt::install_handler();
     if args.list {
-        let mutants = source_tree.mutants()?;
+        let mutants = source_tree.mutants(&options)?;
         if args.json {
             if args.diff {
                 eprintln!("--list --diff --json is not (yet) supported");

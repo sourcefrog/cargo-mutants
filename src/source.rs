@@ -72,9 +72,9 @@ impl SourceTree {
     }
 
     /// Return all the mutations that could possibly be applied to this tree.
-    pub fn mutants(&self) -> Result<Vec<Mutant>> {
+    pub fn mutants(&self, options: &Options) -> Result<Vec<Mutant>> {
         let mut r = Vec::new();
-        for sf in self.source_files() {
+        for sf in self.source_files(options) {
             check_interrupted()?;
             r.extend(discover_mutants(sf.into())?);
         }
@@ -82,7 +82,9 @@ impl SourceTree {
     }
 
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
-    pub fn source_files(&self) -> impl Iterator<Item = SourceFile> + '_ {
+    pub fn source_files(&self, options: &Options) -> impl Iterator<Item = SourceFile> + '_ {
+        let globset = options.globset.clone();
+        let root_path = self.root.clone();
         walkdir::WalkDir::new(self.root.join("src"))
             .sort_by_file_name()
             .into_iter()
@@ -95,6 +97,11 @@ impl SourceTree {
             .filter(|path| {
                 path.extension()
                     .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
+            })
+            .filter(move |path| {
+                globset.as_ref().map_or(true, |gs| {
+                    gs.is_match(path.strip_prefix(&root_path).expect("strip path prefix"))
+                })
             })
             .filter_map(move |full_path| {
                 let tree_relative = full_path.strip_prefix(&self.root).unwrap();
@@ -129,7 +136,7 @@ mod test {
     fn source_files_in_testdata_factorial() {
         let source_paths = SourceTree::new(Path::new("testdata/tree/factorial"))
             .unwrap()
-            .source_files()
+            .source_files(&Options::default())
             .collect::<Vec<SourceFile>>();
         assert_eq!(source_paths.len(), 1);
         assert_eq!(

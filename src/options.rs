@@ -2,7 +2,10 @@
 
 //! Global in-process options for experimenting on mutants.
 
+use std::convert::TryFrom;
 use std::time::Duration;
+
+use globset::{Glob, GlobSet, GlobSetBuilder};
 
 use crate::*;
 
@@ -36,6 +39,9 @@ pub struct Options {
 
     /// Build the source directory before copying it.
     pub build_source: bool,
+
+    /// Files to examine.
+    pub globset: Option<GlobSet>,
 }
 
 impl Options {
@@ -55,12 +61,29 @@ impl Options {
     }
 }
 
-impl From<&Args> for Options {
-    fn from(args: &Args) -> Options {
-        Options {
+impl TryFrom<&Args> for Options {
+    type Error = anyhow::Error;
+
+    fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
+        let globset = if args.file.is_empty() {
+            None
+        } else {
+            let mut builder = GlobSetBuilder::new();
+            for glob_str in &args.file {
+                if glob_str.contains('/') {
+                    builder.add(Glob::new(glob_str)?);
+                } else {
+                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
+                }
+            }
+            Some(builder.build()?)
+        };
+
+        Ok(Options {
             build_source: !args.no_copy_target,
             check_only: args.check,
             copy_target: !args.no_copy_target,
+            globset,
             print_caught: args.caught,
             print_unviable: args.unviable,
             shuffle: !args.no_shuffle,
@@ -71,6 +94,6 @@ impl From<&Args> for Options {
                 .map(Duration::from_secs_f64)
                 .unwrap_or(Duration::MAX),
             additional_cargo_test_args: args.cargo_test_args.clone(),
-        }
+        })
     }
 }
