@@ -42,6 +42,9 @@ pub struct Options {
 
     /// Files to examine.
     pub globset: Option<GlobSet>,
+
+    /// Create `mutants.out` within this directory (by default, the source directory).
+    pub output_in_dir: Option<PathBuf>,
 }
 
 impl Options {
@@ -84,6 +87,7 @@ impl TryFrom<&Args> for Options {
             check_only: args.check,
             copy_target: !args.no_copy_target,
             globset,
+            output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,
             shuffle: !args.no_shuffle,

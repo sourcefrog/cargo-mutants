@@ -9,7 +9,10 @@
   `Default`. cargo-mutants can not yet generate good mutations for these so they
   are generally false positives.
 
-- Better display of `<impl Foo for Bar>::foo`.
+- Improved: Better display of `<impl Foo for Bar>::foo` and similar type paths.
+
+- New: `--output` directory to write `mutants.out` somewhere other than the
+  source directory.
 
 ## 0.2.4
 

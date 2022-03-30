@@ -70,7 +70,12 @@ pub fn test_unmutated_then_all_mutants(
 ) -> Result<LabOutcome> {
     let mut options: Options = options.clone();
     let mut lab_outcome = LabOutcome::default();
-    let output_dir = OutputDir::new(source_tree.root())?;
+    let output_in_dir = if let Some(o) = &options.output_in_dir {
+        o.as_path()
+    } else {
+        source_tree.root()
+    };
+    let output_dir = OutputDir::new(output_in_dir)?;
     let mut lab_activity = LabActivity::new(&options);
 
     if options.build_source {

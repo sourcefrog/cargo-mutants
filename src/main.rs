@@ -84,6 +84,10 @@ struct Args {
     #[argh(switch)]
     no_times: bool,
 
+    /// create mutants.out within this directory.
+    #[argh(option, short = 'o')]
+    output: Option<PathBuf>,
+
     /// run mutants in random order.
     #[argh(switch)]
     shuffle: bool,

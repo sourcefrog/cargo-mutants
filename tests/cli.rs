@@ -363,6 +363,47 @@ fn factorial_mutants_no_copy_target() {
 }
 
 #[test]
+fn output_option() {
+    let tmp_src_dir = copy_of_testdata("factorial");
+    let output_tmpdir = TempDir::new().unwrap();
+    assert!(
+        !tmp_src_dir.path().join("mutants.out").exists(),
+        "mutants.out should not be in a clean copy of the test data"
+    );
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--output")
+        .arg(&output_tmpdir.path())
+        .args(["--check", "--no-times"])
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .assert()
+        .success();
+    assert!(
+        !tmp_src_dir.path().join("mutants.out").exists(),
+        "mutants.out should not be in the source directory after --output was given"
+    );
+    assert!(
+        output_tmpdir.path().join("mutants.out").exists(),
+        "mutants.out is in --output directory"
+    );
+    assert!(
+        output_tmpdir
+            .path()
+            .join("mutants.out/mutants.json")
+            .is_file(),
+        "mutants.out/mutants.json is in --output directory"
+    );
+    assert!(
+        output_tmpdir
+            .path()
+            .join("mutants.out/outcomes.json")
+            .is_file(),
+        "mutants.out/outcomes.json is in --output directory"
+    );
+}
+
+#[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");

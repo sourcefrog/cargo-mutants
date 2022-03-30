@@ -24,10 +24,10 @@ impl OutputDir {
     ///
     /// If the directory already exists, it's rotated to `mutants.out.old`. If that directory
     /// exists, it's deleted.
-    pub fn new<P: AsRef<Path>>(in_dir: P) -> Result<OutputDir> {
-        let path: PathBuf = in_dir.as_ref().join(OUTDIR_NAME);
+    pub fn new(in_dir: &Path) -> Result<OutputDir> {
+        let path = in_dir.join(OUTDIR_NAME);
         if path.exists() {
-            let rotated = in_dir.as_ref().join(ROTATED_NAME);
+            let rotated = in_dir.join(ROTATED_NAME);
             if rotated.exists() {
                 fs::remove_dir_all(&rotated).with_context(|| format!("remove {:?}", &rotated))?;
             }
@@ -104,7 +104,7 @@ mod test {
         let temp_dir = tempfile::TempDir::new().unwrap();
 
         // Create an initial output dir with one log.
-        let output_dir = OutputDir::new(&temp_dir).unwrap();
+        let output_dir = OutputDir::new(temp_dir.path()).unwrap();
         output_dir.create_log(&Scenario::SourceTree).unwrap();
         assert!(temp_dir
             .path()
@@ -112,7 +112,7 @@ mod test {
             .is_file());
 
         // The second time we create it in the same directory, the old one is moved away.
-        let output_dir = OutputDir::new(&temp_dir).unwrap();
+        let output_dir = OutputDir::new(temp_dir.path()).unwrap();
         output_dir.create_log(&Scenario::SourceTree).unwrap();
         output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
@@ -129,7 +129,7 @@ mod test {
             .is_file());
 
         // The third time (and later), the .old directory is removed.
-        let output_dir = OutputDir::new(&temp_dir).unwrap();
+        let output_dir = OutputDir::new(temp_dir.path()).unwrap();
         output_dir.create_log(&Scenario::SourceTree).unwrap();
         assert!(temp_dir
             .path()

@@ -103,3 +103,9 @@ up the CPU will continue.
 
 Therefore we need to also intercept the signal to cargo-mutants and manually
 pass it on to the subprocess group.
+
+## Output directory handling
+
+Various output files, including the text output from all the cargo commands are
+written into `mutants.out` within the directory specified by `--output`, or by
+default the source directory.
