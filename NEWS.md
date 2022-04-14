@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.5
+
+Released 2022-04-14
 
 - New `--file` command line option to mutate only functions in source files
   matching a glob.
