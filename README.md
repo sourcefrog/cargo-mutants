@@ -399,11 +399,12 @@ There's an existing Rust mutation testing tool called
 
 Some differences are:
 
-- Mutagen seems more mature.
-
 - Mutagen requires changes to the source tree, and for functions to be mutated
   to be marked with an attribute. cargo-mutants can work with any unmodified
   tree.
+
+- Mutagen needs a nightly compiler. cargo-mutants can be built with any recent
+  stable (or nightly) compiler and can be used with very old compilers.
 
 - Mutagen builds the tree only once; cargo-mutants does an incremental build for
   each mutation.
@@ -413,9 +414,6 @@ Some differences are:
 
   Typically the incremental builds are relatively cheap compared to the time to
   run the tests.
-
-- Mutagen needs a nightly compiler. cargo-mutants can be built with any recent
-  stable (or nightly) compiler and can be used with very old compilers.
 
 Please let me know anything else that should be added or corrected.
 
