@@ -225,7 +225,18 @@ fn run_cargo_phases(
 }
 
 fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<TempDir> {
-    let temp_dir = TempDir::new()?;
+    let temp_dir = tempfile::Builder::new()
+        .prefix(&format!(
+            "cargo-mutants-{}-",
+            source
+                .path()
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+        ))
+        .suffix(".tmp")
+        .tempdir()
+        .context("create temp dir")?;
     let copy_target = options.copy_target;
     let name = if copy_target {
         "Copy source and build products to scratch directory"
