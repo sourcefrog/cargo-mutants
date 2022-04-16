@@ -73,7 +73,7 @@ pub fn test_unmutated_then_all_mutants(
     let output_in_dir = if let Some(o) = &options.output_in_dir {
         o.as_path()
     } else {
-        source_tree.root()
+        source_tree.path()
     };
     let output_dir = OutputDir::new(output_in_dir)?;
     let mut lab_activity = LabActivity::new(&options);
@@ -244,7 +244,7 @@ fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<Temp
                 && (copy_target
                     || !(dir_entry.file_type().unwrap().is_dir() && path == target_path)))
         })
-        .copy_tree(source.root(), &temp_dir.path())
+        .copy_tree(source.path(), &temp_dir.path())
         .context("copy source tree to lab directory")
     {
         Ok(stats) => activity.succeed(stats.file_bytes),
@@ -252,7 +252,7 @@ fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<Temp
             activity.fail();
             eprintln!(
                 "error copying source tree {} to {}: {:?}",
-                &source.root().to_slash_lossy(),
+                &source.path().to_slash_lossy(),
                 &temp_dir.path().to_slash_lossy(),
                 err
             );
@@ -279,7 +279,7 @@ fn check_and_build_source_tree(
         &[Phase::Check, Phase::Build]
     };
     run_cargo_phases(
-        source_tree.root(),
+        source_tree.path(),
         output_dir,
         options,
         &Scenario::SourceTree,

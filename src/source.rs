@@ -118,7 +118,7 @@ impl SourceTree {
     }
 
     /// Return the path (possibly relative) to the root of the source tree.
-    pub fn root(&self) -> &Path {
+    pub fn path(&self) -> &Path {
         &self.root
     }
 }
