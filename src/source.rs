@@ -31,6 +31,7 @@ impl SourceFile {
     ///
     /// This eagerly loads the text of the file.
     pub fn new(tree_path: &Path, tree_relative: &Path) -> Result<SourceFile> {
+        assert!(tree_relative.is_relative());
         let full_path = tree_path.join(tree_relative);
         let code = std::fs::read_to_string(&full_path)
             .with_context(|| format!("failed to read source of {:?}", full_path))?
@@ -46,10 +47,9 @@ impl SourceFile {
         self.tree_relative.to_slash_lossy()
     }
 
-    /// Return the path of this file relative to a given directory.
-    // TODO: Maybe let the caller do this.
-    pub fn within_dir(&self, dir: &Path) -> PathBuf {
-        dir.join(&self.tree_relative)
+    /// Return the path of this file relative to the base of the source tree.
+    pub fn tree_relative_path(&self) -> &Path {
+        &self.tree_relative
     }
 }
 

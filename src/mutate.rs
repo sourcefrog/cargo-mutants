@@ -180,7 +180,7 @@ impl Mutant {
     }
 
     fn write_in_dir(&self, dir: &Path, code: &str) -> Result<()> {
-        let path = self.source_file.within_dir(dir);
+        let path = dir.join(self.source_file.tree_relative_path());
         // for safety, don't follow symlinks
         assert!(path.is_file(), "{:?} is not a file", path);
         fs::write(&path, code.as_bytes())
