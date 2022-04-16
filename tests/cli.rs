@@ -83,6 +83,15 @@ fn option_in_place_of_cargo_subcommand() {
 }
 
 #[test]
+fn show_version() {
+    run_assert_cmd()
+        .args(["mutants", "--version"])
+        .assert()
+        .success()
+        .stdout(predicates::str::is_match(r"^cargo-mutants \d+\.\d+\.\d+(-.*)?\n$").unwrap());
+}
+
+#[test]
 fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     let bogus_cargo = "NOTHING_NONEXISTENT_VOID";

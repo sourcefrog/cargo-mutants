@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## UNRELEASED
+
+- New `--version` option.
+
 ## 0.2.5
 
 Released 2022-04-14

@@ -38,6 +38,9 @@ use crate::run::CargoResult;
 use crate::source::{SourceFile, SourceTree};
 use crate::visit::discover_mutants;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const NAME: &str = env!("CARGO_PKG_NAME");
+
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///
 /// See <https://github.com/sourcefrog/cargo-mutants> for more information.
@@ -104,6 +107,10 @@ struct Args {
     #[argh(switch, short = 'V')]
     unviable: bool,
 
+    /// show version and quit.
+    #[argh(switch)]
+    version: bool,
+
     // The following option captures all the remaining non-option args, to
     // send to cargo.
     /// pass remaining arguments to cargo test after all options and after `--`.
@@ -125,6 +132,10 @@ fn main() -> Result<()> {
     let options = Options::try_from(&args)?;
     let source_tree = SourceTree::new(&args.dir)?;
     interrupt::install_handler();
+    if args.version {
+        println!("{} {}", NAME, VERSION);
+        return Ok(());
+    }
     if args.list {
         let mutants = source_tree.mutants(&options)?;
         if args.json {
