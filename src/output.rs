@@ -6,11 +6,37 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
+use serde::Serialize;
 
 use crate::*;
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
+
+/// The contents of a `head.json` written into the output directory and used as a lock file.
+#[derive(Debug, Serialize)]
+struct Head {
+    cargo_mutants_version: String,
+    start_time: String,
+    hostname: String,
+    username: String,
+}
+
+const HEAD_JSON: &str = "head.json";
+
+impl Head {
+    pub fn new() -> Head {
+        let now: DateTime<Utc> = Utc::now();
+        let start_time = now.to_rfc3339();
+        Head {
+            cargo_mutants_version: crate::VERSION.to_string(),
+            start_time,
+            hostname: whoami::hostname(),
+            username: whoami::username(),
+        }
+    }
+}
 
 /// A `mutants.out` directory holding logs and other output information.
 #[derive(Debug)]
@@ -35,6 +61,12 @@ impl OutputDir {
                 .with_context(|| format!("move {:?} to {:?}", &path, &rotated))?;
         }
         fs::create_dir(&path).with_context(|| format!("create output directory {:?}", &path))?;
+        let head_path = path.join(HEAD_JSON);
+        fs::write(
+            &head_path,
+            serde_json::to_string_pretty(&Head::new())?.as_bytes(),
+        )
+        .context("write head.json")?;
         let log_dir = path.join("log");
         fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
         Ok(OutputDir { path, log_dir })
@@ -93,10 +125,17 @@ mod test {
         let output_dir = OutputDir::new(src_tree.path()).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
-            &["", "Cargo.toml", "mutants.out", "mutants.out/log",]
+            &[
+                "",
+                "Cargo.toml",
+                "mutants.out",
+                "mutants.out/head.json",
+                "mutants.out/log",
+            ]
         );
         assert_eq!(output_dir.path(), tmp.path().join("mutants.out"));
         assert_eq!(output_dir.log_dir, tmp.path().join("mutants.out/log"));
+        assert!(output_dir.path().join("head.json").is_file());
     }
 
     #[test]

@@ -4,6 +4,9 @@
 
 - New `--version` option.
 
+- New: write a `head.json` into the `mutants.out` directory including the start
+  timestamp, cargo-mutants version, hostname and username.
+
 ## 0.2.5
 
 Released 2022-04-14
