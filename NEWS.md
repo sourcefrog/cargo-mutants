@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## UNRELEASED
+## 0.2.6
+
+Released 2022-04-17
 
 - Improved: Find source files by looking at `cargo metadata` output, rather than
   assuming they're in `src/**/*.rs`. This makes `cargo mutants` work properly
