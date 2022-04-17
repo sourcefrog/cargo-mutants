@@ -1,6 +1,8 @@
 // Copyright 2021, 2022 Martin Pool
 
 //! Global in-process options for experimenting on mutants.
+//!
+//! The [Options] structure is built from command-line options and then widely passed around.
 
 use std::convert::TryFrom;
 use std::time::Duration;
@@ -49,7 +51,7 @@ pub struct Options {
 
 impl Options {
     /// Return the maximum run time for `cargo test` commands.
-    ///commands
+    ///
     /// Build and check are not affected.
     pub fn test_timeout(&self) -> Duration {
         self.test_timeout
