@@ -86,6 +86,7 @@ impl SourceTree {
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
     pub fn source_files(&self, options: &Options) -> impl Iterator<Item = SourceFile> + '_ {
         // TODO: Return a Result, don't panic.
+        // TODO: Maybe don't eagerly read them here...?
         let top_sources = cargo_metadata_sources(&self.root).unwrap();
         let source_paths =
             indirect_sources(&self.root, top_sources.as_slice(), &options.globset).unwrap();
@@ -109,7 +110,7 @@ fn indirect_sources(
     root_dir: &Path,
     top_sources: &[PathBuf],
     globset: &Option<GlobSet>,
-) -> Result<Vec<PathBuf>> {
+) -> Result<BTreeSet<PathBuf>> {
     let dirs: BTreeSet<&Path> = top_sources.iter().map(|p| p.parent().unwrap()).collect();
     let mut files: BTreeSet<PathBuf> = BTreeSet::new();
     for top_dir in dirs {
@@ -137,8 +138,7 @@ fn indirect_sources(
             files.insert(p.to_owned());
         }
     }
-
-    Ok(files.into_iter().collect())
+    Ok(files)
 }
 
 /// Given a path to a cargo manifest, find all the directly-referenced source files.
