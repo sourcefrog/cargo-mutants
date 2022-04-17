@@ -193,6 +193,25 @@ fn list_mutants_json_well_tested() {
 }
 
 #[test]
+fn list_files_text_well_tested() {
+    run()
+        .arg("mutants")
+        .arg("--list-files")
+        .current_dir("testdata/tree/well_tested")
+        .assert_insta("list_files_text_well_tested");
+}
+
+#[test]
+fn list_files_json_well_tested() {
+    run()
+        .arg("mutants")
+        .arg("--list-files")
+        .arg("--json")
+        .current_dir("testdata/tree/well_tested")
+        .assert_insta("list_files_json_well_tested");
+}
+
+#[test]
 fn copy_testdata_doesnt_include_build_artifacts() {
     // If there is a target or mutants.out in the source directory, we don't want it in the copy,
     // so that the tests are (more) hermetic.

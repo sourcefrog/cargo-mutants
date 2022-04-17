@@ -4,10 +4,12 @@
 
 - New `--version` option.
 
-- New: write a `lock.json` into the `mutants.out` directory including the start
+- New: Write a `lock.json` into the `mutants.out` directory including the start
   timestamp, cargo-mutants version, hostname and username. Take a lock on this
   file while `cargo mutants` is running, so that it doesn't crash or get
   confused if two tasks try to write to the same directory at the same time.
+
+- New: Restored a `--list-files` option.
 
 ## 0.2.5
 

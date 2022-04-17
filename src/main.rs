@@ -79,6 +79,10 @@ struct Args {
     #[argh(switch)]
     list: bool,
 
+    /// list source files, don't run anything.
+    #[argh(switch)]
+    list_files: bool,
+
     /// don't copy the /target directory, and don't build the source tree first.
     #[argh(switch)]
     no_copy_target: bool,
@@ -134,9 +138,19 @@ fn main() -> Result<()> {
     interrupt::install_handler();
     if args.version {
         println!("{} {}", NAME, VERSION);
-        return Ok(());
-    }
-    if args.list {
+    } else if args.list_files {
+        let files: Vec<String> = source_tree
+            .source_files(&options)
+            .map(|sf| sf.tree_relative_path().to_slash_lossy())
+            .collect();
+        if args.json {
+            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &files)?;
+        } else {
+            for f in files {
+                println!("{}", f);
+            }
+        }
+    } else if args.list {
         let mutants = source_tree.mutants(&options)?;
         if args.json {
             if args.diff {
