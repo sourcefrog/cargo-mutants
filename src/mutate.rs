@@ -180,7 +180,7 @@ impl Mutant {
     }
 
     fn write_in_dir(&self, dir: &Path, code: &str) -> Result<()> {
-        let path = dir.join(self.source_file.tree_relative_path());
+        let path = self.source_file.tree_relative_path().within(dir);
         // for safety, don't follow symlinks
         assert!(path.is_file(), "{:?} is not a file", path);
         fs::write(&path, code.as_bytes())
@@ -249,7 +249,7 @@ mod test {
     fn discover_factorial_mutants() {
         let source_file = SourceFile::new(
             Path::new("testdata/tree/factorial"),
-            Path::new("src/bin/main.rs"),
+            "src/bin/main.rs".parse().unwrap(),
         )
         .unwrap();
         let muts = discover_mutants(source_file.into()).unwrap();
@@ -268,7 +268,7 @@ mod test {
     fn filter_by_attributes() {
         let source_file = SourceFile::new(
             Path::new("testdata/tree/hang_avoided_by_attr"),
-            Path::new("src/lib.rs"),
+            "src/lib.rs".parse().unwrap(),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();
@@ -283,7 +283,7 @@ mod test {
     fn mutate_factorial() {
         let source_file = SourceFile::new(
             Path::new("testdata/tree/factorial"),
-            Path::new("src/bin/main.rs"),
+            "src/bin/main.rs".parse().unwrap(),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();

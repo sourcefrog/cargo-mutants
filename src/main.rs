@@ -140,8 +140,9 @@ fn main() -> Result<()> {
         println!("{} {}", NAME, VERSION);
     } else if args.list_files {
         let files: Vec<String> = source_tree
-            .source_files(&options)
-            .map(|sf| sf.tree_relative_path().to_slash_lossy())
+            .source_paths(&options)?
+            .into_iter()
+            .map(|trp| trp.to_string())
             .collect();
         if args.json {
             serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &files)?;
