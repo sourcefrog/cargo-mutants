@@ -9,7 +9,7 @@ use std::io::BufWriter;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use path_slash::PathExt;
 use rand::prelude::*;
 use serde::Serialize;
@@ -150,6 +150,9 @@ pub fn test_unmutated_then_all_mutants(
             "mutants"
         }
     );
+    if mutants.is_empty() {
+        return Err(anyhow!("No mutants found"));
+    }
 
     lab_activity.start_mutants(mutants.len());
     for mutant in mutants {

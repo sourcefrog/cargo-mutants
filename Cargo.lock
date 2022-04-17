@@ -145,6 +145,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-mutants-testdata-no-opportunities"
+version = "0.0.0"
+dependencies = [
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "cargo-mutants-testdata-well-tested"
 version = "0.1.0"
 dependencies = [

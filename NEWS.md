@@ -11,6 +11,9 @@
 
 - New: Restored a `--list-files` option.
 
+- Changed: Error if no mutants are generated, which probably indicates a bug
+  or configuration error(?)
+
 ## 0.2.5
 
 Released 2022-04-14

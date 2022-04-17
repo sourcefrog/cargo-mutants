@@ -64,6 +64,7 @@ members = [
     "testdata/tree/factorial",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
+    "testdata/tree/no_opportunities",
     "testdata/tree/well_tested",
 ]
 

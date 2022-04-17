@@ -291,6 +291,18 @@ fn well_tested_tree_check_only_shuffled() {
 }
 
 #[test]
+fn error_when_no_mutants_found() {
+    let tmp_src_dir = copy_of_testdata("no_opportunities");
+    run_assert_cmd()
+        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .stderr(predicate::str::contains("Error: No mutants found"))
+        .stdout(predicate::str::contains("Found 0 mutants to test"))
+        .failure();
+}
+
+#[test]
 fn uncaught_mutant_in_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
