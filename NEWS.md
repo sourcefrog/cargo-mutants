@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+- Improved: Find source files by looking at `cargo metadata` output, rather than
+  assuming they're in `src/**/*.rs`. This makes `cargo mutants` work properly
+  on trees where it previously failed to find the source.
+
 - New `--version` option.
 
 - New: Write a `lock.json` into the `mutants.out` directory including the start

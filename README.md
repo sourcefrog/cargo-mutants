@@ -363,6 +363,7 @@ The basic approach is:
     dependencies, etc.
 
 - Build a list of mutations:
+  - Run `cargo metadata` to find directories containing Rust source files.
   - Walk all source files and parse each one looking for functions.
   - Skip functions that should not be mutated for any of several reasons:
     because they're tests, because they have a `#[mutants::skip]` attribute,
@@ -465,11 +466,6 @@ cargo-mutants is not yet meeting its goals.
   thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
   down to a single task during linking, and often comes down to running a single
   straggler test at a time.
-
-- cargo-mutants currently assumes all the source is in `src/` of the directory, but Cargo
-  doesn't require that, and some crates have their source in a different
-  directory. This could be fixed by reading `cargo metadata`.
-  <https://github.com/sourcefrog/cargo-mutants/issues/29>
 
 ## Code of Conduct
 
