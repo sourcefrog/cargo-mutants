@@ -2,10 +2,12 @@
 
 //! Access to a Rust source tree and files.
 
+use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use anyhow::{anyhow, Context, Result};
+use globset::GlobSet;
 use path_slash::PathExt;
 
 use crate::*;
@@ -83,9 +85,35 @@ impl SourceTree {
 
     /// Return an iterator of `src/**/*.rs` paths relative to the root.
     pub fn source_files(&self, options: &Options) -> impl Iterator<Item = SourceFile> + '_ {
-        let globset = options.globset.clone();
-        let root_path = self.root.clone();
-        walkdir::WalkDir::new(self.root.join("src"))
+        // TODO: Return a Result, don't panic.
+        let top_sources = cargo_metadata_sources(&self.root).unwrap();
+        let source_paths =
+            indirect_sources(&self.root, top_sources.as_slice(), &options.globset).unwrap();
+        let root = self.root.clone();
+        source_paths.into_iter().filter_map(move |p| {
+            SourceFile::new(&root, &p)
+                .map_err(|err| {
+                    eprintln!("error reading source {}: {}", p.to_slash_lossy(), err);
+                })
+                .ok()
+        })
+    }
+
+    /// Return the path (possibly relative) to the root of the source tree.
+    pub fn path(&self) -> &Path {
+        &self.root
+    }
+}
+
+fn indirect_sources(
+    root_dir: &Path,
+    top_sources: &[PathBuf],
+    globset: &Option<GlobSet>,
+) -> Result<Vec<PathBuf>> {
+    let dirs: BTreeSet<&Path> = top_sources.iter().map(|p| p.parent().unwrap()).collect();
+    let mut files: BTreeSet<PathBuf> = BTreeSet::new();
+    for top_dir in dirs {
+        for p in walkdir::WalkDir::new(root_dir.join(&top_dir))
             .sort_by_file_name()
             .into_iter()
             .filter_map(|r| {
@@ -98,29 +126,47 @@ impl SourceTree {
                 path.extension()
                     .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
             })
-            .filter(move |path| {
-                globset.as_ref().map_or(true, |gs| {
-                    gs.is_match(path.strip_prefix(&root_path).expect("strip path prefix"))
-                })
+            .map(move |full_path| {
+                full_path
+                    .strip_prefix(&root_dir)
+                    .expect("strip prefix")
+                    .to_owned()
             })
-            .filter_map(move |full_path| {
-                let tree_relative = full_path.strip_prefix(&self.root).unwrap();
-                SourceFile::new(&self.root, tree_relative)
-                    .map_err(|err| {
-                        eprintln!(
-                            "error reading source {}: {}",
-                            full_path.to_slash_lossy(),
-                            err
-                        );
-                    })
-                    .ok()
-            })
+            .filter(|rel_path| globset.as_ref().map_or(true, |gs| gs.is_match(rel_path)))
+        {
+            files.insert(p.to_owned());
+        }
     }
 
-    /// Return the path (possibly relative) to the root of the source tree.
-    pub fn path(&self) -> &Path {
-        &self.root
+    Ok(files.into_iter().collect())
+}
+
+/// Given a path to a cargo manifest, find all the directly-referenced source files.
+fn cargo_metadata_sources(source_dir: &Path) -> Result<Vec<PathBuf>> {
+    let manifest = source_dir.join("Cargo.toml");
+    let mut found: Vec<PathBuf> = Vec::new();
+    let abs_source = source_dir.canonicalize()?;
+    let cmd = cargo_metadata::MetadataCommand::new()
+        .manifest_path(&manifest)
+        .exec()
+        .context("run cargo metadata")?;
+    // println!("root package:\n{:#?}", cmd.root_package());
+    if let Some(pkg) = cmd.root_package() {
+        for target in &pkg.targets {
+            if target.kind == ["lib"] || target.kind == ["bin"] {
+                // println!("  target {} relpath {}", target.name, target.src_path);
+                // dbg!(&abs_source);
+                if let Ok(relpath) = target.src_path.strip_prefix(&abs_source) {
+                    // println!("  target {} relpath {relpath}", target.name);
+                    let relpath: PathBuf = relpath.into();
+                    if !found.contains(&relpath) {
+                        found.push(relpath);
+                    }
+                }
+            }
+        }
     }
+    Ok(found)
 }
 
 #[cfg(test)]

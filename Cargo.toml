@@ -14,6 +14,7 @@ keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
 [dependencies]
 anyhow = "1.0"
 argh = "0.1"
+cargo_metadata = "0.14"
 chrono = "0.4"
 console = "0.15"
 ctrlc = "3.2.1"
