@@ -23,7 +23,16 @@ use crate::run::run_cargo;
 use crate::*;
 
 /// Filenames excluded from being copied with the source.
-const SOURCE_EXCLUDE: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
+const SOURCE_EXCLUDE: &[&str] = &[
+    ".git",
+    ".hg",
+    ".bzr",
+    ".svn",
+    "_darcs",
+    ".pijul",
+    "mutants.out",
+    "mutants.out.old",
+];
 
 /// What type of build, check, or test was this?
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
