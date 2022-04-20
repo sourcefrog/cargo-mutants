@@ -194,7 +194,7 @@ this code, cargo-mutants might try changing `should_stop` to always return
 applied, and reports mutations that hit a timeout. The automatic timeout is the
 maximum of 5 seconds, or 3x the time to run tests with no mutations.
 
-You can also set an explicit timout with the `--timeout` option. In this case
+You can also set an explicit timeout with the `--timeout` option. In this case
 the timeout is also applied to tests run with no mutation.
 
 The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.
