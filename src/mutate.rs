@@ -9,11 +9,11 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
-use camino::Utf8Path;
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
 
+use crate::build_dir::BuildDir;
 use crate::source::SourceFile;
 use crate::textedit::{replace_region, Span};
 
@@ -158,30 +158,23 @@ impl Mutant {
             .to_string()
     }
 
-    /// Change the file affected by this mutation in the given directory.
-    fn apply_in_dir(&self, dir: &Utf8Path) -> Result<()> {
-        self.write_in_dir(dir, &self.mutated_code())
-    }
-
-    /// Restore the file affected by this mutation to its original text.
-    fn revert_in_dir(&self, dir: &Utf8Path) -> Result<()> {
-        self.write_in_dir(dir, self.original_code())
-    }
-
     /// Run a function with this mutation applied, then revert it afterwards, even if the function
     /// returns an error.
-    pub fn with_mutation_applied<F, T>(&self, dir: &Utf8Path, mut func: F) -> Result<T>
+    pub fn with_mutation_applied<F, T>(&self, build_dir: &BuildDir, mut func: F) -> Result<T>
     where
         F: FnMut() -> Result<T>,
     {
-        self.apply_in_dir(dir)?;
+        self.write_in_dir(build_dir, &self.mutated_code())?;
         let r = func();
-        self.revert_in_dir(dir)?;
+        self.write_in_dir(build_dir, self.original_code())?;
         r
     }
 
-    fn write_in_dir(&self, dir: &Utf8Path, code: &str) -> Result<()> {
-        let path = self.source_file.tree_relative_path().within(dir);
+    fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
+        let path = self
+            .source_file
+            .tree_relative_path()
+            .within(build_dir.path());
         // for safety, don't follow symlinks
         assert!(path.is_file(), "{:?} is not a file", path);
         fs::write(&path, code.as_bytes())

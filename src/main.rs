@@ -2,6 +2,7 @@
 
 //! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
 
+mod build_dir;
 mod console;
 mod exit_code;
 mod interrupt;
@@ -30,6 +31,7 @@ use camino::Utf8PathBuf;
 use path_slash::PathExt;
 
 // Imports of public names from this crate.
+use crate::build_dir::BuildDir;
 use crate::interrupt::check_interrupted;
 use crate::lab::Scenario;
 use crate::log_file::LogFile;

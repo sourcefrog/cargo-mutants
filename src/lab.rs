@@ -3,38 +3,22 @@
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::max;
-use std::convert::TryInto;
 use std::fmt;
 use std::fs::File;
 use std::io::BufWriter;
-use std::path::Path;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use camino::Utf8Path;
-use path_slash::PathExt;
 use rand::prelude::*;
 use serde::Serialize;
-use tempfile::TempDir;
 
-use crate::console::{self, CopyActivity, LabActivity};
+use crate::console::{self, LabActivity};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
 use crate::run::run_cargo;
 use crate::*;
-
-/// Filenames excluded from being copied with the source.
-const SOURCE_EXCLUDE: &[&str] = &[
-    ".git",
-    ".hg",
-    ".bzr",
-    ".svn",
-    "_darcs",
-    ".pijul",
-    "mutants.out",
-    "mutants.out.old",
-];
 
 /// What type of build, check, or test was this?
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
@@ -102,11 +86,8 @@ pub fn test_unmutated_then_all_mutants(
         }
     }
 
-    let build_dir = copy_source_to_scratch(source_tree, &options)?;
-    let build_dir_path = build_dir
-        .path()
-        .try_into()
-        .expect("tmpdir path is not UTF-8");
+    let build_dir = BuildDir::new(source_tree, &options)?;
+    let build_dir_path = build_dir.path();
     let outcome = {
         run_cargo_phases(
             build_dir_path,
@@ -163,7 +144,7 @@ pub fn test_unmutated_then_all_mutants(
     lab_activity.start_mutants(mutants.len());
     for mutant in mutants {
         let scenario = Scenario::Mutant(mutant.clone());
-        let outcome = mutant.with_mutation_applied(build_dir_path, || {
+        let outcome = mutant.with_mutation_applied(&build_dir, || {
             run_cargo_phases(
                 build_dir_path,
                 &output_dir,
@@ -190,9 +171,12 @@ pub fn test_unmutated_then_all_mutants(
 ///
 /// This runs the given phases in order until one fails.
 ///
+/// `in_dir` may be the path of either a source tree (for freshening) or a
+/// [BuildDir] (for baseline and mutation builds.)
+///
 /// Return the outcome of the last phase run.
 fn run_cargo_phases(
-    build_dir: &Utf8Path,
+    in_dir: &Utf8Path,
     output_dir: &OutputDir,
     options: &Options,
     scenario: &Scenario,
@@ -228,7 +212,7 @@ fn run_cargo_phases(
         };
         let cargo_result = run_cargo(
             &cargo_args,
-            build_dir,
+            in_dir,
             &mut cargo_activity,
             &mut log_file,
             timeout,
@@ -240,51 +224,6 @@ fn run_cargo_phases(
     }
     cargo_activity.outcome(&outcome, options)?;
     Ok(outcome)
-}
-
-fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<TempDir> {
-    let temp_dir = tempfile::Builder::new()
-        .prefix(&format!(
-            "cargo-mutants-{}-",
-            source.path().file_name().unwrap_or_default()
-        ))
-        .suffix(".tmp")
-        .tempdir()
-        .context("create temp dir")?;
-    let copy_target = options.copy_target;
-    let name = if copy_target {
-        "Copy source and build products to scratch directory"
-    } else {
-        "Copy source to scratch directory"
-    };
-    let mut activity = CopyActivity::new(name, options.clone());
-    let target_path = Path::new("target");
-    match cp_r::CopyOptions::new()
-        .after_entry_copied(|path, _ft, stats| {
-            activity.bytes_copied(stats.file_bytes);
-            check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
-        })
-        .filter(|path, dir_entry| {
-            Ok(!SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex))
-                && (copy_target
-                    || !(dir_entry.file_type().unwrap().is_dir() && path == target_path)))
-        })
-        .copy_tree(source.path(), &temp_dir.path())
-        .context("copy source tree to lab directory")
-    {
-        Ok(stats) => activity.succeed(stats.file_bytes),
-        Err(err) => {
-            activity.fail();
-            eprintln!(
-                "error copying source tree {} to {}: {:?}",
-                &source.path().to_slash_path(),
-                &temp_dir.path().to_slash_lossy(),
-                err
-            );
-            return Err(err);
-        }
-    }
-    Ok(temp_dir)
 }
 
 /// Build tests in the original source tree.
