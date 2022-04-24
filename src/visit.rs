@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
@@ -165,8 +166,50 @@ fn type_name_string(ty: &syn::Type) -> String {
 }
 
 fn return_type_to_string(return_type: &syn::ReturnType) -> String {
-    // TODO: Remove unnecessary spaces.
-    format!("{}", return_type.to_token_stream())
+    match return_type {
+        syn::ReturnType::Default => String::new(),
+        syn::ReturnType::Type(arrow, typ) => {
+            format!(
+                "{} {}",
+                arrow.to_token_stream(),
+                pretty_return_type(typ.to_token_stream())
+            )
+        }
+    }
+}
+
+/// Convert a TokenStream to a String with typical Rust spacing between tokens.
+fn pretty_return_type(token_stream: TokenStream) -> String {
+    let mut c: Vec<char> = token_stream.to_string().chars().collect();
+    // Walk through looking at space characters, and consider whether we can drop them
+    // without it being ambiguous.
+    //
+    // This is a bit hacky but seems to give reasonably legible results on
+    // typical trees...
+    let mut i = 1;
+    while (i + 1) < c.len() {
+        if c[i] == ' ' {
+            let a = c[i - 1];
+            let b = c[i + 1];
+            if a == ':'
+                || b == ':'
+                || b == ','
+                || a == '&'
+                || a == '<'
+                || b == '<'
+                || a == '>'
+                || b == '>'
+            {
+                c.remove(i);
+                // Retry at the same i
+            } else {
+                i += 1;
+            }
+        } else {
+            i += 1;
+        }
+    }
+    c.into_iter().collect()
 }
 
 fn path_is_result(path: &syn::Path) -> bool {

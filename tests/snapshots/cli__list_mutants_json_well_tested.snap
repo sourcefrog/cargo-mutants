@@ -8,7 +8,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> & 'static str",
+    "return_type": "-> &'static str",
     "replacement": "Default::default()"
   },
   {
@@ -22,14 +22,14 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/methods.rs",
     "line": 18,
     "function": "<impl Display for Foo>::fmt",
-    "return_type": "-> fmt :: Result",
+    "return_type": "-> fmt::Result",
     "replacement": "Ok(Default::default())"
   },
   {
     "file": "src/methods.rs",
     "line": 24,
     "function": "<impl Debug for & Foo>::fmt",
-    "return_type": "-> fmt :: Result",
+    "return_type": "-> fmt::Result",
     "replacement": "Ok(Default::default())"
   },
   {
@@ -50,14 +50,14 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/result.rs",
     "line": 5,
     "function": "simple_result",
-    "return_type": "-> Result < & 'static str , () >",
+    "return_type": "-> Result<&'static str, ()>",
     "replacement": "Ok(Default::default())"
   },
   {
     "file": "src/result.rs",
     "line": 9,
     "function": "error_if_negative",
-    "return_type": "-> Result < () , () >",
+    "return_type": "-> Result<(), ()>",
     "replacement": "Ok(Default::default())"
   },
   {
