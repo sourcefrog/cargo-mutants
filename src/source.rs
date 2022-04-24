@@ -3,41 +3,48 @@
 //! Access to a Rust source tree and files.
 
 use std::collections::BTreeSet;
+use std::convert::TryInto;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
 
 use anyhow::{anyhow, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
-use path_slash::{PathBufExt, PathExt};
 
 use crate::*;
 
 /// A path relative to the top of the source tree.
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
-pub struct TreeRelativePath(PathBuf);
+pub struct TreeRelativePathBuf(Utf8PathBuf);
 
-impl fmt::Display for TreeRelativePath {
+impl fmt::Display for TreeRelativePathBuf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0.to_slash_lossy())
+        let s = self
+            .0
+            .components()
+            .map(|c| c.as_str())
+            .collect::<Vec<_>>()
+            .join("/");
+        f.write_str(&s)
     }
 }
 
-impl TreeRelativePath {
-    pub fn new(path: PathBuf) -> Self {
+impl TreeRelativePathBuf {
+    pub fn new(path: Utf8PathBuf) -> Self {
         assert!(path.is_relative());
-        TreeRelativePath(path)
+        TreeRelativePathBuf(path)
     }
 
-    pub fn within(&self, tree_path: &Path) -> PathBuf {
+    pub fn within(&self, tree_path: &Utf8Path) -> Utf8PathBuf {
         tree_path.join(&self.0)
     }
 
     /// Return the tree-relative path of the containing directory.
     ///
     /// Panics if there is no parent, i.e. if self is already the tree root.
-    pub fn parent(&self) -> TreeRelativePath {
+    pub fn parent(&self) -> TreeRelativePathBuf {
         self.0
             .parent()
             .expect("TreeRelativePath has no parent")
@@ -46,23 +53,29 @@ impl TreeRelativePath {
     }
 }
 
-impl From<PathBuf> for TreeRelativePath {
+impl From<Utf8PathBuf> for TreeRelativePathBuf {
+    fn from(path_buf: Utf8PathBuf) -> Self {
+        TreeRelativePathBuf::new(path_buf)
+    }
+}
+
+impl From<PathBuf> for TreeRelativePathBuf {
     fn from(path_buf: PathBuf) -> Self {
-        TreeRelativePath::new(path_buf)
+        TreeRelativePathBuf::new(path_buf.try_into().expect("path must be UTF-8"))
     }
 }
 
-impl From<&Path> for TreeRelativePath {
+impl From<&Path> for TreeRelativePathBuf {
     fn from(path: &Path) -> Self {
-        TreeRelativePath::new(path.to_owned())
+        TreeRelativePathBuf::from(path.to_owned())
     }
 }
 
-impl FromStr for TreeRelativePath {
+impl FromStr for TreeRelativePathBuf {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(TreeRelativePath::new(s.parse()?))
+        Ok(TreeRelativePathBuf::new(s.parse()?))
     }
 }
 
@@ -76,7 +89,7 @@ impl FromStr for TreeRelativePath {
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
     /// Path relative to the root of the tree.
-    tree_relative_path: TreeRelativePath,
+    tree_relative_path: TreeRelativePathBuf,
 
     /// Full copy of the source.
     pub code: Rc<String>,
@@ -86,7 +99,10 @@ impl SourceFile {
     /// Construct a SourceFile representing a file within a tree.
     ///
     /// This eagerly loads the text of the file.
-    pub fn new(tree_path: &Path, tree_relative_path: TreeRelativePath) -> Result<SourceFile> {
+    pub fn new(
+        tree_path: &Utf8Path,
+        tree_relative_path: TreeRelativePathBuf,
+    ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
             .with_context(|| format!("failed to read source of {:?}", full_path))?
@@ -99,26 +115,26 @@ impl SourceFile {
 
     /// Return the path of this file relative to the tree root, with forward slashes.
     pub fn tree_relative_slashes(&self) -> String {
-        self.tree_relative_path.0.to_slash_lossy()
+        self.tree_relative_path.to_string()
     }
 
     /// Return the path of this file relative to the base of the source tree.
-    pub fn tree_relative_path(&self) -> &TreeRelativePath {
+    pub fn tree_relative_path(&self) -> &TreeRelativePathBuf {
         &self.tree_relative_path
     }
 }
 
 #[derive(Debug)]
 pub struct SourceTree {
-    root: PathBuf,
+    root: Utf8PathBuf,
 }
 
 impl SourceTree {
-    pub fn new(root: &Path) -> Result<SourceTree> {
+    pub fn new(root: &Utf8Path) -> Result<SourceTree> {
         if !root.join("Cargo.toml").is_file() {
             return Err(anyhow!(
                 "{} does not contain a Cargo.toml: specify a crate directory",
-                root.to_slash_lossy()
+                root.to_slash_path()
             ));
         }
         Ok(SourceTree {
@@ -140,7 +156,7 @@ impl SourceTree {
     pub fn source_paths(
         &self,
         options: &Options,
-    ) -> Result<impl IntoIterator<Item = TreeRelativePath>> {
+    ) -> Result<impl IntoIterator<Item = TreeRelativePathBuf>> {
         let top_sources = cargo_metadata_sources(&self.root)?;
         indirect_sources(&self.root, top_sources, &options.globset)
     }
@@ -160,18 +176,18 @@ impl SourceTree {
     }
 
     /// Return the path (possibly relative) to the root of the source tree.
-    pub fn path(&self) -> &Path {
+    pub fn path(&self) -> &Utf8Path {
         &self.root
     }
 }
 
 fn indirect_sources(
-    root_dir: &Path,
-    top_sources: impl IntoIterator<Item = TreeRelativePath>,
+    root_dir: &Utf8Path,
+    top_sources: impl IntoIterator<Item = TreeRelativePathBuf>,
     globset: &Option<GlobSet>,
-) -> Result<BTreeSet<TreeRelativePath>> {
-    let dirs: BTreeSet<TreeRelativePath> = top_sources.into_iter().map(|p| p.parent()).collect();
-    let mut files: BTreeSet<TreeRelativePath> = BTreeSet::new();
+) -> Result<BTreeSet<TreeRelativePathBuf>> {
+    let dirs: BTreeSet<TreeRelativePathBuf> = top_sources.into_iter().map(|p| p.parent()).collect();
+    let mut files: BTreeSet<TreeRelativePathBuf> = BTreeSet::new();
     for top_dir in dirs {
         for p in walkdir::WalkDir::new(top_dir.within(root_dir))
             .sort_by_file_name()
@@ -201,7 +217,7 @@ fn indirect_sources(
 }
 
 /// Given a path to a cargo manifest, find all the directly-referenced source files.
-fn cargo_metadata_sources(source_dir: &Path) -> Result<BTreeSet<TreeRelativePath>> {
+fn cargo_metadata_sources(source_dir: &Utf8Path) -> Result<BTreeSet<TreeRelativePathBuf>> {
     let manifest = source_dir.join("Cargo.toml");
     let mut found = BTreeSet::new();
     let cmd = cargo_metadata::MetadataCommand::new()
@@ -213,7 +229,7 @@ fn cargo_metadata_sources(source_dir: &Path) -> Result<BTreeSet<TreeRelativePath
         for target in &pkg.targets {
             if target.kind == ["lib"] || target.kind == ["bin"] {
                 if let Ok(relpath) = target.src_path.strip_prefix(&pkg_dir) {
-                    let relpath = TreeRelativePath::new(relpath.into());
+                    let relpath = TreeRelativePathBuf::new(relpath.into());
                     found.insert(relpath);
                 } else {
                     eprintln!("{:?} is not in {:?}", target.src_path, pkg_dir);
@@ -235,7 +251,7 @@ mod test {
 
     #[test]
     fn source_files_in_testdata_factorial() {
-        let source_paths = SourceTree::new(Path::new("testdata/tree/factorial"))
+        let source_paths = SourceTree::new(Utf8Path::new("testdata/tree/factorial"))
             .unwrap()
             .source_files(&Options::default())
             .unwrap()
@@ -249,25 +265,27 @@ mod test {
 
     #[test]
     fn error_opening_subdirectory_of_crate() {
-        let result = SourceTree::new(Path::new("testdata/tree/factorial/src"));
+        let result = SourceTree::new(Utf8Path::new("testdata/tree/factorial/src"));
         assert!(result.is_err());
     }
 
     #[test]
     fn error_opening_outside_of_crate() {
-        let result = SourceTree::new(Path::new("/"));
+        let result = SourceTree::new(Utf8Path::new("/"));
         assert!(result.is_err());
     }
 
     #[test]
     fn source_file_normalizes_crlf() {
-        let temp = tempfile::tempdir().unwrap();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
         let file_name = "lib.rs";
-        File::create(temp.path().join(file_name))
+        File::create(temp_dir.path().join(file_name))
             .unwrap()
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
-        let source_file = SourceFile::new(temp.path(), file_name.parse().unwrap()).unwrap();
+
+        let source_file = SourceFile::new(temp_dir_path, file_name.parse().unwrap()).unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 }

@@ -4,7 +4,6 @@
 
 use std::fmt;
 use std::fs;
-use std::path::PathBuf;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -78,7 +77,8 @@ impl LabOutcome {
 #[must_use]
 pub struct Outcome {
     /// A file holding the text output from running this test.
-    log_path: PathBuf,
+    // TODO: Maybe this should be a log object?
+    log_path: Utf8PathBuf,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.

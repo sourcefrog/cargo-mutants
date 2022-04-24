@@ -4,11 +4,12 @@
 
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
+use camino::Utf8Path;
 use chrono::{DateTime, Utc};
 use fs2::FileExt;
 use path_slash::PathExt;
@@ -80,8 +81,8 @@ impl LockFile {
 /// A `mutants.out` directory holding logs and other output information.
 #[derive(Debug)]
 pub struct OutputDir {
-    path: PathBuf,
-    log_dir: PathBuf,
+    path: Utf8PathBuf,
+    log_dir: Utf8PathBuf,
     #[allow(unused)] // Lifetime controls the file lock
     lock_file: File,
 }
@@ -94,10 +95,10 @@ impl OutputDir {
     ///
     /// If the directory already exists and `lock.json` exists and is locked, this waits for
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
-    pub fn new(in_dir: &Path) -> Result<OutputDir> {
+    pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
         let output_dir = in_dir.join(OUTDIR_NAME);
         if output_dir.exists() {
-            LockFile::acquire_lock(&output_dir)?;
+            LockFile::acquire_lock(output_dir.as_ref())?;
             // Now release the lock for a bit while we move the directory. This might be
             // slightly racy.
 
@@ -110,8 +111,8 @@ impl OutputDir {
         }
         fs::create_dir(&output_dir)
             .with_context(|| format!("create output directory {:?}", &output_dir))?;
-        let lock_file =
-            LockFile::acquire_lock(&output_dir).context("create lock.json lock file")?;
+        let lock_file = LockFile::acquire_lock(output_dir.as_std_path())
+            .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
         fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
         Ok(OutputDir {
@@ -131,13 +132,15 @@ impl OutputDir {
 
     #[allow(dead_code)]
     /// Return the path of the `mutants.out` directory.
-    pub fn path(&self) -> &Path {
+    pub fn path(&self) -> &Utf8Path {
         &self.path
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::convert::TryInto;
+
     use itertools::Itertools;
     use path_slash::PathExt;
     use pretty_assertions::assert_eq;
@@ -170,7 +173,8 @@ mod test {
     #[test]
     fn create() {
         let tmp = minimal_source_tree();
-        let src_tree = SourceTree::new(tmp.path()).unwrap();
+        let tmp_path = tmp.path().try_into().unwrap();
+        let src_tree = SourceTree::new(tmp_path).unwrap();
         let output_dir = OutputDir::new(src_tree.path()).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
@@ -190,9 +194,10 @@ mod test {
     #[test]
     fn rotate() {
         let temp_dir = tempfile::TempDir::new().unwrap();
+        let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
-        let output_dir = OutputDir::new(temp_dir.path()).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.create_log(&Scenario::SourceTree).unwrap();
         assert!(temp_dir
             .path()
@@ -201,7 +206,7 @@ mod test {
         drop(output_dir); // release the lock.
 
         // The second time we create it in the same directory, the old one is moved away.
-        let output_dir = OutputDir::new(temp_dir.path()).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.create_log(&Scenario::SourceTree).unwrap();
         output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
@@ -219,7 +224,7 @@ mod test {
         drop(output_dir);
 
         // The third time (and later), the .old directory is removed.
-        let output_dir = OutputDir::new(temp_dir.path()).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.create_log(&Scenario::SourceTree).unwrap();
         assert!(temp_dir
             .path()

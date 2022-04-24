@@ -7,6 +7,7 @@
 use std::convert::TryFrom;
 use std::time::Duration;
 
+use camino::Utf8PathBuf;
 use globset::{Glob, GlobSet, GlobSetBuilder};
 
 use crate::*;
@@ -46,7 +47,7 @@ pub struct Options {
     pub globset: Option<GlobSet>,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
-    pub output_in_dir: Option<PathBuf>,
+    pub output_in_dir: Option<Utf8PathBuf>,
 }
 
 impl Options {

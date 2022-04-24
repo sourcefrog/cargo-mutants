@@ -11,6 +11,7 @@ mod mutate;
 mod options;
 mod outcome;
 mod output;
+mod path;
 mod run;
 mod source;
 mod textedit;
@@ -19,11 +20,12 @@ mod visit;
 use std::convert::TryFrom;
 use std::env;
 use std::io;
-use std::path::PathBuf;
+
 use std::process::exit;
 
 use anyhow::Result;
 use argh::FromArgs;
+use camino::Utf8PathBuf;
 #[allow(unused)]
 use path_slash::PathExt;
 
@@ -34,6 +36,7 @@ use crate::log_file::LogFile;
 use crate::mutate::{Mutant, MutationOp};
 use crate::options::Options;
 use crate::outcome::{Outcome, Phase};
+use crate::path::Utf8PathSlashes;
 use crate::run::CargoResult;
 use crate::source::{SourceFile, SourceTree};
 use crate::visit::discover_mutants;
@@ -63,8 +66,8 @@ struct Args {
     diff: bool,
 
     /// rust crate directory to examine.
-    #[argh(option, short = 'd', default = r#"PathBuf::from(".")"#)]
-    dir: PathBuf,
+    #[argh(option, short = 'd', default = r#"Utf8PathBuf::from(".")"#)]
+    dir: Utf8PathBuf,
 
     /// glob for files to examine; with no glob, all files are examined; globs containing
     /// slash match the entire path.
@@ -93,7 +96,7 @@ struct Args {
 
     /// create mutants.out within this directory.
     #[argh(option, short = 'o')]
-    output: Option<PathBuf>,
+    output: Option<Utf8PathBuf>,
 
     /// run mutants in random order.
     #[argh(switch)]

@@ -5,9 +5,9 @@
 
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
 
 use anyhow::Context;
+use camino::{Utf8Path, Utf8PathBuf};
 
 use crate::Result;
 
@@ -17,12 +17,12 @@ pub const LOG_MARKER: &str = "***";
 /// A log file for execution of a single scenario.
 #[derive(Debug)]
 pub struct LogFile {
-    path: PathBuf,
+    path: Utf8PathBuf,
     write_to: File,
 }
 
 impl LogFile {
-    pub fn create_in(log_dir: &Path, scenario_name: &str) -> Result<LogFile> {
+    pub fn create_in(log_dir: &Utf8Path, scenario_name: &str) -> Result<LogFile> {
         // TODO: Maybe remember what files have already been created to avoid this loop, although
         // realistically it seems unlikely to be hit often...
         let basename = clean_filename(scenario_name);
@@ -56,7 +56,7 @@ impl LogFile {
         let mut buf: Vec<u8> = Vec::new();
         File::open(&self.path)
             .and_then(|mut f| f.read_to_end(&mut buf))
-            .with_context(|| format!("read log file {}", self.path.display()))?;
+            .with_context(|| format!("read log file {}", self.path))?;
         Ok(String::from_utf8_lossy(&buf).into_owned())
     }
 
@@ -65,7 +65,7 @@ impl LogFile {
         OpenOptions::new()
             .append(true)
             .open(&self.path)
-            .with_context(|| format!("open {} for append", self.path.display()))
+            .with_context(|| format!("open {} for append", self.path))
     }
 
     /// Write a message, with a marker. Ignore errors.
@@ -73,7 +73,7 @@ impl LogFile {
         write!(self.write_to, "\n{} {}", LOG_MARKER, message).expect("write message to log");
     }
 
-    pub fn path(&self) -> &Path {
+    pub fn path(&self) -> &Utf8Path {
         &self.path
     }
 }

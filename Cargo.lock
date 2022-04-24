@@ -125,6 +125,7 @@ dependencies = [
  "anyhow",
  "argh",
  "assert_cmd",
+ "camino",
  "cargo_metadata",
  "chrono",
  "console",

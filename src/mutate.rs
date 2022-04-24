@@ -4,11 +4,12 @@
 
 use std::fmt;
 use std::fs;
-use std::path::Path;
+
 use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
+use camino::Utf8Path;
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
@@ -158,18 +159,18 @@ impl Mutant {
     }
 
     /// Change the file affected by this mutation in the given directory.
-    fn apply_in_dir(&self, dir: &Path) -> Result<()> {
+    fn apply_in_dir(&self, dir: &Utf8Path) -> Result<()> {
         self.write_in_dir(dir, &self.mutated_code())
     }
 
     /// Restore the file affected by this mutation to its original text.
-    fn revert_in_dir(&self, dir: &Path) -> Result<()> {
+    fn revert_in_dir(&self, dir: &Utf8Path) -> Result<()> {
         self.write_in_dir(dir, self.original_code())
     }
 
     /// Run a function with this mutation applied, then revert it afterwards, even if the function
     /// returns an error.
-    pub fn with_mutation_applied<F, T>(&self, dir: &Path, mut func: F) -> Result<T>
+    pub fn with_mutation_applied<F, T>(&self, dir: &Utf8Path, mut func: F) -> Result<T>
     where
         F: FnMut() -> Result<T>,
     {
@@ -179,7 +180,7 @@ impl Mutant {
         r
     }
 
-    fn write_in_dir(&self, dir: &Path, code: &str) -> Result<()> {
+    fn write_in_dir(&self, dir: &Utf8Path, code: &str) -> Result<()> {
         let path = self.source_file.tree_relative_path().within(dir);
         // for safety, don't follow symlinks
         assert!(path.is_file(), "{:?} is not a file", path);
@@ -238,8 +239,7 @@ impl Serialize for Mutant {
 
 #[cfg(test)]
 mod test {
-    use std::path::Path;
-
+    use camino::Utf8Path;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
@@ -248,7 +248,7 @@ mod test {
     #[test]
     fn discover_factorial_mutants() {
         let source_file = SourceFile::new(
-            Path::new("testdata/tree/factorial"),
+            Utf8Path::new("testdata/tree/factorial"),
             "src/bin/main.rs".parse().unwrap(),
         )
         .unwrap();
@@ -267,7 +267,7 @@ mod test {
     #[test]
     fn filter_by_attributes() {
         let source_file = SourceFile::new(
-            Path::new("testdata/tree/hang_avoided_by_attr"),
+            Utf8Path::new("testdata/tree/hang_avoided_by_attr"),
             "src/lib.rs".parse().unwrap(),
         )
         .unwrap();
@@ -282,7 +282,7 @@ mod test {
     #[test]
     fn mutate_factorial() {
         let source_file = SourceFile::new(
-            Path::new("testdata/tree/factorial"),
+            Utf8Path::new("testdata/tree/factorial"),
             "src/bin/main.rs".parse().unwrap(),
         )
         .unwrap();

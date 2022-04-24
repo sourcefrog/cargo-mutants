@@ -3,6 +3,7 @@
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::max;
+use std::convert::TryInto;
 use std::fmt;
 use std::fs::File;
 use std::io::BufWriter;
@@ -10,6 +11,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
+use camino::Utf8Path;
 use path_slash::PathExt;
 use rand::prelude::*;
 use serde::Serialize;
@@ -101,9 +103,13 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let build_dir = copy_source_to_scratch(source_tree, &options)?;
+    let build_dir_path = build_dir
+        .path()
+        .try_into()
+        .expect("tmpdir path is not UTF-8");
     let outcome = {
         run_cargo_phases(
-            build_dir.path(),
+            build_dir_path,
             &output_dir,
             &options,
             &Scenario::Baseline,
@@ -157,9 +163,9 @@ pub fn test_unmutated_then_all_mutants(
     lab_activity.start_mutants(mutants.len());
     for mutant in mutants {
         let scenario = Scenario::Mutant(mutant.clone());
-        let outcome = mutant.with_mutation_applied(build_dir.path(), || {
+        let outcome = mutant.with_mutation_applied(build_dir_path, || {
             run_cargo_phases(
-                build_dir.path(),
+                build_dir_path,
                 &output_dir,
                 &options,
                 &scenario,
@@ -186,7 +192,7 @@ pub fn test_unmutated_then_all_mutants(
 ///
 /// Return the outcome of the last phase run.
 fn run_cargo_phases(
-    build_dir: &Path,
+    build_dir: &Utf8Path,
     output_dir: &OutputDir,
     options: &Options,
     scenario: &Scenario,
@@ -240,11 +246,7 @@ fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<Temp
     let temp_dir = tempfile::Builder::new()
         .prefix(&format!(
             "cargo-mutants-{}-",
-            source
-                .path()
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
+            source.path().file_name().unwrap_or_default()
         ))
         .suffix(".tmp")
         .tempdir()
@@ -275,7 +277,7 @@ fn copy_source_to_scratch(source: &SourceTree, options: &Options) -> Result<Temp
             activity.fail();
             eprintln!(
                 "error copying source tree {} to {}: {:?}",
-                &source.path().to_slash_lossy(),
+                &source.path().to_slash_path(),
                 &temp_dir.path().to_slash_lossy(),
                 err
             );

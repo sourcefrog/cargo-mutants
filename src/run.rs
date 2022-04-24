@@ -4,10 +4,10 @@
 
 use std::borrow::Cow;
 use std::env;
-use std::path::Path;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
+use camino::Utf8Path;
 use serde::Serialize;
 use subprocess::{Popen, PopenConfig, Redirection};
 
@@ -44,7 +44,7 @@ impl CargoResult {
 /// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
 pub fn run_cargo(
     cargo_args: &[&str],
-    in_dir: &Path,
+    in_dir: &Utf8Path,
     activity: &mut CargoActivity,
     log_file: &mut LogFile,
     timeout: Duration,
