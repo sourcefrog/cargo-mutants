@@ -1,8 +1,10 @@
 ---
 source: tests/cli.rs
+assertion_line: 41
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
+  "src/empty_fns.rs",
   "src/inside_mod.rs",
   "src/item_mod.rs",
   "src/lib.rs",

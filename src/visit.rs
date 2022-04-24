@@ -77,7 +77,7 @@ impl DiscoveryVisitor {
 impl<'ast> Visit<'ast> for DiscoveryVisitor {
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
         // TODO: Filter out more inapplicable fns.
-        if attrs_excluded(&i.attrs) {
+        if attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return; // don't look inside it either
         }
         self.collect_fn_mutants(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
@@ -113,7 +113,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
         // Don't look inside constructors (called "new") because there's often no good
         // alternative.
-        if attrs_excluded(&i.attrs) || i.sig.ident == "new" {
+        if attrs_excluded(&i.attrs) || i.sig.ident == "new" || block_is_empty(&i.block) {
             return;
         }
         self.collect_fn_mutants(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
@@ -181,6 +181,11 @@ fn attrs_excluded(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
         .any(|attr| attr_is_cfg_test(attr) || attr_is_test(attr) || attr_is_mutants_skip(attr))
+}
+
+/// True if the block (e.g. the contents of a function) is empty.
+fn block_is_empty(block: &syn::Block) -> bool {
+    block.stmts.is_empty()
 }
 
 /// True if the attribute is `#[cfg(test)]`.

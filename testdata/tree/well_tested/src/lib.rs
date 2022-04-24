@@ -1,5 +1,5 @@
-//!  An example tree for `cargo-mutants` with examples of sites where mutants could be, or
-//!  shouldn't be, applied.
+//! An example tree for `cargo-mutants` with examples of sites where mutants could be, or
+//! shouldn't be, applied.
 //!
 //! In this well-tested tree:
 //!
@@ -8,6 +8,7 @@
 
 #![allow(unused, dead_code)]
 
+mod empty_fns;
 mod inside_mod;
 mod item_mod;
 mod methods;

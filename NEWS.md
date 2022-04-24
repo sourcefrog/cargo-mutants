@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: Don't generate pointless mutations of functions with an empty body
+  (ignoring comments.)
+
 ## 0.2.6
 
 Released 2022-04-17
