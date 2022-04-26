@@ -180,37 +180,34 @@ fn return_type_to_string(return_type: &syn::ReturnType) -> String {
 /// spacing between tokens.
 ///
 /// This shrinks for example "& 'static" to just "&'static".
-fn remove_excess_spaces(type_str: &str) -> String {
-    let mut c: Vec<char> = type_str.chars().collect();
+fn remove_excess_spaces(s: &str) -> String {
     // Walk through looking at space characters, and consider whether we can drop them
     // without it being ambiguous.
     //
     // This is a bit hacky but seems to give reasonably legible results on
     // typical trees...
-    let mut i = 1;
-    while (i + 1) < c.len() {
-        if c[i] == ' ' {
-            let a = c[i - 1];
-            let b = c[i + 1];
-            if a == ':'
-                || b == ':'
-                || b == ','
-                || a == '&'
-                || a == '<'
-                || b == '<'
-                || a == '>'
-                || b == '>'
-            {
-                c.remove(i);
-                // Retry at the same i
-            } else {
-                i += 1;
+    let mut r = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            ' ' if r.ends_with("->") => {}
+            ' ' => {
+                // drop spaces following any of these chars
+                if let Some(a) = r.chars().next_back() {
+                    match a {
+                        ':' | '&' | '<' | '>' => continue, // drop the space
+                        _ => {}
+                    }
+                }
             }
-        } else {
-            i += 1;
+            ':' | ',' | '<' | '>' if r.ends_with(' ') => {
+                // drop spaces preceding these chars
+                r.pop();
+            }
+            _ => {}
         }
+        r.push(c)
     }
-    c.into_iter().collect()
+    r
 }
 
 fn path_is_result(path: &syn::Path) -> bool {
@@ -271,5 +268,13 @@ mod test {
     fn path_is_result() {
         let path: syn::Path = syn::parse_quote! { Result<(), ()> };
         assert!(super::path_is_result(&path));
+    }
+
+    #[test]
+    fn remove_excess_spaces() {
+        use super::remove_excess_spaces as rem;
+
+        assert_eq!(rem("<impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next -> Option < Self ::  Item >"),
+    "<impl Iterator for MergeTrees<AE, BE, AIT, BIT>>::next -> Option<Self::Item>");
     }
 }
