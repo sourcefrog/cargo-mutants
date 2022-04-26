@@ -5,7 +5,7 @@
 - Improved: Don't generate pointless mutations of functions with an empty body
   (ignoring comments.)
 
-- Improved: Remove extra whitespace from the display of return types: the new formatting is closer to the spacing used in idiomatic Rust.
+- Improved: Remove extra whitespace from the display of function names and return types: the new formatting is closer to the spacing used in idiomatic Rust.
 
 ## 0.2.6
 

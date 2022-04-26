@@ -28,7 +28,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "file": "src/methods.rs",
     "line": 24,
-    "function": "<impl Debug for & Foo>::fmt",
+    "function": "<impl Debug for &Foo>::fmt",
     "return_type": "-> fmt::Result",
     "replacement": "Ok(Default::default())"
   },

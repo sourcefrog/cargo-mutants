@@ -6,7 +6,6 @@
 
 use std::sync::Arc;
 
-use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
@@ -40,25 +39,18 @@ struct DiscoveryVisitor {
 }
 
 impl DiscoveryVisitor {
-    fn collect_fn_mutants(
-        &mut self,
-        ident: &syn::Ident,
-        return_type: &syn::ReturnType,
-        span: &proc_macro2::Span,
-    ) {
-        self.in_namespace(&ident.to_string(), |v| {
-            let function_name = Arc::new(v.namespace_stack.join("::"));
-            let return_type_str = Arc::new(return_type_to_string(return_type));
-            for op in ops_for_return_type(return_type) {
-                v.mutants.push(Mutant::new(
-                    v.source_file.clone(),
-                    op,
-                    function_name.clone(),
-                    return_type_str.clone(),
-                    span.into(),
-                ))
-            }
-        });
+    fn collect_fn_mutants(&mut self, return_type: &syn::ReturnType, span: &proc_macro2::Span) {
+        let full_function_name = Arc::new(self.namespace_stack.join("::"));
+        let return_type_str = Arc::new(return_type_to_string(return_type));
+        for op in ops_for_return_type(return_type) {
+            self.mutants.push(Mutant::new(
+                self.source_file.clone(),
+                op,
+                full_function_name.clone(),
+                return_type_str.clone(),
+                span.into(),
+            ))
+        }
     }
 
     /// Call a function with a namespace pushed onto the stack.
@@ -81,9 +73,24 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
         if attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return; // don't look inside it either
         }
-        self.collect_fn_mutants(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
-        self.in_namespace(&i.sig.ident.to_string(), |v| {
-            syn::visit::visit_item_fn(v, i);
+        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        self.in_namespace(&function_name, |self_| {
+            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span);
+            syn::visit::visit_item_fn(self_, i);
+        });
+    }
+
+    /// Visit `fn foo()` within an `impl`.
+    fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
+        // Don't look inside constructors (called "new") because there's often no good
+        // alternative.
+        if attrs_excluded(&i.attrs) || i.sig.ident == "new" || block_is_empty(&i.block) {
+            return;
+        }
+        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        self.in_namespace(&function_name, |self_| {
+            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span);
+            syn::visit::visit_impl_item_method(self_, i)
         });
     }
 
@@ -100,7 +107,11 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
                 // Default::default.
                 return;
             }
-            format!("<impl {} for {}>", trait_name, type_name)
+            format!(
+                "<impl {} for {}>",
+                trait_name,
+                remove_excess_spaces(&type_name)
+            )
         } else {
             type_name
         };
@@ -108,19 +119,6 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
         // TODO: For `impl X for Y` get both X and Y onto the namespace
         // stack so that we can show a more descriptive name.
         self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
-    }
-
-    /// Visit `fn foo()` within an `impl`.
-    fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
-        // Don't look inside constructors (called "new") because there's often no good
-        // alternative.
-        if attrs_excluded(&i.attrs) || i.sig.ident == "new" || block_is_empty(&i.block) {
-            return;
-        }
-        self.collect_fn_mutants(&i.sig.ident, &i.sig.output, &i.block.brace_token.span);
-        self.in_namespace(&i.sig.ident.to_string(), |v| {
-            syn::visit::visit_impl_item_method(v, i)
-        });
     }
 
     /// Visit `mod foo { ... }`.
@@ -172,15 +170,18 @@ fn return_type_to_string(return_type: &syn::ReturnType) -> String {
             format!(
                 "{} {}",
                 arrow.to_token_stream(),
-                pretty_return_type(typ.to_token_stream())
+                remove_excess_spaces(&typ.to_token_stream().to_string())
             )
         }
     }
 }
 
-/// Convert a TokenStream to a String with typical Rust spacing between tokens.
-fn pretty_return_type(token_stream: TokenStream) -> String {
-    let mut c: Vec<char> = token_stream.to_string().chars().collect();
+/// Convert a TokenStream representing a type to a String with typical Rust
+/// spacing between tokens.
+///
+/// This shrinks for example "& 'static" to just "&'static".
+fn remove_excess_spaces(type_str: &str) -> String {
+    let mut c: Vec<char> = type_str.chars().collect();
     // Walk through looking at space characters, and consider whether we can drop them
     // without it being ambiguous.
     //
