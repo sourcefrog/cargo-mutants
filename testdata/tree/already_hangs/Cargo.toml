@@ -1,5 +1,5 @@
 [package]
-name = "enucleate-testdata-already-hangs"
+name = "cargo-mutants-testdata-already-hangs"
 version = "0.1.0"
 edition = "2018"
 

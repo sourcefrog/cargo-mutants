@@ -3,12 +3,5 @@
 version = 3
 
 [[package]]
-name = "enucleate-testdata-could-hang"
-version = "0.1.0"
-dependencies = [
- "enucleate_attrs",
-]
-
-[[package]]
-name = "enucleate_attrs"
+name = "cargo-mutants-testdata-could-hang"
 version = "0.1.0"
