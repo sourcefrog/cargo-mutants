@@ -146,7 +146,7 @@ See `testdata/tree/hang_avoided_by_attr/` for an example.
 The crate is tiny and the attribute has no effect on the compiled code. It only
 flags the function for cargo-mutants.
 
-**Note:** This will not check the attribute but only look for the sequence of `mutants::skip` in the attribute.
+**Note:** Currently, `cargo-mutants` does not (yet) evaluate attributes like `cfg_attr`, it only looks for the sequence `mutants::skip` in the attribute.
 
 ### Exit codes
 
