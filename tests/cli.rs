@@ -546,10 +546,13 @@ fn source_tree_build_fails() {
         .assert()
         .failure() // TODO: This should be a distinct error code
         .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
-        .stdout(contains(r"This isn't Rust").name("The problem source line"))
+        .stdout(
+            contains(r#""1" + 2 // Doesn't work in Rust: just as well!"#)
+                .name("The problem source line"),
+        )
         .stdout(contains("*** source tree"))
         .stdout(contains("check --tests")) // Caught at the check phase
-        .stdout(contains("lib.rs:1:6"))
+        .stdout(contains("lib.rs:6"))
         .stdout(contains("*** cargo result: "))
         .stdout(contains("check failed in source tree, not continuing"));
 }
