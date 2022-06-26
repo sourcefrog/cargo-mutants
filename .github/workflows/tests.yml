@@ -44,4 +44,6 @@ jobs:
       run: cargo test --workspace
     - name: Install
       run: cargo install --path .
+    - name: Clippy
+      run: cargo clippy -- -D clippy::all
 
