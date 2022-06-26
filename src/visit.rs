@@ -253,7 +253,7 @@ fn attr_is_test(attr: &Attribute) -> bool {
     attr.path.is_ident("test")
 }
 
-/// True if the attribute is contains `mutants::skip`.
+/// True if the attribute contains `mutants::skip`.
 ///
 /// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
