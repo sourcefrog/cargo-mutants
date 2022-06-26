@@ -276,5 +276,6 @@ mod test {
 
         assert_eq!(rem("<impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next -> Option < Self ::  Item >"),
     "<impl Iterator for MergeTrees<AE, BE, AIT, BIT>>::next -> Option<Self::Item>");
+        assert_eq!(rem("Lex < 'buf >::take"), "Lex<'buf>::take");
     }
 }
