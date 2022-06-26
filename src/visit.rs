@@ -266,8 +266,8 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
     fn list_is_mutants_skip(meta_list: &syn::MetaList) -> bool {
         return meta_list.nested.iter().any(|n| match n {
-            syn::NestedMeta::Meta(syn::Meta::Path(path)) => path_is_mutants_skip(&path),
-            syn::NestedMeta::Meta(syn::Meta::List(list)) => list_is_mutants_skip(&list),
+            syn::NestedMeta::Meta(syn::Meta::Path(path)) => path_is_mutants_skip(path),
+            syn::NestedMeta::Meta(syn::Meta::List(list)) => list_is_mutants_skip(list),
             _ => false,
         });
     }
