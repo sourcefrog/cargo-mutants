@@ -145,6 +145,25 @@ fn list_mutants_in_factorial_json() {
 }
 
 #[test]
+fn list_mutants_in_meta_tree() {
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir("testdata/tree/meta_tree")
+        .assert_insta("list_mutants_in_meta_tree");
+}
+
+#[test]
+fn list_mutants_in_meta_tree_json() {
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir("testdata/tree/meta_tree")
+        .assert_insta("list_mutants_in_meta_tree_json");
+}
+
+#[test]
 fn list_mutants_with_dir_option() {
     run()
         .arg("mutants")
