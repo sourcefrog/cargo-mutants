@@ -3,6 +3,7 @@
 //! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
 
 mod build_dir;
+mod cargo;
 mod console;
 mod exit_code;
 mod interrupt;
@@ -13,7 +14,6 @@ mod options;
 mod outcome;
 mod output;
 mod path;
-mod run;
 mod source;
 mod textedit;
 mod visit;
@@ -32,6 +32,7 @@ use path_slash::PathExt;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
+use crate::cargo::CargoResult;
 use crate::interrupt::check_interrupted;
 use crate::lab::Scenario;
 use crate::log_file::{last_line, LogFile};
@@ -39,7 +40,6 @@ use crate::mutate::{Mutant, MutationOp};
 use crate::options::Options;
 use crate::outcome::{Outcome, Phase};
 use crate::path::Utf8PathSlashes;
-use crate::run::CargoResult;
 use crate::source::{SourceFile, SourceTree};
 use crate::visit::discover_mutants;
 

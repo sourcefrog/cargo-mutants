@@ -13,11 +13,11 @@ use camino::Utf8Path;
 use rand::prelude::*;
 use serde::Serialize;
 
+use crate::cargo::run_cargo;
 use crate::console::{self, LabActivity};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
-use crate::run::run_cargo;
 use crate::*;
 
 /// What type of build, check, or test was this?
