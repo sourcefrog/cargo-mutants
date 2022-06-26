@@ -35,9 +35,9 @@ impl LabActivity {
         })
     }
 
-    pub fn start_scenario(&mut self, scenario: &Scenario) -> CargoActivity {
+    pub fn start_scenario(&mut self, scenario: &Scenario, log_file: Utf8PathBuf) -> CargoActivity {
         let start = Instant::now();
-        let cargo_model = CargoModel::new(scenario, start);
+        let cargo_model = CargoModel::new(scenario, start, log_file);
         let name = cargo_model.name.clone();
         if let Scenario::Mutant { .. } = scenario {
             self.view.update(|model| model.i_mutant += 1);
@@ -108,39 +108,6 @@ pub struct CargoActivity {
     start: Instant,
 }
 
-struct CargoModel {
-    name: Cow<'static, str>,
-    start: Instant,
-    phase: Option<&'static str>,
-}
-
-impl nutmeg::Model for CargoModel {
-    fn render(&mut self, _width: usize) -> String {
-        let mut s = String::with_capacity(100);
-        write!(s, "{} ", self.name).unwrap();
-        if let Some(phase) = self.phase {
-            write!(s, "({}) ", phase).unwrap();
-        }
-        write!(s, "... {}", format_elapsed_secs(self.start)).unwrap();
-        s
-    }
-}
-
-impl CargoModel {
-    fn new(scenario: &Scenario, start: Instant) -> CargoModel {
-        let name: Cow<'static, str> = match scenario {
-            Scenario::SourceTree => "Freshen source tree".into(),
-            Scenario::Baseline => "Unmutated baseline".into(),
-            Scenario::Mutant(mutant) => style_mutant(mutant).into(),
-        };
-        CargoModel {
-            name,
-            phase: None,
-            start,
-        }
-    }
-}
-
 impl CargoActivity {
     pub fn set_phase(&mut self, phase: &'static str) {
         self.lab_view
@@ -196,6 +163,47 @@ impl CargoActivity {
         s.push('\n');
         self.lab_view.message(&s);
         Ok(())
+    }
+}
+
+/// A Nutmeg progress model for running `cargo test` etc.
+///
+/// It draws the command and some description of what scenario is being tested.
+struct CargoModel {
+    name: Cow<'static, str>,
+    start: Instant,
+    phase: Option<&'static str>,
+    log_file: Utf8PathBuf,
+}
+
+impl nutmeg::Model for CargoModel {
+    fn render(&mut self, _width: usize) -> String {
+        let mut s = String::with_capacity(100);
+        write!(s, "{} ", self.name).unwrap();
+        if let Some(phase) = self.phase {
+            write!(s, "({}) ", phase).unwrap();
+        }
+        write!(s, "... {}", format_elapsed_secs(self.start)).unwrap();
+        if let Ok(last_line) = last_line(&self.log_file) {
+            write!(s, "\n    {}", last_line).unwrap();
+        }
+        s
+    }
+}
+
+impl CargoModel {
+    fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> CargoModel {
+        let name: Cow<'static, str> = match scenario {
+            Scenario::SourceTree => "Freshen source tree".into(),
+            Scenario::Baseline => "Unmutated baseline".into(),
+            Scenario::Mutant(mutant) => style_mutant(mutant).into(),
+        };
+        CargoModel {
+            name,
+            phase: None,
+            start,
+            log_file,
+        }
     }
 }
 

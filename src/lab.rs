@@ -188,7 +188,7 @@ fn run_cargo_phases(
     if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&mutant.diff());
     }
-    let mut cargo_activity = lab_activity.start_scenario(scenario);
+    let mut cargo_activity = lab_activity.start_scenario(scenario, log_file.path().to_owned());
 
     let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {

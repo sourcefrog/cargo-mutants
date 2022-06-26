@@ -34,7 +34,7 @@ use path_slash::PathExt;
 use crate::build_dir::BuildDir;
 use crate::interrupt::check_interrupted;
 use crate::lab::Scenario;
-use crate::log_file::LogFile;
+use crate::log_file::{last_line, LogFile};
 use crate::mutate::{Mutant, MutationOp};
 use crate::options::Options;
 use crate::outcome::{Outcome, Phase};
