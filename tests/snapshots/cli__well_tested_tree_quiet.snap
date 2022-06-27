@@ -1,10 +1,9 @@
 ---
 source: tests/cli.rs
-assertion_line: 199
 expression: stdout
 ---
 Freshen source tree ... ok
 Copy source and build products to scratch directory ... done
 Unmutated baseline ... ok
-Found 14 mutants to test
+Found 15 mutants to test
 

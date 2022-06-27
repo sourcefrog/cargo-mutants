@@ -15,3 +15,4 @@ mod methods;
 mod nested_function;
 mod result;
 pub mod simple_fns;
+mod struct_with_lifetime;

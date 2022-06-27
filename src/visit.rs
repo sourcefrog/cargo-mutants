@@ -60,7 +60,8 @@ impl DiscoveryVisitor {
     where
         F: FnOnce(&mut Self) -> T,
     {
-        self.namespace_stack.push(name.to_owned());
+        let name = remove_excess_spaces(name);
+        self.namespace_stack.push(name.clone());
         let r = f(self);
         assert_eq!(self.namespace_stack.pop().unwrap(), name);
         r
@@ -68,6 +69,7 @@ impl DiscoveryVisitor {
 }
 
 impl<'ast> Visit<'ast> for DiscoveryVisitor {
+    /// Visit top-level `fn foo()`.
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
         // TODO: Filter out more inapplicable fns.
         if attrs_excluded(&i.attrs) || block_is_empty(&i.block) {

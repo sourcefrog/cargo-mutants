@@ -100,5 +100,12 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "function": "double_string",
     "return_type": "-> String",
     "replacement": "\"xyzzy\".into()"
+  },
+  {
+    "file": "src/struct_with_lifetime.rs",
+    "line": 14,
+    "function": "Lex<'buf>::buf_len",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
   }
 ]
