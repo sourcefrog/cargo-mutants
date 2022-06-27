@@ -1,5 +1,5 @@
 [package]
-name = "enucleate-testdata-meta-tree"
+name = "cargo-mutants-testdata-cfg-attr-skip"
 version = "0.0.0"
 edition = "2018"
 authors = ["Tim Diekmann"]

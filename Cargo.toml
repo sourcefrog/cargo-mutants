@@ -63,11 +63,11 @@ regex = "1.5"
 [workspace]
 members = [
     "mutants_attrs",
+    "testdata/tree/cfg_attr_skip",
     "testdata/tree/factorial",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
     "testdata/tree/no_opportunities",
-    "testdata/tree/meta_tree",
     "testdata/tree/well_tested",
 ]
 
