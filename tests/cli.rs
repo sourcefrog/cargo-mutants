@@ -126,6 +126,35 @@ fn list_diff_json_not_yet_supported() {
 }
 
 #[test]
+fn list_mutants_in_all_trees() {
+    for t in fs::read_dir("testdata/tree")
+        .unwrap()
+        .map(|r| r.unwrap())
+        .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
+        .map(|dir_entry| dir_entry.path())
+    {
+        println!("test {t:?}");
+        run()
+            .arg("mutants")
+            .arg("--list")
+            .arg("--json")
+            .current_dir(&t)
+            .assert_insta(&format!(
+                "list_mutants_in_all_trees__json__{}",
+                t.file_name().unwrap().to_str().unwrap()
+            ));
+        run()
+            .arg("mutants")
+            .arg("--list")
+            .current_dir(&t)
+            .assert_insta(&format!(
+                "list_mutants_in_all_trees__text__{}",
+                t.file_name().unwrap().to_str().unwrap()
+            ));
+    }
+}
+
+#[test]
 fn list_mutants_in_factorial() {
     run()
         .arg("mutants")
