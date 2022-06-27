@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "mutants-testdata-typecheck-fails"
+name = "mutants-testdata-parse-fails"
 version = "0.0.0"
