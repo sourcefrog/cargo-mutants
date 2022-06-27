@@ -1,0 +1,6 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+src/lib.rs:8: replace infinite_loop with ()
+

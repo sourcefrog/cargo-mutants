@@ -7,6 +7,8 @@
 
 - Improved: Remove extra whitespace from the display of function names and return types: the new formatting is closer to the spacing used in idiomatic Rust.
 
+- Improved: Show the last line of compiler/test output while running builds, so that it's more clear where time is being spent.
+
 ## 0.2.6
 
 Released 2022-04-17

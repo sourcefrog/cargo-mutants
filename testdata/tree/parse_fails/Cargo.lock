@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "cargo-mutants-testdata-factorial"
+name = "mutants-testdata-parse-fails"
 version = "0.0.0"

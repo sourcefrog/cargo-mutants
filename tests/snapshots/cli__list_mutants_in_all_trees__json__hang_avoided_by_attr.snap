@@ -1,0 +1,13 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+[
+  {
+    "file": "src/lib.rs",
+    "line": 12,
+    "function": "controlled_loop",
+    "return_type": "",
+    "replacement": "()"
+  }
+]

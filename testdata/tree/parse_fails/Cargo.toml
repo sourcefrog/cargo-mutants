@@ -1,0 +1,12 @@
+[package]
+name = "mutants-testdata-parse-fails"
+edition = "2018"
+version = "0.0.0"
+authors = ["Martin Pool"]
+publish = false
+
+[lib]
+doctest = false
+
+[workspace]
+# Don't include this in the overall cargo-mutants workspace, because it fails to build.

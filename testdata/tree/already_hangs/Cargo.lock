@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "enucleate-testdata-could-hang"
+name = "cargo-mutants-testdata-already-hangs"
 version = "0.1.0"
 dependencies = [
  "mutants",

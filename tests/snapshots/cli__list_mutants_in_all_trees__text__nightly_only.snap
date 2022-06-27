@@ -1,0 +1,6 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+src/main.rs:2: replace main with ()
+

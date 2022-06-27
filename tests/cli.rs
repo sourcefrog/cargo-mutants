@@ -126,6 +126,36 @@ fn list_diff_json_not_yet_supported() {
 }
 
 #[test]
+fn list_mutants_in_all_trees() {
+    for t in fs::read_dir("testdata/tree")
+        .unwrap()
+        .map(|r| r.unwrap())
+        .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
+        .filter(|dir_entry| dir_entry.file_name() != "parse_fails")
+        .map(|dir_entry| dir_entry.path())
+    {
+        println!("test {t:?}");
+        run()
+            .arg("mutants")
+            .arg("--list")
+            .arg("--json")
+            .current_dir(&t)
+            .assert_insta(&format!(
+                "list_mutants_in_all_trees__json__{}",
+                t.file_name().unwrap().to_str().unwrap()
+            ));
+        run()
+            .arg("mutants")
+            .arg("--list")
+            .current_dir(&t)
+            .assert_insta(&format!(
+                "list_mutants_in_all_trees__text__{}",
+                t.file_name().unwrap().to_str().unwrap()
+            ));
+    }
+}
+
+#[test]
 fn list_mutants_in_factorial() {
     run()
         .arg("mutants")
@@ -556,8 +586,8 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
 }
 
 #[test]
-fn source_tree_build_fails() {
-    let tmp_src_dir = copy_of_testdata("build_fails");
+fn source_tree_parse_fails() {
+    let tmp_src_dir = copy_of_testdata("parse_fails");
     run_assert_cmd()
         .arg("mutants")
         .current_dir(&tmp_src_dir.path())
@@ -565,10 +595,31 @@ fn source_tree_build_fails() {
         .assert()
         .failure() // TODO: This should be a distinct error code
         .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
-        .stdout(contains(r"This isn't Rust").name("The problem source line"))
+        .stdout(contains(r#"This isn't Rust..."#).name("The problem source line"))
         .stdout(contains("*** source tree"))
         .stdout(contains("check --tests")) // Caught at the check phase
-        .stdout(contains("lib.rs:1:6"))
+        .stdout(contains("lib.rs:3"))
+        .stdout(contains("*** cargo result: "))
+        .stdout(contains("check failed in source tree, not continuing"));
+}
+
+#[test]
+fn source_tree_typecheck_fails() {
+    let tmp_src_dir = copy_of_testdata("typecheck_fails");
+    run_assert_cmd()
+        .arg("mutants")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .failure() // TODO: This should be a distinct error code
+        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
+        .stdout(
+            contains(r#""1" + 2 // Doesn't work in Rust: just as well!"#)
+                .name("The problem source line"),
+        )
+        .stdout(contains("*** source tree"))
+        .stdout(contains("check --tests")) // Caught at the check phase
+        .stdout(contains("lib.rs:6"))
         .stdout(contains("*** cargo result: "))
         .stdout(contains("check failed in source tree, not continuing"));
 }

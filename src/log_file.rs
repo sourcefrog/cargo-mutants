@@ -3,8 +3,8 @@
 //! Manage per-scenario log files, which contain the output from cargo
 //! and test cases, mixed with commentary from cargo-mutants.
 
-use std::fs::{File, OpenOptions};
-use std::io::{self, Read, Write};
+use std::fs::{self, File, OpenOptions};
+use std::io::{self, Write};
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -50,16 +50,6 @@ impl LogFile {
         );
     }
 
-    /// Return the full content of the log as a string.
-    #[allow(unused)]
-    pub fn get_log_content(&self) -> Result<String> {
-        let mut buf: Vec<u8> = Vec::new();
-        File::open(&self.path)
-            .and_then(|mut f| f.read_to_end(&mut buf))
-            .with_context(|| format!("read log file {}", self.path))?;
-        Ok(String::from_utf8_lossy(&buf).into_owned())
-    }
-
     /// Open the log file to append more content.
     pub fn open_append(&self) -> Result<File> {
         OpenOptions::new()
@@ -76,6 +66,21 @@ impl LogFile {
     pub fn path(&self) -> &Utf8Path {
         &self.path
     }
+}
+
+/// Return the last non-empty line from a file, if it has any content.
+pub fn last_line(path: &Utf8Path) -> Result<String> {
+    // This is somewhat inefficient: we could potentially remember how long
+    // the file was last time, seek to that point, and deal with incomplete
+    // lines. However, probably these files will never get so colossal that
+    // reading them is a big problem; they are almost certainly in cache;
+    // and this should only be called a few times per second...
+    Ok(fs::read_to_string(path)?
+        .lines()
+        .filter(|s| !s.trim().is_empty())
+        .last()
+        .unwrap_or_default()
+        .to_owned())
 }
 
 fn clean_filename(s: &str) -> String {

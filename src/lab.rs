@@ -13,11 +13,11 @@ use camino::Utf8Path;
 use rand::prelude::*;
 use serde::Serialize;
 
+use crate::cargo::run_cargo;
 use crate::console::{self, LabActivity};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
-use crate::run::run_cargo;
 use crate::*;
 
 /// What type of build, check, or test was this?
@@ -188,7 +188,7 @@ fn run_cargo_phases(
     if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&mutant.diff());
     }
-    let mut cargo_activity = lab_activity.start_scenario(scenario);
+    let mut cargo_activity = lab_activity.start_scenario(scenario, log_file.path().to_owned());
 
     let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {

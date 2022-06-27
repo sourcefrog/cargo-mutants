@@ -1,0 +1,20 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+[
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "try_value_coercion",
+    "return_type": "-> String",
+    "replacement": "\"\".into()"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "try_value_coercion",
+    "return_type": "-> String",
+    "replacement": "\"xyzzy\".into()"
+  }
+]
