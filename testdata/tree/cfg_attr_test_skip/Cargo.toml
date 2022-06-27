@@ -1,9 +1,12 @@
 [package]
-name = "cargo-mutants-testdata-cfg-attr-mutants-skip"
+name = "cargo-mutants-testdata-cfg-attr-test-skip"
 version = "0.0.0"
 edition = "2018"
 authors = ["Tim Diekmann"]
 publish = false
+
+[dev-dependencies]
+mutants = "0"
 
 [[bin]]
 name = "main"
