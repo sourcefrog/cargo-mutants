@@ -566,8 +566,8 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
 }
 
 #[test]
-fn source_tree_build_fails() {
-    let tmp_src_dir = copy_of_testdata("build_fails");
+fn source_tree_typecheck_fails() {
+    let tmp_src_dir = copy_of_testdata("typecheck_fails");
     run_assert_cmd()
         .arg("mutants")
         .current_dir(&tmp_src_dir.path())
