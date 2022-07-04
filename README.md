@@ -248,6 +248,33 @@ difficult. cargo-mutants can help in a few ways:
   with, for example, a counter of the number of memory allocations or cache
   misses/hits.
 
+### Continuous integration
+
+Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact.
+
+```yml
+name: Mutation
+
+on: [pull_request, push]
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants
+      - name: Run mutant tests
+        run: cargo mutants -- --all-features
+      - name: Archive results
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: mutation-report
+          path: mutants.out
+```
+
 ## How to help
 
 Experience reports in GitHub Discussions or Bugs are very welcome:
