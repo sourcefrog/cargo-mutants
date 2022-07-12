@@ -221,8 +221,7 @@ So, anything you can do to make the `cargo build` and `cargo test` suite faster
 will have a multiplicative effect on `cargo mutants` run time, and of course
 will also make normal development more pleasant.
 
-There's lots of good advice on the web, including
-<https://matklad.github.io/2021/09/04/fast-rust-builds.html.>
+There's lots of good advice on the web, including <https://matklad.github.io/2021/09/04/fast-rust-builds.html>.
 
 In particular, on Linux, using the [Mold linker](https://github.com/rui314/mold)
 can improve build times significantly: because cargo-mutants does many
