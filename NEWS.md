@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Improved: Don't generate pointless mutations of functions with an empty body
-  (ignoring comments.)
+- New: You can skip functions by adding `#[cfg_attr(test, mutants::skip)`, in which case the `mutants` crate can be only a `dev-dependency`.
+
+- Improved: Don't generate pointless mutations of functions with an empty body (ignoring comments.)
 
 - Improved: Remove extra whitespace from the display of function names and return types: the new formatting is closer to the spacing used in idiomatic Rust.
 
