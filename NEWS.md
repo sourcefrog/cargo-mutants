@@ -10,6 +10,8 @@
 
 - Improved: Show the last line of compiler/test output while running builds, so that it's more clear where time is being spent.
 
+- Docs: Instructions on how to check for missed mutants from CI.
+
 ## 0.2.6
 
 Released 2022-04-17
