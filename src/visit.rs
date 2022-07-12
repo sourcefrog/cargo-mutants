@@ -255,13 +255,34 @@ fn attr_is_test(attr: &Attribute) -> bool {
     attr.path.is_ident("test")
 }
 
-/// True if the attribute is `#[mutants::skip]`.
+/// True if the attribute contains `mutants::skip`.
+///
+/// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
-    attr.path
-        .segments
-        .iter()
-        .map(|ps| &ps.ident)
-        .eq(["mutants", "skip"].iter())
+    fn path_is_mutants_skip(path: &syn::Path) -> bool {
+        path.segments
+            .iter()
+            .map(|ps| &ps.ident)
+            .eq(["mutants", "skip"].iter())
+    }
+
+    fn list_is_mutants_skip(meta_list: &syn::MetaList) -> bool {
+        return meta_list.nested.iter().any(|n| match n {
+            syn::NestedMeta::Meta(syn::Meta::Path(path)) => path_is_mutants_skip(path),
+            syn::NestedMeta::Meta(syn::Meta::List(list)) => list_is_mutants_skip(list),
+            _ => false,
+        });
+    }
+
+    if path_is_mutants_skip(&attr.path) {
+        return true;
+    }
+
+    if let Ok(syn::Meta::List(meta_list)) = attr.parse_meta() {
+        return list_is_mutants_skip(&meta_list);
+    }
+
+    false
 }
 
 #[cfg(test)]

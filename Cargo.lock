@@ -156,6 +156,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-mutants-testdata-cfg-attr-mutants-skip"
+version = "0.0.0"
+
+[[package]]
+name = "cargo-mutants-testdata-cfg-attr-test-skip"
+version = "0.0.0"
+dependencies = [
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "cargo-mutants-testdata-factorial"
 version = "0.0.0"
 

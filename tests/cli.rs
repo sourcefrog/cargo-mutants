@@ -175,6 +175,48 @@ fn list_mutants_in_factorial_json() {
 }
 
 #[test]
+fn list_mutants_in_cfg_attr_mutants_skip() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_mutants_skip");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_mutants_skip_json() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_mutants_skip_json");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_test_skip() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_test_skip");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_test_skip_json() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_test_skip_json");
+}
+
+#[test]
 fn list_mutants_with_dir_option() {
     run()
         .arg("mutants")

@@ -139,12 +139,14 @@ To mark functions so they are not mutated:
    crate, version "0.0.3" or later. (This must be a regular `dependency` not a
    `dev-dependency`, because the annotation will be on non-test code.)
 
-2. Mark functions with `#[mutants::skip]`.
+2. Mark functions with `#[mutants::skip]` or other attributes containing `mutants::skip` (e.g. `#[cfg_attr(test, mutants::skip)`).
 
 See `testdata/tree/hang_avoided_by_attr/` for an example.
 
 The crate is tiny and the attribute has no effect on the compiled code. It only
 flags the function for cargo-mutants.
+
+**Note:** Currently, `cargo-mutants` does not (yet) evaluate attributes like `cfg_attr`, it only looks for the sequence `mutants::skip` in the attribute.
 
 ### Exit codes
 
