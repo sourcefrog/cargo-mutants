@@ -252,19 +252,21 @@ difficult. cargo-mutants can help in a few ways:
 
 ### Continuous integration
 
-Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact.
+Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
 
 ```yml
-name: Mutation
+name: cargo-mutants
 
 on: [pull_request, push]
 
 jobs:
-  mutation:
+  cargo-mutants:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - name: Install cargo-mutants
         run: cargo install cargo-mutants
       - name: Run mutant tests
