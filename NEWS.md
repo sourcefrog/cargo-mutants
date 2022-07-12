@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.7
+
+Released 2022-07-11
 
 - New: You can skip functions by adding `#[cfg_attr(test, mutants::skip)`, in which case the `mutants` crate can be only a `dev-dependency`.
 
