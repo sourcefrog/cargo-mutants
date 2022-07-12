@@ -369,9 +369,7 @@ Showing _interesting results_ mean:
   has been done here yet.)
 
 - For trees that are thoroughly tested, you can use `cargo mutants` in CI to
-  check that they remain so. (This is possible but might not be really practical
-  yet, because cargo-mutants generates too many uninteresting findings -- this
-  can be fixed.)
+  check that they remain so.
 
 ## How it works
 
