@@ -483,11 +483,9 @@ cargo-mutants is not yet meeting its goals.
   and fewer unviable mutants.
 
 - Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path` (other than in subdirectories). This could
-  be handled by an option to mutate in-place (maybe into a copy made by the
-  user) or possibly an option to copy a larger containing directory. You can
+  dependencies by a relative `path` (other than in subdirectories). You can
   work around this by editing `Cargo.toml` to make the paths absolute, before
-  running `cargo mutants`
+  running `cargo mutants`. (See <https://github.com/sourcefrog/cargo-mutants/issues/42>.)
 
 - To make this faster on large trees, we could keep several scratch trees and
   test them in parallel, which is likely to exploit CPU resources more
