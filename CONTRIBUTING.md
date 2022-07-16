@@ -24,3 +24,9 @@ names into `main.rs`, so that other implementation modules can just
 Try to keep one major class or separation of concern per mod, with
 implementation details being private. However, fields that would have trivial
 getters and that don't break the abstraction can be public.
+
+## Testing
+
+Of course, please add tests for new features or bug fixes. The primary means of testing is Rust source trees under `testdata/tree`: you can copy an existing tree and modify it to show the new behavior that you want to test.
+
+Unit tests within the source file can also be added for particular behavior that is hard to exercise from a command-line test.
