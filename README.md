@@ -482,11 +482,6 @@ cargo-mutants is not yet meeting its goals.
   rust-analyzer?), which would help it generate more interesting viable mutants,
   and fewer unviable mutants.
 
-- Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path` (other than in subdirectories). You can
-  work around this by editing `Cargo.toml` to make the paths absolute, before
-  running `cargo mutants`. (See <https://github.com/sourcefrog/cargo-mutants/issues/42>.)
-
 - To make this faster on large trees, we could keep several scratch trees and
   test them in parallel, which is likely to exploit CPU resources more
   thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
