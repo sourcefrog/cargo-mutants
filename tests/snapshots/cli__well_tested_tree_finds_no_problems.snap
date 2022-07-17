@@ -21,4 +21,5 @@ src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... caught
 src/simple_fns.rs:26: replace double_string -> String with "".into() ... caught
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... caught
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default() ... caught
+15 mutants tested: 15 caught
 

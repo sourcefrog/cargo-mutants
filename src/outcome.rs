@@ -1,6 +1,6 @@
 // Copyright 2022 Martin Pool
 
-//! The outcome of running a command.
+//! The outcome of running a single mutation scenario, or a whole lab.
 
 use std::fmt;
 use std::fs;
@@ -44,13 +44,32 @@ impl fmt::Display for Phase {
 /// The outcome from a whole lab run containing multiple mutants.
 #[derive(Debug, Default, Serialize)]
 pub struct LabOutcome {
+    /// All the scenario outcomes, including baseline builds.
     outcomes: Vec<Outcome>,
+    total_mutants: usize,
+    missed: usize,
+    caught: usize,
+    timeout: usize,
+    unviable: usize,
+    success: usize,
+    failure: usize,
 }
 
 impl LabOutcome {
     /// Record the event of one test.
     pub fn add(&mut self, outcome: &Outcome) {
         self.outcomes.push(outcome.clone());
+        if outcome.scenario.is_mutant() {
+            self.total_mutants += 1;
+            match outcome.summary() {
+                SummaryOutcome::CaughtMutant => self.caught += 1,
+                SummaryOutcome::MissedMutant => self.missed += 1,
+                SummaryOutcome::Timeout => self.timeout += 1,
+                SummaryOutcome::Unviable => self.unviable += 1,
+                SummaryOutcome::Success => self.success += 1,
+                SummaryOutcome::Failure => self.failure += 1,
+            }
+        }
     }
 
     /// Return the overall program exit code reflecting this outcome.
@@ -62,13 +81,39 @@ impl LabOutcome {
             .any(|o| !o.scenario.is_mutant() && !o.success())
         {
             exit_code::CLEAN_TESTS_FAILED
-        } else if self.outcomes.iter().any(|o| o.has_timeout()) {
+        } else if self.timeout > 0 {
             exit_code::TIMEOUT
-        } else if self.outcomes.iter().any(|o| o.mutant_missed()) {
+        } else if self.missed > 0 {
             exit_code::FOUND_PROBLEMS
         } else {
             exit_code::SUCCESS
         }
+    }
+
+    /// Return an overall summary, to show at the end of the program.
+    pub fn summary_string(&self) -> String {
+        let mut s = format!("{} mutants tested: ", self.total_mutants,);
+        let mut parts: Vec<String> = Vec::new();
+        if self.missed > 0 {
+            parts.push(format!("{} missed", self.missed));
+        }
+        if self.caught > 0 {
+            parts.push(format!("{} caught", self.caught));
+        }
+        if self.unviable > 0 {
+            parts.push(format!("{} unviable", self.unviable));
+        }
+        if self.timeout > 0 {
+            parts.push(format!("{} timeouts", self.timeout));
+        }
+        if self.success > 0 {
+            parts.push(format!("{} builds succeeded", self.success));
+        }
+        if self.failure > 0 {
+            parts.push(format!("{} builds failed", self.failure));
+        }
+        s.push_str(&parts.join(", "));
+        s
     }
 }
 
@@ -100,7 +145,7 @@ impl Serialize for Outcome {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Hash)]
 pub enum SummaryOutcome {
     Success,
     CaughtMutant,

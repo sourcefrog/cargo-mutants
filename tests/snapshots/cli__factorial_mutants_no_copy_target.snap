@@ -6,4 +6,5 @@ Copy source to scratch directory ... done
 Unmutated baseline ... ok
 Found 2 mutants to test
 src/bin/main.rs:1: replace main with () ... NOT CAUGHT
+2 mutants tested: 1 missed, 1 caught
 

@@ -163,6 +163,7 @@ pub fn test_unmutated_then_all_mutants(
             &lab_outcome,
         )?;
     }
+    println!("{}", lab_outcome.summary_string());
     Ok(lab_outcome)
 }
 
