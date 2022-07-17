@@ -45,7 +45,7 @@ impl BuildDir {
             .suffix(".tmp")
             .tempdir()
             .context("create temp dir")?;
-        let temp_dir_path = temp_dir.path().to_owned().try_into().unwrap();
+        let temp_dir_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         let copy_target = options.copy_target;
         let name = if copy_target {
             "Copy source and build products to scratch directory"
@@ -80,48 +80,20 @@ impl BuildDir {
                 return Err(err);
             }
         }
+        // TODO: Also fix paths in .cargo/config.toml.
+        let source_abs = source
+            .path()
+            .canonicalize_utf8()
+            .expect("canonicalize source path");
+        fix_manifest(&temp_dir_path.join("Cargo.toml"), &source_abs)?;
         let build_dir = BuildDir {
             _temp_dir: temp_dir,
             path: temp_dir_path,
         };
-        // TODO: Also fix paths in .cargo/config.toml.
-        build_dir.fix_manifests(source.path())?;
         Ok(build_dir)
     }
 
     pub fn path(&self) -> &Utf8Path {
         self.path.as_path()
-    }
-
-    /// Find any Cargo manifests, and fix any relative paths within them.
-    pub fn fix_manifests(&self, source_path: &Utf8Path) -> Result<()> {
-        for manifest_path in walkdir::WalkDir::new(&self.path)
-            .sort_by_file_name()
-            .into_iter()
-            .filter_map(|r| {
-                r.map_err(|err| eprintln!("error walking tree: {:?}", err))
-                    .ok()
-            })
-            .filter(|entry| entry.file_type().is_file())
-            .map(|entry| entry.into_path())
-            .filter(|path| {
-                path.file_name()
-                    .map_or(false, |p| p.eq_ignore_ascii_case("Cargo.toml"))
-            })
-        {
-            let manifest_path = Utf8Path::from_path(&manifest_path).expect("utf8 manifest path");
-            let manifest_relpath = manifest_path
-                .strip_prefix(&self.path)
-                .expect("manifest relpath");
-            let mut manifest_source_dir = source_path.to_owned();
-            if let Some(dir) = manifest_relpath.parent() {
-                manifest_source_dir.push(dir);
-            }
-            let manifest_source_dir = manifest_source_dir
-                .canonicalize_utf8()
-                .context("canonicalize manifest source dir")?;
-            fix_manifest(manifest_path, &manifest_source_dir)?;
-        }
-        Ok(())
     }
 }
