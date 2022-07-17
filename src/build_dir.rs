@@ -10,6 +10,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 
 use crate::console::CopyActivity;
+use crate::manifest::fix_cargo_config;
 use crate::*;
 
 /// Filenames excluded from being copied with the source.
@@ -45,7 +46,7 @@ impl BuildDir {
             .suffix(".tmp")
             .tempdir()
             .context("create temp dir")?;
-        let temp_dir_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
+        let build_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         let copy_target = options.copy_target;
         let name = if copy_target {
             "Copy source and build products to scratch directory"
@@ -85,10 +86,11 @@ impl BuildDir {
             .path()
             .canonicalize_utf8()
             .expect("canonicalize source path");
-        fix_manifest(&temp_dir_path.join("Cargo.toml"), &source_abs)?;
+        fix_manifest(&build_path.join("Cargo.toml"), &source_abs)?;
+        fix_cargo_config(&build_path, &source_abs)?;
         let build_dir = BuildDir {
             _temp_dir: temp_dir,
-            path: temp_dir_path,
+            path: build_path,
         };
         Ok(build_dir)
     }

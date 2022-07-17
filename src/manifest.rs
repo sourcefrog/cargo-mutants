@@ -101,13 +101,51 @@ fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Ut
     }
 }
 
+/// Rewrite relative paths within `.cargo/config.toml` to be absolute paths.
+pub fn fix_cargo_config(build_path: &Utf8Path, source_path: &Utf8Path) -> Result<()> {
+    let config_path = build_path.join(".cargo/config.toml");
+    if config_path.exists() {
+        let toml_str = fs::read_to_string(&config_path).context("read .cargo/config.toml")?;
+        if let Some(changed_toml) = fix_cargo_config_toml(&toml_str, source_path)? {
+            fs::write(build_path.join(&config_path), changed_toml.as_bytes())
+                .context("write .cargo/config.toml")?;
+        }
+    }
+    Ok(())
+}
+
+/// Replace any relative paths in a config file with absolute paths.
+///
+/// Returns None if no changes are needed.
+///
+/// See <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html?search=#paths-overrides>.
+fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Option<String>> {
+    let mut value: toml::Value = config_toml.parse().context("parse config.toml")?;
+    let mut changed = false;
+    if let Some(paths) = value.get_mut("paths").and_then(|p| p.as_array_mut()) {
+        for path_value in paths {
+            if let Some(path_str) = path_value.as_str() {
+                if let Some(new_path) = fix_path(path_str, source_dir) {
+                    *path_value = toml::Value::String(new_path.to_string());
+                    changed = true;
+                }
+            }
+        }
+    }
+    if changed {
+        Ok(Some(toml::to_string_pretty(&value)?))
+    } else {
+        Ok(None)
+    }
+}
+
 /// Fix one path, from inside a scratch tree, to be absolute as interpreted relative to the source tree.
-fn fix_path(path_str: &str, manifest_source_dir: &Utf8Path) -> Option<Utf8PathBuf> {
+fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<Utf8PathBuf> {
     let path = Utf8Path::new(path_str);
     if path.is_absolute() {
         None
     } else {
-        let mut new_path = manifest_source_dir.to_owned();
+        let mut new_path = source_dir.to_owned();
         new_path.push(path);
         Some(new_path)
     }
@@ -234,6 +272,34 @@ wibble = { path = "../wibble" } # Use the relative path to the dependency.
 wibble = '1.2.3'
 [patch.crates-io.wibble]
 path = '/home/user/src/foo/../wibble'
+"#;
+        assert_eq!(fixed_toml, expected);
+    }
+
+    #[test]
+    fn fix_cargo_config_toml() {
+        let cargo_config_toml = r#"
+paths = [
+    "sub_dependency",
+    "../sibling_dependency",
+    "../../parent_dependency",
+    "/Users/jane/src/absolute_dependency",
+    "/src/other",
+    ]"#;
+        let source_dir = Utf8Path::new("/Users/jane/src/foo");
+        let fixed_toml = super::fix_cargo_config_toml(&cargo_config_toml, source_dir)
+            .unwrap()
+            .expect("toml was modified");
+        // a crude adaption for windows.
+        let fixed_toml = fixed_toml.replace('\\', "/");
+        // Round-tripping toml produces some insignificant stylistic changes.
+        let expected = r#"paths = [
+    '/Users/jane/src/foo/sub_dependency',
+    '/Users/jane/src/foo/../sibling_dependency',
+    '/Users/jane/src/foo/../../parent_dependency',
+    '/Users/jane/src/absolute_dependency',
+    '/src/other',
+]
 "#;
         assert_eq!(fixed_toml, expected);
     }
