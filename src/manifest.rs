@@ -50,15 +50,8 @@ fn fix_manifest_toml_str(
                             //     path_value.as_str().unwrap_or("???")
                             // );
                             if let Some(path_str) = path_value.as_str() {
-                                let path = Utf8Path::new(path_str);
-                                if !path.is_absolute() {
-                                    let mut new_path = manifest_source_dir.to_owned();
-                                    new_path.push(path);
-                                    let new_path = new_path
-                                        .canonicalize_utf8()
-                                        .context("canonicalize path")?;
-                                    // eprintln!("  fixing to {}", new_path);
-                                    *path_value = toml::Value::String(new_path.into_string());
+                                if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
+                                    *path_value = toml::Value::String(new_path);
                                 }
                             }
                         }
@@ -71,5 +64,50 @@ fn fix_manifest_toml_str(
         Ok(None)
     } else {
         Ok(Some(toml::to_string_pretty(&value)?))
+    }
+}
+
+/// Fix one path, from inside a scratch tree, to be absolute as interpreted relative to the source tree.
+fn fix_path(path_str: &str, manifest_source_dir: &Utf8Path) -> Option<String> {
+    let path = Utf8Path::new(path_str);
+    if path.is_absolute() {
+        None
+    } else {
+        let mut new_path = manifest_source_dir.to_owned();
+        new_path.push(path);
+        let new_path = new_path
+            .canonicalize_utf8()
+            .expect("canonicalize fixed path");
+        Some(new_path.into_string())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use camino::Utf8Path;
+
+    #[test]
+    fn fix_path_absolute_unchanged() {
+        assert_eq!(
+            super::fix_path("/absolute/path", &Utf8Path::new("/home/user/src/foo")),
+            None
+        );
+    }
+
+    #[test]
+    fn fix_path_relative() {
+        // fs::canonicalize requires that the path exists.
+        assert_eq!(
+            super::fix_path(
+                "../dependency",
+                &Utf8Path::new("testdata/tree/relative_dependency")
+            ),
+            Some(
+                Utf8Path::new("testdata/tree/dependency")
+                    .canonicalize_utf8()
+                    .unwrap()
+                    .into_string()
+            )
+        );
     }
 }
