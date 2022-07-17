@@ -1,6 +1,9 @@
 // Copyright 2022 Martin Pool.
 
 //! Manipulate Cargo.toml manifest files.
+//!
+//! In particular, when the tree is copied we have to fix up relative paths, so that they
+//! still work from the new location of the scratch directory.
 
 use std::fs;
 
@@ -42,21 +45,7 @@ fn fix_manifest_toml_str(
     if let Some(top_table) = value.as_table_mut() {
         if let Some(dependencies) = top_table.get_mut("dependencies") {
             if let Some(dependencies_table) = dependencies.as_table_mut() {
-                for (_dependency_name, value) in dependencies_table.iter_mut() {
-                    if let Some(dependency_table) = value.as_table_mut() {
-                        if let Some(path_value) = dependency_table.get_mut("path") {
-                            // eprintln!(
-                            //     "found dependency {dependency_name} with path {}",
-                            //     path_value.as_str().unwrap_or("???")
-                            // );
-                            if let Some(path_str) = path_value.as_str() {
-                                if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
-                                    *path_value = toml::Value::String(new_path.to_string());
-                                }
-                            }
-                        }
-                    }
-                }
+                fix_dependency_table(dependencies_table, manifest_source_dir);
             }
         }
     }
@@ -64,6 +53,36 @@ fn fix_manifest_toml_str(
         Ok(None)
     } else {
         Ok(Some(toml::to_string_pretty(&value)?))
+    }
+}
+
+/// Fix up paths in a manifest "dependency table".
+///
+/// This is a pattern that can occur at various places in the manifest. It's a
+/// map from package name to a table which may contain a "path" field.
+///
+/// The table is mutated if necessary.
+fn fix_dependency_table(
+    dependencies_table: &mut toml::value::Map<String, toml::Value>,
+    manifest_source_dir: &Utf8Path,
+) {
+    for (_dependency_name, value) in dependencies_table.iter_mut() {
+        if let Some(dependency_table) = value.as_table_mut() {
+            if let Some(path_value) = dependency_table.get_mut("path") {
+                // eprintln!(
+                //     "found dependency {dependency_name} with path {}",
+                //     path_value.as_str().unwrap_or("???")
+                // );
+                if let Some(path_str) = path_value.as_str() {
+                    if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
+                        let new_path_str = new_path.to_string();
+                        // Always use slashes for easier testing.
+                        let new_path_str = new_path_str.replace('\\', "/");
+                        *path_value = toml::Value::String(new_path_str);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -82,6 +101,9 @@ fn fix_path(path_str: &str, manifest_source_dir: &Utf8Path) -> Option<Utf8PathBu
 #[cfg(test)]
 mod test {
     use camino::Utf8Path;
+    use pretty_assertions::assert_eq;
+
+    use super::fix_manifest_toml_str;
 
     #[test]
     fn fix_path_absolute_unchanged() {
@@ -105,6 +127,28 @@ mod test {
                 &Utf8Path::new("testdata/tree/relative_dependency")
             ),
             Some(Utf8Path::new("testdata/tree/relative_dependency/../dependency").to_owned())
+        );
+    }
+
+    #[test]
+    fn fix_relative_path_in_manifest() {
+        let orig_toml = r#"
+# A comment
+author = "A Smithee"
+[dependencies]
+wibble = { path = "../wibble" } # Use the relative path to the dependency.
+"#;
+        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let fixed_toml = fix_manifest_toml_str(&orig_toml, orig_path)
+            .unwrap()
+            .expect("toml was modified");
+        // Round-tripping toml produces some insignificant stylistic changes.
+        assert_eq!(
+            fixed_toml,
+            "author = 'A Smithee'
+[dependencies.wibble]
+path = '/home/user/src/foo/../wibble'
+"
         );
     }
 }
