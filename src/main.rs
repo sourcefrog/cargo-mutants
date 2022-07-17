@@ -169,8 +169,6 @@ fn main() -> Result<()> {
         }
     } else {
         let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options)?;
-        // TODO: Perhaps print a text summary of how many were tested and whether they were all
-        // caught?
         exit(lab_outcome.exit_code());
     }
     Ok(())
