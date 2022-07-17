@@ -16,21 +16,9 @@ use crate::Result;
 ///
 /// `manifest_source_dir` is the directory originally containing the manifest, from
 /// which the absolute paths are calculated.
-pub fn fix_manifest(
-    manifest_scratch_path: &Utf8Path,
-    manifest_source_dir: &Utf8Path,
-) -> Result<()> {
-    // eprintln!(
-    //     "fixing manifest {} relative to {}",
-    //     manifest_scratch_path, &manifest_source_dir
-    // );
+pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> Result<()> {
     let toml_str = fs::read_to_string(manifest_scratch_path).context("read manifest")?;
-    if let Some(changed_toml) = fix_manifest_toml(&toml_str, manifest_source_dir)? {
-        // println!(
-        //     "## Original manifest from {manifest_scratch_path}\n{}",
-        //     toml_str
-        // );
-        // println!("## Fixed manifest:\n{changed_toml}",);
+    if let Some(changed_toml) = fix_manifest_toml(&toml_str, source_dir)? {
         fs::write(manifest_scratch_path, changed_toml.as_bytes()).context("write manifest")?;
     }
     Ok(())
@@ -67,8 +55,7 @@ fn fix_manifest_toml(
     if value == orig_value {
         Ok(None)
     } else {
-        let toml_str = toml::to_string_pretty(&value)?;
-        Ok(Some(toml_str))
+        Ok(Some(toml::to_string_pretty(&value)?))
     }
 }
 
@@ -83,13 +70,9 @@ fn fix_manifest_toml(
 /// other values are ignored.
 fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Utf8Path) {
     if let Some(dependencies_table) = dependencies.as_table_mut() {
-        for (_dependency_name, value) in dependencies_table.iter_mut() {
+        for (_, value) in dependencies_table.iter_mut() {
             if let Some(dependency_table) = value.as_table_mut() {
                 if let Some(path_value) = dependency_table.get_mut("path") {
-                    // eprintln!(
-                    //     "found dependency {dependency_name} with path {}",
-                    //     path_value.as_str().unwrap_or("???")
-                    // );
                     if let Some(path_str) = path_value.as_str() {
                         if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
                             *path_value = toml::Value::String(new_path.to_string());
