@@ -25,7 +25,7 @@ pub fn fix_manifest(
     //     manifest_scratch_path, &manifest_source_dir
     // );
     let toml_str = fs::read_to_string(manifest_scratch_path).context("read manifest")?;
-    if let Some(changed_toml) = fix_manifest_toml_str(&toml_str, manifest_source_dir)? {
+    if let Some(changed_toml) = fix_manifest_toml(&toml_str, manifest_source_dir)? {
         fs::write(manifest_scratch_path, changed_toml.as_bytes()).context("write manifest")?;
     }
     Ok(())
@@ -34,12 +34,12 @@ pub fn fix_manifest(
 /// Fix any relative paths within a Cargo.toml manifest.
 ///
 /// Returns the new manifest, or None if no changes were made.
-fn fix_manifest_toml_str(
-    manifest_toml_str: &str,
+fn fix_manifest_toml(
+    manifest_toml: &str,
     manifest_source_dir: &Utf8Path,
 ) -> Result<Option<String>> {
     // TODO: Also look at `patch` and `replace` sections.
-    let mut value: toml::Value = manifest_toml_str.parse().context("parse manifest")?;
+    let mut value: toml::Value = manifest_toml.parse().context("parse manifest")?;
     let orig_value = value.clone();
     // dbg!(&value);
     if let Some(top_table) = value.as_table_mut() {
@@ -75,10 +75,7 @@ fn fix_dependency_table(
                 // );
                 if let Some(path_str) = path_value.as_str() {
                     if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
-                        let new_path_str = new_path.to_string();
-                        // Always use slashes for easier testing.
-                        let new_path_str = new_path_str.replace('\\', "/");
-                        *path_value = toml::Value::String(new_path_str);
+                        *path_value = toml::Value::String(new_path.to_string());
                     }
                 }
             }
@@ -103,7 +100,7 @@ mod test {
     use camino::Utf8Path;
     use pretty_assertions::assert_eq;
 
-    use super::fix_manifest_toml_str;
+    use super::fix_manifest_toml;
 
     #[test]
     fn fix_path_absolute_unchanged() {
@@ -132,23 +129,48 @@ mod test {
 
     #[test]
     fn fix_relative_path_in_manifest() {
-        let orig_toml = r#"
+        let manifest_toml = r#"
 # A comment
 author = "A Smithee"
 [dependencies]
 wibble = { path = "../wibble" } # Use the relative path to the dependency.
 "#;
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml_str(&orig_toml, orig_path)
+        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
         // Round-tripping toml produces some insignificant stylistic changes.
-        assert_eq!(
-            fixed_toml,
-            "author = 'A Smithee'
+        #[cfg(unix)]
+        let expected = "author = 'A Smithee'
 [dependencies.wibble]
 path = '/home/user/src/foo/../wibble'
-"
+";
+        #[cfg(windows)]
+        let expected = "author = 'A Smithee'
+[dependencies.wibble]
+path = '/home/user/src/foo\\../wibble'
+";
+        assert_eq!(fixed_toml, expected);
+    }
+
+    #[test]
+    fn absolute_path_in_manifest_is_unchanged() {
+        #[cfg(unix)]
+        let manifest_toml = r#"
+[dependencies]
+wibble = { path = "/home/asmithee/src/wibble" }
+"#;
+        #[cfg(windows)]
+        let manifest_toml = r#"
+[dependencies]
+wibble = { path = "c:/home/asmithee/src/wibble" }
+"#;
+
+        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path).unwrap();
+        assert_eq!(
+            fixed_toml, None,
+            "manifest containing only an absolute path should not be modified"
         );
     }
 }
