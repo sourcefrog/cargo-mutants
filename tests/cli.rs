@@ -715,3 +715,24 @@ fn log_file_names_are_short_and_dont_collide() {
         "log file names are not disambiguated"
     );
 }
+
+#[test]
+fn cargo_mutants_in_relative_dependency_tree_passes() {
+    // Run against the testdata directory directly, without copying it, so that the
+    // relative dependency `../dependency` is still used. We also pass `--no-copy-target`
+    // so that we don't do a freshening build first, so nothing should write into the
+    // source directory.
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--no-times")
+        .arg("--no-copy-target")
+        .arg("--no-shuffle")
+        .arg("-d")
+        .arg("testdata/tree/relative_dependency")
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}

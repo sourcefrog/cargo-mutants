@@ -5,7 +5,7 @@
 use std::fs;
 
 use anyhow::Context;
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
 
 use crate::Result;
 
@@ -51,7 +51,7 @@ fn fix_manifest_toml_str(
                             // );
                             if let Some(path_str) = path_value.as_str() {
                                 if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
-                                    *path_value = toml::Value::String(new_path);
+                                    *path_value = toml::Value::String(new_path.to_string());
                                 }
                             }
                         }
@@ -68,14 +68,14 @@ fn fix_manifest_toml_str(
 }
 
 /// Fix one path, from inside a scratch tree, to be absolute as interpreted relative to the source tree.
-fn fix_path(path_str: &str, manifest_source_dir: &Utf8Path) -> Option<String> {
+fn fix_path(path_str: &str, manifest_source_dir: &Utf8Path) -> Option<Utf8PathBuf> {
     let path = Utf8Path::new(path_str);
     if path.is_absolute() {
         None
     } else {
         let mut new_path = manifest_source_dir.to_owned();
         new_path.push(path);
-        Some(new_path.into_string())
+        Some(new_path)
     }
 }
 
@@ -85,8 +85,14 @@ mod test {
 
     #[test]
     fn fix_path_absolute_unchanged() {
+        let dependency_abspath = Utf8Path::new("testdata/tree/dependency")
+            .canonicalize_utf8()
+            .unwrap();
         assert_eq!(
-            super::fix_path("/absolute/path", &Utf8Path::new("/home/user/src/foo")),
+            super::fix_path(
+                dependency_abspath.as_str(),
+                &Utf8Path::new("/home/user/src/foo")
+            ),
             None
         );
     }
@@ -98,11 +104,7 @@ mod test {
                 "../dependency",
                 &Utf8Path::new("testdata/tree/relative_dependency")
             ),
-            Some(
-                Utf8Path::new("testdata/tree/relative_dependency/../dependency")
-                    .as_str()
-                    .to_string()
-            )
+            Some(Utf8Path::new("testdata/tree/relative_dependency/../dependency").to_owned())
         );
     }
 }
