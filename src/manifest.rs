@@ -38,14 +38,21 @@ fn fix_manifest_toml(
     manifest_toml: &str,
     manifest_source_dir: &Utf8Path,
 ) -> Result<Option<String>> {
-    // TODO: Also look at `patch` and `replace` sections.
+    // TODO: Also look at `patch` sections.
     let mut value: toml::Value = manifest_toml.parse().context("parse manifest")?;
     let orig_value = value.clone();
-    // dbg!(&value);
     if let Some(top_table) = value.as_table_mut() {
         if let Some(dependencies) = top_table.get_mut("dependencies") {
             if let Some(dependencies_table) = dependencies.as_table_mut() {
                 fix_dependency_table(dependencies_table, manifest_source_dir);
+            }
+        }
+        if let Some(replace) = top_table.get_mut("replace") {
+            if let Some(replace_table) = replace.as_table_mut() {
+                // The replace section is a table from package name/version to a table which might
+                // include a `path` key. (The keys are not exactly package names but it doesn't matter.)
+                // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section>
+                fix_dependency_table(replace_table, manifest_source_dir);
             }
         }
     }
@@ -130,7 +137,7 @@ mod test {
     #[test]
     fn fix_relative_path_in_manifest() {
         let manifest_toml = r#"
-# A comment
+# A comment, which will be dropped.
 author = "A Smithee"
 [dependencies]
 wibble = { path = "../wibble" } # Use the relative path to the dependency.
@@ -150,6 +157,29 @@ path = '/home/user/src/foo/../wibble'
 [dependencies.wibble]
 path = '/home/user/src/foo\\../wibble'
 ";
+        assert_eq!(fixed_toml, expected);
+    }
+
+    #[test]
+    fn fix_replace_section() {
+        let manifest_toml = r#"
+[dependencies]
+wibble = "1.2.3"
+[replace]
+"wibble:1.2.3" = { path = "../wibble" } # Use the relative path to the dependency.
+"#;
+        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path)
+            .unwrap()
+            .expect("toml was modified");
+        // A crude adaption for Windows.
+        let fixed_toml = fixed_toml.replace('\\', "/");
+        // Round-tripping toml produces some insignificant stylistic changes.
+        let expected = r#"[dependencies]
+wibble = '1.2.3'
+[replace."wibble:1.2.3"]
+path = '/home/user/src/foo/../wibble'
+"#;
         assert_eq!(fixed_toml, expected);
     }
 
