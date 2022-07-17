@@ -80,5 +80,6 @@ members = [
 exclude = [
     "testdata/tree/already_hangs",
     "testdata/tree/already_failing_tests",
+    "testdata/tree/patch_dependency",
     "testdata/tree/replace_dependency",
 ]

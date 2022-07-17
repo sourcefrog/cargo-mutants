@@ -43,21 +43,24 @@ fn fix_manifest_toml(
     manifest_toml: &str,
     manifest_source_dir: &Utf8Path,
 ) -> Result<Option<String>> {
-    // TODO: Also look at `patch` sections.
     let mut value: toml::Value = manifest_toml.parse().context("parse manifest")?;
     let orig_value = value.clone();
     if let Some(top_table) = value.as_table_mut() {
         if let Some(dependencies) = top_table.get_mut("dependencies") {
-            if let Some(dependencies_table) = dependencies.as_table_mut() {
-                fix_dependency_table(dependencies_table, manifest_source_dir);
-            }
+            fix_dependency_table(dependencies, manifest_source_dir);
         }
         if let Some(replace) = top_table.get_mut("replace") {
-            if let Some(replace_table) = replace.as_table_mut() {
-                // The replace section is a table from package name/version to a table which might
-                // include a `path` key. (The keys are not exactly package names but it doesn't matter.)
-                // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section>
-                fix_dependency_table(replace_table, manifest_source_dir);
+            // The replace section is a table from package name/version to a table which might
+            // include a `path` key. (The keys are not exactly package names but it doesn't matter.)
+            // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section>
+            fix_dependency_table(replace, manifest_source_dir);
+        }
+        if let Some(patch_table) = top_table.get_mut("patch").and_then(|p| p.as_table_mut()) {
+            // The keys of the patch table are registry names or source URLs; the values are like
+            // dependency tables.
+            // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section>
+            for (_name, dependencies) in patch_table {
+                fix_dependency_table(dependencies, manifest_source_dir);
             }
         }
     }
@@ -75,20 +78,22 @@ fn fix_manifest_toml(
 /// map from package name to a table which may contain a "path" field.
 ///
 /// The table is mutated if necessary.
-fn fix_dependency_table(
-    dependencies_table: &mut toml::value::Map<String, toml::Value>,
-    manifest_source_dir: &Utf8Path,
-) {
-    for (_dependency_name, value) in dependencies_table.iter_mut() {
-        if let Some(dependency_table) = value.as_table_mut() {
-            if let Some(path_value) = dependency_table.get_mut("path") {
-                // eprintln!(
-                //     "found dependency {dependency_name} with path {}",
-                //     path_value.as_str().unwrap_or("???")
-                // );
-                if let Some(path_str) = path_value.as_str() {
-                    if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
-                        *path_value = toml::Value::String(new_path.to_string());
+///
+/// `dependencies_table` is a TOML Value that should normally be a table;
+/// other values are ignored.
+fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Utf8Path) {
+    if let Some(dependencies_table) = dependencies.as_table_mut() {
+        for (_dependency_name, value) in dependencies_table.iter_mut() {
+            if let Some(dependency_table) = value.as_table_mut() {
+                if let Some(path_value) = dependency_table.get_mut("path") {
+                    // eprintln!(
+                    //     "found dependency {dependency_name} with path {}",
+                    //     path_value.as_str().unwrap_or("???")
+                    // );
+                    if let Some(path_str) = path_value.as_str() {
+                        if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
+                            *path_value = toml::Value::String(new_path.to_string());
+                        }
                     }
                 }
             }
@@ -208,5 +213,28 @@ wibble = { path = "c:/home/asmithee/src/wibble" }
             fixed_toml, None,
             "manifest containing only an absolute path should not be modified"
         );
+    }
+
+    #[test]
+    fn fix_patch_section() {
+        let manifest_toml = r#"
+[dependencies]
+wibble = "1.2.3"
+[patch.crates-io]
+wibble = { path = "../wibble" } # Use the relative path to the dependency.
+"#;
+        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path)
+            .unwrap()
+            .expect("toml was modified");
+        // A crude adaption for Windows.
+        let fixed_toml = fixed_toml.replace('\\', "/");
+        // Round-tripping toml produces some insignificant stylistic changes.
+        let expected = r#"[dependencies]
+wibble = '1.2.3'
+[patch.crates-io.wibble]
+path = '/home/user/src/foo/../wibble'
+"#;
+        assert_eq!(fixed_toml, expected);
     }
 }
