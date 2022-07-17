@@ -151,6 +151,7 @@ dependencies = [
  "subprocess",
  "syn",
  "tempfile",
+ "toml",
  "walkdir",
  "whoami",
 ]
@@ -165,6 +166,10 @@ version = "0.0.0"
 dependencies = [
  "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "cargo-mutants-testdata-dependency"
+version = "0.0.0"
 
 [[package]]
 name = "cargo-mutants-testdata-factorial"
@@ -189,6 +194,13 @@ name = "cargo-mutants-testdata-no-opportunities"
 version = "0.0.0"
 dependencies = [
  "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "cargo-mutants-testdata-relative-dependency"
+version = "0.0.0"
+dependencies = [
+ "cargo-mutants-testdata-dependency",
 ]
 
 [[package]]
@@ -901,6 +913,15 @@ dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
  "winapi",
+]
+
+[[package]]
+name = "toml"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

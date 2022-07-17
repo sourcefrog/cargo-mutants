@@ -1,3 +1,5 @@
+// Copyright 2021, 2022 Martin Pool
+
 //! A temporary directory containing mutated source to run cargo builds and tests.
 
 use std::convert::TryInto;
@@ -25,7 +27,10 @@ const SOURCE_EXCLUDE: &[&str] = &[
 /// A temporary directory initialized with a copy of the source, where mutations can be tested.
 #[derive(Debug)]
 pub struct BuildDir {
+    /// The path of the root of the temporary directory.
     path: Utf8PathBuf,
+    /// Holds a reference to the temporary directory, so that it will be deleted when this
+    /// object is dropped.
     _temp_dir: TempDir,
 }
 
@@ -75,13 +80,48 @@ impl BuildDir {
                 return Err(err);
             }
         }
-        Ok(BuildDir {
+        let build_dir = BuildDir {
             _temp_dir: temp_dir,
             path: temp_dir_path,
-        })
+        };
+        // TODO: Also fix paths in .cargo/config.toml.
+        build_dir.fix_manifests(source.path())?;
+        Ok(build_dir)
     }
 
     pub fn path(&self) -> &Utf8Path {
         self.path.as_path()
+    }
+
+    /// Find any Cargo manifests, and fix any relative paths within them.
+    pub fn fix_manifests(&self, source_path: &Utf8Path) -> Result<()> {
+        for manifest_path in walkdir::WalkDir::new(&self.path)
+            .sort_by_file_name()
+            .into_iter()
+            .filter_map(|r| {
+                r.map_err(|err| eprintln!("error walking source tree: {:?}", err))
+                    .ok()
+            })
+            .filter(|entry| entry.file_type().is_file())
+            .map(|entry| entry.into_path())
+            .filter(|path| {
+                path.file_name()
+                    .map_or(false, |p| p.eq_ignore_ascii_case("Cargo.toml"))
+            })
+        {
+            let manifest_path = Utf8Path::from_path(&manifest_path).expect("utf8 manifest path");
+            let manifest_relpath = manifest_path
+                .strip_prefix(&self.path)
+                .expect("manifest relpath");
+            let mut manifest_source_dir = source_path.to_owned();
+            if let Some(dir) = manifest_relpath.parent() {
+                manifest_source_dir.push(dir);
+            }
+            let manifest_source_dir = manifest_source_dir
+                .canonicalize_utf8()
+                .context("canonicalize manifest source dir")?;
+            fix_manifest(manifest_path, &manifest_source_dir)?;
+        }
+        Ok(())
     }
 }
