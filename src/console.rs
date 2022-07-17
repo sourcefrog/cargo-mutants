@@ -8,7 +8,7 @@
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
 use anyhow::Result;
@@ -280,7 +280,7 @@ impl CopyActivity {
 }
 
 fn nutmeg_options() -> nutmeg::Options {
-    nutmeg::Options::default()
+    nutmeg::Options::default().print_holdoff(Duration::from_secs(2))
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
