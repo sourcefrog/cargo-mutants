@@ -26,6 +26,11 @@ pub fn fix_manifest(
     // );
     let toml_str = fs::read_to_string(manifest_scratch_path).context("read manifest")?;
     if let Some(changed_toml) = fix_manifest_toml(&toml_str, manifest_source_dir)? {
+        // println!(
+        //     "## Original manifest from {manifest_scratch_path}\n{}",
+        //     toml_str
+        // );
+        // println!("## Fixed manifest:\n{changed_toml}",);
         fs::write(manifest_scratch_path, changed_toml.as_bytes()).context("write manifest")?;
     }
     Ok(())
@@ -59,7 +64,8 @@ fn fix_manifest_toml(
     if value == orig_value {
         Ok(None)
     } else {
-        Ok(Some(toml::to_string_pretty(&value)?))
+        let toml_str = toml::to_string_pretty(&value)?;
+        Ok(Some(toml_str))
     }
 }
 

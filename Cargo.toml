@@ -75,6 +75,10 @@ members = [
     "testdata/tree/well_tested",
 ]
 
-# TODO: Re-enable these when the tests are checked by the real integration tests, but
-# skipped by `cargo test --workspace`. (It's complicated!)
-exclude = ["testdata/tree/already_hangs", "testdata/tree/already_failing_tests"]
+# `replace_dependency` can't be in the workspace, because 'replace' sections
+# must be in the workspace root.
+exclude = [
+    "testdata/tree/already_hangs",
+    "testdata/tree/already_failing_tests",
+    "testdata/tree/replace_dependency",
+]
