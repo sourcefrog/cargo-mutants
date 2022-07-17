@@ -269,7 +269,7 @@ jobs:
       - name: Install cargo-mutants
         run: cargo install cargo-mutants
       - name: Run mutant tests
-        run: cargo mutants -- --all-features
+        run: cargo mutants -v -V -- --all-features
       - name: Archive results
         uses: actions/upload-artifact@v3
         if: failure()
