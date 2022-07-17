@@ -6,6 +6,8 @@
 
 - Fixed: Works properly with crates that have relative `path` dependencies in `Cargo.toml`, by rewriting them to absolute paths in the scratch directory. (`patch` and `replace` configurations, and `.cargo/config.toml` are not yet supported.)
 
+- New: Summarize the overall number of mutants generated, caught, missed, etc, at the end.
+
 ## 0.2.7
 
 Released 2022-07-11
