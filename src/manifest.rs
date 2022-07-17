@@ -75,9 +75,6 @@ fn fix_path(path_str: &str, manifest_source_dir: &Utf8Path) -> Option<String> {
     } else {
         let mut new_path = manifest_source_dir.to_owned();
         new_path.push(path);
-        let new_path = new_path
-            .canonicalize_utf8()
-            .expect("canonicalize fixed path");
         Some(new_path.into_string())
     }
 }
@@ -96,17 +93,15 @@ mod test {
 
     #[test]
     fn fix_path_relative() {
-        // fs::canonicalize requires that the path exists.
         assert_eq!(
             super::fix_path(
                 "../dependency",
                 &Utf8Path::new("testdata/tree/relative_dependency")
             ),
             Some(
-                Utf8Path::new("testdata/tree/dependency")
-                    .canonicalize_utf8()
-                    .unwrap()
-                    .into_string()
+                Utf8Path::new("testdata/tree/relative_dependency/../dependency")
+                    .as_str()
+                    .to_string()
             )
         );
     }
