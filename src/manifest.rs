@@ -8,7 +8,7 @@
 use std::fs;
 
 use anyhow::Context;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
 
 use crate::Result;
 
@@ -76,7 +76,7 @@ fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Ut
                 if let Some(path_value) = dependency_table.get_mut("path") {
                     if let Some(path_str) = path_value.as_str() {
                         if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
-                            *path_value = toml::Value::String(new_path.to_string());
+                            *path_value = toml::Value::String(new_path);
                         }
                     }
                 }
@@ -110,7 +110,7 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
         for path_value in paths {
             if let Some(path_str) = path_value.as_str() {
                 if let Some(new_path) = fix_path(path_str, source_dir) {
-                    *path_value = toml::Value::String(new_path.to_string());
+                    *path_value = toml::Value::String(new_path);
                     changed = true;
                 }
             }
@@ -125,14 +125,14 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
 
 /// Fix one path, from inside a scratch tree, to be absolute as interpreted
 /// relative to the source tree.
-fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<Utf8PathBuf> {
+fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
     let path = Utf8Path::new(path_str);
     if path.is_absolute() {
         None
     } else {
         let mut new_path = source_dir.to_owned();
         new_path.push(path);
-        Some(new_path)
+        Some(new_path.to_string())
     }
 }
 
@@ -164,7 +164,7 @@ mod test {
                 "../dependency",
                 &Utf8Path::new("testdata/tree/relative_dependency")
             ),
-            Some(Utf8Path::new("testdata/tree/relative_dependency/../dependency").to_owned())
+            Some("testdata/tree/relative_dependency/../dependency".to_owned())
         );
     }
 
