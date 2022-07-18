@@ -41,6 +41,13 @@ the content based on those addresses.
 `visit.rs` -- Walk a source file's AST. The interface to the `syn` parser is
 localized here.
 
+## Relative dependencies
+
+After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
+`.cargo/config.toml` for relative dependencies. If there are any, the paths are
+rewritten to be absolute, so that they still work when cargo is run in the
+scratch directory.
+
 ## Handling timeouts
 
 Mutations can cause a program to go into an infinite (or just very long) loop:

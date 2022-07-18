@@ -385,6 +385,11 @@ The basic approach is:
   directory. The same directory is reused across all the mutations to benefit
   from incremental builds.
 
+  - After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
+    `.cargo/config.toml` for relative dependencies. If there are any, the paths are
+    rewritten to be absolute, so that they still work when cargo is run in the
+    scratch directory.
+
   - Before applying any mutations, check that `cargo test` succeeds in the
     scratch directory: perhaps a test is already broken, or perhaps the tree
     doesn't build when copied because it relies on relative paths to find
