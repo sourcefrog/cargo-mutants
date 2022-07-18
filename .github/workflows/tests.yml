@@ -23,27 +23,24 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Show Cargo and rustc version
-      run: |
-        cargo --version
-        rustc --version
-    - name: Cache Cargo
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-        restore-keys: |
-          cargo-${{ runner.os }}-
-    - name: Build
-      run: cargo build --all-targets
-    - name: Test
-      run: cargo test --workspace
-    - name: Install
-      run: cargo install --path .
-    - name: Clippy
-      run: cargo clippy -- -D clippy::all
-
+      - uses: actions/checkout@v2
+      - name: Show Cargo and rustc version
+        run: |
+          cargo --version
+          rustc --version
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - name: Build
+        run: cargo build --all-targets
+      - name: Test
+        run: cargo test --workspace
+      - name: Install
+        run: cargo install --path .
+      - name: Clippy
+        run: cargo clippy -- -D clippy::all
