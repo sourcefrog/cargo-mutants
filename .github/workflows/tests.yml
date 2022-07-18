@@ -36,11 +36,11 @@ jobs:
             ~/.cargo/git
             target
           key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - name: Clippy
+        run: cargo clippy -- -D clippy::all
       - name: Build
         run: cargo build --all-targets
       - name: Test
         run: cargo test --workspace
       - name: Install
         run: cargo install --path .
-      - name: Clippy
-        run: cargo clippy -- -D clippy::all
