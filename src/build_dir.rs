@@ -1,3 +1,5 @@
+// Copyright 2021, 2022 Martin Pool
+
 //! A temporary directory containing mutated source to run cargo builds and tests.
 
 use std::convert::TryInto;
@@ -8,6 +10,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 
 use crate::console::CopyActivity;
+use crate::manifest::fix_cargo_config;
 use crate::*;
 
 /// Filenames excluded from being copied with the source.
@@ -25,7 +28,10 @@ const SOURCE_EXCLUDE: &[&str] = &[
 /// A temporary directory initialized with a copy of the source, where mutations can be tested.
 #[derive(Debug)]
 pub struct BuildDir {
+    /// The path of the root of the temporary directory.
     path: Utf8PathBuf,
+    /// Holds a reference to the temporary directory, so that it will be deleted when this
+    /// object is dropped.
     _temp_dir: TempDir,
 }
 
@@ -40,7 +46,7 @@ impl BuildDir {
             .suffix(".tmp")
             .tempdir()
             .context("create temp dir")?;
-        let temp_dir_path = temp_dir.path().to_owned().try_into().unwrap();
+        let build_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         let copy_target = options.copy_target;
         let name = if copy_target {
             "Copy source and build products to scratch directory"
@@ -75,10 +81,17 @@ impl BuildDir {
                 return Err(err);
             }
         }
-        Ok(BuildDir {
+        let source_abs = source
+            .path()
+            .canonicalize_utf8()
+            .expect("canonicalize source path");
+        fix_manifest(&build_path.join("Cargo.toml"), &source_abs)?;
+        fix_cargo_config(&build_path, &source_abs)?;
+        let build_dir = BuildDir {
             _temp_dir: temp_dir,
-            path: temp_dir_path,
-        })
+            path: build_path,
+        };
+        Ok(build_dir)
     }
 
     pub fn path(&self) -> &Utf8Path {
