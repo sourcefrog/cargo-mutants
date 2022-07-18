@@ -81,7 +81,6 @@ impl BuildDir {
                 return Err(err);
             }
         }
-        // TODO: Also fix paths in .cargo/config.toml.
         let source_abs = source
             .path()
             .canonicalize_utf8()

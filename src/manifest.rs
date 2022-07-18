@@ -1,9 +1,9 @@
 // Copyright 2022 Martin Pool.
 
-//! Manipulate Cargo.toml manifest files.
+//! Manipulate Cargo manifest and config files.
 //!
-//! In particular, when the tree is copied we have to fix up relative paths, so that they
-//! still work from the new location of the scratch directory.
+//! In particular, when the tree is copied we have to fix up relative paths, so
+//! that they still work from the new location of the scratch directory.
 
 use std::fs;
 
@@ -38,14 +38,15 @@ fn fix_manifest_toml(
             fix_dependency_table(dependencies, manifest_source_dir);
         }
         if let Some(replace) = top_table.get_mut("replace") {
-            // The replace section is a table from package name/version to a table which might
-            // include a `path` key. (The keys are not exactly package names but it doesn't matter.)
+            // The replace section is a table from package name/version to a
+            // table which might include a `path` key. (The keys are not exactly
+            // package names but it doesn't matter.)
             // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section>
             fix_dependency_table(replace, manifest_source_dir);
         }
         if let Some(patch_table) = top_table.get_mut("patch").and_then(|p| p.as_table_mut()) {
-            // The keys of the patch table are registry names or source URLs; the values are like
-            // dependency tables.
+            // The keys of the patch table are registry names or source URLs;
+            // the values are like dependency tables.
             // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section>
             for (_name, dependencies) in patch_table {
                 fix_dependency_table(dependencies, manifest_source_dir);
@@ -122,7 +123,8 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
     }
 }
 
-/// Fix one path, from inside a scratch tree, to be absolute as interpreted relative to the source tree.
+/// Fix one path, from inside a scratch tree, to be absolute as interpreted
+/// relative to the source tree.
 fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<Utf8PathBuf> {
     let path = Utf8Path::new(path_str);
     if path.is_absolute() {
