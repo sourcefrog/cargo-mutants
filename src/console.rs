@@ -50,6 +50,10 @@ impl LabActivity {
             start,
         }
     }
+
+    pub fn message(&self, message: &str) {
+        self.view.message(message);
+    }
 }
 
 /// Description of all current activities in the lab.
