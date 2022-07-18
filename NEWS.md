@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.8
+
+Released 2022-07-18
 
 - New: Summarize the overall number of mutants generated, caught, missed, etc, at the end.
 
