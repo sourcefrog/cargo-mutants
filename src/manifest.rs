@@ -138,7 +138,7 @@ fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use camino::Utf8Path;
+    use camino::{Utf8Path, Utf8PathBuf};
     use pretty_assertions::assert_eq;
 
     use super::fix_manifest_toml;
@@ -159,12 +159,15 @@ mod test {
 
     #[test]
     fn fix_path_relative() {
+        let fixed_path: Utf8PathBuf = super::fix_path(
+            "../dependency",
+            &Utf8Path::new("testdata/tree/relative_dependency"),
+        )
+        .expect("path was adjusted")
+        .into();
         assert_eq!(
-            super::fix_path(
-                "../dependency",
-                &Utf8Path::new("testdata/tree/relative_dependency")
-            ),
-            Some("testdata/tree/relative_dependency/../dependency".to_owned())
+            &fixed_path,
+            Utf8Path::new("testdata/tree/relative_dependency/../dependency"),
         );
     }
 
