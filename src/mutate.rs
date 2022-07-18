@@ -252,8 +252,16 @@ mod test {
             r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2) }"#
         );
         assert_eq!(
+            muts[0].to_string(),
+            "replace main with () in src/bin/main.rs:1"
+        );
+        assert_eq!(
             format!("{:?}", muts[1]),
             r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2) }"#
+        );
+        assert_eq!(
+            muts[1].to_string(),
+            "replace factorial with Default::default() in src/bin/main.rs:7"
         );
     }
 
