@@ -9,7 +9,7 @@ impl Utf8PathSlashes for Utf8Path {
         self.components()
             .map(|c| c.as_str())
             .filter(|c| !c.is_empty())
-            .map(|c| if c == "/" {"" } else { c })
+            .map(|c| if c == "/" || c == "\\" { "" } else { c })
             .collect::<Vec<_>>()
             .join("/")
     }
