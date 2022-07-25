@@ -151,7 +151,7 @@ mod test {
         assert_eq!(
             super::fix_path(
                 dependency_abspath.as_str(),
-                &Utf8Path::new("/home/user/src/foo")
+                Utf8Path::new("/home/user/src/foo")
             ),
             None
         );
@@ -161,7 +161,7 @@ mod test {
     fn fix_path_relative() {
         let fixed_path: Utf8PathBuf = super::fix_path(
             "../dependency",
-            &Utf8Path::new("testdata/tree/relative_dependency"),
+            Utf8Path::new("testdata/tree/relative_dependency"),
         )
         .expect("path was adjusted")
         .into();
@@ -180,7 +180,7 @@ author = "A Smithee"
 wibble = { path = "../wibble" } # Use the relative path to the dependency.
 "#;
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path)
+        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
         // Round-tripping toml produces some insignificant stylistic changes.
@@ -206,7 +206,7 @@ wibble = "1.2.3"
 "wibble:1.2.3" = { path = "../wibble" } # Use the relative path to the dependency.
 "#;
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path)
+        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
         // A crude adaption for Windows.
@@ -234,7 +234,7 @@ wibble = { path = "c:/home/asmithee/src/wibble" }
 "#;
 
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path).unwrap();
+        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path).unwrap();
         assert_eq!(
             fixed_toml, None,
             "manifest containing only an absolute path should not be modified"
@@ -250,7 +250,7 @@ wibble = "1.2.3"
 wibble = { path = "../wibble" } # Use the relative path to the dependency.
 "#;
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(&manifest_toml, orig_path)
+        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
         // A crude adaption for Windows.
@@ -275,7 +275,7 @@ paths = [
     "/src/other",
     ]"#;
         let source_dir = Utf8Path::new("/Users/jane/src/foo");
-        let fixed_toml = super::fix_cargo_config_toml(&cargo_config_toml, source_dir)
+        let fixed_toml = super::fix_cargo_config_toml(cargo_config_toml, source_dir)
             .unwrap()
             .expect("toml was modified");
         // a crude adaption for windows.
