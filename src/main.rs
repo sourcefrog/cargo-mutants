@@ -28,7 +28,6 @@ use std::process::exit;
 use anyhow::Result;
 use argh::FromArgs;
 use camino::Utf8PathBuf;
-#[allow(unused)]
 use path_slash::PathExt;
 
 // Imports of public names from this crate.
