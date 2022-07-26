@@ -11,7 +11,6 @@ use camino::Utf8Path;
 use serde::Serialize;
 use subprocess::{Popen, PopenConfig, Redirection};
 
-use crate::console::CargoActivity;
 use crate::log_file::LogFile;
 use crate::*;
 
@@ -45,9 +44,9 @@ impl CargoResult {
 pub fn run_cargo(
     cargo_args: &[&str],
     in_dir: &Utf8Path,
-    activity: &mut CargoActivity,
     log_file: &mut LogFile,
     timeout: Duration,
+    view: &nutmeg::View<console::LabModel>,
 ) -> Result<CargoResult> {
     let start = Instant::now();
     // When run as a Cargo subcommand, which is the usual/intended case,
@@ -80,14 +79,14 @@ pub fn run_cargo(
             terminate_child(child, log_file)?;
             return Ok(CargoResult::Timeout);
         } else if let Err(e) = check_interrupted() {
-            activity.interrupted();
             log_file.message("interrupted\n");
+            view.message(console::style_interrupted());
             terminate_child(child, log_file)?;
             return Err(e);
         } else if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
             break status;
         }
-        activity.tick();
+        view.update(|_| ());
     };
     log_file.message(&format!(
         "cargo result: {:?} in {:.3}s",
