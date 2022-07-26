@@ -211,16 +211,36 @@ impl CargoModel {
     }
 }
 
-pub struct CopyActivity {
-    view: nutmeg::View<CopyModel>,
-}
-
-struct CopyModel {
+/// A Nutmeg model for progress in copying a tree.
+pub struct CopyModel {
     bytes_copied: u64,
     start: Instant,
     name: &'static str,
     succeeded: bool,
     show_times: bool,
+}
+
+impl CopyModel {
+    pub fn new(name: &'static str, options: &Options) -> CopyModel {
+        CopyModel {
+            name,
+            start: Instant::now(),
+            bytes_copied: 0,
+            succeeded: false,
+            show_times: options.show_times,
+        }
+    }
+
+    /// Update that some bytes have been copied.
+    pub fn bytes_copied(&mut self, bytes_copied: u64) {
+        self.bytes_copied += bytes_copied
+    }
+
+    /// Update that the copy succeeded, and set the _total_ number of bytes copies.
+    pub fn succeed(&mut self, total_bytes_copied: u64) {
+        self.succeeded = true;
+        self.bytes_copied = total_bytes_copied;
+    }
 }
 
 impl nutmeg::Model for CopyModel {
@@ -251,39 +271,7 @@ impl nutmeg::Model for CopyModel {
     }
 }
 
-impl CopyActivity {
-    pub fn new(name: &'static str, options: Options) -> CopyActivity {
-        let view = nutmeg::View::new(
-            CopyModel {
-                name,
-                start: Instant::now(),
-                bytes_copied: 0,
-                succeeded: false,
-                show_times: options.show_times,
-            },
-            nutmeg_options(),
-        );
-        CopyActivity { view }
-    }
-
-    pub fn bytes_copied(&mut self, bytes_copied: u64) {
-        self.view.update(|model| model.bytes_copied = bytes_copied);
-    }
-
-    pub fn succeed(self, bytes_copied: u64) {
-        self.view.update(|model| {
-            model.succeeded = true;
-            model.bytes_copied = bytes_copied;
-        });
-        self.view.finish();
-    }
-
-    pub fn fail(self) {
-        self.view.finish();
-    }
-}
-
-fn nutmeg_options() -> nutmeg::Options {
+pub fn nutmeg_options() -> nutmeg::Options {
     nutmeg::Options::default().print_holdoff(Duration::from_secs(2))
 }
 
