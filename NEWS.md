@@ -1,8 +1,12 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.8
+
+Released 2022-07-18
 
 - New: Summarize the overall number of mutants generated, caught, missed, etc, at the end.
+
+- Fixed: Works properly with crates that have relative `path` dependencies in `Cargo.toml` or `.cargo/config.toml`, by rewriting them to absolute paths in the scratch directory.
 
 ## 0.2.7
 

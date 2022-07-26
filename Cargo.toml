@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "0.2.8-pre"
+version = "0.2.9-pre"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -30,6 +30,7 @@ serde_json = "1"
 similar = "2.0"
 subprocess = "0.2.8"
 tempfile = "3.2"
+toml = "0.5"
 walkdir = "2.3"
 whoami = "1.2"
 
@@ -65,13 +66,21 @@ members = [
     "mutants_attrs",
     "testdata/tree/cfg_attr_mutants_skip",
     "testdata/tree/cfg_attr_test_skip",
+    "testdata/tree/dependency",
     "testdata/tree/factorial",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
     "testdata/tree/no_opportunities",
+    "testdata/tree/relative_dependency",
     "testdata/tree/well_tested",
 ]
 
-# TODO: Re-enable these when the tests are checked by the real integration tests, but
-# skipped by `cargo test --workspace`. (It's complicated!)
-exclude = ["testdata/tree/already_hangs", "testdata/tree/already_failing_tests"]
+# `replace_dependency` can't be in the workspace, because 'replace' sections
+# must be in the workspace root.
+exclude = [
+    "testdata/tree/already_hangs",
+    "testdata/tree/already_failing_tests",
+    "testdata/tree/override_dependency",
+    "testdata/tree/patch_dependency",
+    "testdata/tree/replace_dependency",
+]

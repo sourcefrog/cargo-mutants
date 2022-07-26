@@ -1,0 +1,9 @@
+---
+source: tests/cli.rs
+expression: stdout
+---
+Copy source to scratch directory ... done
+Unmutated baseline ... ok
+Found 2 mutants to test
+2 mutants tested: 2 caught
+

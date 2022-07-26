@@ -385,6 +385,11 @@ The basic approach is:
   directory. The same directory is reused across all the mutations to benefit
   from incremental builds.
 
+  - After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
+    `.cargo/config.toml` for relative dependencies. If there are any, the paths are
+    rewritten to be absolute, so that they still work when cargo is run in the
+    scratch directory.
+
   - Before applying any mutations, check that `cargo test` succeeds in the
     scratch directory: perhaps a test is already broken, or perhaps the tree
     doesn't build when copied because it relies on relative paths to find
@@ -481,11 +486,6 @@ cargo-mutants is not yet meeting its goals.
   types. Possibly it could learn to get type information from the compiler (or
   rust-analyzer?), which would help it generate more interesting viable mutants,
   and fewer unviable mutants.
-
-- Copying the tree to build it doesn't work well if the `Cargo.toml` points to
-  dependencies by a relative `path` (other than in subdirectories). You can
-  work around this by editing `Cargo.toml` to make the paths absolute, before
-  running `cargo mutants`. (See <https://github.com/sourcefrog/cargo-mutants/issues/42>.)
 
 - To make this faster on large trees, we could keep several scratch trees and
   test them in parallel, which is likely to exploit CPU resources more
