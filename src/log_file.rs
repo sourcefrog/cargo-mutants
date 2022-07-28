@@ -60,7 +60,7 @@ impl LogFile {
 
     /// Write a message, with a marker. Ignore errors.
     pub fn message(&mut self, message: &str) {
-        write!(self.write_to, "\n{} {}", LOG_MARKER, message).expect("write message to log");
+        write!(self.write_to, "\n{} {}\n", LOG_MARKER, message).expect("write message to log");
     }
 
     pub fn path(&self) -> &Utf8Path {

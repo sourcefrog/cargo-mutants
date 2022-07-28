@@ -15,7 +15,17 @@ use crate::exit_code;
 use crate::log_file::LogFile;
 use crate::*;
 
-/// What phase of evaluating a tree?
+/// What phase of running a scenario.
+///
+/// Every scenario proceed through up to three phases in order. They are:
+///
+/// 1. `cargo check` -- is the tree basically buildable; this should detect many
+///    unviable mutants early.
+/// 2. `cargo build` -- actually build it.
+/// 3. `cargo tests` -- do the tests pass?
+///
+/// Some scenarios such as freshening the tree don't run the tests. Tests might
+/// also be skipped by `--check`.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize)]
 pub enum Phase {
     Check,

@@ -7,64 +7,22 @@
 
 use std::borrow::Cow;
 use std::fmt::Write;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
-use anyhow::Result;
+use camino::Utf8Path;
 
 use crate::*;
 
-/// Overall "run a bunch of experiments activity".
-pub struct LabActivity {
-    view: Arc<nutmeg::View<LabModel>>,
-}
-
-impl LabActivity {
-    pub fn new(_options: &Options) -> LabActivity {
-        let model = LabModel::default();
-        LabActivity {
-            view: Arc::new(nutmeg::View::new(model, nutmeg_options())),
-        }
-    }
-
-    pub fn start_mutants(&mut self, n_mutants: usize) {
-        self.view.update(|model| {
-            model.n_mutants = n_mutants;
-            model.lab_start = Some(Instant::now());
-        })
-    }
-
-    pub fn start_scenario(&mut self, scenario: &Scenario, log_file: Utf8PathBuf) -> CargoActivity {
-        let start = Instant::now();
-        let cargo_model = CargoModel::new(scenario, start, log_file);
-        let name = cargo_model.name.clone();
-        if let Scenario::Mutant { .. } = scenario {
-            self.view.update(|model| model.i_mutant += 1);
-        }
-        self.view
-            .update(|model| model.cargo_model = Some(cargo_model));
-        CargoActivity {
-            lab_view: self.view.clone(),
-            name,
-            start,
-        }
-    }
-
-    pub fn message(&self, message: &str) {
-        self.view.message(message);
-    }
-}
-
 /// Description of all current activities in the lab.
 ///
-/// At the moment there is either a copy, cargo runs, or nothing.
-/// Later, there might be concurrent activities.
+/// At the moment there is either a copy, cargo runs, or nothing.  Later, there
+/// might be concurrent activities.
 #[derive(Default)]
-struct LabModel {
+pub struct LabModel {
     copy_model: Option<CopyModel>,
     cargo_model: Option<CargoModel>,
-    lab_start: Option<Instant>,
+    lab_start_time: Option<Instant>,
     i_mutant: usize,
     n_mutants: usize,
     mutants_caught: usize,
@@ -81,7 +39,7 @@ impl nutmeg::Model for LabModel {
             if !s.is_empty() {
                 s.push('\n')
             }
-            if let Some(lab_start) = self.lab_start {
+            if let Some(lab_start_time) = self.lab_start_time {
                 writeln!(
                     s,
                     "Trying mutant {}/{}, {} done, {} caught, {} missed, {} remaining",
@@ -90,7 +48,7 @@ impl nutmeg::Model for LabModel {
                     nutmeg::percent_done(self.i_mutant, self.n_mutants),
                     self.mutants_caught,
                     self.mutants_missed,
-                    nutmeg::estimate_remaining(&lab_start, self.i_mutant, self.n_mutants)
+                    nutmeg::estimate_remaining(&lab_start_time, self.i_mutant, self.n_mutants)
                 )
                 .unwrap();
             }
@@ -101,79 +59,87 @@ impl nutmeg::Model for LabModel {
 }
 
 impl LabModel {
-    fn cargo_model(&mut self) -> &mut CargoModel {
-        self.cargo_model.as_mut().unwrap()
+    pub fn new() -> LabModel {
+        Default::default()
+    }
+
+    /// Update that work is starting on testing a given number of mutants.
+    pub fn start_mutants(&mut self, n_mutants: usize) {
+        self.n_mutants = n_mutants;
+        self.lab_start_time = Some(Instant::now());
+    }
+
+    /// Update that a cargo task is starting.
+    pub fn start_cargo(&mut self, scenario: &Scenario, log_file: &Utf8Path) {
+        let start = Instant::now();
+        let cargo_model = CargoModel::new(scenario, start, log_file.to_owned());
+        if let Scenario::Mutant { .. } = scenario {
+            self.i_mutant += 1;
+        }
+        self.cargo_model = Some(cargo_model);
+    }
+
+    /// Update the phase of the cargo task.
+    pub fn set_cargo_phase(&mut self, phase: &Phase) {
+        self.cargo_model
+            .as_mut()
+            .expect("cargo model already started")
+            .phase = Some(phase.name());
     }
 }
 
-pub struct CargoActivity {
-    lab_view: Arc<nutmeg::View<LabModel>>,
-    name: Cow<'static, str>,
+/// Update that cargo finished.
+pub fn cargo_outcome(
+    view: &nutmeg::View<LabModel>,
+    scenario: &Scenario,
     start: Instant,
-}
+    outcome: &Outcome,
+    options: &Options,
+) {
+    view.update(|model| {
+        if outcome.mutant_caught() {
+            model.mutants_caught += 1
+        } else if outcome.mutant_missed() {
+            model.mutants_missed += 1
+        }
+    });
 
-impl CargoActivity {
-    pub fn set_phase(&mut self, phase: &'static str) {
-        self.lab_view
-            .update(|lab_model| lab_model.cargo_model().phase = Some(phase));
+    if (outcome.mutant_caught() && !options.print_caught)
+        || (outcome.scenario.is_mutant()
+            && outcome.check_or_build_failed()
+            && !options.print_unviable)
+    {
+        return;
     }
 
-    /// Mark this activity as interrupted.
-    pub fn interrupted(&mut self) {
-        // TODO: Unify with outcomes?
-        self.lab_view.update(|lab_model| {
-            lab_model.cargo_model.take();
-        });
-        self.lab_view.message(format!(
-            "{} ... {}",
-            self.name,
-            style("interrupted").bold().red()
-        ));
+    let mut s = String::with_capacity(100);
+    write!(
+        s,
+        "{} ... {}",
+        style_scenario(scenario),
+        style_outcome(outcome)
+    )
+    .unwrap();
+    if options.show_times {
+        write!(s, " in {}", format_elapsed_millis(start)).unwrap();
     }
-
-    pub fn tick(&mut self) {
-        self.lab_view.update(|_| ());
-    }
-
-    /// Report the outcome of a scenario.
-    ///
-    /// Prints the log content if appropriate.
-    pub fn outcome(self, outcome: &Outcome, options: &Options) -> Result<()> {
-        self.lab_view.update(|model| {
-            if outcome.mutant_caught() {
-                model.mutants_caught += 1
-            } else if outcome.mutant_missed() {
-                model.mutants_missed += 1
-            }
-        });
-
-        if (outcome.mutant_caught() && !options.print_caught)
-            || (outcome.scenario.is_mutant()
-                && outcome.check_or_build_failed()
-                && !options.print_unviable)
-        {
-            return Ok(());
-        }
-
-        let mut s = String::with_capacity(100);
-        write!(s, "{} ... {}", self.name, style_outcome(outcome)).unwrap();
-        if options.show_times {
-            write!(s, " in {}", format_elapsed_millis(self.start)).unwrap();
-        }
-        if outcome.should_show_logs() || options.show_all_logs {
-            s.push('\n');
-            write!(s, "{}", outcome.get_log_content()?).unwrap();
-        }
+    if outcome.should_show_logs() || options.show_all_logs {
         s.push('\n');
-        self.lab_view.message(&s);
-        Ok(())
+        s.push_str(
+            outcome
+                .get_log_content()
+                .expect("read log content")
+                .as_str(),
+        );
     }
+    s.push('\n');
+    view.message(&s);
 }
 
 /// A Nutmeg progress model for running `cargo test` etc.
 ///
 /// It draws the command and some description of what scenario is being tested.
-struct CargoModel {
+pub struct CargoModel {
     name: Cow<'static, str>,
     start: Instant,
     phase: Option<&'static str>,
@@ -196,14 +162,9 @@ impl nutmeg::Model for CargoModel {
 }
 
 impl CargoModel {
-    fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> CargoModel {
-        let name: Cow<'static, str> = match scenario {
-            Scenario::SourceTree => "Freshen source tree".into(),
-            Scenario::Baseline => "Unmutated baseline".into(),
-            Scenario::Mutant(mutant) => style_mutant(mutant).into(),
-        };
+    pub fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> CargoModel {
         CargoModel {
-            name,
+            name: style_scenario(scenario),
             phase: None,
             start,
             log_file,
@@ -211,16 +172,38 @@ impl CargoModel {
     }
 }
 
-pub struct CopyActivity {
-    view: nutmeg::View<CopyModel>,
-}
-
-struct CopyModel {
+/// A Nutmeg model for progress in copying a tree.
+pub struct CopyModel {
     bytes_copied: u64,
     start: Instant,
     name: &'static str,
     succeeded: bool,
     show_times: bool,
+}
+
+impl CopyModel {
+    pub fn new(name: &'static str, options: &Options) -> CopyModel {
+        CopyModel {
+            name,
+            start: Instant::now(),
+            bytes_copied: 0,
+            succeeded: false,
+            show_times: options.show_times,
+        }
+    }
+
+    /// Update that some bytes have been copied.
+    ///
+    /// `bytes_copied` is the total bytes copied so far.
+    pub fn bytes_copied(&mut self, bytes_copied: u64) {
+        self.bytes_copied = bytes_copied
+    }
+
+    /// Update that the copy succeeded, and set the _total_ number of bytes copies.
+    pub fn succeed(&mut self, total_bytes_copied: u64) {
+        self.succeeded = true;
+        self.bytes_copied = total_bytes_copied;
+    }
 }
 
 impl nutmeg::Model for CopyModel {
@@ -251,39 +234,7 @@ impl nutmeg::Model for CopyModel {
     }
 }
 
-impl CopyActivity {
-    pub fn new(name: &'static str, options: Options) -> CopyActivity {
-        let view = nutmeg::View::new(
-            CopyModel {
-                name,
-                start: Instant::now(),
-                bytes_copied: 0,
-                succeeded: false,
-                show_times: options.show_times,
-            },
-            nutmeg_options(),
-        );
-        CopyActivity { view }
-    }
-
-    pub fn bytes_copied(&mut self, bytes_copied: u64) {
-        self.view.update(|model| model.bytes_copied = bytes_copied);
-    }
-
-    pub fn succeed(self, bytes_copied: u64) {
-        self.view.update(|model| {
-            model.succeeded = true;
-            model.bytes_copied = bytes_copied;
-        });
-        self.view.finish();
-    }
-
-    pub fn fail(self) {
-        self.view.finish();
-    }
-}
-
-fn nutmeg_options() -> nutmeg::Options {
+pub fn nutmeg_options() -> nutmeg::Options {
     nutmeg::Options::default().print_holdoff(Duration::from_secs(2))
 }
 
@@ -353,4 +304,16 @@ fn format_mb(bytes: u64) -> String {
 
 fn style_mb(bytes: u64) -> StyledObject<String> {
     style(format_mb(bytes)).cyan()
+}
+
+pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
+    match scenario {
+        Scenario::SourceTree => "Freshen source tree".into(),
+        Scenario::Baseline => "Unmutated baseline".into(),
+        Scenario::Mutant(mutant) => console::style_mutant(mutant).into(),
+    }
+}
+
+pub fn style_interrupted() -> String {
+    format!("{}", style("interrupted\n").bold().red())
 }

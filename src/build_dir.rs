@@ -9,7 +9,6 @@ use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 
-use crate::console::CopyActivity;
 use crate::manifest::fix_cargo_config;
 use crate::*;
 
@@ -53,11 +52,14 @@ impl BuildDir {
         } else {
             "Copy source to scratch directory"
         };
-        let mut activity = CopyActivity::new(name, options.clone());
+        let view = nutmeg::View::new(
+            console::CopyModel::new(name, options),
+            console::nutmeg_options(),
+        );
         let target_path = Path::new("target");
         match cp_r::CopyOptions::new()
             .after_entry_copied(|path, _ft, stats| {
-                activity.bytes_copied(stats.file_bytes);
+                view.update(|model| model.bytes_copied(stats.file_bytes));
                 check_interrupted()
                     .map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
             })
@@ -69,9 +71,12 @@ impl BuildDir {
             .copy_tree(source.path(), &temp_dir.path())
             .context("copy source tree to lab directory")
         {
-            Ok(stats) => activity.succeed(stats.file_bytes),
+            Ok(stats) => {
+                view.update(|model| model.succeed(stats.file_bytes));
+                view.finish();
+            }
             Err(err) => {
-                activity.fail();
+                view.finish();
                 eprintln!(
                     "error copying source tree {} to {}: {:?}",
                     &source.path().to_slash_path(),

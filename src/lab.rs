@@ -14,7 +14,7 @@ use rand::prelude::*;
 use serde::Serialize;
 
 use crate::cargo::run_cargo;
-use crate::console::{self, LabActivity};
+use crate::console::{self, LabModel};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
@@ -71,11 +71,10 @@ pub fn test_unmutated_then_all_mutants(
         source_tree.path()
     };
     let output_dir = OutputDir::new(output_in_dir)?;
-    let mut lab_activity = LabActivity::new(&options);
+    let view = nutmeg::View::new(LabModel::new(), console::nutmeg_options());
 
     if options.build_source {
-        let outcome =
-            check_and_build_source_tree(source_tree, &output_dir, &options, &mut lab_activity)?;
+        let outcome = check_and_build_source_tree(source_tree, &output_dir, &options, &view)?;
         lab_outcome.add(&outcome);
         if !outcome.success() {
             console::print_error(&format!(
@@ -95,7 +94,7 @@ pub fn test_unmutated_then_all_mutants(
             &options,
             &Scenario::Baseline,
             Phase::ALL,
-            &mut lab_activity,
+            &view,
         )
     }?;
     lab_outcome.add(&outcome);
@@ -141,7 +140,7 @@ pub fn test_unmutated_then_all_mutants(
         return Err(anyhow!("No mutants found"));
     }
 
-    lab_activity.start_mutants(mutants.len());
+    view.update(|model| model.start_mutants(mutants.len()));
     for mutant in mutants {
         let scenario = Scenario::Mutant(mutant.clone());
         let outcome = mutant.with_mutation_applied(&build_dir, || {
@@ -151,7 +150,7 @@ pub fn test_unmutated_then_all_mutants(
                 &options,
                 &scenario,
                 Phase::ALL,
-                &mut lab_activity,
+                &view,
             )
         })?;
         lab_outcome.add(&outcome);
@@ -163,7 +162,7 @@ pub fn test_unmutated_then_all_mutants(
             &lab_outcome,
         )?;
     }
-    lab_activity.message(&format!("{}\n", lab_outcome.summary_string()));
+    view.message(&format!("{}\n", lab_outcome.summary_string()));
     Ok(lab_outcome)
 }
 
@@ -182,19 +181,20 @@ fn run_cargo_phases(
     options: &Options,
     scenario: &Scenario,
     phases: &[Phase],
-    lab_activity: &mut LabActivity,
+    view: &nutmeg::View<console::LabModel>,
 ) -> Result<Outcome> {
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
+    let start_time = Instant::now();
     if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&mutant.diff());
     }
-    let mut cargo_activity = lab_activity.start_scenario(scenario, log_file.path().to_owned());
+    view.update(|model| model.start_cargo(scenario, log_file.path()));
 
     let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {
         let phase_start = Instant::now();
-        cargo_activity.set_phase(phase.name());
+        view.update(|model| model.set_cargo_phase(&phase));
         let cargo_args = match phase {
             Phase::Check => vec!["check", "--tests"],
             Phase::Build => vec!["build", "--tests"],
@@ -211,19 +211,14 @@ fn run_cargo_phases(
             Phase::Test => options.test_timeout(),
             _ => Duration::MAX,
         };
-        let cargo_result = run_cargo(
-            &cargo_args,
-            in_dir,
-            &mut cargo_activity,
-            &mut log_file,
-            timeout,
-        )?;
+        let cargo_result = run_cargo(&cargo_args, in_dir, &mut log_file, timeout, view)?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;
         }
     }
-    cargo_activity.outcome(&outcome, options)?;
+    console::cargo_outcome(view, scenario, start_time, &outcome, options);
+
     Ok(outcome)
 }
 
@@ -236,7 +231,7 @@ fn check_and_build_source_tree(
     source_tree: &SourceTree,
     output_dir: &OutputDir,
     options: &Options,
-    lab_activity: &mut LabActivity,
+    view: &nutmeg::View<LabModel>,
 ) -> Result<Outcome> {
     let phases: &'static [Phase] = if options.check_only {
         &[Phase::Check]
@@ -249,6 +244,6 @@ fn check_and_build_source_tree(
         options,
         &Scenario::SourceTree,
         phases,
-        lab_activity,
+        view,
     )
 }
