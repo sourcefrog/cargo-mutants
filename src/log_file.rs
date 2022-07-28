@@ -36,6 +36,7 @@ impl LogFile {
             match OpenOptions::new()
                 .write(true)
                 .read(true)
+                .append(true)
                 .create_new(true)
                 .open(&path)
             {

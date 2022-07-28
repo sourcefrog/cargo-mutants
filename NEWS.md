@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed: Open log files in append mode to fix messages from other processes
+  occasionally being partly overwritten.
+
 - Improved: The build dir name includes the root package name.
 
 ## 0.2.8
