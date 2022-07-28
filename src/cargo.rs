@@ -2,7 +2,6 @@
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
-use std::borrow::Cow;
 use std::env;
 use std::time::{Duration, Instant};
 
@@ -53,9 +52,7 @@ pub fn run_cargo(
     // When run as a Cargo subcommand, which is the usual/intended case,
     // $CARGO tells us the right way to call back into it, so that we get
     // the matching toolchain etc.
-    let cargo_bin: Cow<str> = env::var("CARGO")
-        .map(Cow::from)
-        .unwrap_or(Cow::Borrowed("cargo"));
+    let cargo_bin = env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
     log_file.message(&format!("run {} {}", cargo_bin, cargo_args.join(" "),));
 
     let mut argv: Vec<&str> = vec![&cargo_bin];
