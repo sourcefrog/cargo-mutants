@@ -1,9 +1,6 @@
 // Copyright 2021, 2022 Martin Pool
 
 //! Print messages and progress bars on the terminal.
-//!
-//! This is modeled as a series of "activities" that each interface to the actual
-//! terminal-drawing in Nutmeg.
 
 use std::borrow::Cow;
 use std::fmt::Write;
@@ -14,12 +11,113 @@ use camino::Utf8Path;
 
 use crate::*;
 
+/// An interface to the console for the rest of cargo-mutants.
+///
+/// This wraps the Nutmeg view and model.
+pub struct Console {
+    /// The inner view through which progress bars and messages are drawn.
+    view: nutmeg::View<LabModel>,
+}
+
+impl Console {
+    pub fn new() -> Console {
+        Console {
+            view: nutmeg::View::new(LabModel::default(), nutmeg_options()),
+        }
+    }
+
+    /// Update that cargo finished.
+    pub fn cargo_outcome(
+        &self,
+        scenario: &Scenario,
+        start: Instant,
+        outcome: &Outcome,
+        options: &Options,
+    ) {
+        self.view.update(|model| {
+            if outcome.mutant_caught() {
+                model.mutants_caught += 1
+            } else if outcome.mutant_missed() {
+                model.mutants_missed += 1
+            }
+        });
+
+        if (outcome.mutant_caught() && !options.print_caught)
+            || (outcome.scenario.is_mutant()
+                && outcome.check_or_build_failed()
+                && !options.print_unviable)
+        {
+            return;
+        }
+
+        let mut s = String::with_capacity(100);
+        write!(
+            s,
+            "{} ... {}",
+            style_scenario(scenario),
+            style_outcome(outcome)
+        )
+        .unwrap();
+        if options.show_times {
+            write!(s, " in {}", format_elapsed_millis(start)).unwrap();
+        }
+        if outcome.should_show_logs() || options.show_all_logs {
+            s.push('\n');
+            s.push_str(
+                outcome
+                    .get_log_content()
+                    .expect("read log content")
+                    .as_str(),
+            );
+        }
+        s.push('\n');
+        self.view.message(&s);
+    }
+
+    /// Update that work is starting on testing a given number of mutants.
+    pub fn start_testing_mutants(&self, n_mutants: usize) {
+        self.view.update(|model| {
+            model.n_mutants = n_mutants;
+            model.lab_start_time = Some(Instant::now());
+        })
+    }
+
+    /// Update that a cargo task is starting.
+    pub fn start_cargo(&self, scenario: &Scenario, log_file: &Utf8Path) {
+        let start = Instant::now();
+        let cargo_model = CargoModel::new(scenario, start, log_file.to_owned());
+        self.view.update(|model| {
+            model.i_mutant += scenario.is_mutant() as usize;
+            model.cargo_model = Some(cargo_model);
+        });
+    }
+
+    /// Update the phase of the cargo task.
+    pub fn set_cargo_phase(&self, phase: &Phase) {
+        self.view.update(|model| {
+            model
+                .cargo_model
+                .as_mut()
+                .expect("cargo model already started")
+                .phase = Some(phase.name())
+        })
+    }
+
+    pub fn message(&self, message: &str) {
+        self.view.message(message)
+    }
+
+    pub fn tick(&self) {
+        self.view.update(|_| ())
+    }
+}
+
 /// Description of all current activities in the lab.
 ///
 /// At the moment there is either a copy, cargo runs, or nothing.  Later, there
 /// might be concurrent activities.
 #[derive(Default)]
-pub struct LabModel {
+struct LabModel {
     copy_model: Option<CopyModel>,
     cargo_model: Option<CargoModel>,
     lab_start_time: Option<Instant>,
@@ -58,88 +156,12 @@ impl nutmeg::Model for LabModel {
     }
 }
 
-impl LabModel {
-    pub fn new() -> LabModel {
-        Default::default()
-    }
-
-    /// Update that work is starting on testing a given number of mutants.
-    pub fn start_mutants(&mut self, n_mutants: usize) {
-        self.n_mutants = n_mutants;
-        self.lab_start_time = Some(Instant::now());
-    }
-
-    /// Update that a cargo task is starting.
-    pub fn start_cargo(&mut self, scenario: &Scenario, log_file: &Utf8Path) {
-        let start = Instant::now();
-        let cargo_model = CargoModel::new(scenario, start, log_file.to_owned());
-        if let Scenario::Mutant { .. } = scenario {
-            self.i_mutant += 1;
-        }
-        self.cargo_model = Some(cargo_model);
-    }
-
-    /// Update the phase of the cargo task.
-    pub fn set_cargo_phase(&mut self, phase: &Phase) {
-        self.cargo_model
-            .as_mut()
-            .expect("cargo model already started")
-            .phase = Some(phase.name());
-    }
-}
-
-/// Update that cargo finished.
-pub fn cargo_outcome(
-    view: &nutmeg::View<LabModel>,
-    scenario: &Scenario,
-    start: Instant,
-    outcome: &Outcome,
-    options: &Options,
-) {
-    view.update(|model| {
-        if outcome.mutant_caught() {
-            model.mutants_caught += 1
-        } else if outcome.mutant_missed() {
-            model.mutants_missed += 1
-        }
-    });
-
-    if (outcome.mutant_caught() && !options.print_caught)
-        || (outcome.scenario.is_mutant()
-            && outcome.check_or_build_failed()
-            && !options.print_unviable)
-    {
-        return;
-    }
-
-    let mut s = String::with_capacity(100);
-    write!(
-        s,
-        "{} ... {}",
-        style_scenario(scenario),
-        style_outcome(outcome)
-    )
-    .unwrap();
-    if options.show_times {
-        write!(s, " in {}", format_elapsed_millis(start)).unwrap();
-    }
-    if outcome.should_show_logs() || options.show_all_logs {
-        s.push('\n');
-        s.push_str(
-            outcome
-                .get_log_content()
-                .expect("read log content")
-                .as_str(),
-        );
-    }
-    s.push('\n');
-    view.message(&s);
-}
+impl LabModel {}
 
 /// A Nutmeg progress model for running `cargo test` etc.
 ///
 /// It draws the command and some description of what scenario is being tested.
-pub struct CargoModel {
+struct CargoModel {
     name: Cow<'static, str>,
     start: Instant,
     phase: Option<&'static str>,
@@ -162,7 +184,7 @@ impl nutmeg::Model for CargoModel {
 }
 
 impl CargoModel {
-    pub fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> CargoModel {
+    fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> CargoModel {
         CargoModel {
             name: style_scenario(scenario),
             phase: None,
