@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: The build dir name includes the root package name.
+
 ## 0.2.8
 
 Released 2022-07-18

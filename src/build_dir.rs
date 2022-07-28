@@ -38,10 +38,7 @@ impl BuildDir {
     /// Make a new build dir, copying from a source directory.
     pub fn new(source: &SourceTree, options: &Options) -> Result<BuildDir> {
         let temp_dir = tempfile::Builder::new()
-            .prefix(&format!(
-                "cargo-mutants-{}-",
-                source.path().file_name().unwrap_or_default()
-            ))
+            .prefix(&format!("cargo-mutants-{}-", source.root_package_name()?))
             .suffix(".tmp")
             .tempdir()
             .context("create temp dir")?;

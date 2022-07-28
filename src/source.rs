@@ -196,8 +196,13 @@ impl SourceTree {
     }
 
     /// Return the name of the root crate, as an identifier for this tree.
-    pub fn root_crate_name(&self) -> Result<String> {
-        todo!()
+    pub fn root_package_name(&self) -> Result<&str> {
+        Ok(self
+            .metadata
+            .root_package()
+            .ok_or_else(|| anyhow!("directory has no root package"))?
+            .name
+            .as_str())
     }
 }
 
@@ -304,5 +309,11 @@ mod test {
 
         let source_file = SourceFile::new(temp_dir_path, file_name.parse().unwrap()).unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
+    }
+
+    #[test]
+    fn source_root_package_name_of_cargo_mutants_itself() {
+        let source_tree = SourceTree::new(".".into()).unwrap();
+        assert_eq!(source_tree.root_package_name().unwrap(), "cargo-mutants");
     }
 }
