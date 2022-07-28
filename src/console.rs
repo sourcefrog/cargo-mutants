@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use ::console::{style, StyledObject};
 use camino::Utf8Path;
 
+use crate::outcome::SummaryOutcome;
 use crate::*;
 
 /// An interface to the console for the rest of cargo-mutants.
@@ -34,12 +35,13 @@ impl Console {
         outcome: &Outcome,
         options: &Options,
     ) {
-        self.view.update(|model| {
-            if outcome.mutant_caught() {
-                model.mutants_caught += 1
-            } else if outcome.mutant_missed() {
-                model.mutants_missed += 1
-            }
+        self.view.update(|model| match outcome.summary() {
+            SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
+            SummaryOutcome::MissedMutant => model.mutants_missed += 1,
+            SummaryOutcome::Timeout => model.timeouts += 1,
+            SummaryOutcome::Unviable => model.unviable += 1,
+            SummaryOutcome::Success => model.successes += 1,
+            SummaryOutcome::Failure => model.failures += 1,
         });
 
         if (outcome.mutant_caught() && !options.print_caught)
@@ -125,6 +127,10 @@ struct LabModel {
     n_mutants: usize,
     mutants_caught: usize,
     mutants_missed: usize,
+    unviable: usize,
+    timeouts: usize,
+    successes: usize,
+    failures: usize,
 }
 
 impl nutmeg::Model for LabModel {
@@ -138,14 +144,39 @@ impl nutmeg::Model for LabModel {
                 s.push('\n')
             }
             if let Some(lab_start_time) = self.lab_start_time {
-                writeln!(
+                let elapsed = lab_start_time.elapsed();
+                write!(
                     s,
-                    "Trying mutant {}/{}, {} done, {} caught, {} missed, {} remaining",
+                    "Trying mutant {}/{}, {} done",
                     self.i_mutant,
                     self.n_mutants,
                     nutmeg::percent_done(self.i_mutant, self.n_mutants),
-                    self.mutants_caught,
-                    self.mutants_missed,
+                )
+                .unwrap();
+                if self.mutants_missed > 0 {
+                    write!(s, ", {} missed", self.mutants_missed).unwrap();
+                }
+                if self.timeouts > 0 {
+                    write!(s, ", {} timeouts", self.timeouts).unwrap();
+                }
+                if self.mutants_caught > 0 {
+                    write!(s, ", {} caught", self.mutants_caught).unwrap();
+                }
+                if self.unviable > 0 {
+                    write!(s, ", {} unviable", self.unviable).unwrap();
+                }
+                // Maybe don't report these, because they're uninteresting?
+                // if self.successes > 0 {
+                //     write!(s, ", {} successes", self.successes).unwrap();
+                // }
+                // if self.failures > 0 {
+                //     write!(s, ", {} failures", self.failures).unwrap();
+                // }
+                writeln!(
+                    s,
+                    ", {}:{:02} elapsed, about {} remaining",
+                    elapsed.as_secs() / 60,
+                    elapsed.as_secs() % 60,
                     nutmeg::estimate_remaining(&lab_start_time, self.i_mutant, self.n_mutants)
                 )
                 .unwrap();

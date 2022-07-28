@@ -7,6 +7,8 @@
 
 - Improved: The build dir name includes the root package name.
 
+- Improved: The progress bar shows more information.
+
 ## 0.2.8
 
 Released 2022-07-18
