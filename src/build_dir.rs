@@ -54,7 +54,7 @@ impl BuildDir {
             console::nutmeg_options(),
         );
         let target_path = Path::new("target");
-        match cp_r::CopyOptions::new()
+        let copy_options = cp_r::CopyOptions::new()
             .after_entry_copied(|path, _ft, stats| {
                 view.update(|model| model.bytes_copied(stats.file_bytes));
                 check_interrupted()
@@ -64,7 +64,8 @@ impl BuildDir {
                 Ok(!SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex))
                     && (copy_target
                         || !(dir_entry.file_type().unwrap().is_dir() && path == target_path)))
-            })
+            });
+        match copy_options
             .copy_tree(source.path(), &temp_dir.path())
             .context("copy source tree to lab directory")
         {
