@@ -124,21 +124,36 @@ impl SourceFile {
     }
 }
 
+/// An original Rust source tree.
+///
+/// This is never written to, only examined and used as a source for copying to
+/// build dirs.
 #[derive(Debug)]
 pub struct SourceTree {
     root: Utf8PathBuf,
+    metadata: cargo_metadata::Metadata,
 }
 
 impl SourceTree {
-    pub fn new(root: &Utf8Path) -> Result<SourceTree> {
-        if !root.join("Cargo.toml").is_file() {
+    /// Open a source tree.
+    ///
+    /// This eagerly loads cargo metadata from the enclosed `Cargo.toml`, so the
+    /// tree must be minimally valid Rust.
+    pub fn new(path: &Utf8Path) -> Result<SourceTree> {
+        let cargo_toml_path = path.join("Cargo.toml");
+        if !cargo_toml_path.is_file() {
             return Err(anyhow!(
                 "{} does not contain a Cargo.toml: specify a crate directory",
-                root.to_slash_path()
+                path.to_slash_path()
             ));
         }
+        let metadata = cargo_metadata::MetadataCommand::new()
+            .manifest_path(&cargo_toml_path)
+            .exec()
+            .context("run cargo metadata")?;
         Ok(SourceTree {
-            root: root.to_owned(),
+            root: path.to_owned(),
+            metadata,
         })
     }
 
@@ -157,7 +172,7 @@ impl SourceTree {
         &self,
         options: &Options,
     ) -> Result<impl IntoIterator<Item = TreeRelativePathBuf>> {
-        let top_sources = cargo_metadata_sources(&self.root)?;
+        let top_sources = cargo_metadata_sources(&self.metadata)?;
         indirect_sources(&self.root, top_sources, &options.globset)
     }
 
@@ -178,6 +193,11 @@ impl SourceTree {
     /// Return the path (possibly relative) to the root of the source tree.
     pub fn path(&self) -> &Utf8Path {
         &self.root
+    }
+
+    /// Return the name of the root crate, as an identifier for this tree.
+    pub fn root_crate_name(&self) -> Result<String> {
+        todo!()
     }
 }
 
@@ -217,14 +237,11 @@ fn indirect_sources(
 }
 
 /// Given a path to a cargo manifest, find all the directly-referenced source files.
-fn cargo_metadata_sources(source_dir: &Utf8Path) -> Result<BTreeSet<TreeRelativePathBuf>> {
-    let manifest = source_dir.join("Cargo.toml");
+fn cargo_metadata_sources(
+    metadata: &cargo_metadata::Metadata,
+) -> Result<BTreeSet<TreeRelativePathBuf>> {
     let mut found = BTreeSet::new();
-    let cmd = cargo_metadata::MetadataCommand::new()
-        .manifest_path(&manifest)
-        .exec()
-        .context("run cargo metadata")?;
-    if let Some(pkg) = cmd.root_package() {
+    if let Some(pkg) = metadata.root_package() {
         let pkg_dir = pkg.manifest_path.parent().unwrap();
         for target in &pkg.targets {
             if target.kind == ["lib"] || target.kind == ["bin"] {

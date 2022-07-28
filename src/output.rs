@@ -151,7 +151,18 @@ mod test {
 
     fn minimal_source_tree() -> TempDir {
         let tmp = tempfile::tempdir().unwrap();
-        fs::write(tmp.path().join("Cargo.toml"), b"# enough for a test").unwrap();
+        let path = tmp.path();
+        fs::write(
+            path.join("Cargo.toml"),
+            br#"# enough for a test
+[package]
+name = "cargo-mutants-minimal-test-tree"
+version = "0.0.0"
+"#,
+        )
+        .unwrap();
+        fs::create_dir(path.join("src")).unwrap();
+        fs::write(path.join("src/lib.rs"), b"fn foo() {}").unwrap();
         tmp
     }
 
@@ -181,10 +192,13 @@ mod test {
             list_recursive(tmp.path()),
             &[
                 "",
+                "Cargo.lock",
                 "Cargo.toml",
                 "mutants.out",
                 "mutants.out/lock.json",
                 "mutants.out/log",
+                "src",
+                "src/lib.rs",
             ]
         );
         assert_eq!(output_dir.path(), tmp.path().join("mutants.out"));
