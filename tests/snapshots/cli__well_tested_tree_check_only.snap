@@ -21,5 +21,5 @@ src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... check ok
 src/simple_fns.rs:26: replace double_string -> String with "".into() ... check ok
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... check ok
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default() ... check ok
-15 mutants tested: 15 builds succeeded
+15 mutants tested: 15 succeeded
 

@@ -11,6 +11,7 @@ use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
 
+use crate::console::plural;
 use crate::exit_code;
 use crate::log_file::LogFile;
 use crate::*;
@@ -102,7 +103,7 @@ impl LabOutcome {
 
     /// Return an overall summary, to show at the end of the program.
     pub fn summary_string(&self) -> String {
-        let mut s = format!("{} mutants tested: ", self.total_mutants,);
+        let mut s = format!("{} tested: ", plural(self.total_mutants, "mutant"),);
         let mut parts: Vec<String> = Vec::new();
         if self.missed > 0 {
             parts.push(format!("{} missed", self.missed));
@@ -117,10 +118,10 @@ impl LabOutcome {
             parts.push(format!("{} timeouts", self.timeout));
         }
         if self.success > 0 {
-            parts.push(format!("{} builds succeeded", self.success));
+            parts.push(format!("{} succeeded", self.success));
         }
         if self.failure > 0 {
-            parts.push(format!("{} builds failed", self.failure));
+            parts.push(format!("{} failed", self.failure));
         }
         s.push_str(&parts.join(", "));
         s

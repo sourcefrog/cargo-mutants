@@ -7,5 +7,5 @@ Copy source and build products to scratch directory ... done
 Unmutated baseline ... ok
 Found 1 mutant to test
 src/lib.rs:1: replace factorial -> u32 with Default::default() ... check ok
-1 mutants tested: 1 builds succeeded
+1 mutant tested: 1 succeeded
 

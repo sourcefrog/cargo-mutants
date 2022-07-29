@@ -1,0 +1,13 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+[
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "some_fn",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  }
+]

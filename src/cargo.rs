@@ -55,6 +55,12 @@ pub fn run_cargo(
     let cargo_bin = env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
     log_file.message(&format!("run {} {}", cargo_bin, cargo_args.join(" "),));
 
+    let mut env = PopenConfig::current_env();
+    // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
+    // <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
+    // TODO: Maybe this should append instead of overwriting it...?
+    env.push(("RUSTFLAGS".into(), "--cap-lints=allow".into()));
+
     let mut argv: Vec<&str> = vec![&cargo_bin];
     argv.extend(cargo_args.iter());
     let mut child = Popen::create(
@@ -64,6 +70,7 @@ pub fn run_cargo(
             stdout: Redirection::File(log_file.open_append()?),
             stderr: Redirection::Merge,
             cwd: Some(in_dir.as_os_str().to_owned()),
+            env: Some(env),
             ..setpgid_on_unix()
         },
     )

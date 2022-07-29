@@ -370,3 +370,12 @@ pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
 pub fn style_interrupted() -> String {
     format!("{}", style("interrupted\n").bold().red())
 }
+
+pub fn plural(n: usize, noun: &str) -> String {
+    if n == 1 {
+        format!("{} {}", n, noun)
+    } else {
+        // TODO: Special cases for irregular nouns if they occur...
+        format!("{} {}s", n, noun)
+    }
+}

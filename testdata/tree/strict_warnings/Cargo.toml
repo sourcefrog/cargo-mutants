@@ -1,0 +1,11 @@
+[package]
+name = "cargo-mutants-testdata-strict-warnings"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies.mutants]
+version = "0.0.3"
+# path = "../../../mutants_attrs"
+
+[lib]
+doctest = false

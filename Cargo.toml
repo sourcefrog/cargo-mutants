@@ -72,6 +72,7 @@ members = [
     "testdata/tree/hang_when_mutated",
     "testdata/tree/no_opportunities",
     "testdata/tree/relative_dependency",
+    "testdata/tree/strict_warnings",
     "testdata/tree/well_tested",
 ]
 

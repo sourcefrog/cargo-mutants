@@ -5,5 +5,5 @@ expression: stdout
 Copy source to scratch directory ... done
 Unmutated baseline ... ok
 Found 1 mutant to test
-1 mutants tested: 1 caught
+1 mutant tested: 1 caught
 

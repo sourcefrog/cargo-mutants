@@ -798,3 +798,24 @@ fn cargo_mutants_in_patch_dependency_tree_passes() {
             true
         }));
 }
+
+#[test]
+fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
+    let tmp_src_dir = copy_of_testdata("strict_warnings");
+    run_assert_cmd()
+        .arg("mutants")
+        .arg("--check")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(contains("1 mutant tested: 1 succeeded"));
+
+    run_assert_cmd()
+        .arg("mutants")
+        .current_dir(&tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(contains("1 mutant tested: 1 caught"));
+}
