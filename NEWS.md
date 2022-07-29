@@ -7,11 +7,13 @@
 - Fixed: Open log files in append mode to fix messages from other processes
   occasionally being partly overwritten.
 
+- Improved: `cargo mutants` should now give useful results in packages that use `#![deny(unused)]` or other mechanisms to reject warnings.  Mutated functions often ignore some parameters, which would previously be rejected by this configuration without proving anything interesting about test coverage. Now, `--cap-lints=allow` is passed in `RUSTFLAGS` while building mutants, so that they're not falsely rejected and the tests can be exercised.
+
 - Improved: The build dir name includes the root package name.
 
 - Improved: The progress bar shows more information.
 
-- Improved: `cargo mutants` should now give useful results in packages that use `#![deny(unused)]` or other mechanisms to reject warnings.  Mutated functions often ignore some parameters, which would previously be rejected by this configuration without proving anything interesting about test coverage. Now, `--cap-lints=allow` is passed in `RUSTFLAGS` while building mutants, so that they're not falsely rejected and the tests can be exercised.
+- Improved: The final message shows how many mutants were tested and how long it took.
 
 ## 0.2.8
 

@@ -8,5 +8,5 @@ Unmutated baseline ... ok in x.xxxs
 Auto-set test timeout to x.xxxs
 Found 2 mutants to test
 src/bin/main.rs:1: replace main with () ... NOT CAUGHT in x.xxxs
-2 mutants tested: 1 missed, 1 caught
+2 mutants tested in x.xxxs: 1 missed, 1 caught
 

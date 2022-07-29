@@ -5,13 +5,14 @@
 use std::fmt;
 use std::fs;
 use std::time::Duration;
+use std::time::Instant;
 
 use anyhow::Context;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
 
-use crate::console::plural;
+use crate::console::{duration_minutes_seconds, plural};
 use crate::exit_code;
 use crate::log_file::LogFile;
 use crate::*;
@@ -100,8 +101,13 @@ impl LabOutcome {
     }
 
     /// Return an overall summary, to show at the end of the program.
-    pub fn summary_string(&self) -> String {
-        let mut s = format!("{} tested: ", plural(self.total_mutants, "mutant"),);
+    pub fn summary_string(&self, start_time: Instant, options: &Options) -> String {
+        let mut s = format!("{} tested", plural(self.total_mutants, "mutant"),);
+        if options.show_times {
+            s.push_str(" in ");
+            s.push_str(&duration_minutes_seconds(start_time.elapsed()));
+        }
+        s.push_str(": ");
         let mut parts: Vec<String> = Vec::new();
         if self.missed > 0 {
             parts.push(format!("{} missed", self.missed));

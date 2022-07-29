@@ -174,9 +174,8 @@ impl nutmeg::Model for LabModel {
                 // }
                 writeln!(
                     s,
-                    ", {}:{:02} elapsed, about {} remaining",
-                    elapsed.as_secs() / 60,
-                    elapsed.as_secs() % 60,
+                    ", {} elapsed, about {} remaining",
+                    duration_minutes_seconds(elapsed),
                     nutmeg::estimate_remaining(&lab_start_time, self.i_mutant, self.n_mutants)
                 )
                 .unwrap();
@@ -351,6 +350,11 @@ fn format_elapsed_millis(since: Instant) -> String {
     format!("{:.3}s", since.elapsed().as_secs_f64())
 }
 
+pub fn duration_minutes_seconds(duration: Duration) -> String {
+    let secs = duration.as_secs();
+    format!("{}:{:02}", secs / 60, secs % 60)
+}
+
 fn format_mb(bytes: u64) -> String {
     format!("{} MB", bytes / 1_000_000)
 }
@@ -377,5 +381,19 @@ pub fn plural(n: usize, noun: &str) -> String {
     } else {
         // TODO: Special cases for irregular nouns if they occur...
         format!("{} {}s", n, noun)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_duration_minutes_seconds() {
+        assert_eq!(duration_minutes_seconds(Duration::ZERO), "0:00");
+        assert_eq!(duration_minutes_seconds(Duration::from_secs(3)), "0:03");
+        assert_eq!(duration_minutes_seconds(Duration::from_secs(73)), "1:13");
+        assert_eq!(duration_minutes_seconds(Duration::from_secs(6003)), "100:03");
     }
 }

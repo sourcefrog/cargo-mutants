@@ -63,6 +63,7 @@ pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
     options: &Options,
 ) -> Result<LabOutcome> {
+    let start_time = Instant::now();
     let mut options: Options = options.clone();
     let mut lab_outcome = LabOutcome::default();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
@@ -159,7 +160,10 @@ pub fn test_unmutated_then_all_mutants(
             &lab_outcome,
         )?;
     }
-    console.message(&format!("{}\n", lab_outcome.summary_string()));
+    console.message(&format!(
+        "{}\n",
+        lab_outcome.summary_string(start_time, &options)
+    ));
     Ok(lab_outcome)
 }
 

@@ -18,7 +18,7 @@ use tempfile::{tempdir, TempDir};
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
-    static ref DURATION_RE: Regex = Regex::new(r"\d+\.\d{1,3}s").unwrap();
+    static ref DURATION_RE: Regex = Regex::new(r"(\d+\.\d{1,3}s|\d+:\d{2})").unwrap();
     static ref SIZE_RE: Regex = Regex::new(r"\d+ MB").unwrap();
 }
 
@@ -805,6 +805,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
     run_assert_cmd()
         .arg("mutants")
         .arg("--check")
+        .arg("--no-times")
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
@@ -813,6 +814,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
 
     run_assert_cmd()
         .arg("mutants")
+        .arg("--no-times")
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
