@@ -116,3 +116,9 @@ pass it on to the subprocess group.
 Various output files, including the text output from all the cargo commands are
 written into `mutants.out` within the directory specified by `--output`, or by
 default the source directory.
+
+## Handling strict lints
+
+Some trees are configured so that any unused variable is an error. This is a reasonable choice to keep the tree very clean in CI, but if unhandled it would be a problem for cargo mutants. Many mutants -- in fact at the time of writing all generated mutants -- ignore function parameters and return a static value. Rejecting them due to the lint failure is a missed opportunity to consider a similar but more subtle potential bug.
+
+Therefore when running `rustc` we configure all warnings off, with `--cap-lints`.
