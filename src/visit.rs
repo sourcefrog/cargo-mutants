@@ -44,10 +44,10 @@ impl DiscoveryVisitor {
         let return_type_str = Arc::new(return_type_to_string(return_type));
         for op in ops_for_return_type(return_type) {
             self.mutants.push(Mutant::new(
-                self.source_file.clone(),
+                &self.source_file,
                 op,
-                full_function_name.clone(),
-                return_type_str.clone(),
+                &full_function_name,
+                &return_type_str,
                 span.into(),
             ))
         }

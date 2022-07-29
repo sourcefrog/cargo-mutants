@@ -1,4 +1,4 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021, 2022 Martin Pool
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
@@ -78,17 +78,17 @@ pub struct Mutant {
 
 impl Mutant {
     pub fn new(
-        source_file: Arc<SourceFile>,
+        source_file: &Arc<SourceFile>,
         op: MutationOp,
-        function_name: Arc<String>,
-        return_type: Arc<String>,
+        function_name: &Arc<String>,
+        return_type: &Arc<String>,
         span: Span,
     ) -> Mutant {
         Mutant {
-            source_file,
+            source_file: Arc::clone(source_file),
             op,
-            function_name,
-            return_type,
+            function_name: Arc::clone(function_name),
+            return_type: Arc::clone(return_type),
             span,
         }
     }
