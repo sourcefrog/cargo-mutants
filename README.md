@@ -376,7 +376,7 @@ Showing _interesting results_ mean:
 
 The basic approach is:
 
-- First, run `cargo build --tests` and `cargo check` in the source tree to
+- First, run `cargo build --tests` in the source tree to
   "freshen" it so that the mutated copies will have a good starting point. (This
   is skipped with `--no-copy-target`.)
 

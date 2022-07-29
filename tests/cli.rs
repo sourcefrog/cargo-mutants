@@ -619,10 +619,10 @@ fn source_tree_parse_fails() {
         .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
         .stdout(contains(r#"This isn't Rust..."#).name("The problem source line"))
         .stdout(contains("*** source tree"))
-        .stdout(contains("check --tests")) // Caught at the check phase
+        .stdout(contains("build --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:3"))
         .stdout(contains("*** cargo result: "))
-        .stdout(contains("check failed in source tree, not continuing"));
+        .stdout(contains("build failed in source tree, not continuing"));
 }
 
 #[test]
@@ -640,10 +640,10 @@ fn source_tree_typecheck_fails() {
                 .name("The problem source line"),
         )
         .stdout(contains("*** source tree"))
-        .stdout(contains("check --tests")) // Caught at the check phase
+        .stdout(contains("build --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:6"))
         .stdout(contains("*** cargo result: "))
-        .stdout(contains("check failed in source tree, not continuing"));
+        .stdout(contains("build failed in source tree, not continuing"));
 }
 
 #[test]

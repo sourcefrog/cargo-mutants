@@ -42,8 +42,6 @@ impl Phase {
             Phase::Test => "test",
         }
     }
-
-    pub const ALL: &'static [Phase] = &[Phase::Check, Phase::Build, Phase::Test];
 }
 
 impl fmt::Display for Phase {

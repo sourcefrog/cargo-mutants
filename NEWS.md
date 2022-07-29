@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Faster: `cargo mutants` no longer runs `cargo check` before building, in cases where the build products are wanted or tests will be run. This saves a significant amount of work in build phases; in some trees `cargo mutants` is now 30% faster. (In trees where most of the time is spent running tests the effect will be less.)
+
 - Fixed: Open log files in append mode to fix messages from other processes
   occasionally being partly overwritten.
 

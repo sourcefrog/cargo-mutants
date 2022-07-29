@@ -14,7 +14,7 @@ use rand::prelude::*;
 use serde::Serialize;
 
 use crate::cargo::run_cargo;
-use crate::console::{self, Console};
+use crate::console::{self, plural, Console};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
@@ -74,7 +74,7 @@ pub fn test_unmutated_then_all_mutants(
     let console = Console::new();
 
     if options.build_source {
-        let outcome = check_and_build_source_tree(source_tree, &output_dir, &options, &console)?;
+        let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
         lab_outcome.add(&outcome);
         if !outcome.success() {
             console::print_error(&format!(
@@ -87,13 +87,18 @@ pub fn test_unmutated_then_all_mutants(
 
     let build_dir = BuildDir::new(source_tree, &options)?;
     let build_dir_path = build_dir.path();
+    let phases: &[Phase] = if options.check_only {
+        &[Phase::Check]
+    } else {
+        &[Phase::Build, Phase::Test]
+    };
     let outcome = {
         run_cargo_phases(
             build_dir_path,
             &output_dir,
             &options,
             &Scenario::Baseline,
-            Phase::ALL,
+            phases,
             &console,
         )
     }?;
@@ -127,15 +132,7 @@ pub fn test_unmutated_then_all_mutants(
         BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
         &mutants,
     )?;
-    println!(
-        "Found {} {} to test",
-        mutants.len(),
-        if mutants.len() == 1 {
-            "mutant"
-        } else {
-            "mutants"
-        }
-    );
+    println!("Found {} to test", plural(mutants.len(), "mutant"));
     if mutants.is_empty() {
         return Err(anyhow!("No mutants found"));
     }
@@ -149,7 +146,7 @@ pub fn test_unmutated_then_all_mutants(
                 &output_dir,
                 &options,
                 &scenario,
-                Phase::ALL,
+                phases,
                 &console,
             )
         })?;
@@ -227,7 +224,7 @@ fn run_cargo_phases(
 /// This brings the source `target` directory basically up to date with any changes to the source,
 /// dependencies, or the Rust toolchain. We do this in the source so that repeated runs of `cargo
 /// mutants` won't have to repeat this work in every scratch directory.
-fn check_and_build_source_tree(
+fn build_source_tree(
     source_tree: &SourceTree,
     output_dir: &OutputDir,
     options: &Options,
@@ -236,7 +233,7 @@ fn check_and_build_source_tree(
     let phases: &'static [Phase] = if options.check_only {
         &[Phase::Check]
     } else {
-        &[Phase::Check, Phase::Build]
+        &[Phase::Build]
     };
     run_cargo_phases(
         source_tree.path(),
