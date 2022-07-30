@@ -62,7 +62,7 @@ root; otherwise it matches only against the file name.
 
 `--json`: With `--list`, show the list in json.
 
-`--check`: Run `cargo check` on all generated mutants, but don't actually run the tests.
+`--check`: Run `cargo check` on all generated mutants to find out which ones are viable, but don't actually run the tests.
 
 `--no-copy-target`: Don't copy the `/target` directory from the source, and
 don't freshen the source directory before copying it. The first "baseline" build
@@ -80,7 +80,7 @@ of cargo-mutants.)
 
 `-v`, `--caught`: Also print mutants that were caught by tests.
 
-`-V`, `--unviable`: Also print mutants that failed `cargo check` or `cargo build`.
+`-V`, `--unviable`: Also print mutants that failed `cargo build`.
 
 `--no-times`: Don't print elapsed times.
 
@@ -329,12 +329,7 @@ Being _easy_ to use means:
 - cargo-mutants should avoid generating unviable mutants that don't compile,
   because that wastes time. However, when it's uncertain whether the mutant will
   build, it's worth trying things that _might_ find interesting results even if
-  they might fail to build.  (There is room for improvement here too, but since
-  cargo-mutants runs a cheap `cargo check` on each mutant first, the cost to try
-  unviable mutants is actually not too bad. Most of the time is in running the
-  tests for viable mutants. And, we can generally assume developers aren't
-  waiting for cargo-mutants on every change the way they might wait for the
-  regular test suite.)
+  they might fail to build.  (It does currently generate _some_ unviable mutants, but typically not too many, and they don't have a large effect on runtime in most trees.)
 
 - Realistically, cargo-mutants may generate some mutants that aren't caught by
   tests but also aren't interesting, or aren't feasible to test. In those cases
