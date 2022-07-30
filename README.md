@@ -116,20 +116,18 @@ one of these categories:
 - **caught** — A test failed with this mutant applied. This is a good sign about
   test coverage. You can look in `mutants.out/log` to see which tests failed.
 
-- **not caught** — No test failed with this mutation applied, which seems to
+- **missed** — No test failed with this mutation applied, which seems to
   indicate a gap in test coverage. Or, it may be that the mutant is
   undistinguishable from the correct code. You may wish to add a better test, or
   mark that the function should be skipped.
 
-- **check failed** — `cargo check` failed on the mutated code, probably because
-  the mutation does not typecheck. This is inconclusive about test coverage and
+- **unviable** — The attempted mutation doesn't compile. This is inconclusive about test coverage and
   no action is needed, but indicates an opportunity for cargo-mutants to either
   generate better mutants, or at least not generate unviable mutants.
 
-- **build failed** — Similarly, but `cargo build` failed. This should be rare.
+- **timeout** — The mutation caused the test suite to run for a long time, until it was eventually killed. You might want to investigate the cause and potentially mark the function to be skipped.
 
-By default only "not caught" mutants are printed; others can be shown with the
-`-v` and `-V` options.
+By default only missed mutants and timeouts are printed because they're the most actionable. Others can be shown with the `-v` and `-V` options.
 
 ### Skipping functions
 
