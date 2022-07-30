@@ -425,30 +425,7 @@ It's an interesting insight that mutation at the level of a whole function is a
 practical sweet-spot to discover missing tests, while still making it feasible
 to exhaustively generate every mutant, at least for moderate-sized trees.
 
-### Mutagen
-
-There's an existing Rust mutation testing tool called
-[Mutagen](https://github.com/llogiq/mutagen).
-
-Some differences are:
-
-- Mutagen requires changes to the source tree, and for functions to be mutated
-  to be marked with an attribute. cargo-mutants can work with any unmodified
-  tree.
-
-- Mutagen needs a nightly compiler. cargo-mutants can be built with any recent
-  stable (or nightly) compiler and can be used with very old compilers.
-
-- Mutagen builds the tree only once; cargo-mutants does an incremental build for
-  each mutation.
-
-  On the up side building for each mutation gives cargo-mutants the freedom to
-  try mutations it's not sure will compile.
-
-  Typically the incremental builds are relatively cheap compared to the time to
-  run the tests.
-
-Please let me know anything else that should be added or corrected.
+See also: [more information on how cargo-mutants compares to other techniques and tools](https://github.com/sourcefrog/cargo-mutants/wiki/Compared).
 
 ## Supported Rust versions
 
