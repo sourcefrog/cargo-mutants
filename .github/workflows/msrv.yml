@@ -16,7 +16,7 @@ env:
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  build:
+  test:
     strategy:
       matrix:
         toolchain: [1.58]
@@ -28,6 +28,7 @@ jobs:
         name: Install older toolchain
         with:
           toolchain: ${{ matrix.toolchain }}
+          override: true
       - name: Show Cargo and rustc version
         run: |
           cargo --version
