@@ -324,7 +324,7 @@ Being _easy_ to use means:
   cargo-mutants runs tests with an automatically set and configurable timeout.)
 
 - The results should be reproducible, assuming the build and test suite is
-  deterministic. (This should be true today; please file a bug if it's not.)
+  deterministic. (This should be true today; please file a bug if it's not. Mutants are run in random order unless `--no-shuffle` is specified, but this should not affect the results.)
 
 - cargo-mutants should avoid generating unviable mutants that don't compile,
   because that wastes time. However, when it's uncertain whether the mutant will
