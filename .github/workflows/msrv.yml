@@ -1,0 +1,45 @@
+name: MSRV
+
+on:
+  push:
+  pull_request:
+    branch: main
+
+# see https://matklad.github.io/2021/09/04/fast-rust-builds.html
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CI: 1
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-W rust-2021-compatibility"
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        toolchain: [1.58]
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        name: Install older toolchain
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+      - name: Show Cargo and rustc version
+        run: |
+          cargo --version
+          rustc --version
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ matrix.toolchain }}-${{ hashFiles('Cargo.lock') }}
+      - name: Test
+        run: cargo test --workspace
