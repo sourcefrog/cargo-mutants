@@ -438,19 +438,12 @@ any toolchain, using the standard `+` option to `cargo`:
 cargo +1.48 mutants
 ```
 
-## Project status
+### Limitations, caveats, known bugs, and future enhancements
 
 cargo-mutants behavior, output formats, command-line syntax, json output
 formats, etc, may change from one release to the next.
 
-The repertoire of generated mutants is smaller than it could be, and
-cargo-mutants generates and tries to build some mutants that it really should
-know won't work out.
-
-### Limitations, caveats, known bugs, and future enhancements
-
-See also the list of goals, above, which has some commentary on where
-cargo-mutants is not yet meeting its goals.
+- cargo-mutants does not yet understand cargo workspaces, and it will only test the root package. <https://github.com/sourcefrog/cargo-mutants/issues/45>
 
 - cargo-mutants sees the AST of the tree but doesn't fully "understand" the
   types. Possibly it could learn to get type information from the compiler (or
@@ -461,7 +454,7 @@ cargo-mutants is not yet meeting its goals.
   test them in parallel, which is likely to exploit CPU resources more
   thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
   down to a single task during linking, and often comes down to running a single
-  straggler test at a time.
+  straggler test at a time. <https://github.com/sourcefrog/cargo-mutants/issues/39>
 
 ## Code of Conduct
 
