@@ -202,14 +202,6 @@ The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.
 When a test times out, you can mark it with `#[mutants::skip]` so that future
 `cargo mutants` runs go faster.
 
-### Avoiding false negatives
-
-Trees that `deny` style lints such as `unused_variable` are likely to fail to
-build when mutated, without really saying much about the value of the tests. I
-suggest you don't statically deny warnings in your source code, but rather set
-`RUSTFLAGS` when you do want to check this, and don't do this when running
-`cargo mutants`.
-
 ### Performance
 
 Most of the runtime for cargo-mutants is spent in running the program test suite
