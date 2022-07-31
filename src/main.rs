@@ -22,8 +22,8 @@ mod visit;
 use std::convert::TryFrom;
 use std::env;
 use std::io;
-
 use std::process::exit;
+use std::time::Duration;
 
 use anyhow::Result;
 use argh::FromArgs;
@@ -46,6 +46,7 @@ use crate::visit::discover_mutants;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
+const DEFAULT_TEST_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///
