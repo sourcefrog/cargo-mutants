@@ -64,12 +64,20 @@ fn fix_manifest_toml(
 /// Fix up paths in a manifest "dependency table".
 ///
 /// This is a pattern that can occur at various places in the manifest. It's a
-/// map from package name to a table which may contain a "path" field.
+/// map from a string (such as a package name) to a table which may contain a "path" field.
+///
+/// For example:
+///
+/// ```yaml
+/// mutants = { version = "1.0", path = "../mutants" }
+/// ```
 ///
 /// The table is mutated if necessary.
 ///
-/// `dependencies_table` is a TOML Value that should normally be a table;
-/// other values are ignored.
+/// `dependencies` is a TOML Value that should normally be a table;
+/// other values are left unchanged.
+///
+/// Entries that have no `path` are left unchanged too.
 fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Utf8Path) {
     if let Some(dependencies_table) = dependencies.as_table_mut() {
         for (_, value) in dependencies_table.iter_mut() {
