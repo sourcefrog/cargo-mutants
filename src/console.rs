@@ -394,6 +394,9 @@ mod test {
         assert_eq!(duration_minutes_seconds(Duration::ZERO), "0:00");
         assert_eq!(duration_minutes_seconds(Duration::from_secs(3)), "0:03");
         assert_eq!(duration_minutes_seconds(Duration::from_secs(73)), "1:13");
-        assert_eq!(duration_minutes_seconds(Duration::from_secs(6003)), "100:03");
+        assert_eq!(
+            duration_minutes_seconds(Duration::from_secs(6003)),
+            "100:03"
+        );
     }
 }
