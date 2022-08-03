@@ -1,5 +1,19 @@
-use camino::Utf8Path;
+// Copyright 2022 Martin Pool.
 
+//! Utilities for file paths.
+
+use std::convert::TryInto;
+use std::fmt;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+
+use camino::{Utf8Path, Utf8PathBuf};
+
+/// An extension trait that helps Utf8Path print with forward slashes,
+/// even on Windows.
+///
+/// This makes the output more consistent across platforms and so easier
+/// to test.
 pub trait Utf8PathSlashes {
     fn to_slash_path(&self) -> String;
 }
@@ -12,6 +26,70 @@ impl Utf8PathSlashes for Utf8Path {
             .map(|c| if c == "/" || c == "\\" { "" } else { c })
             .collect::<Vec<_>>()
             .join("/")
+    }
+}
+
+/// A path relative to the top of the source tree.
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+pub struct TreeRelativePathBuf(Utf8PathBuf);
+
+impl fmt::Display for TreeRelativePathBuf {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = self
+            .0
+            .components()
+            .map(|c| c.as_str())
+            .collect::<Vec<_>>()
+            .join("/");
+        f.write_str(&s)
+    }
+}
+
+impl TreeRelativePathBuf {
+    pub fn new(path: Utf8PathBuf) -> Self {
+        assert!(path.is_relative());
+        TreeRelativePathBuf(path)
+    }
+
+    pub fn within(&self, tree_path: &Utf8Path) -> Utf8PathBuf {
+        tree_path.join(&self.0)
+    }
+
+    /// Return the tree-relative path of the containing directory.
+    ///
+    /// Panics if there is no parent, i.e. if self is already the tree root.
+    pub fn parent(&self) -> TreeRelativePathBuf {
+        self.0
+            .parent()
+            .expect("TreeRelativePath has no parent")
+            .to_owned()
+            .into()
+    }
+}
+
+impl From<Utf8PathBuf> for TreeRelativePathBuf {
+    fn from(path_buf: Utf8PathBuf) -> Self {
+        TreeRelativePathBuf::new(path_buf)
+    }
+}
+
+impl From<PathBuf> for TreeRelativePathBuf {
+    fn from(path_buf: PathBuf) -> Self {
+        TreeRelativePathBuf::new(path_buf.try_into().expect("path must be UTF-8"))
+    }
+}
+
+impl From<&Path> for TreeRelativePathBuf {
+    fn from(path: &Path) -> Self {
+        TreeRelativePathBuf::from(path.to_owned())
+    }
+}
+
+impl FromStr for TreeRelativePathBuf {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(TreeRelativePathBuf::new(s.parse()?))
     }
 }
 
