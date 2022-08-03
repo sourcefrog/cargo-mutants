@@ -72,22 +72,20 @@ impl SourceTree {
     ///
     /// This eagerly loads cargo metadata from the enclosed `Cargo.toml`, so the
     /// tree must be minimally valid Rust.
+    ///
+    /// `path` may be any path pointing within the tree, including a relative path.
+    /// The root of the tree is discovered.
     pub fn new(path: &Utf8Path) -> Result<SourceTree> {
-        let cargo_toml_path = path.join("Cargo.toml");
-        if !cargo_toml_path.is_file() {
-            return Err(anyhow!(
-                "{} does not contain a Cargo.toml: specify a crate directory",
-                path.to_slash_path()
-            ));
-        }
+        let cargo_toml_path = cargo::locate_project(path)?;
+        let root = cargo_toml_path
+            .parent()
+            .expect("Cargo.toml path has not parent")
+            .to_owned();
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
             .exec()
             .context("run cargo metadata")?;
-        Ok(SourceTree {
-            root: path.to_owned(),
-            metadata,
-        })
+        Ok(SourceTree { root, metadata })
     }
 
     /// Return all the mutations that could possibly be applied to this tree.
@@ -197,6 +195,7 @@ fn cargo_metadata_sources(
 
 #[cfg(test)]
 mod test {
+    use std::ffi::OsStr;
     use std::fs::File;
     use std::io::Write;
 
@@ -219,9 +218,14 @@ mod test {
     }
 
     #[test]
-    fn error_opening_subdirectory_of_crate() {
-        let result = SourceTree::new(Utf8Path::new("testdata/tree/factorial/src"));
-        assert!(result.is_err());
+    fn open_subdirectory_of_crate_opens_the_crate() {
+        let source_tree = SourceTree::new(Utf8Path::new("testdata/tree/factorial/src"))
+            .expect("open source tree from subdirectory");
+        let path = source_tree.path();
+        assert!(path.is_dir());
+        assert!(path.join("Cargo.toml").is_file());
+        assert!(path.join("src/bin/main.rs").is_file());
+        assert_eq!(path.file_name().unwrap(), OsStr::new("factorial"));
     }
 
     #[test]

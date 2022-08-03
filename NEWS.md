@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: Works properly if run from a subdirectory of a crate, or if `-d` points to a
+  subdirectory of a crate.
+
 ## 0.2.9
 
 Released 2022-07-30

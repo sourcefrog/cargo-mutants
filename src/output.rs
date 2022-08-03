@@ -201,8 +201,8 @@ version = "0.0.0"
                 "src/lib.rs",
             ]
         );
-        assert_eq!(output_dir.path(), tmp.path().join("mutants.out"));
-        assert_eq!(output_dir.log_dir, tmp.path().join("mutants.out/log"));
+        assert_eq!(output_dir.path(), src_tree.path().join("mutants.out"));
+        assert_eq!(output_dir.log_dir, src_tree.path().join("mutants.out/log"));
         assert!(output_dir.path().join("lock.json").is_file());
     }
 

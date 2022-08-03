@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use serde::Serialize;
+use serde_json::Value;
 use subprocess::{Popen, PopenConfig, Redirection};
 
 use crate::console::Console;
@@ -52,8 +53,7 @@ pub fn run_cargo(
     // When run as a Cargo subcommand, which is the usual/intended case,
     // $CARGO tells us the right way to call back into it, so that we get
     // the matching toolchain etc.
-    let cargo_bin = env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
-    log_file.message(&format!("run {} {}", cargo_bin, cargo_args.join(" "),));
+    let cargo_bin = cargo_bin();
 
     let mut env = PopenConfig::current_env();
     // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
@@ -63,6 +63,7 @@ pub fn run_cargo(
 
     let mut argv: Vec<&str> = vec![&cargo_bin];
     argv.extend(cargo_args.iter());
+    log_file.message(&format!("run {}", argv.join(" "),));
     let mut child = Popen::create(
         &argv,
         PopenConfig {
@@ -74,7 +75,7 @@ pub fn run_cargo(
             ..setpgid_on_unix()
         },
     )
-    .with_context(|| format!("failed to spawn {} {}", cargo_bin, cargo_args.join(" ")))?;
+    .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
     let exit_status = loop {
         if start.elapsed() > timeout {
             log_file.message(&format!(
@@ -104,6 +105,11 @@ pub fn run_cargo(
     } else {
         Ok(CargoResult::Failure)
     }
+}
+
+/// Return the name of the cargo binary.
+fn cargo_bin() -> String {
+    env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned())
 }
 
 #[cfg(unix)]
@@ -152,4 +158,42 @@ fn setpgid_on_unix() -> PopenConfig {
 #[cfg(not(unix))]
 fn setpgid_on_unix() -> PopenConfig {
     Default::default()
+}
+
+/// Find the path of the Cargo.toml file enclosing the given directory.
+///
+/// Returns an error if it's not found.
+pub fn locate_project(path: &Utf8Path) -> Result<Utf8PathBuf> {
+    let cargo_bin = cargo_bin();
+    let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
+    let mut child = Popen::create(
+        &argv,
+        PopenConfig {
+            stdin: Redirection::Pipe,
+            stdout: Redirection::Pipe,
+            stderr: Redirection::Pipe,
+            cwd: Some(path.as_os_str().to_owned()),
+            ..Default::default()
+        },
+    )
+    .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
+    let (stdout, stderr) = child
+        .communicate(Some(""))
+        .context("communicate with cargo locate-project")
+        .map(|(a, b)| (a.unwrap(), b.unwrap()))?;
+    if !child
+        .wait()
+        .context("wait for cargo locate-project")?
+        .success()
+        || stdout.is_empty()
+    {
+        return Err(anyhow!(stderr));
+    }
+    let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
+    let root = &val["root"];
+    let root = root
+        .as_str()
+        .context("cargo locate-project output has no root: {stdout}")?;
+    root.parse()
+        .context("parse cargo locate-project output root to path")
 }
