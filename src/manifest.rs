@@ -123,17 +123,27 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
     }
 }
 
-/// Fix one path, from inside a scratch tree, to be absolute as interpreted
-/// relative to the source tree.
-fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
+/// Fix a dependency path to be absolute, if necessary.
+///
+/// `path_str` is the path as it occurs in the original manifest or config.
+///
+/// `package_dir` is the absolute path of the package where this dependency occurs.
+/// If `path_str` is relative and must be made absolute, that's done relative to
+/// this location.
+///
+/// Returns None if the path doesn't need to be changed, otherwise the new
+/// absolute path.
+fn fix_path(path_str: &str, package_dir: &Utf8Path) -> Option<String> {
+    debug_assert!(package_dir.is_absolute());
     let path = Utf8Path::new(path_str);
     if path.is_absolute() {
         None
     } else {
-        let mut new_path = source_dir.to_owned();
-        new_path.push(path);
-        Some(new_path.to_string())
+        // We don't canonicalize here because that requires that the path exists, and
+        // and it's easier to test if we don't require that.
+        Some(package_dir.join(path).to_string())
     }
+    // TODO: Measure how many directories upward this path ever moves.
 }
 
 #[cfg(test)]
@@ -142,6 +152,21 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use super::fix_manifest_toml;
+
+    // #[test]
+    // fn fix_path_into_subdir_is_unchanged() {
+    //     // This is a relative dependency pointing to a subdirectory of the source tree.
+    //     // It's OK to leave it as relative because the whole tree will be copied,
+    //     // so the subdirectory can still be found at the same relative position.
+    //     let package_dir = Utf8Path::new("testdata/tree/relative_dependency")
+    //         .canonicalize_utf8()
+    //         .unwrap();
+    //     assert_eq!(
+    //         super::fix_path("subpackage", &package_dir).unwrap(),
+    //         "subpackage",
+    //         "TODO"
+    //     );
+    // }
 
     #[test]
     fn fix_path_absolute_unchanged() {
@@ -159,16 +184,13 @@ mod test {
 
     #[test]
     fn fix_path_relative() {
-        let fixed_path: Utf8PathBuf = super::fix_path(
-            "../dependency",
-            Utf8Path::new("testdata/tree/relative_dependency"),
-        )
-        .expect("path was adjusted")
-        .into();
-        assert_eq!(
-            &fixed_path,
-            Utf8Path::new("testdata/tree/relative_dependency/../dependency"),
-        );
+        let package_path = Utf8Path::new("testdata/tree/relative_dependency")
+            .canonicalize_utf8()
+            .unwrap();
+        let fixed_path: Utf8PathBuf = super::fix_path("../dependency", &package_path)
+            .expect("path was adjusted")
+            .into();
+        assert_eq!(fixed_path, package_path.join("../dependency"));
     }
 
     #[test]
