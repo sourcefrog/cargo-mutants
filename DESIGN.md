@@ -122,3 +122,15 @@ default the source directory.
 Some trees are configured so that any unused variable is an error. This is a reasonable choice to keep the tree very clean in CI, but if unhandled it would be a problem for cargo mutants. Many mutants -- in fact at the time of writing all generated mutants -- ignore function parameters and return a static value. Rejecting them due to the lint failure is a missed opportunity to consider a similar but more subtle potential bug.
 
 Therefore when running `rustc` we configure all warnings off, with `--cap-lints`.
+
+## Workspaces with multiple packages
+
+Rust has _workspaces_, which are directories containing multiple crates (also called packages), sharing a single `target` directory.
+
+The `SourceTree` root is the root of the workspace.
+
+cargo-mutants will by default copy the whole workspace and test every package within it.
+
+`cargo test` needs to be run for each package, passing the package name.
+
+Every `Cargo.toml` in the workspace must be examined for relative paths. Relative paths that point inside the tree can be left as they are. In doing this we must take account of the position of the manifest within the source tree.
