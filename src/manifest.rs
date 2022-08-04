@@ -10,6 +10,7 @@ use std::fs;
 use anyhow::Context;
 use camino::Utf8Path;
 
+use crate::path::ascent;
 use crate::Result;
 
 /// Rewrite the scratch copy of a manifest to have absolute paths.
@@ -125,9 +126,13 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
 
 /// Fix one path, from inside a scratch tree, to be absolute as interpreted
 /// relative to the source tree.
+///
+/// Paths pointing into a subdirectory of the source tree are left unchanged.
+///
+/// Returns None if the path does not need to be changed.
 fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
     let path = Utf8Path::new(path_str);
-    if path.is_absolute() {
+    if path.is_absolute() || ascent(path) == 0 {
         None
     } else {
         let mut new_path = source_dir.to_owned();
@@ -242,6 +247,21 @@ wibble = { path = "c:/home/asmithee/src/wibble" }
     }
 
     #[test]
+    fn subdir_path_in_manifest_is_unchanged() {
+        let manifest_toml = r#"
+[dependencies]
+wibble = { path = "wibble" }
+"#;
+
+        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path).unwrap();
+        assert_eq!(
+            fixed_toml, None,
+            "manifest with a relative path to a subdirectory should not be modified",
+        );
+    }
+
+    #[test]
     fn fix_patch_section() {
         let manifest_toml = r#"
 [dependencies]
@@ -282,7 +302,7 @@ paths = [
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
         let expected = r#"paths = [
-    '/Users/jane/src/foo/sub_dependency',
+    'sub_dependency',
     '/Users/jane/src/foo/../sibling_dependency',
     '/Users/jane/src/foo/../../parent_dependency',
     '/Users/jane/src/absolute_dependency',
