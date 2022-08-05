@@ -7,6 +7,8 @@
 
 - Improved: Various docs.
 
+- Improved: Relative dependencies within the source tree are left as relative paths, and will be built within the scratch directory. Relative dependencies outside the source tree are still rewritten as absolute paths.
+
 ## 0.2.9
 
 Released 2022-07-30
