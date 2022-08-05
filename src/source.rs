@@ -142,6 +142,48 @@ impl SourceTree {
             .name
             .as_str())
     }
+
+    /// Return a list of all the packages in the tree.
+    pub fn workspace_packages(&self) -> Result<Vec<Package>> {
+        // Packages with "source: null" seem to come from inside this workspace?
+        Ok(self
+            .metadata
+            .packages
+            .iter()
+            .filter(|p| p.source.is_none())
+            .map(|p| {
+                let path: TreeRelativePathBuf = p
+                    .manifest_path
+                    .parent()
+                    .expect("manifest path has no parent")
+                    .strip_prefix(self.path())
+                    .expect("manifest path is not in source tree")
+                    .to_owned()
+                    .into();
+                Package {
+                    name: p.name.to_owned(),
+                    path,
+                }
+            })
+            .collect())
+    }
+}
+
+/// A Rust package within a tree.
+#[derive(Debug, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Package {
+    name: String,
+    path: TreeRelativePathBuf,
+}
+
+impl Package {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn path(&self) -> &TreeRelativePathBuf {
+        &self.path
+    }
 }
 
 fn indirect_sources(
@@ -281,5 +323,31 @@ mod test {
     fn source_root_package_name_of_cargo_mutants_itself() {
         let source_tree = SourceTree::new(".".into()).unwrap();
         assert_eq!(source_tree.root_package_name().unwrap(), "cargo-mutants");
+    }
+
+    #[test]
+    fn discover_workspace_packages() {
+        let source_tree = SourceTree::new("testdata/tree/workspace".into()).unwrap();
+        let mut packages = source_tree.workspace_packages().unwrap();
+        packages.sort_unstable();
+        assert_eq!(packages.len(), 3);
+        // TODO: Check contents
+        assert_eq!(
+            packages,
+            vec![
+                Package {
+                    name: "main".to_owned(),
+                    path: "main".parse().unwrap(),
+                },
+                Package {
+                    name: "main2".to_owned(),
+                    path: "main2".parse().unwrap(),
+                },
+                Package {
+                    name: "utils".to_owned(),
+                    path: "utils".parse().unwrap(),
+                },
+            ]
+        );
     }
 }

@@ -91,6 +91,12 @@ impl TreeRelativePathBuf {
     }
 }
 
+impl From<&Utf8Path> for TreeRelativePathBuf {
+    fn from(path_buf: &Utf8Path) -> Self {
+        TreeRelativePathBuf::new(path_buf.to_owned())
+    }
+}
+
 impl From<Utf8PathBuf> for TreeRelativePathBuf {
     fn from(path_buf: Utf8PathBuf) -> Self {
         TreeRelativePathBuf::new(path_buf)
