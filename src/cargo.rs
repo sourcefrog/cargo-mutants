@@ -191,9 +191,8 @@ pub fn locate_project(path: &Utf8Path) -> Result<Utf8PathBuf> {
     }
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let root = &val["root"];
-    let root = root
-        .as_str()
-        .context("cargo locate-project output has no root: {stdout}")?;
-    root.parse()
+    root.as_str()
+        .context("cargo locate-project output has no root: {stdout:?}")?
+        .parse()
         .context("parse cargo locate-project output root to path")
 }
