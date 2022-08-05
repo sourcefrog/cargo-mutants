@@ -79,7 +79,7 @@ impl SourceTree {
         let cargo_toml_path = cargo::locate_project(path)?;
         let root = cargo_toml_path
             .parent()
-            .expect("Cargo.toml path has not parent")
+            .expect("Cargo.toml path has no parent")
             .to_owned();
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
