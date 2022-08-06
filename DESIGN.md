@@ -48,6 +48,21 @@ After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
 rewritten to be absolute, so that they still work when cargo is run in the
 scratch directory.
 
+## Enumerating the source tree
+
+A source tree may be a single crate or a Cargo workspace. There are several levels of nesting:
+
+* A workspace contains one or more packages,
+* A package contains some source files,
+* Each source file contains some functions,
+* For each function we generate some mutants.
+
+The identity of the containing package is passed through to the `SourceFile` and the muation, because `cargo test` must be run for this single package.
+
+Currently source files are discovered by finding any `bin` or `lib` targets in the package, then taking every `*.rs` file in the same directory as their top-level source file. (This is a bit approximate and will pick up files that might not actually be referenced by a `mod` statement, so may change in the future.)
+
+We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented.
+
 ## Handling timeouts
 
 Mutations can cause a program to go into an infinite (or just very long) loop:
