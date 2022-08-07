@@ -475,10 +475,10 @@ r"Copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d
 r"Unmutated baseline \.\.\. ok in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
+r"src/bin/factorial\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
+r"src/bin/factorial\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
         ).unwrap());
 }
 

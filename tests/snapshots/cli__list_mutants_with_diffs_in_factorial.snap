@@ -1,11 +1,9 @@
 ---
 source: tests/cli.rs
-assertion_line: 41
 expression: "String::from_utf8_lossy(&output.stdout)"
-
 ---
-src/bin/main.rs:1: replace main with ()
---- src/bin/main.rs
+src/bin/factorial.rs:1: replace main with ()
+--- src/bin/factorial.rs
 +++ replace main with ()
 @@ -1,12 +1,10 @@
  fn main() {
@@ -22,8 +20,8 @@ src/bin/main.rs:1: replace main with ()
      }
      a
 
-src/bin/main.rs:7: replace factorial -> u32 with Default::default()
---- src/bin/main.rs
+src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
+--- src/bin/factorial.rs
 +++ replace factorial with Default::default()
 @@ -1,19 +1,15 @@
  fn main() {

@@ -81,14 +81,14 @@ expression: buf
 ```json
 [
   {
-    "file": "src/bin/main.rs",
+    "file": "src/bin/factorial.rs",
     "line": 1,
     "function": "main",
     "return_type": "",
     "replacement": "()"
   },
   {
-    "file": "src/bin/main.rs",
+    "file": "src/bin/factorial.rs",
     "line": 7,
     "function": "factorial",
     "return_type": "-> u32",

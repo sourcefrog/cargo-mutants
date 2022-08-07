@@ -242,7 +242,7 @@ mod test {
     fn discover_factorial_mutants() {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
-            "src/bin/main.rs".parse().unwrap(),
+            "src/bin/factorial.rs".parse().unwrap(),
         )
         .unwrap();
         let muts = discover_mutants(source_file.into()).unwrap();
@@ -253,7 +253,7 @@ mod test {
         );
         assert_eq!(
             muts[0].to_string(),
-            "replace main with () in src/bin/main.rs:1"
+            "replace main with () in src/bin/factorial.rs:1"
         );
         assert_eq!(
             format!("{:?}", muts[1]),
@@ -261,7 +261,7 @@ mod test {
         );
         assert_eq!(
             muts[1].to_string(),
-            "replace factorial with Default::default() in src/bin/main.rs:7"
+            "replace factorial with Default::default() in src/bin/factorial.rs:7"
         );
     }
 
@@ -284,7 +284,7 @@ mod test {
     fn mutate_factorial() {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
-            "src/bin/main.rs".parse().unwrap(),
+            "src/bin/factorial.rs".parse().unwrap(),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();

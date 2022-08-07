@@ -44,8 +44,8 @@ src/lib.rs:1: replace factorial -> u32 with Default::default()
 ## testdata/tree/factorial
 
 ```
-src/bin/main.rs:1: replace main with ()
-src/bin/main.rs:7: replace factorial -> u32 with Default::default()
+src/bin/factorial.rs:1: replace main with ()
+src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
 ```
 
 ## testdata/tree/hang_avoided_by_attr
