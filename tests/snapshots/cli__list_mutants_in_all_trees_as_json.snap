@@ -230,6 +230,20 @@ expression: buf
 ]
 ```
 
+## testdata/tree/small_well_tested
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 4,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 ## testdata/tree/strict_warnings
 
 ```json

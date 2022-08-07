@@ -204,6 +204,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-mutants-testdata-small-well-tested"
+version = "0.0.0"
+
+[[package]]
 name = "cargo-mutants-testdata-strict-warnings"
 version = "0.1.0"
 dependencies = [

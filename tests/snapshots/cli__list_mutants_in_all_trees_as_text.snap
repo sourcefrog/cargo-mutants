@@ -95,6 +95,12 @@ src/lib.rs:6: replace is_even -> bool with true
 src/lib.rs:6: replace is_even -> bool with false
 ```
 
+## testdata/tree/small_well_tested
+
+```
+src/lib.rs:4: replace factorial -> u32 with Default::default()
+```
+
 ## testdata/tree/strict_warnings
 
 ```
