@@ -126,30 +126,36 @@ fn list_diff_json_not_yet_supported() {
 
 #[test]
 fn list_mutants_in_all_trees() {
-    for t in fs::read_dir("testdata/tree")
+    for dir_path in fs::read_dir("testdata/tree")
         .unwrap()
         .map(|r| r.unwrap())
         .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
         .filter(|dir_entry| dir_entry.file_name() != "parse_fails")
         .map(|dir_entry| dir_entry.path())
     {
-        println!("test {t:?}");
+        if !dir_path.join("Cargo.toml").exists() {
+            // Maybe a leftover directory after switching branches that contains
+            // `target/` but no source.
+            println!("Skipping {} as it has no Cargo.toml", dir_path.display());
+            continue;
+        }
+        println!("test {dir_path:?}");
         run()
             .arg("mutants")
             .arg("--list")
             .arg("--json")
-            .current_dir(&t)
+            .current_dir(&dir_path)
             .assert_insta(&format!(
                 "list_mutants_in_all_trees__json__{}",
-                t.file_name().unwrap().to_str().unwrap()
+                dir_path.file_name().unwrap().to_str().unwrap()
             ));
         run()
             .arg("mutants")
             .arg("--list")
-            .current_dir(&t)
+            .current_dir(&dir_path)
             .assert_insta(&format!(
                 "list_mutants_in_all_trees__text__{}",
-                t.file_name().unwrap().to_str().unwrap()
+                dir_path.file_name().unwrap().to_str().unwrap()
             ));
     }
 }
