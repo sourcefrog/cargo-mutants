@@ -115,8 +115,7 @@ fn cargo_bin() -> String {
 /// Make up the argv for a cargo check/build/test invocation, not including
 /// the cargo binary itself.
 pub fn cargo_args(phase: Phase, options: &Options) -> Vec<String> {
-    let mut cargo_args = Vec::new();
-    cargo_args.push(phase.name().to_string());
+    let mut cargo_args = vec![phase.name().to_string()];
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
     }
