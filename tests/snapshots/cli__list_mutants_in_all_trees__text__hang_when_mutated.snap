@@ -1,8 +1,0 @@
----
-source: tests/cli.rs
-expression: "String::from_utf8_lossy(&output.stdout)"
----
-src/lib.rs:7: replace should_stop -> bool with true
-src/lib.rs:7: replace should_stop -> bool with false
-src/lib.rs:11: replace controlled_loop with ()
-

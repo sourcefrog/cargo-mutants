@@ -2,10 +2,12 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::fmt::Write;
 use std::fs::{self, read_dir};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use assert_cmd::prelude::OutputAssertExt;
 use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
@@ -124,40 +126,59 @@ fn list_diff_json_not_yet_supported() {
         .stdout("");
 }
 
-#[test]
-fn list_mutants_in_all_trees() {
-    for dir_path in fs::read_dir("testdata/tree")
+/// Return paths to all testdata trees, in order, excluding leftover git
+/// detritus with no Cargo.toml.
+fn all_testdata_tree_paths() -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = fs::read_dir("testdata/tree")
         .unwrap()
         .map(|r| r.unwrap())
         .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
         .filter(|dir_entry| dir_entry.file_name() != "parse_fails")
         .map(|dir_entry| dir_entry.path())
-    {
-        if !dir_path.join("Cargo.toml").exists() {
-            // Maybe a leftover directory after switching branches that contains
-            // `target/` but no source.
-            println!("Skipping {} as it has no Cargo.toml", dir_path.display());
-            continue;
-        }
-        println!("test {dir_path:?}");
-        run()
+        .filter(|dir_path| dir_path.join("Cargo.toml").exists())
+        .collect();
+    paths.sort();
+    paths
+}
+
+#[test]
+fn list_mutants_in_all_trees_as_json() {
+    // The snapshot accumulated here is actually a big text file
+    // containing JSON fragments. This might seem a bit weird for easier
+    // review I want just a single snapshot, and json-inside-json has quoting
+    // that makes it harder to review.
+    let mut buf = String::new();
+    for dir_path in all_testdata_tree_paths() {
+        writeln!(buf, "## {}\n", dir_path.display()).unwrap();
+        let cmd_assert = run()
             .arg("mutants")
             .arg("--list")
             .arg("--json")
             .current_dir(&dir_path)
-            .assert_insta(&format!(
-                "list_mutants_in_all_trees__json__{}",
-                dir_path.file_name().unwrap().to_str().unwrap()
-            ));
-        run()
+            .assert()
+            .success();
+        let json_str = String::from_utf8_lossy(&cmd_assert.get_output().stdout);
+        writeln!(buf, "```json\n{}\n```\n", json_str).unwrap();
+    }
+    insta::assert_snapshot!(buf);
+}
+
+#[test]
+fn list_mutants_in_all_trees_as_text() {
+    let mut buf = String::new();
+    for dir_path in all_testdata_tree_paths() {
+        writeln!(buf, "## {}\n\n```", dir_path.display()).unwrap();
+        let stdout = run()
             .arg("mutants")
             .arg("--list")
             .current_dir(&dir_path)
-            .assert_insta(&format!(
-                "list_mutants_in_all_trees__text__{}",
-                dir_path.file_name().unwrap().to_str().unwrap()
-            ));
+            .output()
+            .unwrap()
+            .stdout;
+        buf.push_str(&String::from_utf8_lossy(&stdout));
+        buf.push_str("```\n\n");
     }
+    insta::assert_snapshot!(buf);
 }
 
 #[test]
@@ -689,7 +710,7 @@ fn hang_when_mutated() {
 
 #[test]
 fn log_file_names_are_short_and_dont_collide() {
-    // The "well-tested" tree can generate multiple mutants from single lines. They get distinct file names.
+    // The "well_tested" tree can generate multiple mutants from single lines. They get distinct file names.
     let tmp_src_dir = copy_of_testdata("well_tested");
     let cmd_assert = run_assert_cmd()
         .arg("mutants")
