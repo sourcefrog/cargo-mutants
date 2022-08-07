@@ -517,6 +517,30 @@ fn factorial_mutants_no_copy_target() {
 }
 
 #[test]
+fn small_well_tested_mutants_with_cargo_arg_release() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--no-times", "--cargo-arg", "--release"])
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .assert()
+        .success()
+        .stderr("")
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+    // Check that it was actually passed.
+    let baseline_log_path = &tmp_src_dir.path().join("mutants.out/log/baseline.log");
+    println!("{}", baseline_log_path.display());
+    let log_content = fs::read_to_string(&baseline_log_path).unwrap();
+    println!("{}", log_content);
+    assert!(log_content.contains("cargo build --tests --release"));
+    assert!(log_content.contains("cargo test --release"));
+}
+
+#[test]
 fn output_option() {
     let tmp_src_dir = copy_of_testdata("factorial");
     let output_tmpdir = TempDir::new().unwrap();
