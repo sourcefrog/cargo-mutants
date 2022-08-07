@@ -406,7 +406,7 @@ fn well_tested_tree_check_only_shuffled() {
 
 #[test]
 fn error_when_no_mutants_found() {
-    let tmp_src_dir = copy_of_testdata("no_opportunities");
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
     run_assert_cmd()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(&tmp_src_dir.path())

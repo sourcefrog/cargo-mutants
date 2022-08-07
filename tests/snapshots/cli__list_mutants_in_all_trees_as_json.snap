@@ -70,6 +70,12 @@ expression: buf
 ]
 ```
 
+## testdata/tree/everything_skipped
+
+```json
+[]
+```
+
 ## testdata/tree/factorial
 
 ```json
@@ -145,12 +151,6 @@ expression: buf
     "replacement": "()"
   }
 ]
-```
-
-## testdata/tree/no_opportunities
-
-```json
-[]
 ```
 
 ## testdata/tree/override_dependency

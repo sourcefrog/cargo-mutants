@@ -36,6 +36,11 @@ src/lib.rs:8: replace infinite_loop with ()
 src/lib.rs:1: replace factorial -> u32 with Default::default()
 ```
 
+## testdata/tree/everything_skipped
+
+```
+```
+
 ## testdata/tree/factorial
 
 ```
@@ -61,11 +66,6 @@ src/lib.rs:11: replace controlled_loop with ()
 
 ```
 src/main.rs:2: replace main with ()
-```
-
-## testdata/tree/no_opportunities
-
-```
 ```
 
 ## testdata/tree/override_dependency
