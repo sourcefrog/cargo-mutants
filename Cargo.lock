@@ -623,7 +623,8 @@ dependencies = [
 [[package]]
 name = "nutmeg"
 version = "0.1.2"
-source = "git+https://github.com/sourcefrog/nutmeg.git#06970fa31d92d75c7bd8a8297063f004ca31b960"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4cf1f0653933873dfd8eccc0ac30b6e12d1db895a4d0dd868d81ce4105400ea"
 dependencies = [
  "atty",
  "parking_lot",
