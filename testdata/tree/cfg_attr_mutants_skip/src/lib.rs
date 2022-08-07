@@ -1,12 +1,7 @@
-#[cfg_attr(test, mutants::skip)]
-fn main() {
-    for i in 1..=6 {
-        println!("{}! = {}", i, factorial(i));
-    }
-}
+//! Mutations can be skipped with `cfg_attr` attributes.
 
-#[cfg_attr(test, mutants::skip)]
-fn factorial(n: u32) -> u32 {
+#[cfg_attr(mutants, mutants::skip)]
+pub fn factorial(n: u32) -> u32 {
     let mut a = 1;
     for i in 2..=n {
         a *= i;
