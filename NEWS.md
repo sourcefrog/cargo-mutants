@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added: `--cargo-arg` allows passing arguments to cargo commands (check, build, and test), for example to set `--release` or `--features`.
+- Added: `--cargo-arg` (or `-C` for short) allows passing arguments to cargo commands (check, build, and test), for example to set `--release` or `--features`.
 
 - Improved: Works properly if run from a subdirectory of a crate, or if `-d` points to a
   subdirectory of a crate.

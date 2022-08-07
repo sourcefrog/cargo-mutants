@@ -123,7 +123,7 @@ struct Args {
     version: bool,
 
     /// additional args for all cargo invocations.
-    #[argh(option)]
+    #[argh(option, short = 'C')]
     cargo_arg: Vec<String>,
 
     // The following option captures all the remaining non-option args, to
