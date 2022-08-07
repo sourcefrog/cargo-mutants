@@ -87,6 +87,9 @@ of cargo-mutants.)
 `--timeout`: Set a fixed timeout for each `cargo test` run, to catch mutations
 that cause a hang. By default a timeout is automatically determined.
 
+`--cargo-arg`: Passes the option argument to `cargo check`, `build`, and `test`.
+For example, `--cargo-arg --release`.
+
 ### Passing arguments to `cargo test`
 
 Command-line options following a `--` delimiter are passed through to
