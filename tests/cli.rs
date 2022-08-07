@@ -12,6 +12,7 @@ use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
 use lazy_static::lazy_static;
+use path_slash::PathBufExt;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
@@ -149,7 +150,7 @@ fn list_mutants_in_all_trees_as_json() {
     // that makes it harder to review.
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
-        writeln!(buf, "## {}\n", dir_path.display()).unwrap();
+        writeln!(buf, "## {}\n", dir_path.to_slash_lossy()).unwrap();
         let cmd_assert = run()
             .arg("mutants")
             .arg("--list")
@@ -167,7 +168,7 @@ fn list_mutants_in_all_trees_as_json() {
 fn list_mutants_in_all_trees_as_text() {
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
-        writeln!(buf, "## {}\n\n```", dir_path.display()).unwrap();
+        writeln!(buf, "## {}\n\n```", dir_path.to_slash_lossy()).unwrap();
         let stdout = run()
             .arg("mutants")
             .arg("--list")
