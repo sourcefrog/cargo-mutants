@@ -16,12 +16,6 @@ _reached_ by a test, and not whether the test really _checks_ anything about the
 behavior of the code. Mutation tests give different information, about whether
 the tests really check the code's behavior.
 
-**CAUTION**: This tool builds and runs code with machine-generated
-modifications. If the code under test, or the test suite, has side effects such
-as writing or deleting files, running it with mutations may be dangerous. Think
-first about what side effects the test suite could possibly have, and/or run it
-in a restricted or disposable environment.
-
 ## Install
 
 ```sh
@@ -437,21 +431,27 @@ cargo +1.48 mutants
 
 ### Limitations, caveats, known bugs, and future enhancements
 
+**CAUTION**: This tool builds and runs code with machine-generated
+modifications. If the code under test, or the test suite, has side effects such
+as writing or deleting files, running it with mutations may be dangerous. Think
+first about what side effects the test suite could possibly have, and/or run it
+in a restricted or disposable environment.
+
 cargo-mutants behavior, output formats, command-line syntax, json output
 formats, etc, may change from one release to the next.
 
-- cargo-mutants does not yet understand cargo workspaces, and it will only test the root package. <https://github.com/sourcefrog/cargo-mutants/issues/45>
+cargo-mutants does not yet understand cargo workspaces, and it will only test the root package. <https://github.com/sourcefrog/cargo-mutants/issues/45>
 
-- cargo-mutants sees the AST of the tree but doesn't fully "understand" the
-  types. Possibly it could learn to get type information from the compiler (or
-  rust-analyzer?), which would help it generate more interesting viable mutants,
-  and fewer unviable mutants.
+cargo-mutants sees the AST of the tree but doesn't fully "understand" the types.
+Possibly it could learn to get type information from the compiler (or
+rust-analyzer?), which would help it generate more interesting viable mutants,
+and fewer unviable mutants.
 
-- To make this faster on large trees, we could keep several scratch trees and
-  test them in parallel, which is likely to exploit CPU resources more
-  thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
-  down to a single task during linking, and often comes down to running a single
-  straggler test at a time. <https://github.com/sourcefrog/cargo-mutants/issues/39>
+To make this faster on large trees, we could keep several scratch trees and
+test them in parallel, which is likely to exploit CPU resources more
+thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
+down to a single task during linking, and often comes down to running a single
+straggler test at a time. <https://github.com/sourcefrog/cargo-mutants/issues/39>
 
 ## Code of Conduct
 
