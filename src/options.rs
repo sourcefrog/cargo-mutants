@@ -69,31 +69,31 @@ impl Options {
         self.test_timeout = test_timeout;
     }
 
-    fn build_glob_set(global_set: &Vec<String>) -> Option<GlobSet> {
-        let globset = if global_set.is_empty() {
-            None
+    fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
+        let globset = if glob_set.is_empty() {
+            Ok(None)
         } else {
             let mut builder = GlobSetBuilder::new();
-            for glob_str in global_set {
+            for glob_str in glob_set {
                 if glob_str.contains('/') {
-                    builder.add(Glob::new(&glob_str).ok()?);
+                    builder.add(Glob::new(glob_str)?);
                 } else {
-                    builder.add(Glob::new(&format!("**/{}", glob_str)).ok()?);
+                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
                 }
             }
-            Some(builder.build().ok()?)
+            Ok(Some(builder.build()?))
         };
+
         globset
     }
-
 }
 
 impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
     fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
-        let examine_globset = Self::build_glob_set(&args.file);
-        let exclude_globset = Self::build_glob_set(&args.exclude);
+        let examine_globset = Self::build_glob_set(&args.file)?;
+        let exclude_globset = Self::build_glob_set(&args.exclude)?;
 
         Ok(Options {
             build_source: !args.no_copy_target,
