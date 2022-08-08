@@ -536,8 +536,14 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(&baseline_log_path).unwrap();
     println!("{}", log_content);
-    assert!(log_content.contains("cargo build --tests --release"));
-    assert!(log_content.contains("cargo test --release"));
+    regex::Regex::new(r"cargo.* build --tests --release")
+        .unwrap()
+        .captures(&log_content)
+        .unwrap();
+    regex::Regex::new(r"cargo.* test --release")
+        .unwrap()
+        .captures(&log_content)
+        .unwrap();
 }
 
 #[test]
