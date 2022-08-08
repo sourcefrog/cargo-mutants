@@ -2,14 +2,17 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::fmt::Write;
 use std::fs::{self, read_dir};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use assert_cmd::prelude::OutputAssertExt;
 use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
 use lazy_static::lazy_static;
+use path_slash::PathBufExt;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
@@ -124,34 +127,59 @@ fn list_diff_json_not_yet_supported() {
         .stdout("");
 }
 
-#[test]
-fn list_mutants_in_all_trees() {
-    for t in fs::read_dir("testdata/tree")
+/// Return paths to all testdata trees, in order, excluding leftover git
+/// detritus with no Cargo.toml.
+fn all_testdata_tree_paths() -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = fs::read_dir("testdata/tree")
         .unwrap()
         .map(|r| r.unwrap())
         .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
         .filter(|dir_entry| dir_entry.file_name() != "parse_fails")
         .map(|dir_entry| dir_entry.path())
-    {
-        println!("test {t:?}");
-        run()
+        .filter(|dir_path| dir_path.join("Cargo.toml").exists())
+        .collect();
+    paths.sort();
+    paths
+}
+
+#[test]
+fn list_mutants_in_all_trees_as_json() {
+    // The snapshot accumulated here is actually a big text file
+    // containing JSON fragments. This might seem a bit weird for easier
+    // review I want just a single snapshot, and json-inside-json has quoting
+    // that makes it harder to review.
+    let mut buf = String::new();
+    for dir_path in all_testdata_tree_paths() {
+        writeln!(buf, "## {}\n", dir_path.to_slash_lossy()).unwrap();
+        let cmd_assert = run()
             .arg("mutants")
             .arg("--list")
             .arg("--json")
-            .current_dir(&t)
-            .assert_insta(&format!(
-                "list_mutants_in_all_trees__json__{}",
-                t.file_name().unwrap().to_str().unwrap()
-            ));
-        run()
+            .current_dir(&dir_path)
+            .assert()
+            .success();
+        let json_str = String::from_utf8_lossy(&cmd_assert.get_output().stdout);
+        writeln!(buf, "```json\n{}\n```\n", json_str).unwrap();
+    }
+    insta::assert_snapshot!(buf);
+}
+
+#[test]
+fn list_mutants_in_all_trees_as_text() {
+    let mut buf = String::new();
+    for dir_path in all_testdata_tree_paths() {
+        writeln!(buf, "## {}\n\n```", dir_path.to_slash_lossy()).unwrap();
+        let stdout = run()
             .arg("mutants")
             .arg("--list")
-            .current_dir(&t)
-            .assert_insta(&format!(
-                "list_mutants_in_all_trees__text__{}",
-                t.file_name().unwrap().to_str().unwrap()
-            ));
+            .current_dir(&dir_path)
+            .output()
+            .unwrap()
+            .stdout;
+        buf.push_str(&String::from_utf8_lossy(&stdout));
+        buf.push_str("```\n\n");
     }
+    insta::assert_snapshot!(buf);
 }
 
 #[test]
@@ -303,6 +331,21 @@ fn copy_testdata_doesnt_include_build_artifacts() {
 }
 
 #[test]
+fn small_well_tested_tree_is_clean() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "-v", "-V"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
 fn well_tested_tree_quiet() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run_assert_cmd()
@@ -372,7 +415,7 @@ fn well_tested_tree_check_only_shuffled() {
 
 #[test]
 fn error_when_no_mutants_found() {
-    let tmp_src_dir = copy_of_testdata("no_opportunities");
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
     run_assert_cmd()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(&tmp_src_dir.path())
@@ -441,10 +484,10 @@ r"Copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d
 r"Unmutated baseline \.\.\. ok in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/main\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
+r"src/bin/factorial\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/main\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
+r"src/bin/factorial\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
         ).unwrap());
 }
 
@@ -480,6 +523,36 @@ fn factorial_mutants_no_copy_target() {
             insta::assert_snapshot!(stdout);
             true
         }));
+}
+
+#[test]
+fn small_well_tested_mutants_with_cargo_arg_release() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--no-times", "--cargo-arg", "--release"])
+        .arg("-d")
+        .arg(&tmp_src_dir.path())
+        .assert()
+        .success()
+        .stderr("")
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+    // Check that it was actually passed.
+    let baseline_log_path = &tmp_src_dir.path().join("mutants.out/log/baseline.log");
+    println!("{}", baseline_log_path.display());
+    let log_content = fs::read_to_string(&baseline_log_path).unwrap();
+    println!("{}", log_content);
+    regex::Regex::new(r"cargo.* build --tests --release")
+        .unwrap()
+        .captures(&log_content)
+        .unwrap();
+    regex::Regex::new(r"cargo.* test --release")
+        .unwrap()
+        .captures(&log_content)
+        .unwrap();
 }
 
 #[test]
@@ -692,7 +765,7 @@ fn hang_when_mutated() {
 
 #[test]
 fn log_file_names_are_short_and_dont_collide() {
-    // The "well-tested" tree can generate multiple mutants from single lines. They get distinct file names.
+    // The "well_tested" tree can generate multiple mutants from single lines. They get distinct file names.
     let tmp_src_dir = copy_of_testdata("well_tested");
     let cmd_assert = run_assert_cmd()
         .arg("mutants")

@@ -1,0 +1,137 @@
+---
+source: tests/cli.rs
+expression: buf
+---
+## testdata/tree/already_failing_doctests
+
+```
+src/lib.rs:9: replace takes_one_arg -> usize with Default::default()
+```
+
+## testdata/tree/already_failing_tests
+
+```
+src/lib.rs:1: replace factorial -> u32 with Default::default()
+```
+
+## testdata/tree/already_hangs
+
+```
+src/lib.rs:8: replace infinite_loop with ()
+```
+
+## testdata/tree/cfg_attr_mutants_skip
+
+```
+```
+
+## testdata/tree/cfg_attr_test_skip
+
+```
+```
+
+## testdata/tree/dependency
+
+```
+src/lib.rs:1: replace factorial -> u32 with Default::default()
+```
+
+## testdata/tree/everything_skipped
+
+```
+```
+
+## testdata/tree/factorial
+
+```
+src/bin/factorial.rs:1: replace main with ()
+src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
+```
+
+## testdata/tree/hang_avoided_by_attr
+
+```
+src/lib.rs:12: replace controlled_loop with ()
+```
+
+## testdata/tree/hang_when_mutated
+
+```
+src/lib.rs:7: replace should_stop -> bool with true
+src/lib.rs:7: replace should_stop -> bool with false
+src/lib.rs:11: replace controlled_loop with ()
+```
+
+## testdata/tree/nightly_only
+
+```
+src/main.rs:2: replace main with ()
+```
+
+## testdata/tree/override_dependency
+
+```
+src/lib.rs:6: replace is_even -> bool with true
+src/lib.rs:6: replace is_even -> bool with false
+```
+
+## testdata/tree/patch_dependency
+
+```
+src/lib.rs:6: replace is_even -> bool with true
+src/lib.rs:6: replace is_even -> bool with false
+```
+
+## testdata/tree/relative_dependency
+
+```
+src/lib.rs:5: replace double_factorial -> u32 with Default::default()
+```
+
+## testdata/tree/replace_dependency
+
+```
+src/lib.rs:6: replace is_even -> bool with true
+src/lib.rs:6: replace is_even -> bool with false
+```
+
+## testdata/tree/small_well_tested
+
+```
+src/lib.rs:4: replace factorial -> u32 with Default::default()
+```
+
+## testdata/tree/strict_warnings
+
+```
+src/lib.rs:5: replace some_fn -> usize with Default::default()
+```
+
+## testdata/tree/typecheck_fails
+
+```
+src/lib.rs:5: replace try_value_coercion -> String with "".into()
+src/lib.rs:5: replace try_value_coercion -> String with "xyzzy".into()
+```
+
+## testdata/tree/well_tested
+
+```
+src/inside_mod.rs:3: replace outer::inner::name -> &'static str with Default::default()
+src/methods.rs:16: replace Foo::double with ()
+src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
+src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())
+src/nested_function.rs:1: replace has_nested -> u32 with Default::default()
+src/nested_function.rs:2: replace has_nested::inner -> u32 with Default::default()
+src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok(Default::default())
+src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(Default::default())
+src/simple_fns.rs:7: replace returns_unit with ()
+src/simple_fns.rs:12: replace returns_42u32 -> u32 with Default::default()
+src/simple_fns.rs:17: replace divisible_by_three -> bool with true
+src/simple_fns.rs:17: replace divisible_by_three -> bool with false
+src/simple_fns.rs:26: replace double_string -> String with "".into()
+src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into()
+src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default()
+```
+
+

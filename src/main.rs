@@ -127,6 +127,10 @@ struct Args {
     #[argh(switch)]
     version: bool,
 
+    /// additional args for all cargo invocations.
+    #[argh(option, short = 'C')]
+    cargo_arg: Vec<String>,
+
     // The following option captures all the remaining non-option args, to
     // send to cargo.
     /// pass remaining arguments to cargo test after all options and after `--`.

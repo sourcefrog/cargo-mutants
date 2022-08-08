@@ -215,7 +215,7 @@ mod test {
         assert_eq!(source_paths.len(), 1);
         assert_eq!(
             source_paths[0].tree_relative_path().to_string(),
-            "src/bin/main.rs",
+            "src/bin/factorial.rs",
         );
     }
 
@@ -226,7 +226,7 @@ mod test {
         let path = source_tree.path();
         assert!(path.is_dir());
         assert!(path.join("Cargo.toml").is_file());
-        assert!(path.join("src/bin/main.rs").is_file());
+        assert!(path.join("src/bin/factorial.rs").is_file());
         assert_eq!(path.file_name().unwrap(), OsStr::new("factorial"));
     }
 

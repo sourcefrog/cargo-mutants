@@ -120,7 +120,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "0.2.10-pre"
+version = "0.2.10"
 dependencies = [
  "anyhow",
  "argh",
@@ -172,6 +172,13 @@ name = "cargo-mutants-testdata-dependency"
 version = "0.0.0"
 
 [[package]]
+name = "cargo-mutants-testdata-everything-skipped"
+version = "0.0.0"
+dependencies = [
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "cargo-mutants-testdata-factorial"
 version = "0.0.0"
 
@@ -190,18 +197,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-mutants-testdata-no-opportunities"
-version = "0.0.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cargo-mutants-testdata-relative-dependency"
 version = "0.0.0"
 dependencies = [
  "cargo-mutants-testdata-dependency",
 ]
+
+[[package]]
+name = "cargo-mutants-testdata-small-well-tested"
+version = "0.0.0"
 
 [[package]]
 name = "cargo-mutants-testdata-strict-warnings"
@@ -623,7 +627,8 @@ dependencies = [
 [[package]]
 name = "nutmeg"
 version = "0.1.2"
-source = "git+https://github.com/sourcefrog/nutmeg.git#06970fa31d92d75c7bd8a8297063f004ca31b960"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4cf1f0653933873dfd8eccc0ac30b6e12d1db895a4d0dd868d81ce4105400ea"
 dependencies = [
  "atty",
  "parking_lot",

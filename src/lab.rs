@@ -13,7 +13,7 @@ use camino::Utf8Path;
 use rand::prelude::*;
 use serde::Serialize;
 
-use crate::cargo::run_cargo;
+use crate::cargo::{cargo_args, run_cargo};
 use crate::console::{self, plural, Console};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
@@ -196,18 +196,7 @@ fn run_cargo_phases(
     for &phase in phases {
         let phase_start = Instant::now();
         console.set_cargo_phase(&phase);
-        let cargo_args = match phase {
-            Phase::Check => vec!["check", "--tests"],
-            Phase::Build => vec!["build", "--tests"],
-            Phase::Test => std::iter::once("test")
-                .chain(
-                    options
-                        .additional_cargo_test_args
-                        .iter()
-                        .map(String::as_str),
-                )
-                .collect(),
-        };
+        let cargo_args = cargo_args(phase, options);
         let timeout = match phase {
             Phase::Test => options.test_timeout(),
             _ => Duration::MAX,
