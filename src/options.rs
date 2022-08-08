@@ -68,32 +68,14 @@ impl Options {
     pub fn set_test_timeout(&mut self, test_timeout: Duration) {
         self.test_timeout = test_timeout;
     }
-
-    fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
-        let globset = if glob_set.is_empty() {
-            Ok(None)
-        } else {
-            let mut builder = GlobSetBuilder::new();
-            for glob_str in glob_set {
-                if glob_str.contains('/') {
-                    builder.add(Glob::new(glob_str)?);
-                } else {
-                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
-                }
-            }
-            Ok(Some(builder.build()?))
-        };
-
-        globset
-    }
 }
 
 impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
     fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
-        let examine_globset = Self::build_glob_set(&args.file)?;
-        let exclude_globset = Self::build_glob_set(&args.exclude)?;
+        let examine_globset = build_glob_set(&args.file)?;
+        let exclude_globset = build_glob_set(&args.exclude)?;
 
         Ok(Options {
             build_source: !args.no_copy_target,
@@ -114,4 +96,22 @@ impl TryFrom<&Args> for Options {
             additional_cargo_test_args: args.cargo_test_args.clone(),
         })
     }
+}
+
+fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
+    let globset = if glob_set.is_empty() {
+        Ok(None)
+    } else {
+        let mut builder = GlobSetBuilder::new();
+        for glob_str in glob_set {
+            if glob_str.contains('/') {
+                builder.add(Glob::new(glob_str)?);
+            } else {
+                builder.add(Glob::new(&format!("**/{}", glob_str))?);
+            }
+        }
+        Ok(Some(builder.build()?))
+    };
+
+    globset
 }
