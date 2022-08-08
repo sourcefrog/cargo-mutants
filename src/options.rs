@@ -46,6 +46,9 @@ pub struct Options {
     /// Files to examine.
     pub globset: Option<GlobSet>,
 
+    /// Files to exclude
+    pub exclude_globset: Option<GlobSet>,
+
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
 }
@@ -85,11 +88,26 @@ impl TryFrom<&Args> for Options {
             Some(builder.build()?)
         };
 
+        let exclude_globset = if args.exclude.is_empty() {
+            None
+        } else {
+            let mut builder = GlobSetBuilder::new();
+            for glob_str in &args.exclude {
+                if glob_str.contains('/') {
+                    builder.add(Glob::new(glob_str)?);
+                } else {
+                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
+                }
+            }
+            Some(builder.build()?)
+        };
+
         Ok(Options {
             build_source: !args.no_copy_target,
             check_only: args.check,
             copy_target: !args.no_copy_target,
             globset,
+            exclude_globset,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,

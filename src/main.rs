@@ -78,6 +78,11 @@ struct Args {
     #[argh(option, short = 'f')]
     file: Vec<String>,
 
+    /// glob for files to exclude; with no glob, all files are included; globs containing
+    /// slash match the entire path.
+    #[argh(option, short = 'e')]
+    exclude: Vec<String>,
+
     /// output json (only for --list).
     #[argh(switch)]
     json: bool,

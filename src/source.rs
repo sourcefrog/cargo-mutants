@@ -104,7 +104,7 @@ impl SourceTree {
         options: &Options,
     ) -> Result<impl IntoIterator<Item = TreeRelativePathBuf>> {
         let top_sources = cargo_metadata_sources(&self.metadata)?;
-        indirect_sources(&self.root, top_sources, &options.globset)
+        indirect_sources(&self.root, top_sources, &options.globset, &options.exclude_globset)
     }
 
     /// Return an iterator of [SourceFile] object, eagerly loading their content.
@@ -141,6 +141,7 @@ fn indirect_sources(
     root_dir: &Utf8Path,
     top_sources: impl IntoIterator<Item = TreeRelativePathBuf>,
     globset: &Option<GlobSet>,
+    exclude_globset: &Option<GlobSet>
 ) -> Result<BTreeSet<TreeRelativePathBuf>> {
     let dirs: BTreeSet<TreeRelativePathBuf> = top_sources.into_iter().map(|p| p.parent()).collect();
     let mut files: BTreeSet<TreeRelativePathBuf> = BTreeSet::new();
@@ -165,6 +166,7 @@ fn indirect_sources(
                     .to_owned()
             })
             .filter(|rel_path| globset.as_ref().map_or(true, |gs| gs.is_match(rel_path)))
+            .filter(|rel_path| exclude_globset.as_ref().map_or(true, |gs| !gs.is_match(rel_path)))
         {
             files.insert(p.into());
         }
