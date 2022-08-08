@@ -104,7 +104,7 @@ impl SourceTree {
         options: &Options,
     ) -> Result<impl IntoIterator<Item = TreeRelativePathBuf>> {
         let top_sources = cargo_metadata_sources(&self.metadata)?;
-        indirect_sources(&self.root, top_sources, &options.globset, &options.exclude_globset)
+        indirect_sources(&self.root, top_sources, &options.examine_globset, &options.exclude_globset)
     }
 
     /// Return an iterator of [SourceFile] object, eagerly loading their content.

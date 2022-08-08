@@ -44,7 +44,7 @@ pub struct Options {
     pub build_source: bool,
 
     /// Files to examine.
-    pub globset: Option<GlobSet>,
+    pub examine_globset: Option<GlobSet>,
 
     /// Files to exclude
     pub exclude_globset: Option<GlobSet>,
@@ -68,45 +68,38 @@ impl Options {
     pub fn set_test_timeout(&mut self, test_timeout: Duration) {
         self.test_timeout = test_timeout;
     }
+
+    fn build_glob_set(global_set: &Vec<String>) -> Option<GlobSet> {
+        let globset = if global_set.is_empty() {
+            None
+        } else {
+            let mut builder = GlobSetBuilder::new();
+            for glob_str in global_set {
+                if glob_str.contains('/') {
+                    builder.add(Glob::new(&glob_str).ok()?);
+                } else {
+                    builder.add(Glob::new(&format!("**/{}", glob_str)).ok()?);
+                }
+            }
+            Some(builder.build().ok()?)
+        };
+        globset
+    }
+
 }
 
 impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
     fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
-        let globset = if args.file.is_empty() {
-            None
-        } else {
-            let mut builder = GlobSetBuilder::new();
-            for glob_str in &args.file {
-                if glob_str.contains('/') {
-                    builder.add(Glob::new(glob_str)?);
-                } else {
-                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
-                }
-            }
-            Some(builder.build()?)
-        };
-
-        let exclude_globset = if args.exclude.is_empty() {
-            None
-        } else {
-            let mut builder = GlobSetBuilder::new();
-            for glob_str in &args.exclude {
-                if glob_str.contains('/') {
-                    builder.add(Glob::new(glob_str)?);
-                } else {
-                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
-                }
-            }
-            Some(builder.build()?)
-        };
+        let examine_globset = Self::build_glob_set(&args.file);
+        let exclude_globset = Self::build_glob_set(&args.exclude);
 
         Ok(Options {
             build_source: !args.no_copy_target,
             check_only: args.check,
             copy_target: !args.no_copy_target,
-            globset,
+            examine_globset,
             exclude_globset,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
