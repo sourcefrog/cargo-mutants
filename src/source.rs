@@ -140,7 +140,7 @@ impl SourceTree {
 fn indirect_sources(
     root_dir: &Utf8Path,
     top_sources: impl IntoIterator<Item = TreeRelativePathBuf>,
-    globset: &Option<GlobSet>,
+    examine_globset: &Option<GlobSet>,
     exclude_globset: &Option<GlobSet>
 ) -> Result<BTreeSet<TreeRelativePathBuf>> {
     let dirs: BTreeSet<TreeRelativePathBuf> = top_sources.into_iter().map(|p| p.parent()).collect();
@@ -165,7 +165,7 @@ fn indirect_sources(
                     .expect("strip prefix")
                     .to_owned()
             })
-            .filter(|rel_path| globset.as_ref().map_or(true, |gs| gs.is_match(rel_path)))
+            .filter(|rel_path| examine_globset.as_ref().map_or(true, |gs| gs.is_match(rel_path)))
             .filter(|rel_path| exclude_globset.as_ref().map_or(true, |gs| !gs.is_match(rel_path)))
         {
             files.insert(p.into());
