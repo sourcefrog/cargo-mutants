@@ -250,7 +250,7 @@ fn list_mutants_well_tested_examine_name_filter() {
         .arg("mutants")
         .args(["--list", "--file", "nested_function.rs"])
         .current_dir("testdata/tree/well_tested")
-        .assert_insta("list_mutants_well_tested_name_filter");
+        .assert_insta("list_mutants_well_tested_examine_name_filter");
 }
 
 #[test]
@@ -259,7 +259,7 @@ fn list_mutants_well_tested_exclude_name_filter() {
         .arg("mutants")
         .args(["--list", "--exclude", "simple_fns.rs"])
         .current_dir("testdata/tree/well_tested")
-        .assert_insta("list_mutants_well_tested_name_exclude_filter");
+        .assert_insta("list_mutants_well_tested_exclude_name_filter");
 }
 
 #[test]
