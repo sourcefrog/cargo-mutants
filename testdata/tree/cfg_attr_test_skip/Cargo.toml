@@ -8,6 +8,5 @@ publish = false
 [dev-dependencies]
 mutants = "0"
 
-[[bin]]
-name = "main"
+[lib]
 doctest = false

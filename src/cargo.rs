@@ -43,7 +43,7 @@ impl CargoResult {
 
 /// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
 pub fn run_cargo(
-    cargo_args: &[&str],
+    cargo_args: &[String],
     in_dir: &Utf8Path,
     log_file: &mut LogFile,
     timeout: Duration,
@@ -61,8 +61,8 @@ pub fn run_cargo(
     // TODO: Maybe this should append instead of overwriting it...?
     env.push(("RUSTFLAGS".into(), "--cap-lints=allow".into()));
 
-    let mut argv: Vec<&str> = vec![&cargo_bin];
-    argv.extend(cargo_args.iter());
+    let mut argv: Vec<String> = vec![cargo_bin];
+    argv.extend(cargo_args.iter().cloned());
     log_file.message(&format!("run {}", argv.join(" "),));
     let mut child = Popen::create(
         &argv,
@@ -110,6 +110,20 @@ pub fn run_cargo(
 /// Return the name of the cargo binary.
 fn cargo_bin() -> String {
     env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned())
+}
+
+/// Make up the argv for a cargo check/build/test invocation, not including
+/// the cargo binary itself.
+pub fn cargo_args(phase: Phase, options: &Options) -> Vec<String> {
+    let mut cargo_args = vec![phase.name().to_string()];
+    if phase == Phase::Check || phase == Phase::Build {
+        cargo_args.push("--tests".to_string());
+    }
+    cargo_args.extend(options.additional_cargo_args.iter().cloned());
+    if phase == Phase::Test {
+        cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
+    }
+    cargo_args
 }
 
 #[cfg(unix)]
@@ -195,4 +209,58 @@ pub fn locate_project(path: &Utf8Path) -> Result<Utf8PathBuf> {
         .context("cargo locate-project output has no root: {stdout:?}")?
         .parse()
         .context("parse cargo locate-project output root to path")
+}
+
+#[cfg(test)]
+mod test {
+    use pretty_assertions::assert_eq;
+
+    use super::cargo_args;
+    use crate::options::Options;
+    use crate::Phase;
+
+    #[test]
+    fn generate_cargo_args_for_default_options() {
+        let options = Options::default();
+        assert_eq!(cargo_args(Phase::Check, &options), vec!["check", "--tests"]);
+        assert_eq!(cargo_args(Phase::Build, &options), vec!["build", "--tests"]);
+        assert_eq!(cargo_args(Phase::Test, &options), vec!["test"]);
+    }
+
+    #[test]
+    fn generate_cargo_args_with_additional_cargo_test_args() {
+        let mut options = Options::default();
+        options
+            .additional_cargo_test_args
+            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+        assert_eq!(cargo_args(Phase::Check, &options), vec!["check", "--tests"]);
+        assert_eq!(cargo_args(Phase::Build, &options), vec!["build", "--tests"]);
+        assert_eq!(
+            cargo_args(Phase::Test, &options),
+            vec!["test", "--lib", "--no-fail-fast"]
+        );
+    }
+
+    #[test]
+    fn generate_cargo_args_with_additional_cargo_args_and_test_args() {
+        let mut options = Options::default();
+        options
+            .additional_cargo_test_args
+            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+        options
+            .additional_cargo_args
+            .extend(["--release".to_owned()]);
+        assert_eq!(
+            cargo_args(Phase::Check, &options),
+            vec!["check", "--tests", "--release"]
+        );
+        assert_eq!(
+            cargo_args(Phase::Build, &options),
+            vec!["build", "--tests", "--release"]
+        );
+        assert_eq!(
+            cargo_args(Phase::Test, &options),
+            vec!["test", "--release", "--lib", "--no-fail-fast"]
+        );
+    }
 }

@@ -1,0 +1,10 @@
+[package]
+name = "cargo-mutants-testdata-small-well-tested"
+description = "A small tree with one function with good coverage"
+version = "0.0.0"
+edition = "2018"
+authors = ["Martin Pool"]
+publish = false
+
+[lib]
+doctest = false

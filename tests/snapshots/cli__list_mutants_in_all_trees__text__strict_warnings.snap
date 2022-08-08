@@ -1,6 +1,0 @@
----
-source: tests/cli.rs
-expression: "String::from_utf8_lossy(&output.stdout)"
----
-src/lib.rs:5: replace some_fn -> usize with Default::default()
-

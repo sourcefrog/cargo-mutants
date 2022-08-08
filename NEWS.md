@@ -1,6 +1,12 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.10
+
+Released 2022-08-07
+
+cargo-mutants 0.2.10 comes with improved docs, and the new `-C` option can be used to pass options like `--release` or `--all-features` to `cargo`.
+
+- Added: `--cargo-arg` (or `-C` for short) allows passing arguments to cargo commands (check, build, and test), for example to set `--release` or `--features`.
 
 - Improved: Works properly if run from a subdirectory of a crate, or if `-d` points to a
   subdirectory of a crate.

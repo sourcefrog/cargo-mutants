@@ -34,6 +34,9 @@ pub struct Options {
     /// interesting results.
     pub shuffle: bool,
 
+    /// Additional arguments for every cargo invocation.
+    pub additional_cargo_args: Vec<String>,
+
     /// Additional arguments to `cargo test`.
     pub additional_cargo_test_args: Vec<String>,
 
@@ -78,6 +81,8 @@ impl TryFrom<&Args> for Options {
         let exclude_globset = build_glob_set(&args.exclude)?;
 
         Ok(Options {
+            additional_cargo_args: args.cargo_arg.clone(),
+            additional_cargo_test_args: args.cargo_test_args.clone(),
             build_source: !args.no_copy_target,
             check_only: args.check,
             copy_target: !args.no_copy_target,
@@ -93,7 +98,6 @@ impl TryFrom<&Args> for Options {
                 .timeout
                 .map(Duration::from_secs_f64)
                 .unwrap_or(Duration::MAX),
-            additional_cargo_test_args: args.cargo_test_args.clone(),
         })
     }
 }

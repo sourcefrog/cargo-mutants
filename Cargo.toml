@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "0.2.10-pre"
+version = "0.2.10"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -39,7 +39,7 @@ version = "0.5.1"
 
 [dependencies.nutmeg]
 version = "0.1.2"
-git = "https://github.com/sourcefrog/nutmeg.git"
+# git = "https://github.com/sourcefrog/nutmeg.git"
 
 [dependencies.proc-macro2]
 features = ["span-locations"]
@@ -67,11 +67,12 @@ members = [
     "testdata/tree/cfg_attr_mutants_skip",
     "testdata/tree/cfg_attr_test_skip",
     "testdata/tree/dependency",
+    "testdata/tree/everything_skipped",
     "testdata/tree/factorial",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
-    "testdata/tree/no_opportunities",
     "testdata/tree/relative_dependency",
+    "testdata/tree/small_well_tested",
     "testdata/tree/strict_warnings",
     "testdata/tree/well_tested",
 ]

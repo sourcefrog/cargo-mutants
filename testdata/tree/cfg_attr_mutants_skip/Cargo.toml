@@ -5,6 +5,5 @@ edition = "2018"
 authors = ["Tim Diekmann"]
 publish = false
 
-[[bin]]
-name = "main"
+[lib]
 doctest = false

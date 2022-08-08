@@ -6,5 +6,5 @@ authors = ["Martin Pool"]
 publish = false
 
 [[bin]]
-name = "main"
+name = "factorial"
 doctest = false

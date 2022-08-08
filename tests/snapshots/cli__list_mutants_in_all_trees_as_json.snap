@@ -1,0 +1,394 @@
+---
+source: tests/cli.rs
+expression: buf
+---
+## testdata/tree/already_failing_doctests
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 9,
+    "function": "takes_one_arg",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/already_failing_tests
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/already_hangs
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 8,
+    "function": "infinite_loop",
+    "return_type": "",
+    "replacement": "()"
+  }
+]
+```
+
+## testdata/tree/cfg_attr_mutants_skip
+
+```json
+[]
+```
+
+## testdata/tree/cfg_attr_test_skip
+
+```json
+[]
+```
+
+## testdata/tree/dependency
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/everything_skipped
+
+```json
+[]
+```
+
+## testdata/tree/factorial
+
+```json
+[
+  {
+    "file": "src/bin/factorial.rs",
+    "line": 1,
+    "function": "main",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "line": 7,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/hang_avoided_by_attr
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 12,
+    "function": "controlled_loop",
+    "return_type": "",
+    "replacement": "()"
+  }
+]
+```
+
+## testdata/tree/hang_when_mutated
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 7,
+    "function": "should_stop",
+    "return_type": "-> bool",
+    "replacement": "true"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 7,
+    "function": "should_stop",
+    "return_type": "-> bool",
+    "replacement": "false"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 11,
+    "function": "controlled_loop",
+    "return_type": "",
+    "replacement": "()"
+  }
+]
+```
+
+## testdata/tree/nightly_only
+
+```json
+[
+  {
+    "file": "src/main.rs",
+    "line": 2,
+    "function": "main",
+    "return_type": "",
+    "replacement": "()"
+  }
+]
+```
+
+## testdata/tree/override_dependency
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 6,
+    "function": "is_even",
+    "return_type": "-> bool",
+    "replacement": "true"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 6,
+    "function": "is_even",
+    "return_type": "-> bool",
+    "replacement": "false"
+  }
+]
+```
+
+## testdata/tree/patch_dependency
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 6,
+    "function": "is_even",
+    "return_type": "-> bool",
+    "replacement": "true"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 6,
+    "function": "is_even",
+    "return_type": "-> bool",
+    "replacement": "false"
+  }
+]
+```
+
+## testdata/tree/relative_dependency
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "double_factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/replace_dependency
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 6,
+    "function": "is_even",
+    "return_type": "-> bool",
+    "replacement": "true"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 6,
+    "function": "is_even",
+    "return_type": "-> bool",
+    "replacement": "false"
+  }
+]
+```
+
+## testdata/tree/small_well_tested
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 4,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/strict_warnings
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "some_fn",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/typecheck_fails
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "try_value_coercion",
+    "return_type": "-> String",
+    "replacement": "\"\".into()"
+  },
+  {
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "try_value_coercion",
+    "return_type": "-> String",
+    "replacement": "\"xyzzy\".into()"
+  }
+]
+```
+
+## testdata/tree/well_tested
+
+```json
+[
+  {
+    "file": "src/inside_mod.rs",
+    "line": 3,
+    "function": "outer::inner::name",
+    "return_type": "-> &'static str",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 16,
+    "function": "Foo::double",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 22,
+    "function": "<impl Display for Foo>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 28,
+    "function": "<impl Debug for &Foo>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/result.rs",
+    "line": 5,
+    "function": "simple_result",
+    "return_type": "-> Result<&'static str, ()>",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/result.rs",
+    "line": 9,
+    "function": "error_if_negative",
+    "return_type": "-> Result<(), ()>",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 7,
+    "function": "returns_unit",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 12,
+    "function": "returns_42u32",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 17,
+    "function": "divisible_by_three",
+    "return_type": "-> bool",
+    "replacement": "true"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 17,
+    "function": "divisible_by_three",
+    "return_type": "-> bool",
+    "replacement": "false"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 26,
+    "function": "double_string",
+    "return_type": "-> String",
+    "replacement": "\"\".into()"
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "line": 26,
+    "function": "double_string",
+    "return_type": "-> String",
+    "replacement": "\"xyzzy\".into()"
+  },
+  {
+    "file": "src/struct_with_lifetime.rs",
+    "line": 14,
+    "function": "Lex<'buf>::buf_len",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+
