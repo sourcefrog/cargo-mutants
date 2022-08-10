@@ -48,11 +48,13 @@ but not adequately tested.
 
 `-f`, `--file FILE`: Mutate only functions in files matching the given name or
 glob. If the glob contains `/` it matches against the path from the source tree
-root; otherwise it matches only against the file name.
+root; otherwise it matches only against the file name. If used together with `--exclude` argument, 
+then the files to be examined are matched before the files to be excluded.
 
 `-e`, `--exclude FILE`: Exclude files from mutants generation, matching the given name or
 glob. If the glob contains `/` it matches against the path from the source tree
-root; otherwise it matches only against the file name.
+root; otherwise it matches only against the file name. If used together with `--file` argument, 
+then the files to be examined are matched before the files to be excluded.
 
 `--list`: Show what mutants could be generated, without running them.
 

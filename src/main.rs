@@ -74,12 +74,12 @@ struct Args {
     dir: Utf8PathBuf,
 
     /// glob for files to examine; with no glob, all files are examined; globs containing
-    /// slash match the entire path.
+    /// slash match the entire path. If used together with `--exclude` argument, then the files to be examined are matched before the files to be excluded.
     #[argh(option, short = 'f')]
     file: Vec<String>,
 
     /// glob for files to exclude; with no glob, all files are included; globs containing
-    /// slash match the entire path.
+    /// slash match the entire path. If used together with `--file` argument, then the files to be examined are matched before the files to be excluded.
     #[argh(option, short = 'e')]
     exclude: Vec<String>,
 
