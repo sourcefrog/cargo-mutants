@@ -134,4 +134,18 @@ src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into()
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default()
 ```
 
+## testdata/tree/with_child_directories
+
+```
+src/methods.rs:16: replace Foo::double with ()
+src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
+src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())
+src/module/module_methods.rs:16: replace Bar::double with ()
+src/module/module_methods.rs:22: replace <impl Display for Bar>::fmt -> fmt::Result with Ok(Default::default())
+src/module/module_methods.rs:28: replace <impl Debug for &Bar>::fmt -> fmt::Result with Ok(Default::default())
+src/module/utils/inside_mod.rs:3: replace outer::inner::name -> &'static str with Default::default()
+src/module/utils/nested_function.rs:1: replace has_nested -> u32 with Default::default()
+src/module/utils/nested_function.rs:2: replace has_nested::inner -> u32 with Default::default()
+```
+
 

@@ -391,4 +391,74 @@ expression: buf
 ]
 ```
 
+## testdata/tree/with_child_directories
+
+```json
+[
+  {
+    "file": "src/methods.rs",
+    "line": 16,
+    "function": "Foo::double",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 22,
+    "function": "<impl Display for Foo>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/methods.rs",
+    "line": 28,
+    "function": "<impl Debug for &Foo>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/module/module_methods.rs",
+    "line": 16,
+    "function": "Bar::double",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "src/module/module_methods.rs",
+    "line": 22,
+    "function": "<impl Display for Bar>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/module/module_methods.rs",
+    "line": 28,
+    "function": "<impl Debug for &Bar>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "src/module/utils/inside_mod.rs",
+    "line": 3,
+    "function": "outer::inner::name",
+    "return_type": "-> &'static str",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 
