@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## 0.2.11
+
+- New `--exclude` command line option to exclude source files from mutants generation, matching a glob.
+
 ## 0.2.10
 
 Released 2022-08-07
