@@ -50,6 +50,10 @@ but not adequately tested.
 glob. If the glob contains `/` it matches against the path from the source tree
 root; otherwise it matches only against the file name.
 
+`-e`, `--exclude FILE`: Exclude files from mutants generation, matching the given name or
+glob. If the glob contains `/` it matches against the path from the source tree
+root; otherwise it matches only against the file name.
+
 `--list`: Show what mutants could be generated, without running them.
 
 `--diff`: With `--list`, also include a diff of the source change for each mutant.
