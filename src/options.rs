@@ -103,19 +103,18 @@ impl TryFrom<&Args> for Options {
 }
 
 fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
-    let globset = if glob_set.is_empty() {
-        Ok(None)
-    } else {
-        let mut builder = GlobSetBuilder::new();
-        for glob_str in glob_set {
-            if glob_str.contains('/') {
-                builder.add(Glob::new(glob_str)?);
-            } else {
-                builder.add(Glob::new(&format!("**/{}", glob_str))?);
-            }
-        }
-        Ok(Some(builder.build()?))
-    };
+    if glob_set.is_empty() {
+        return Ok(None);
+    }
 
-    globset
+    let mut builder = GlobSetBuilder::new();
+    for glob_str in glob_set {
+        if glob_str.contains('/') {
+            builder.add(Glob::new(glob_str)?);
+        } else {
+            builder.add(Glob::new(&format!("**/{}", glob_str))?);
+        }
+    }
+    Ok(Some(builder.build()?))
+
 }
