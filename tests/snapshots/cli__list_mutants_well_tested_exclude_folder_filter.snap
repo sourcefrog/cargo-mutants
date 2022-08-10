@@ -1,0 +1,8 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+src/methods.rs:16: replace Foo::double with ()
+src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
+src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())
+
