@@ -313,7 +313,13 @@ fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
 fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
     run()
         .arg("mutants")
-        .args(["--list", "--file", "src/module/utils/*.rs", "--exclude", "nested_function.rs"])
+        .args([
+            "--list",
+            "--file",
+            "src/module/utils/*.rs",
+            "--exclude",
+            "nested_function.rs",
+        ])
         .current_dir("testdata/tree/with_child_directories")
         .assert_insta("list_mutants_well_tested_examine_and_exclude_name_filter_combined");
 }

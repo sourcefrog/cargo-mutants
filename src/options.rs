@@ -102,7 +102,7 @@ impl TryFrom<&Args> for Options {
     }
 }
 
-fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
+fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>> {
     if glob_set.is_empty() {
         return Ok(None);
     }
@@ -116,5 +116,4 @@ fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
         }
     }
     Ok(Some(builder.build()?))
-
 }
