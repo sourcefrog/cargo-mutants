@@ -309,6 +309,15 @@ fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
 }
 
 #[test]
+fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "module_methods.rs", "--file", "*/utils/*", "--exclude", "*/sub_utils/*", "--exclude", "nested_function.rs"])
+        .current_dir("testdata/tree/with_child_directories")
+        .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
+}
+
+#[test]
 fn list_mutants_json_well_tested() {
     run()
         .arg("mutants")

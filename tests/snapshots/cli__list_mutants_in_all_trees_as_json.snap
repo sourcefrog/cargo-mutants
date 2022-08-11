@@ -457,6 +457,20 @@ expression: buf
     "function": "has_nested::inner",
     "return_type": "-> u32",
     "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
   }
 ]
 ```
