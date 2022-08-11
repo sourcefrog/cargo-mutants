@@ -32,6 +32,6 @@ impl fmt::Debug for &Bar {
 
 impl Default for Bar {
     fn default() -> Self {
-        Foo::new()
+        Bar::new()
     }
 }
