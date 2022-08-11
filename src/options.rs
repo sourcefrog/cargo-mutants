@@ -109,7 +109,7 @@ fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>>{
 
     let mut builder = GlobSetBuilder::new();
     for glob_str in glob_set {
-        if glob_str.contains('/') {
+        if glob_str.contains('/') || glob_str.contains(std::path::MAIN_SEPARATOR) {
             builder.add(Glob::new(glob_str)?);
         } else {
             builder.add(Glob::new(&format!("**/{}", glob_str))?);

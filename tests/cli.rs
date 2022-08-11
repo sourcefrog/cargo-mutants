@@ -300,6 +300,16 @@ fn list_mutants_well_tested_exclude_folder_filter() {
 }
 
 #[test]
+#[cfg(target_os = "windows")]
+fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "*\\module\\*"])
+        .current_dir("testdata/tree/with_child_directories")
+        .assert_insta("list_mutants_well_tested_exclude_folder_filter");
+}
+
+#[test]
 fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
     run()
         .arg("mutants")
