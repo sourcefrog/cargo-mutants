@@ -36,7 +36,7 @@ Of course, please add tests for new features or bug fixes.
 
 Cargo-mutants is primarily tested on its public interface, which is the command line. These tests live in `tests/cli` and generally have the form of:
 
-1. Make a copy of a `testdata` tree, so that it's not accidentally mutated.
+1. Make a copy of a `testdata` tree, so that it's not accidentally modified.
 2. Run a `cargo-mutants` command on it.
 3. Inspect the stdout, return code, or `mutants.out`.
 
