@@ -28,14 +28,18 @@ impl Console {
         }
     }
 
+    /// Update that a cargo task is starting.
+    pub fn scenario_started(&self, scenario: &Scenario, log_file: &Utf8Path) {
+        let start = Instant::now();
+        let scenario_model = ScenarioModel::new(scenario, start, log_file.to_owned());
+        self.view.update(|model| {
+            model.i_mutant += scenario.is_mutant() as usize;
+            model.scenario_model = Some(scenario_model);
+        });
+    }
+
     /// Update that cargo finished.
-    pub fn cargo_outcome(
-        &self,
-        scenario: &Scenario,
-        start: Instant,
-        outcome: &Outcome,
-        options: &Options,
-    ) {
+    pub fn scenario_finished(&self, scenario: &Scenario, outcome: &Outcome, options: &Options) {
         self.view.update(|model| match outcome.summary() {
             SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
             SummaryOutcome::MissedMutant => model.mutants_missed += 1,
@@ -62,7 +66,18 @@ impl Console {
         )
         .unwrap();
         if options.show_times {
-            write!(s, " in {}", style_elapsed_secs(start)).unwrap();
+            let prs: Vec<String> = outcome
+                .phase_results()
+                .iter()
+                .map(|pr| {
+                    format!(
+                        "{secs} {phase}",
+                        secs = style_secs(pr.duration),
+                        phase = style(pr.phase.to_string()).dim()
+                    )
+                })
+                .collect();
+            let _ = write!(s, " in {}", prs.join(" + "));
         }
         if outcome.should_show_logs() || options.show_all_logs {
             s.push('\n');
@@ -85,24 +100,24 @@ impl Console {
         })
     }
 
-    /// Update that a cargo task is starting.
-    pub fn start_cargo(&self, scenario: &Scenario, log_file: &Utf8Path) {
-        let start = Instant::now();
-        let cargo_model = CargoModel::new(scenario, start, log_file.to_owned());
-        self.view.update(|model| {
-            model.i_mutant += scenario.is_mutant() as usize;
-            model.cargo_model = Some(cargo_model);
-        });
-    }
-
-    /// Update the phase of the cargo task.
-    pub fn set_cargo_phase(&self, phase: &Phase) {
+    /// A new phase of this scenario started.
+    pub fn scenario_phase_started(&self, phase: Phase) {
         self.view.update(|model| {
             model
-                .cargo_model
+                .scenario_model
                 .as_mut()
-                .expect("cargo model already started")
-                .phase = Some(phase.name())
+                .expect("scenario_model exists")
+                .phase_started(phase);
+        })
+    }
+
+    pub fn scenario_phase_finished(&self, phase: Phase) {
+        self.view.update(|model| {
+            model
+                .scenario_model
+                .as_mut()
+                .expect("scenario_model exists")
+                .phase_finished(phase);
         })
     }
 
@@ -123,7 +138,7 @@ impl Console {
 #[derive(Default)]
 struct LabModel {
     copy_model: Option<CopyModel>,
-    cargo_model: Option<CargoModel>,
+    scenario_model: Option<ScenarioModel>,
     lab_start_time: Option<Instant>,
     i_mutant: usize,
     n_mutants: usize,
@@ -141,7 +156,7 @@ impl nutmeg::Model for LabModel {
         if let Some(copy) = self.copy_model.as_mut() {
             s.push_str(&copy.render(width));
         }
-        if let Some(cargo_model) = self.cargo_model.as_mut() {
+        if let Some(scenario_model) = self.scenario_model.as_mut() {
             if !s.is_empty() {
                 s.push('\n')
             }
@@ -177,12 +192,17 @@ impl nutmeg::Model for LabModel {
                 writeln!(
                     s,
                     ", {} elapsed, about {} remaining",
-                    duration_minutes_seconds(elapsed),
-                    nutmeg::estimate_remaining(&lab_start_time, self.i_mutant, self.n_mutants)
+                    style_minutes_seconds(elapsed),
+                    style(nutmeg::estimate_remaining(
+                        &lab_start_time,
+                        self.i_mutant,
+                        self.n_mutants
+                    ))
+                    .cyan()
                 )
                 .unwrap();
             }
-            s.push_str(&cargo_model.render(width));
+            s.push_str(&scenario_model.render(width));
         }
         s
     }
@@ -190,39 +210,63 @@ impl nutmeg::Model for LabModel {
 
 impl LabModel {}
 
-/// A Nutmeg progress model for running `cargo test` etc.
+/// A Nutmeg progress model for running a single scenario.
 ///
 /// It draws the command and some description of what scenario is being tested.
-struct CargoModel {
+struct ScenarioModel {
     name: Cow<'static, str>,
-    start: Instant,
-    phase: Option<&'static str>,
+    phase_start: Instant,
+    phase: Option<Phase>,
+    /// Previously-executed phases and durations.
+    previous_phase_durations: Vec<(Phase, Duration)>,
     log_file: Utf8PathBuf,
 }
 
-impl nutmeg::Model for CargoModel {
+impl ScenarioModel {
+    fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> ScenarioModel {
+        ScenarioModel {
+            name: style_scenario(scenario),
+            phase: None,
+            phase_start: start,
+            log_file,
+            previous_phase_durations: Vec::new(),
+        }
+    }
+
+    fn phase_started(&mut self, phase: Phase) {
+        self.phase = Some(phase);
+        self.phase_start = Instant::now();
+    }
+
+    fn phase_finished(&mut self, phase: Phase) {
+        debug_assert_eq!(self.phase, Some(phase));
+        self.previous_phase_durations
+            .push((phase, self.phase_start.elapsed()));
+        self.phase = None;
+    }
+}
+
+impl nutmeg::Model for ScenarioModel {
     fn render(&mut self, _width: usize) -> String {
         let mut s = String::with_capacity(100);
-        write!(s, "{} ", self.name).unwrap();
+        write!(s, "{} ... ", self.name).unwrap();
+        let mut prs = self
+            .previous_phase_durations
+            .iter()
+            .map(|(phase, duration)| format!("{} {}", style_secs(*duration), style(phase).dim()))
+            .collect::<Vec<_>>();
         if let Some(phase) = self.phase {
-            write!(s, "({}) ", phase).unwrap();
+            prs.push(format!(
+                "{} {}",
+                style_secs(self.phase_start.elapsed()),
+                style(phase).dim()
+            ));
         }
-        write!(s, "... {}", style_elapsed_secs(self.start)).unwrap();
+        write!(s, "{}", prs.join(" + ")).unwrap();
         if let Ok(last_line) = last_line(&self.log_file) {
             write!(s, "\n    {}", last_line).unwrap();
         }
         s
-    }
-}
-
-impl CargoModel {
-    fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> CargoModel {
-        CargoModel {
-            name: style_scenario(scenario),
-            phase: None,
-            start,
-            log_file,
-        }
     }
 }
 
@@ -343,9 +387,17 @@ pub fn print_error(msg: &str) {
 }
 
 fn style_elapsed_secs(since: Instant) -> String {
-    style(format!("{:.1}s", since.elapsed().as_secs_f32()))
+    style_secs(since.elapsed())
+}
+
+fn style_secs(duration: Duration) -> String {
+    style(format!("{:.1}s", duration.as_secs_f32()))
         .cyan()
         .to_string()
+}
+
+fn style_minutes_seconds(duration: Duration) -> String {
+    style(duration_minutes_seconds(duration)).cyan().to_string()
 }
 
 pub fn duration_minutes_seconds(duration: Duration) -> String {

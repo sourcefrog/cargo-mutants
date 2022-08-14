@@ -197,16 +197,15 @@ fn run_cargo_phases(
     info!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
-    let start_time = Instant::now();
     if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&mutant.diff());
     }
-    console.start_cargo(scenario, log_file.path());
+    console.scenario_started(scenario, log_file.path());
 
     let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {
         let phase_start = Instant::now();
-        console.set_cargo_phase(&phase);
+        console.scenario_phase_started(phase);
         let cargo_args = cargo_args(phase, options);
         let timeout = match phase {
             Phase::Test => options.test_timeout(),
@@ -214,12 +213,13 @@ fn run_cargo_phases(
         };
         let cargo_result = run_cargo(&cargo_args, in_dir, &mut log_file, timeout, console)?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result);
+        console.scenario_phase_finished(phase);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;
         }
     }
     info!("{scenario} outcome {:?}", outcome.summary());
-    console.cargo_outcome(scenario, start_time, &outcome, options);
+    console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
 }
