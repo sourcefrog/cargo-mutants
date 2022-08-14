@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Added: A new `mutants.out/debug.log` with internal debugging information.
+
 ## 0.2.10
 
 Released 2022-08-07
