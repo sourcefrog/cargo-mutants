@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
 use camino::Utf8Path;
+use tracing::info;
 
 use crate::outcome::SummaryOutcome;
 use crate::*;
@@ -106,6 +107,7 @@ impl Console {
     }
 
     pub fn message(&self, message: &str) {
+        info!("{}", message);
         self.view.message(message)
     }
 

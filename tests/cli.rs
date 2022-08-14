@@ -585,6 +585,10 @@ fn output_option() {
             .is_file(),
         "mutants.out/outcomes.json is in --output directory"
     );
+    assert!(
+        output_tmpdir.path().join("mutants.out/debug.log").is_file(),
+        "mutants.out/debug.log is in --output directory"
+    );
 }
 
 #[test]

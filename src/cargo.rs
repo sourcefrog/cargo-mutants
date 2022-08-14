@@ -10,6 +10,7 @@ use camino::Utf8Path;
 use serde::Serialize;
 use serde_json::Value;
 use subprocess::{Popen, PopenConfig, Redirection};
+use tracing::{debug, info, warn};
 
 use crate::console::Console;
 use crate::log_file::LogFile;
@@ -63,7 +64,9 @@ pub fn run_cargo(
 
     let mut argv: Vec<String> = vec![cargo_bin];
     argv.extend(cargo_args.iter().cloned());
-    log_file.message(&format!("run {}", argv.join(" "),));
+    let message = format!("run {}", argv.join(" "),);
+    log_file.message(&message);
+    info!("{}", message);
     let mut child = Popen::create(
         &argv,
         PopenConfig {
@@ -78,14 +81,16 @@ pub fn run_cargo(
     .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
     let exit_status = loop {
         if start.elapsed() > timeout {
-            log_file.message(&format!(
+            let message = format!(
                 "timeout after {:.3}s, terminating cargo process...\n",
                 start.elapsed().as_secs_f32()
-            ));
+            );
+            log_file.message(&message);
+            info!("{}", message);
             terminate_child(child, log_file)?;
             return Ok(CargoResult::Timeout);
         } else if let Err(e) = check_interrupted() {
-            log_file.message("interrupted\n");
+            warn!("interrupted: {}", e);
             console.message(&console::style_interrupted());
             terminate_child(child, log_file)?;
             return Err(e);
@@ -94,11 +99,13 @@ pub fn run_cargo(
         }
         console.tick();
     };
-    log_file.message(&format!(
+    let message = format!(
         "cargo result: {:?} in {:.3}s",
         exit_status,
         start.elapsed().as_secs_f64()
-    ));
+    );
+    log_file.message(&message);
+    info!("{}", message);
     check_interrupted()?;
     if exit_status.success() {
         Ok(CargoResult::Success)
@@ -133,12 +140,14 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     use std::convert::TryInto;
 
     let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
+    info!("terminating cargo process {}", pid);
     if let Err(errno) = killpg(pid, Signal::SIGTERM) {
         if errno == Errno::ESRCH {
             // most likely we raced and it's already gone
             return Ok(());
         } else {
             let message = format!("failed to terminate child: {}", errno);
+            warn!("{}", message);
             log_file.message(&message);
             return Err(anyhow!(message));
         }
@@ -151,9 +160,11 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
 
 #[cfg(not(unix))]
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
+    info!("terminating cargo process {child:?}");
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
         let message = format!("failed to terminate child: {}", e);
+        warn!("{}", message);
         log_file.message(&message);
         return Err(anyhow!(message));
     }
@@ -203,6 +214,7 @@ pub fn locate_project(path: &Utf8Path) -> Result<Utf8PathBuf> {
     {
         return Err(anyhow!(stderr));
     }
+    debug!("locate-project output: {stdout}");
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let root = &val["root"];
     root.as_str()

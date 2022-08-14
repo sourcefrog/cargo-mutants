@@ -12,6 +12,7 @@ use anyhow::{anyhow, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
 use serde::Serialize;
+use tracing::info;
 
 use crate::cargo::{cargo_args, run_cargo};
 use crate::console::{self, plural, Console};
@@ -72,6 +73,15 @@ pub fn test_unmutated_then_all_mutants(
         source_tree.path()
     };
     let output_dir = OutputDir::new(output_in_dir)?;
+
+    let debug_log = tracing_appender::rolling::never(output_dir.path(), "debug.log");
+    tracing_subscriber::fmt()
+        .with_ansi(false)
+        .with_file(true) // source file name
+        .with_line_number(true)
+        .with_writer(debug_log)
+        .init();
+
     let console = Console::new();
 
     if options.build_source {
@@ -184,6 +194,7 @@ fn run_cargo_phases(
     phases: &[Phase],
     console: &Console,
 ) -> Result<Outcome> {
+    info!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
     let start_time = Instant::now();
@@ -207,6 +218,7 @@ fn run_cargo_phases(
             break;
         }
     }
+    info!("{scenario} outcome {:?}", outcome.summary());
     console.cargo_outcome(scenario, start_time, &outcome, options);
 
     Ok(outcome)
