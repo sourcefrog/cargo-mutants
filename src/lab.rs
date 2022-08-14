@@ -126,10 +126,7 @@ pub fn test_unmutated_then_all_mutants(
             let auto_timeout = max(DEFAULT_TEST_TIMEOUT, baseline_duration.mul_f32(5.0));
             options.set_test_timeout(auto_timeout);
             if options.show_times {
-                println!(
-                    "Auto-set test timeout to {:.1}s",
-                    options.test_timeout().as_secs_f32()
-                );
+                console.autoset_timeout(auto_timeout);
             }
         }
     }

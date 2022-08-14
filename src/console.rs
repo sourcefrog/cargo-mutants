@@ -92,6 +92,14 @@ impl Console {
         self.view.message(&s);
     }
 
+    /// Update that a test timeout was auto-set.
+    pub fn autoset_timeout(&self, timeout: Duration) {
+        self.message(&format!(
+            "Auto-set test timeout to {}\n",
+            style_secs(timeout)
+        ));
+    }
+
     /// Update that work is starting on testing a given number of mutants.
     pub fn start_testing_mutants(&self, n_mutants: usize) {
         self.view.update(|model| {
