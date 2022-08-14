@@ -61,7 +61,7 @@ impl Console {
         )
         .unwrap();
         if options.show_times {
-            write!(s, " in {}", format_elapsed_millis(start)).unwrap();
+            write!(s, " in {}", style_elapsed_secs(start)).unwrap();
         }
         if outcome.should_show_logs() || options.show_all_logs {
             s.push('\n');
@@ -205,7 +205,7 @@ impl nutmeg::Model for CargoModel {
         if let Some(phase) = self.phase {
             write!(s, "({}) ", phase).unwrap();
         }
-        write!(s, "... {}", format_elapsed_secs(self.start)).unwrap();
+        write!(s, "... {}", style_elapsed_secs(self.start)).unwrap();
         if let Ok(last_line) = last_line(&self.log_file) {
             write!(s, "\n    {}", last_line).unwrap();
         }
@@ -264,7 +264,7 @@ impl nutmeg::Model for CopyModel {
             "{} ... {} in {}",
             self.name,
             style_mb(self.bytes_copied),
-            format_elapsed_secs(self.start),
+            style_elapsed_secs(self.start),
         )
     }
 
@@ -275,7 +275,7 @@ impl nutmeg::Model for CopyModel {
                     "{} ... {} in {}",
                     self.name,
                     style_mb(self.bytes_copied),
-                    style(format_elapsed_millis(self.start)).cyan(),
+                    style_elapsed_secs(self.start)
                 )
             } else {
                 format!("{} ... {}", self.name, style("done").green())
@@ -340,14 +340,10 @@ pub fn print_error(msg: &str) {
     println!("{}: {}", style("error").bold().red(), msg);
 }
 
-fn format_elapsed_secs(since: Instant) -> String {
-    style(format!("{}s", since.elapsed().as_secs()))
+fn style_elapsed_secs(since: Instant) -> String {
+    style(format!("{:.1}s", since.elapsed().as_secs_f32()))
         .cyan()
         .to_string()
-}
-
-fn format_elapsed_millis(since: Instant) -> String {
-    format!("{:.3}s", since.elapsed().as_secs_f64())
 }
 
 pub fn duration_minutes_seconds(duration: Duration) -> String {
