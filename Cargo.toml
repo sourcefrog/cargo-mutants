@@ -78,6 +78,7 @@ members = [
     "testdata/tree/small_well_tested",
     "testdata/tree/strict_warnings",
     "testdata/tree/well_tested",
+    "testdata/tree/with_child_directories",
 ]
 
 # `replace_dependency` can't be in the workspace, because 'replace' sections

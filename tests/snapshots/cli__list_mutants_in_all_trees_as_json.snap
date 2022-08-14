@@ -391,4 +391,60 @@ expression: buf
 ]
 ```
 
+## testdata/tree/with_child_directories
+
+```json
+[
+  {
+    "file": "src/methods.rs",
+    "line": 1,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/module_methods.rs",
+    "line": 1,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/inside_mod.rs",
+    "line": 3,
+    "function": "outer::inner::name",
+    "return_type": "-> &'static str",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 

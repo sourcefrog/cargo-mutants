@@ -47,7 +47,10 @@ pub struct Options {
     pub build_source: bool,
 
     /// Files to examine.
-    pub globset: Option<GlobSet>,
+    pub examine_globset: Option<GlobSet>,
+
+    /// Files to exclude
+    pub exclude_globset: Option<GlobSet>,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
@@ -74,19 +77,8 @@ impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
     fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
-        let globset = if args.file.is_empty() {
-            None
-        } else {
-            let mut builder = GlobSetBuilder::new();
-            for glob_str in &args.file {
-                if glob_str.contains('/') {
-                    builder.add(Glob::new(glob_str)?);
-                } else {
-                    builder.add(Glob::new(&format!("**/{}", glob_str))?);
-                }
-            }
-            Some(builder.build()?)
-        };
+        let examine_globset = build_glob_set(&args.file)?;
+        let exclude_globset = build_glob_set(&args.exclude)?;
 
         Ok(Options {
             additional_cargo_args: args.cargo_arg.clone(),
@@ -94,7 +86,8 @@ impl TryFrom<&Args> for Options {
             build_source: !args.no_copy_target,
             check_only: args.check,
             copy_target: !args.no_copy_target,
-            globset,
+            examine_globset,
+            exclude_globset,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,
@@ -107,4 +100,20 @@ impl TryFrom<&Args> for Options {
                 .unwrap_or(Duration::MAX),
         })
     }
+}
+
+fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>> {
+    if glob_set.is_empty() {
+        return Ok(None);
+    }
+
+    let mut builder = GlobSetBuilder::new();
+    for glob_str in glob_set {
+        if glob_str.contains('/') || glob_str.contains(std::path::MAIN_SEPARATOR) {
+            builder.add(Glob::new(glob_str)?);
+        } else {
+            builder.add(Glob::new(&format!("**/{}", glob_str))?);
+        }
+    }
+    Ok(Some(builder.build()?))
 }

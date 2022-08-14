@@ -1,0 +1,6 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+src/methods.rs:1: replace double -> usize with Default::default()
+

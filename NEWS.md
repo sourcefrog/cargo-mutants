@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 0.2.11 UNRELEASED
+
+- New `--exclude` command line option to exclude source files from mutants generation, matching a glob.
 
 - Added: A new `mutants.out/debug.log` with internal debugging information.
 

@@ -273,12 +273,75 @@ fn list_mutants_well_tested() {
 }
 
 #[test]
-fn list_mutants_well_tested_name_filter() {
+fn list_mutants_well_tested_examine_name_filter() {
     run()
         .arg("mutants")
         .args(["--list", "--file", "nested_function.rs"])
         .current_dir("testdata/tree/well_tested")
-        .assert_insta("list_mutants_well_tested_name_filter");
+        .assert_insta("list_mutants_well_tested_examine_name_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_exclude_name_filter() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "simple_fns.rs"])
+        .current_dir("testdata/tree/well_tested")
+        .assert_insta("list_mutants_well_tested_exclude_name_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_exclude_folder_filter() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "*/module/*"])
+        .current_dir("testdata/tree/with_child_directories")
+        .assert_insta("list_mutants_well_tested_exclude_folder_filter");
+}
+
+#[test]
+#[cfg(target_os = "windows")]
+fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "*\\module\\*"])
+        .current_dir("testdata/tree/with_child_directories")
+        .assert_insta("list_mutants_well_tested_exclude_folder_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--file",
+            "src/module/utils/*.rs",
+            "--exclude",
+            "nested_function.rs",
+        ])
+        .current_dir("testdata/tree/with_child_directories")
+        .assert_insta("list_mutants_well_tested_examine_and_exclude_name_filter_combined");
+}
+
+#[test]
+fn tree_with_child_directories_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "module_methods.rs", "--file", "*/utils/*", "--exclude", "*/sub_utils/*", "--exclude", "nested_function.rs"])
+        .current_dir("testdata/tree/with_child_directories")
+        .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
 }
 
 #[test]

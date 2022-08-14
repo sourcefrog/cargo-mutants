@@ -234,6 +234,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-mutants-testdata-with-child-directories"
+version = "0.1.0"
+dependencies = [
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "cargo-platform"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
