@@ -346,23 +346,13 @@ pub fn nutmeg_options() -> nutmeg::Options {
 
 /// Return a styled string reflecting the moral value of this outcome.
 pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
-    use CargoResult::*;
-    use Scenario::*;
-    match &outcome.scenario {
-        SourceTree | Baseline => match outcome.last_phase_result() {
-            Success => style("ok").green(),
-            Failure => style("FAILED").red().bold(),
-            Timeout => style("TIMEOUT").red().bold(),
-        },
-        Mutant { .. } => match (outcome.last_phase(), outcome.last_phase_result()) {
-            (Phase::Test, Failure) => style("caught").green(),
-            (Phase::Test, Success) => style("NOT CAUGHT").red().bold(),
-            (Phase::Build, Success) => style("build ok").green(),
-            (Phase::Check, Success) => style("check ok").green(),
-            (Phase::Build, Failure) => style("build failed").yellow(),
-            (Phase::Check, Failure) => style("check failed").yellow(),
-            (_, Timeout) => style("TIMEOUT").red().bold(),
-        },
+    match outcome.summary() {
+        SummaryOutcome::CaughtMutant => style("caught").green(),
+        SummaryOutcome::MissedMutant => style("NOT CAUGHT").red().bold(),
+        SummaryOutcome::Failure => style("FAILED").red().bold(),
+        SummaryOutcome::Success => style("ok").green(),
+        SummaryOutcome::Unviable => style("unviable").blue(),
+        SummaryOutcome::Timeout => style("TIMEOUT").red().bold(),
     }
 }
 
