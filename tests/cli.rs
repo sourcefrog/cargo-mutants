@@ -325,6 +325,17 @@ fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
 }
 
 #[test]
+fn tree_with_child_directories_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+}
+
+#[test]
 fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
     run()
         .arg("mutants")
