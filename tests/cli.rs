@@ -519,18 +519,18 @@ fn factorial_mutants_with_all_logs() {
         .assert()
         .code(2)
         .stderr("")
-        .stdout(is_match(r"source tree \.\.\. ok in \d+\.\d\d\ds").unwrap())
+        .stdout(is_match(r"source tree \.\.\. ok in \d+\.\ds").unwrap())
         .stdout(is_match(
-r"Copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\d\d\ds"
+r"Copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"Unmutated baseline \.\.\. ok in \d+\.\d\d\ds"
+r"Unmutated baseline \.\.\. ok in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\d\d\ds"
+r"src/bin/factorial\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\d\d\ds"
+r"src/bin/factorial\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\ds"
         ).unwrap());
 }
 
@@ -637,6 +637,10 @@ fn output_option() {
             .is_file(),
         "mutants.out/outcomes.json is in --output directory"
     );
+    assert!(
+        output_tmpdir.path().join("mutants.out/debug.log").is_file(),
+        "mutants.out/debug.log is in --output directory"
+    );
 }
 
 #[test]
@@ -741,7 +745,7 @@ fn source_tree_parse_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
+        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\ds").unwrap())
         .stdout(contains(r#"This isn't Rust..."#).name("The problem source line"))
         .stdout(contains("*** source tree"))
         .stdout(contains("build --tests")) // Caught at the check phase
@@ -759,7 +763,7 @@ fn source_tree_typecheck_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\d{3}s").unwrap())
+        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\ds").unwrap())
         .stdout(
             contains(r#""1" + 2 // Doesn't work in Rust: just as well!"#)
                 .name("The problem source line"),
@@ -781,7 +785,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
-        .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\d{3}s").unwrap())
+        .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\ds").unwrap())
         .stdout(contains("timeout"))
         .stdout(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",

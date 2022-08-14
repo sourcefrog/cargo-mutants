@@ -9,6 +9,7 @@ use std::fs;
 
 use anyhow::Context;
 use camino::Utf8Path;
+use tracing::debug;
 
 use crate::path::ascent;
 use crate::Result;
@@ -145,7 +146,9 @@ fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
     } else {
         let mut new_path = source_dir.to_owned();
         new_path.push(path);
-        Some(new_path.to_string())
+        let new_path_str = new_path.to_string();
+        debug!("fix path {path_str} -> {new_path_str}");
+        Some(new_path_str)
     }
 }
 

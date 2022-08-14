@@ -6,6 +6,6 @@ Freshen source tree ... ok
 Copy source and build products to scratch directory ... done
 Unmutated baseline ... ok
 Found 1 mutant to test
-src/lib.rs:12: replace controlled_loop with () ... check ok
+src/lib.rs:12: replace controlled_loop with () ... ok
 1 mutant tested: 1 succeeded
 

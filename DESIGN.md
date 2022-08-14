@@ -122,3 +122,11 @@ default the source directory.
 Some trees are configured so that any unused variable is an error. This is a reasonable choice to keep the tree very clean in CI, but if unhandled it would be a problem for cargo mutants. Many mutants -- in fact at the time of writing all generated mutants -- ignore function parameters and return a static value. Rejecting them due to the lint failure is a missed opportunity to consider a similar but more subtle potential bug.
 
 Therefore when running `rustc` we configure all warnings off, with `--cap-lints`.
+
+## Logging
+
+cargo-mutants writes two types of log files into the `mutants.out` directory:
+
+Within the `log` directory, there is a file for each mutant scenario. This mostly contains the output from the Cargo commands, interspersed with some lines showing what command was run and the outcome. This is opened in append mode so that both cargo-mutants and cargo can write to it. This log is watched and the last line is shown in the progress bar to indicate what's going on.
+
+Also, a file `mutants.out/debug.log` is written using [tracing](https://docs.rs/tracing) and written using the tracing macros. This contains more detailed information about what's happening in cargo-mutants itself.

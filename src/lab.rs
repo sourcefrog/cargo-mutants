@@ -12,6 +12,7 @@ use anyhow::{anyhow, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
 use serde::Serialize;
+use tracing::info;
 
 use crate::cargo::{cargo_args, run_cargo};
 use crate::console::{self, plural, Console};
@@ -72,6 +73,15 @@ pub fn test_unmutated_then_all_mutants(
         source_tree.path()
     };
     let output_dir = OutputDir::new(output_in_dir)?;
+
+    let debug_log = tracing_appender::rolling::never(output_dir.path(), "debug.log");
+    tracing_subscriber::fmt()
+        .with_ansi(false)
+        .with_file(true) // source file name
+        .with_line_number(true)
+        .with_writer(debug_log)
+        .init();
+
     let console = Console::new();
 
     if options.build_source {
@@ -116,10 +126,7 @@ pub fn test_unmutated_then_all_mutants(
             let auto_timeout = max(DEFAULT_TEST_TIMEOUT, baseline_duration.mul_f32(5.0));
             options.set_test_timeout(auto_timeout);
             if options.show_times {
-                println!(
-                    "Auto-set test timeout to {:.1}s",
-                    options.test_timeout().as_secs_f32()
-                );
+                console.autoset_timeout(auto_timeout);
             }
         }
     }
@@ -184,18 +191,18 @@ fn run_cargo_phases(
     phases: &[Phase],
     console: &Console,
 ) -> Result<Outcome> {
+    info!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
-    let start_time = Instant::now();
     if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&mutant.diff());
     }
-    console.start_cargo(scenario, log_file.path());
+    console.scenario_started(scenario, log_file.path());
 
     let mut outcome = Outcome::new(&log_file, scenario.clone());
     for &phase in phases {
         let phase_start = Instant::now();
-        console.set_cargo_phase(&phase);
+        console.scenario_phase_started(phase);
         let cargo_args = cargo_args(phase, options);
         let timeout = match phase {
             Phase::Test => options.test_timeout(),
@@ -203,11 +210,13 @@ fn run_cargo_phases(
         };
         let cargo_result = run_cargo(&cargo_args, in_dir, &mut log_file, timeout, console)?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result);
+        console.scenario_phase_finished(phase);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;
         }
     }
-    console.cargo_outcome(scenario, start_time, &outcome, options);
+    info!("{scenario} outcome {:?}", outcome.summary());
+    console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
 }

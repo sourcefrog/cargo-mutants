@@ -21,13 +21,13 @@ use crate::*;
 ///
 /// Every scenario proceed through up to three phases in order. They are:
 ///
-/// 1. `cargo check` -- is the tree basically buildable; this should detect many
-///    unviable mutants early.
+/// 1. `cargo check` -- is the tree basically buildable? This is skipped
+///    during normal testing, but used with `--check`, in which case the
+///    other phases are skipped.
 /// 2. `cargo build` -- actually build it.
 /// 3. `cargo tests` -- do the tests pass?
 ///
-/// Some scenarios such as freshening the tree don't run the tests. Tests might
-/// also be skipped by `--check`.
+/// Some scenarios such as freshening the tree don't run the tests.
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize)]
 pub enum Phase {
     Check,
@@ -160,16 +160,6 @@ impl Serialize for Outcome {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Hash)]
-pub enum SummaryOutcome {
-    Success,
-    CaughtMutant,
-    MissedMutant,
-    Unviable,
-    Failure,
-    Timeout,
-}
-
 impl Outcome {
     pub fn new(log_file: &LogFile, scenario: Scenario) -> Outcome {
         Outcome {
@@ -202,6 +192,10 @@ impl Outcome {
 
     pub fn last_phase_result(&self) -> CargoResult {
         self.phase_results.last().unwrap().cargo_result
+    }
+
+    pub fn phase_results(&self) -> &[PhaseResult] {
+        &self.phase_results
     }
 
     /// True if this status indicates the user definitely needs to see the logs, because a task
@@ -280,11 +274,15 @@ impl Outcome {
     }
 }
 
+/// The result of running one phase of a mutation scenario, i.e. a single cargo check/build/test command.
 #[derive(Debug, Clone, Eq, PartialEq)]
-struct PhaseResult {
-    phase: Phase,
-    duration: Duration,
-    cargo_result: CargoResult,
+pub struct PhaseResult {
+    /// What phase was this?
+    pub phase: Phase,
+    /// How long did it take?
+    pub duration: Duration,
+    /// Did it succeed?
+    pub cargo_result: CargoResult,
 }
 
 impl Serialize for PhaseResult {
@@ -299,4 +297,15 @@ impl Serialize for PhaseResult {
         ss.serialize_field("cargo_result", &self.cargo_result)?;
         ss.end()
     }
+}
+
+/// Overall summary outcome for one mutant.
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Hash)]
+pub enum SummaryOutcome {
+    Success,
+    CaughtMutant,
+    MissedMutant,
+    Unviable,
+    Failure,
+    Timeout,
 }

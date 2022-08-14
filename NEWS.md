@@ -1,8 +1,14 @@
 # cargo-mutants changelog
 
-## 0.2.11
+## 0.2.11 UNRELEASED
 
 - New `--exclude` command line option to exclude source files from mutants generation, matching a glob.
+
+- Added: A new `mutants.out/debug.log` with internal debugging information.
+
+- Improved: The time for check, build, and test is now shown separately in progress bars and output, to give a better indication of which is taking more time in the tree under test. Also, times are show in seconds with one decimal place, and they are styled more consistently.
+
+- Improved: More consistent use of 'unviable' and other terms for outcomes in the UI.
 
 ## 0.2.10
 
