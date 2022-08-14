@@ -397,45 +397,17 @@ expression: buf
 [
   {
     "file": "src/methods.rs",
-    "line": 16,
-    "function": "Foo::double",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "file": "src/methods.rs",
-    "line": 22,
-    "function": "<impl Display for Foo>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
-  },
-  {
-    "file": "src/methods.rs",
-    "line": 28,
-    "function": "<impl Debug for &Foo>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
+    "line": 1,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
   },
   {
     "file": "src/module/module_methods.rs",
-    "line": 16,
-    "function": "Bar::double",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "file": "src/module/module_methods.rs",
-    "line": 22,
-    "function": "<impl Display for Bar>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
-  },
-  {
-    "file": "src/module/module_methods.rs",
-    "line": 28,
-    "function": "<impl Debug for &Bar>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
+    "line": 1,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
   },
   {
     "file": "src/module/utils/inside_mod.rs",

@@ -1,7 +1,5 @@
-An example tree for `cargo-mutants` with examples of sites where mutants could
-be, or shouldn't be, applied.
+# `with_child_directories`
 
-Every example in this tree should be adequately tested so that:
+An example tree for `cargo-mutants` with various subdirectories, to test matching filenames.
 
-1. All tests pass in a clean tree.
-2. Every mutation is caught.
+All tests should pass and everything should be covered.
