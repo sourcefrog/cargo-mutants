@@ -128,7 +128,6 @@ impl SourceTree {
             )?;
             for source_path in source_paths {
                 check_interrupted()?;
-                // TODO: Reference the package in the source file.
                 r.push(SourceFile::new(
                     &self.root,
                     source_path,
