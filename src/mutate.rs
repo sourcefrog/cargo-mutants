@@ -199,6 +199,7 @@ impl fmt::Debug for Mutant {
             // more concise display of spans
             .field("start", &(self.span.start.line, self.span.start.column))
             .field("end", &(self.span.end.line, self.span.end.column))
+            .field("package_name", &self.source_file.package_name)
             .finish()
     }
 }
@@ -250,7 +251,7 @@ mod test {
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2) }"#
+            r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
             muts[0].to_string(),
@@ -258,7 +259,7 @@ mod test {
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2) }"#
+            r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
             muts[1].to_string(),
