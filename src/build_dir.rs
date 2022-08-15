@@ -37,8 +37,9 @@ pub struct BuildDir {
 impl BuildDir {
     /// Make a new build dir, copying from a source directory.
     pub fn new(source: &SourceTree, options: &Options) -> Result<BuildDir> {
+        let name_tail = source.path().file_name().unwrap_or("");
         let temp_dir = tempfile::Builder::new()
-            .prefix(&format!("cargo-mutants-{}-", source.root_package_name()?))
+            .prefix(&format!("cargo-mutants-{}-", name_tail))
             .suffix(".tmp")
             .tempdir()
             .context("create temp dir")?;

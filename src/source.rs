@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
 use tracing::{debug, info, warn};
@@ -142,16 +142,6 @@ impl SourceTree {
     /// Return the path (possibly relative) to the root of the source tree.
     pub fn path(&self) -> &Utf8Path {
         &self.root
-    }
-
-    /// Return the name of the root crate, as an identifier for this tree.
-    pub fn root_package_name(&self) -> Result<&str> {
-        Ok(self
-            .metadata
-            .root_package()
-            .ok_or_else(|| anyhow!("directory has no root package"))?
-            .name
-            .as_str())
     }
 }
 
@@ -299,11 +289,5 @@ mod test {
         )
         .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
-    }
-
-    #[test]
-    fn source_root_package_name_of_cargo_mutants_itself() {
-        let source_tree = SourceTree::new(".".into()).unwrap();
-        assert_eq!(source_tree.root_package_name().unwrap(), "cargo-mutants");
     }
 }
