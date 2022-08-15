@@ -1,12 +1,8 @@
+pub fn triple(a: i32) -> i32 {
+    a * 3
+}
 
-pub mod a_public_module {
-    pub fn print_from_utils() {
-        println!("Print works from utils library");
-    }
-
-
-    pub fn test() -> Option<i32> {
-        return Option::None
-    }
-
+#[test]
+fn test_triple() {
+    assert_eq!(triple(3), 9);
 }

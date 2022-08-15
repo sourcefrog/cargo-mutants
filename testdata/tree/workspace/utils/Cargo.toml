@@ -1,5 +1,5 @@
 [package]
-name = "utils"
+name = "cargo_mutants_testdata_workspace_utils"
 version = "0.1.0"
 edition = "2021"
 publish = false

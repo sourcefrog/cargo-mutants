@@ -126,6 +126,8 @@ pub fn cargo_args(phase: Phase, options: &Options) -> Vec<String> {
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
     }
+    // TODO: Target the specific package if this is a mutant scenario.
+    cargo_args.push("--workspace".to_string());
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
         cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
@@ -234,9 +236,18 @@ mod test {
     #[test]
     fn generate_cargo_args_for_default_options() {
         let options = Options::default();
-        assert_eq!(cargo_args(Phase::Check, &options), vec!["check", "--tests"]);
-        assert_eq!(cargo_args(Phase::Build, &options), vec!["build", "--tests"]);
-        assert_eq!(cargo_args(Phase::Test, &options), vec!["test"]);
+        assert_eq!(
+            cargo_args(Phase::Check, &options),
+            vec!["check", "--tests", "--workspace"]
+        );
+        assert_eq!(
+            cargo_args(Phase::Build, &options),
+            vec!["build", "--tests", "--workspace"]
+        );
+        assert_eq!(
+            cargo_args(Phase::Test, &options),
+            vec!["test", "--workspace"]
+        );
     }
 
     #[test]
@@ -245,11 +256,17 @@ mod test {
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
-        assert_eq!(cargo_args(Phase::Check, &options), vec!["check", "--tests"]);
-        assert_eq!(cargo_args(Phase::Build, &options), vec!["build", "--tests"]);
+        assert_eq!(
+            cargo_args(Phase::Check, &options),
+            vec!["check", "--tests", "--workspace"]
+        );
+        assert_eq!(
+            cargo_args(Phase::Build, &options),
+            vec!["build", "--tests", "--workspace"]
+        );
         assert_eq!(
             cargo_args(Phase::Test, &options),
-            vec!["test", "--lib", "--no-fail-fast"]
+            vec!["test", "--workspace", "--lib", "--no-fail-fast"]
         );
     }
 
@@ -264,15 +281,21 @@ mod test {
             .extend(["--release".to_owned()]);
         assert_eq!(
             cargo_args(Phase::Check, &options),
-            vec!["check", "--tests", "--release"]
+            vec!["check", "--tests", "--workspace", "--release"]
         );
         assert_eq!(
             cargo_args(Phase::Build, &options),
-            vec!["build", "--tests", "--release"]
+            vec!["build", "--tests", "--workspace", "--release"]
         );
         assert_eq!(
             cargo_args(Phase::Test, &options),
-            vec!["test", "--release", "--lib", "--no-fail-fast"]
+            vec![
+                "test",
+                "--workspace",
+                "--release",
+                "--lib",
+                "--no-fail-fast"
+            ]
         );
     }
 }

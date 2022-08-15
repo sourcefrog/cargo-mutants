@@ -510,9 +510,17 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo_mutants_testdata_workspace_utils",
+    "file": "utils/src/lib.rs",
+    "line": 1,
+    "function": "triple",
+    "return_type": "-> i32",
+    "replacement": "Default::default()"
+  },
+  {
     "package": "main",
     "file": "main/src/main.rs",
-    "line": 4,
+    "line": 5,
     "function": "main",
     "return_type": "",
     "replacement": "()"
@@ -520,82 +528,18 @@ expression: buf
   {
     "package": "main",
     "file": "main/src/main.rs",
-    "line": 10,
+    "line": 12,
     "function": "factorial",
     "return_type": "-> u32",
     "replacement": "Default::default()"
   },
   {
-    "package": "main",
-    "file": "main/src/main.rs",
-    "line": 27,
-    "function": "Foo::double",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "package": "main",
-    "file": "main/src/main.rs",
-    "line": 33,
-    "function": "<impl Display for Foo>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
-  },
-  {
-    "package": "main",
-    "file": "main/src/main.rs",
-    "line": 39,
-    "function": "<impl Debug for &Foo>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
-  },
-  {
     "package": "main2",
     "file": "main2/src/main.rs",
-    "line": 4,
+    "line": 5,
     "function": "main",
     "return_type": "",
     "replacement": "()"
-  },
-  {
-    "package": "main2",
-    "file": "main2/src/main.rs",
-    "line": 18,
-    "function": "Bar::double",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "package": "main2",
-    "file": "main2/src/main.rs",
-    "line": 24,
-    "function": "<impl Display for Bar>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
-  },
-  {
-    "package": "main2",
-    "file": "main2/src/main.rs",
-    "line": 30,
-    "function": "<impl Debug for &Bar>::fmt",
-    "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
-  },
-  {
-    "package": "utils",
-    "file": "utils/src/lib.rs",
-    "line": 3,
-    "function": "a_public_module::print_from_utils",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "package": "utils",
-    "file": "utils/src/lib.rs",
-    "line": 8,
-    "function": "a_public_module::test",
-    "return_type": "-> Option<i32>",
-    "replacement": "Default::default()"
   }
 ]
 ```

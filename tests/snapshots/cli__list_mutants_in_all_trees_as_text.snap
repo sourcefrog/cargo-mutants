@@ -155,17 +155,10 @@ src/module/utils/sub_utils/subutils_nested_function.rs:2: replace has_nested::in
 ## testdata/tree/workspace
 
 ```
-main/src/main.rs:4: replace main with ()
-main/src/main.rs:10: replace factorial -> u32 with Default::default()
-main/src/main.rs:27: replace Foo::double with ()
-main/src/main.rs:33: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
-main/src/main.rs:39: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())
-main2/src/main.rs:4: replace main with ()
-main2/src/main.rs:18: replace Bar::double with ()
-main2/src/main.rs:24: replace <impl Display for Bar>::fmt -> fmt::Result with Ok(Default::default())
-main2/src/main.rs:30: replace <impl Debug for &Bar>::fmt -> fmt::Result with Ok(Default::default())
-utils/src/lib.rs:3: replace a_public_module::print_from_utils with ()
-utils/src/lib.rs:8: replace a_public_module::test -> Option<i32> with Default::default()
+utils/src/lib.rs:1: replace triple -> i32 with Default::default()
+main/src/main.rs:5: replace main with ()
+main/src/main.rs:12: replace factorial -> u32 with Default::default()
+main2/src/main.rs:5: replace main with ()
 ```
 
 

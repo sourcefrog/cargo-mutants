@@ -4,15 +4,15 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
+    "package": "cargo_mutants_testdata_workspace_utils",
+    "path": "utils/src/lib.rs"
+  },
+  {
     "package": "main",
     "path": "main/src/main.rs"
   },
   {
     "package": "main2",
     "path": "main2/src/main.rs"
-  },
-  {
-    "package": "utils",
-    "path": "utils/src/lib.rs"
   }
 ]
