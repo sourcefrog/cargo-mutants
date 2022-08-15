@@ -4,6 +4,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
+    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 1,
     "function": "main",
@@ -11,6 +12,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "()"
   },
   {
+    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 7,
     "function": "factorial",

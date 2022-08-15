@@ -10,7 +10,7 @@ Released 2022-08-20
 
 - New: Partial support for testing within a Cargo workspace.
 
-- Changed: `cargo mutants --list-files --json` now includes package names for each file.
+- Changed: `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
 
 - New `--exclude` command line option to exclude source files from mutants generation, matching a glob.
 

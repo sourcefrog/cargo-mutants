@@ -147,6 +147,11 @@ impl Mutant {
         &self.function_name
     }
 
+    /// Return the cargo package name.
+    pub fn package_name(&self) -> &str {
+        &self.source_file.package_name
+    }
+
     /// Return a unified diff for the mutant.
     pub fn diff(&self) -> String {
         let old_label = self.source_file.tree_relative_slashes();
@@ -199,7 +204,7 @@ impl fmt::Debug for Mutant {
             // more concise display of spans
             .field("start", &(self.span.start.line, self.span.start.column))
             .field("end", &(self.span.end.line, self.span.end.column))
-            .field("package_name", &self.source_file.package_name)
+            .field("package_name", &self.package_name())
             .finish()
     }
 }
@@ -221,7 +226,8 @@ impl Serialize for Mutant {
         S: Serializer,
     {
         // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Mutation", 4)?;
+        let mut ss = serializer.serialize_struct("Mutation", 6)?;
+        ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;
