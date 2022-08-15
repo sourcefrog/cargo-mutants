@@ -23,7 +23,7 @@ use crate::*;
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
     /// Path relative to the root of the tree.
-    tree_relative_path: TreeRelativePathBuf,
+    pub tree_relative_path: TreeRelativePathBuf,
 
     /// Full copy of the source.
     pub code: Rc<String>,

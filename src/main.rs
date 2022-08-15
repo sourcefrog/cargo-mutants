@@ -29,6 +29,8 @@ use anyhow::Result;
 use argh::FromArgs;
 use camino::Utf8PathBuf;
 use path_slash::PathExt;
+use serde_json::json;
+use serde_json::Value;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
@@ -156,17 +158,12 @@ fn main() -> Result<()> {
     if args.version {
         println!("{} {}", NAME, VERSION);
     } else if args.list_files {
-        let source_paths: Vec<String> = source_tree
-            .source_files(&options)?
-            .into_iter()
-            .map(|s| s.tree_relative_slashes())
-            .collect();
         if args.json {
-            // TODO: In json maybe also include the package.
-            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &source_paths)?;
+            list_files_as_json(&source_tree, &options)?;
         } else {
-            for f in source_paths {
-                println!("{}", f);
+            let source_files = source_tree.source_files(&options)?;
+            for f in source_files {
+                println!("{}", f.tree_relative_slashes());
             }
         }
     } else if args.list {
@@ -184,5 +181,22 @@ fn main() -> Result<()> {
         let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options)?;
         exit(lab_outcome.exit_code());
     }
+    Ok(())
+}
+
+fn list_files_as_json(source_tree: &SourceTree, options: &Options) -> Result<()> {
+    let list = Value::Array(
+        source_tree
+            .source_files(options)?
+            .iter()
+            .map(|source_file| {
+                json!({
+                    "path": source_file.tree_relative_path,
+                    "package": source_file.package_name,
+                })
+            })
+            .collect(),
+    );
+    serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &list)?;
     Ok(())
 }

@@ -374,6 +374,15 @@ fn list_files_json_well_tested() {
 }
 
 #[test]
+fn list_files_json_workspace() {
+    // Demonstrates that we get package names in the json listing.
+    run()
+        .args(["mutants", "--list-files", "--json"])
+        .current_dir("testdata/tree/workspace")
+        .assert_insta("list_files_json_workspace");
+}
+
+#[test]
 fn copy_testdata_doesnt_include_build_artifacts() {
     // If there is a target or mutants.out in the source directory, we don't want it in the copy,
     // so that the tests are (more) hermetic.

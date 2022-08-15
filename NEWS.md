@@ -8,6 +8,10 @@
 
 Released 2022-08-20
 
+- New: Partial support for testing within a Cargo workspace.
+
+- Changed: `cargo mutants --list-files --json` now includes package names for each file.
+
 - New `--exclude` command line option to exclude source files from mutants generation, matching a glob.
 
 - New: `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` sets a minimum timeout for cargo tests, in seconds. This can be used to allow more time on slow CI builders. If unset the default is still 20s.
