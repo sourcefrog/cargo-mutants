@@ -82,6 +82,7 @@ impl TreeRelativePathBuf {
         TreeRelativePathBuf(Utf8PathBuf::new())
     }
 
+    #[allow(dead_code)]
     pub fn from_absolute(path: &Utf8Path, tree_root: &Utf8Path) -> Self {
         TreeRelativePathBuf(
             path.strip_prefix(tree_root)

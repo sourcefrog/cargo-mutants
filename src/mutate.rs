@@ -232,26 +232,18 @@ impl Serialize for Mutant {
 
 #[cfg(test)]
 mod test {
-    use std::rc::Rc;
-
     use camino::Utf8Path;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
-    use crate::path::TreeRelativePathBuf;
-    use crate::source::Package;
     use crate::*;
 
     #[test]
     fn discover_factorial_mutants() {
-        let package = Rc::new(Package {
-            name: "cargo-mutants-testdata-factorial".to_string(),
-            path: TreeRelativePathBuf::empty(),
-        });
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
             "src/bin/factorial.rs".parse().unwrap(),
-            package,
+            "cargo-mutants-testdata-factorial",
         )
         .unwrap();
         let muts = discover_mutants(source_file.into()).unwrap();
@@ -276,14 +268,10 @@ mod test {
 
     #[test]
     fn filter_by_attributes() {
-        let package = Rc::new(Package {
-            name: "cargo-mutants-testdata-hang-avoided".to_string(),
-            path: TreeRelativePathBuf::empty(),
-        });
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/hang_avoided_by_attr"),
             "src/lib.rs".parse().unwrap(),
-            package,
+            "cargo-mutants-testdata-hang-avoided",
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();
@@ -296,14 +284,10 @@ mod test {
 
     #[test]
     fn mutate_factorial() {
-        let package = Rc::new(Package {
-            name: "cargo-mutants-testdata-factorial".to_string(),
-            path: TreeRelativePathBuf::empty(),
-        });
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
             "src/bin/factorial.rs".parse().unwrap(),
-            package,
+            "cargo-mutants-testdata-factorial",
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();

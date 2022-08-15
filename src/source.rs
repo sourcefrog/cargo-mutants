@@ -8,7 +8,6 @@ use std::rc::Rc;
 use anyhow::{anyhow, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
-use serde::Serialize;
 use tracing::{debug, info, warn};
 
 use crate::path::TreeRelativePathBuf;
@@ -30,7 +29,7 @@ pub struct SourceFile {
     pub code: Rc<String>,
 
     /// Package within the workspace.
-    pub package: Rc<Package>,
+    pub package_name: String,
 }
 
 impl SourceFile {
@@ -40,7 +39,7 @@ impl SourceFile {
     pub fn new(
         tree_path: &Utf8Path,
         tree_relative_path: TreeRelativePathBuf,
-        package: Rc<Package>,
+        package_name: &str,
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
@@ -49,7 +48,7 @@ impl SourceFile {
         Ok(SourceFile {
             tree_relative_path,
             code: Rc::new(code),
-            package,
+            package_name: package_name.to_owned(),
         })
     }
 
@@ -119,17 +118,6 @@ impl SourceTree {
     pub fn source_files(&self, options: &Options) -> Result<Vec<SourceFile>> {
         let mut r = Vec::new();
         for package_metadata in &self.metadata.workspace_packages() {
-            let package_path = TreeRelativePathBuf::from_absolute(
-                package_metadata
-                    .manifest_path
-                    .parent()
-                    .expect("package has no directory?"),
-                &self.root,
-            );
-            let package = Rc::new(Package {
-                name: package_metadata.name.clone(),
-                path: package_path,
-            });
             debug!("walk package {:?}", package_metadata.manifest_path);
             let top_sources = direct_package_sources(&self.root, package_metadata)?;
             let source_paths = indirect_source_paths(
@@ -144,7 +132,7 @@ impl SourceTree {
                 r.push(SourceFile::new(
                     &self.root,
                     source_path,
-                    Rc::clone(&package),
+                    &package_metadata.name,
                 )?);
             }
         }
@@ -166,15 +154,6 @@ impl SourceTree {
             .as_str())
     }
 }
-
-/// A Rust package within a tree.
-#[derive(Debug, PartialEq, Eq, Ord, PartialOrd, Clone, Serialize)]
-pub struct Package {
-    pub name: String,
-    pub path: TreeRelativePathBuf,
-}
-
-impl Package {}
 
 /// Find all the `.rs` files, by starting from the sources identified by the manifest
 /// and walking down.
@@ -312,13 +291,13 @@ mod test {
             .unwrap()
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
-        let package = Rc::new(Package {
-            name: "imaginary-package".to_owned(),
-            path: TreeRelativePathBuf::new("".into()),
-        });
 
-        let source_file =
-            SourceFile::new(temp_dir_path, file_name.parse().unwrap(), package).unwrap();
+        let source_file = SourceFile::new(
+            temp_dir_path,
+            file_name.parse().unwrap(),
+            "imaginary-package",
+        )
+        .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 
