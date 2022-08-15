@@ -156,15 +156,16 @@ fn main() -> Result<()> {
     if args.version {
         println!("{} {}", NAME, VERSION);
     } else if args.list_files {
-        let files: Vec<String> = source_tree
-            .source_paths(&options)?
+        let source_paths: Vec<String> = source_tree
+            .source_files(&options)?
             .into_iter()
-            .map(|trp| trp.to_string())
+            .map(|s| s.tree_relative_slashes())
             .collect();
         if args.json {
-            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &files)?;
+            // TODO: In json maybe also include the package.
+            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &source_paths)?;
         } else {
-            for f in files {
+            for f in source_paths {
                 println!("{}", f);
             }
         }

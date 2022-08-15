@@ -461,4 +461,88 @@ expression: buf
 ]
 ```
 
+## testdata/tree/workspace
+
+```json
+[
+  {
+    "file": "main/src/main.rs",
+    "line": 4,
+    "function": "main",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "main/src/main.rs",
+    "line": 10,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "file": "main/src/main.rs",
+    "line": 27,
+    "function": "Foo::double",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "main/src/main.rs",
+    "line": 33,
+    "function": "<impl Display for Foo>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "main/src/main.rs",
+    "line": 39,
+    "function": "<impl Debug for &Foo>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "main2/src/main.rs",
+    "line": 4,
+    "function": "main",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "main2/src/main.rs",
+    "line": 18,
+    "function": "Bar::double",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "main2/src/main.rs",
+    "line": 24,
+    "function": "<impl Display for Bar>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "main2/src/main.rs",
+    "line": 30,
+    "function": "<impl Debug for &Bar>::fmt",
+    "return_type": "-> fmt::Result",
+    "replacement": "Ok(Default::default())"
+  },
+  {
+    "file": "utils/src/lib.rs",
+    "line": 3,
+    "function": "a_public_module::print_from_utils",
+    "return_type": "",
+    "replacement": "()"
+  },
+  {
+    "file": "utils/src/lib.rs",
+    "line": 8,
+    "function": "a_public_module::test",
+    "return_type": "-> Option<i32>",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 
