@@ -14,6 +14,7 @@ env:
   RUST_BACKTRACE: short
   RUSTFLAGS: "-W rust-2021-compatibility"
   RUSTUP_MAX_RETRIES: 10
+  CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT: 60
 
 jobs:
   test:

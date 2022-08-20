@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
 use serde::Serialize;
@@ -123,7 +123,7 @@ pub fn test_unmutated_then_all_mutants(
     }
     if !options.has_test_timeout() {
         if let Some(baseline_duration) = outcome.test_duration() {
-            let auto_timeout = max(DEFAULT_TEST_TIMEOUT, baseline_duration.mul_f32(5.0));
+            let auto_timeout = max(minimum_test_timeout()?, baseline_duration.mul_f32(5.0));
             options.set_test_timeout(auto_timeout);
             if options.show_times {
                 console.autoset_timeout(auto_timeout);
@@ -172,6 +172,21 @@ pub fn test_unmutated_then_all_mutants(
         lab_outcome.summary_string(start_time, &options)
     ));
     Ok(lab_outcome)
+}
+
+/// Return the minimum timeout for cargo tests (used if the baseline tests are fast),
+/// from either the environment or a built-in default.
+fn minimum_test_timeout() -> Result<Duration> {
+    let var_name = crate::MINIMUM_TEST_TIMEOUT_ENV_VAR;
+    if let Some(env_timeout) = env::var_os(var_name) {
+        let env_timeout = env_timeout
+            .to_string_lossy()
+            .parse()
+            .with_context(|| format!("invalid {var_name}"))?;
+        Ok(Duration::from_secs(env_timeout))
+    } else {
+        Ok(DEFAULT_MINIMUM_TEST_TIMEOUT)
+    }
 }
 
 /// Successively run cargo check, build, test, and return the overall outcome in a build

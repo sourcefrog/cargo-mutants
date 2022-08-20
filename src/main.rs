@@ -46,7 +46,8 @@ use crate::visit::discover_mutants;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
-const DEFAULT_TEST_TIMEOUT: Duration = Duration::from_secs(20);
+const DEFAULT_MINIMUM_TEST_TIMEOUT: Duration = Duration::from_secs(20);
+const MINIMUM_TEST_TIMEOUT_ENV_VAR: &str = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT";
 
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///

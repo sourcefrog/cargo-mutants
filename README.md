@@ -48,12 +48,12 @@ but not adequately tested.
 
 `-f`, `--file FILE`: Mutate only functions in files matching the given name or
 glob. If the glob contains `/` it matches against the path from the source tree
-root; otherwise it matches only against the file name. If used together with `--exclude` argument, 
+root; otherwise it matches only against the file name. If used together with `--exclude` argument,
 then the files to be examined are matched before the files to be excluded.
 
 `-e`, `--exclude FILE`: Exclude files from mutants generation, matching the given name or
 glob. If the glob contains `/` it matches against the path from the source tree
-root; otherwise it matches only against the file name. If used together with `--file` argument, 
+root; otherwise it matches only against the file name. If used together with `--file` argument,
 then the files to be examined are matched before the files to be excluded.
 
 `--list`: Show what mutants could be generated, without running them.
@@ -194,8 +194,10 @@ this code, cargo-mutants might try changing `should_stop` to always return
 ```
 
 `cargo mutants` automatically sets a timeout when running tests with mutations
-applied, and reports mutations that hit a timeout. The automatic timeout is the
-maximum of 20 seconds, or 5x the time to run tests with no mutations.
+applied, and reports mutations that hit a timeout. The automatic timeout is the greater of
+20 seconds, or 5x the time to run tests with no mutations.
+
+The `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in seconds, overrides the minimum time.
 
 You can also set an explicit timeout with the `--timeout` option. In this case
 the timeout is also applied to tests run with no mutation.
