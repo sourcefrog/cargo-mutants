@@ -123,6 +123,42 @@ Some trees are configured so that any unused variable is an error. This is a rea
 
 Therefore when running `rustc` we configure all warnings off, with `--cap-lints`.
 
+## Testing
+
+Cargo-mutants is primarily tested on its public interface, which is the command line. These tests live in `tests/cli` and generally have the form of:
+
+1. Make a copy of a `testdata` tree, so that it's not accidentally modified.
+2. Run a `cargo-mutants` command on it.
+3. Inspect the stdout, return code, or `mutants.out`.
+
+`cargo-mutants` runs as a subprocess of the test process so that we get the most realistic view of its behavior. In some cases it is run via the `cargo` command to test that this level of indirection works properly.
+
+### `testdata` trees
+
+The primary means of testing is Rust source trees under `testdata/tree`: you can copy an existing tree and modify it to show the new behavior that you want to test.
+
+A selection of test trees are available for testing different scenarios. If there is an existing suitable tree, please use it. If you need to test a situation that is not covered yet, please add a new tree.
+
+Please describe the purpose of the testdata tree inside the tree, either in `Cargo.toml` or a `README.md` file.
+
+To make a new tree you can copy an existing tree, but make sure to change the package name in its `Cargo.toml`.
+
+All the trees need to be excluded from the overall workspace in the top-level `Cargo.toml`.
+
+### `--list` tests
+
+There is a general test that runs `cargo mutants --list` on each tree and compares the result to an Insta snapshot, for both the text and json output formats.
+
+Many features can be tested adequately by only looking at the list of mutants produced, with no need to actually test the mutants. In this case the generic list tests might be enough.
+
+### Unit tests
+
+Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient to exercise from the command line.
+
+## UI Style
+
+Always print paths with forward slashes, even on Windows. Use `path_slash`.
+
 ## Logging
 
 cargo-mutants writes two types of log files into the `mutants.out` directory:
