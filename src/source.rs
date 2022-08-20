@@ -69,9 +69,8 @@ impl SourceFile {
 /// build dirs.
 #[derive(Debug)]
 pub struct SourceTree {
+    /// Root of the source tree, absolute or relative to the cargo-mutants cwd.
     root: Utf8PathBuf,
-    #[allow(dead_code)]
-    cargo_toml_path: Utf8PathBuf,
     metadata: cargo_metadata::Metadata,
 }
 
@@ -96,11 +95,7 @@ impl SourceTree {
             .manifest_path(&cargo_toml_path)
             .exec()
             .context("run cargo metadata")?;
-        Ok(SourceTree {
-            cargo_toml_path,
-            metadata,
-            root,
-        })
+        Ok(SourceTree { metadata, root })
     }
 
     /// Return all the mutations that could possibly be applied to this tree.
