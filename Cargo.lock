@@ -129,7 +129,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "0.2.11-pre"
+version = "0.2.11"
 dependencies = [
  "anyhow",
  "argh",
