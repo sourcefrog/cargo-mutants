@@ -58,7 +58,7 @@ All the trees need to be mentioned in the top-level `Cargo.toml` as either inclu
 
 ### Insta snapshots
 
-Many tests use Insta <https://insta.rs> to assert the expected output. Insta makes it easy to review and accept changes to expected output, either when there's a real functional change or when for example line numbers or output formatting changes.
+Many tests use [Insta](https://insta.rs) to assert the expected output. [Insta](https://insta.rs) makes it easy to review and accept changes to expected output, either when there's a real functional change or when for example line numbers or output formatting changes.
 
 To conveniently review changed output, `cargo install cargo-insta` and then run `cargo insta test --review` etc.
 
