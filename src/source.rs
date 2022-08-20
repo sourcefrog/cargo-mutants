@@ -9,6 +9,8 @@ use anyhow::{anyhow, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
 
+use tracing::debug;
+
 use crate::path::TreeRelativePathBuf;
 use crate::*;
 
@@ -195,17 +197,29 @@ fn cargo_metadata_sources(
     if let Some(pkg) = metadata.root_package() {
         let pkg_dir = pkg.manifest_path.parent().unwrap();
         for target in &pkg.targets {
-            if target.kind == ["lib"] || target.kind == ["bin"] {
+            if should_mutate_target(target) {
                 if let Ok(relpath) = target.src_path.strip_prefix(&pkg_dir) {
                     let relpath = TreeRelativePathBuf::new(relpath.into());
                     found.insert(relpath);
                 } else {
                     eprintln!("{:?} is not in {:?}", target.src_path, pkg_dir);
                 }
+            } else {
+                debug!(
+                    "skipping target {:?} of kinds {:?}",
+                    target.name, target.kind
+                );
             }
         }
     }
     Ok(found)
+}
+
+fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
+    target
+        .kind
+        .iter()
+        .any(|k| k.ends_with("lib") || k == "bin" || k == "test")
 }
 
 #[cfg(test)]
