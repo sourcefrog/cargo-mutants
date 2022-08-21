@@ -67,6 +67,14 @@ regex = "1.5"
 [workspace]
 members = [
     "mutants_attrs",
+]
+
+# Exclude all testdata, so that they're more isolated from the real tree, and
+# so that support for testing workspaces does not try to test the whole
+# cargo-mutants tree.
+exclude = [
+    "testdata/tree/already_failing_tests",
+    "testdata/tree/already_hangs",
     "testdata/tree/cfg_attr_mutants_skip",
     "testdata/tree/cfg_attr_test_skip",
     "testdata/tree/dependency",
@@ -74,19 +82,12 @@ members = [
     "testdata/tree/factorial",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
+    "testdata/tree/override_dependency",
+    "testdata/tree/patch_dependency",
     "testdata/tree/relative_dependency",
+    "testdata/tree/replace_dependency",
     "testdata/tree/small_well_tested",
     "testdata/tree/strict_warnings",
     "testdata/tree/well_tested",
     "testdata/tree/with_child_directories",
-]
-
-# `replace_dependency` can't be in the workspace, because 'replace' sections
-# must be in the workspace root.
-exclude = [
-    "testdata/tree/already_hangs",
-    "testdata/tree/already_failing_tests",
-    "testdata/tree/override_dependency",
-    "testdata/tree/patch_dependency",
-    "testdata/tree/replace_dependency",
 ]

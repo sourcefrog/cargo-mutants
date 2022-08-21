@@ -169,78 +169,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-mutants-testdata-cfg-attr-mutants-skip"
-version = "0.0.0"
-
-[[package]]
-name = "cargo-mutants-testdata-cfg-attr-test-skip"
-version = "0.0.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-dependency"
-version = "0.0.0"
-
-[[package]]
-name = "cargo-mutants-testdata-everything-skipped"
-version = "0.0.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-factorial"
-version = "0.0.0"
-
-[[package]]
-name = "cargo-mutants-testdata-hang-avoided-by-attr"
-version = "0.1.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-hang-when-mutated"
-version = "0.1.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-relative-dependency"
-version = "0.0.0"
-dependencies = [
- "cargo-mutants-testdata-dependency",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-small-well-tested"
-version = "0.0.0"
-
-[[package]]
-name = "cargo-mutants-testdata-strict-warnings"
-version = "0.1.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-well-tested"
-version = "0.1.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cargo-mutants-testdata-with-child-directories"
-version = "0.1.0"
-dependencies = [
- "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "cargo-platform"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -624,12 +552,6 @@ dependencies = [
 [[package]]
 name = "mutants"
 version = "0.0.3"
-
-[[package]]
-name = "mutants"
-version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc0287524726960e07b119cebd01678f852f147742ae0d925e6a520dca956126"
 
 [[package]]
 name = "nix"
