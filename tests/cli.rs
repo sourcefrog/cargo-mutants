@@ -400,6 +400,21 @@ fn small_well_tested_tree_is_clean() {
 }
 
 #[test]
+fn cdylib_tree_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("cdylib");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "-v", "-V"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
 fn well_tested_tree_quiet() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run_assert_cmd()

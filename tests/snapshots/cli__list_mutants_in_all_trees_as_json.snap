@@ -44,6 +44,20 @@ expression: buf
 ]
 ```
 
+## testdata/tree/cdylib
+
+```json
+[
+  {
+    "file": "src/entry.rs",
+    "line": 1,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 ## testdata/tree/cfg_attr_mutants_skip
 
 ```json

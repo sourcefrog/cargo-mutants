@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## UNRELEASED
+
+- Improved: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
+
 ## 0.2.11
 
 Released 2022-08-20

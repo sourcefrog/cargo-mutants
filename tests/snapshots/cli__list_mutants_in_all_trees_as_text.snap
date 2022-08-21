@@ -20,6 +20,12 @@ src/lib.rs:1: replace factorial -> u32 with Default::default()
 src/lib.rs:8: replace infinite_loop with ()
 ```
 
+## testdata/tree/cdylib
+
+```
+src/entry.rs:1: replace factorial -> u32 with Default::default()
+```
+
 ## testdata/tree/cfg_attr_mutants_skip
 
 ```
