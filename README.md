@@ -448,8 +448,6 @@ in a restricted or disposable environment.
 cargo-mutants behavior, output formats, command-line syntax, json output
 formats, etc, may change from one release to the next.
 
-cargo-mutants does not yet understand cargo workspaces, and it will only test the root package. <https://github.com/sourcefrog/cargo-mutants/issues/45>
-
 cargo-mutants sees the AST of the tree but doesn't fully "understand" the types.
 Possibly it could learn to get type information from the compiler (or
 rust-analyzer?), which would help it generate more interesting viable mutants,
