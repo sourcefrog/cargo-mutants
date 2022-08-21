@@ -383,6 +383,17 @@ fn list_files_json_workspace() {
 }
 
 #[test]
+fn workspace_tree_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("workspace");
+    run()
+        .args(["mutants", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+    // TODO: Check that --package arguments were passed, maybe by looking in the `outcomes.json` file.
+}
+
+#[test]
 fn copy_testdata_doesnt_include_build_artifacts() {
     // If there is a target or mutants.out in the source directory, we don't want it in the copy,
     // so that the tests are (more) hermetic.

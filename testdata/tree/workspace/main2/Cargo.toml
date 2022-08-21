@@ -8,3 +8,4 @@ publish = false
 
 [dependencies]
 cargo_mutants_testdata_workspace_utils = { path = "../utils", default-features = false }
+mutants = "0.0.3"

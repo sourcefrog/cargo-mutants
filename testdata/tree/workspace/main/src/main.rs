@@ -1,7 +1,6 @@
-use std::fmt;
-
 use cargo_mutants_testdata_workspace_utils::triple;
 
+#[mutants::skip]
 fn main() {
     for i in 1..=6 {
         println!("{}! = {}", i, factorial(i));

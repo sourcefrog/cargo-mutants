@@ -156,9 +156,8 @@ src/module/utils/sub_utils/subutils_nested_function.rs:2: replace has_nested::in
 
 ```
 utils/src/lib.rs:1: replace triple -> i32 with Default::default()
-main/src/main.rs:5: replace main with ()
-main/src/main.rs:12: replace factorial -> u32 with Default::default()
-main2/src/main.rs:5: replace main with ()
+main/src/main.rs:11: replace factorial -> u32 with Default::default()
+main2/src/main.rs:9: replace triple_3 -> i32 with Default::default()
 ```
 
 

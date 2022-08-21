@@ -234,7 +234,7 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use super::cargo_args;
-    use crate::{Options, Phase, Scenario};
+    use crate::{Options, Phase};
 
     #[test]
     fn generate_cargo_args_for_baseline_with_default_options() {

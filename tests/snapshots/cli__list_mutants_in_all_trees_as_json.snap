@@ -521,15 +521,7 @@ expression: buf
   {
     "package": "main",
     "file": "main/src/main.rs",
-    "line": 5,
-    "function": "main",
-    "return_type": "",
-    "replacement": "()"
-  },
-  {
-    "package": "main",
-    "file": "main/src/main.rs",
-    "line": 12,
+    "line": 11,
     "function": "factorial",
     "return_type": "-> u32",
     "replacement": "Default::default()"
@@ -537,10 +529,10 @@ expression: buf
   {
     "package": "main2",
     "file": "main2/src/main.rs",
-    "line": 5,
-    "function": "main",
-    "return_type": "",
-    "replacement": "()"
+    "line": 9,
+    "function": "triple_3",
+    "return_type": "-> i32",
+    "replacement": "Default::default()"
   }
 ]
 ```
