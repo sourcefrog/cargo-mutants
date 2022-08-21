@@ -417,6 +417,40 @@ fn small_well_tested_tree_is_clean() {
             insta::assert_snapshot!(stdout);
             true
         }));
+    // The log file should exist and include something that looks like a diff.
+    let log_content = fs::read_to_string(
+        tmp_src_dir
+            .path()
+            .join("mutants.out/log/src__lib.rs_line_4.log"),
+    )
+    .unwrap()
+    .replace('\r', "");
+    println!("log content:\n{}", log_content);
+    assert!(log_content.contains("*** mutation diff"));
+    assert!(log_content.contains(
+        "*** mutation diff:
+--- src/lib.rs
++++ replace factorial with Default::default()
+@@ -1,17 +1,13 @@
+ //! A small tree with one function with good coverage: a fast-to-run successful
+ //! case for cargo-mutants.
+
+ pub fn factorial(n: u32) -> u32 {
+-    let mut a = 1;
+-    for i in 2..=n {
+-        a *= i;
+-    }
+-    a
++Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+s
+"
+    ));
+    // Also, it should contain output from the failed tests with mutations applied.
+    assert!(log_content.contains("test test::test_factorial ... FAILED"));
+
+    assert!(log_content.contains("---- test::test_factorial stdout ----"));
+    assert!(log_content.contains("factorial(6) = 0"));
 }
 
 #[test]

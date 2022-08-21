@@ -217,7 +217,7 @@ fn run_cargo_phases(
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
     if let Scenario::Mutant(mutant) = scenario {
-        log_file.message(&mutant.diff());
+        log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
     }
     console.scenario_started(scenario, log_file.path());
 

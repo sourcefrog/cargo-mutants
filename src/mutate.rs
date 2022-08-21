@@ -155,7 +155,8 @@ impl Mutant {
     /// Return a unified diff for the mutant.
     pub fn diff(&self) -> String {
         let old_label = self.source_file.tree_relative_slashes();
-        let new_label = self.describe_change();
+        // There shouldn't be any newlines, but just in case...
+        let new_label = self.describe_change().replace('\n', " ");
         TextDiff::from_lines(self.original_code(), &self.mutated_code())
             .unified_diff()
             .context_radius(8)
