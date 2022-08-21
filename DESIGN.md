@@ -32,6 +32,8 @@ applied.
 
 `run.rs` -- Run Cargo subprocesses, including dealing with timeouts.
 
+`scenario.rs` -- Each of the build/test cycles is a "scenario": either building the source tree, testing the baseline, or testing a mutant.
+
 `source.rs` -- A source tree and files within it, including visiting each source
 file to find mutations.
 

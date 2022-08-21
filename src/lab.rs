@@ -3,7 +3,6 @@
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::max;
-use std::fmt;
 use std::fs::File;
 use std::io::BufWriter;
 use std::time::{Duration, Instant};
@@ -11,59 +10,13 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
-use serde::Serialize;
 use tracing::info;
 
 use crate::cargo::{cargo_argv, run_cargo};
 use crate::console::{self, plural, Console};
-use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
 use crate::*;
-
-/// What type of build, check, or test was this?
-#[derive(Clone, Eq, PartialEq, Debug, Serialize)]
-pub enum Scenario {
-    /// Build in the original source tree.
-    SourceTree,
-    /// Build in a copy of the source tree but with no mutations applied.
-    Baseline,
-    /// Build with a mutation applied.
-    Mutant(Mutant),
-}
-
-impl fmt::Display for Scenario {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Scenario::SourceTree => f.write_str("source tree"),
-            Scenario::Baseline => f.write_str("baseline"),
-            Scenario::Mutant(mutant) => mutant.fmt(f),
-        }
-    }
-}
-
-impl Scenario {
-    pub fn is_mutant(&self) -> bool {
-        matches!(self, Scenario::Mutant { .. })
-    }
-
-    pub(crate) fn log_file_name_base(&self) -> String {
-        match self {
-            Scenario::SourceTree => "source_tree".into(),
-            Scenario::Baseline => "baseline".into(),
-            Scenario::Mutant(mutant) => mutant.log_file_name_base(),
-        }
-    }
-
-    /// Return the package name that should be tested for this scenario,
-    /// or None to test every package.
-    pub fn package_name(&self) -> Option<&str> {
-        match self {
-            Scenario::Mutant(mutant) => Some(mutant.package_name()),
-            _ => None,
-        }
-    }
-}
 
 /// Run all possible mutation experiments.
 ///
