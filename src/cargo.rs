@@ -121,10 +121,16 @@ fn cargo_bin() -> String {
 
 /// Make up the argv for a cargo check/build/test invocation, not including
 /// the cargo binary itself.
-pub fn cargo_args(phase: Phase, options: &Options) -> Vec<String> {
+pub fn cargo_args(package_name: Option<&str>, phase: Phase, options: &Options) -> Vec<String> {
     let mut cargo_args = vec![phase.name().to_string()];
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
+    }
+    if let Some(package_name) = package_name {
+        cargo_args.push("--package".to_owned());
+        cargo_args.push(package_name.to_owned());
+    } else {
+        cargo_args.push("--workspace".to_string());
     }
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
@@ -228,28 +234,43 @@ mod test {
     use pretty_assertions::assert_eq;
 
     use super::cargo_args;
-    use crate::options::Options;
-    use crate::Phase;
+    use crate::{Options, Phase};
 
     #[test]
-    fn generate_cargo_args_for_default_options() {
+    fn generate_cargo_args_for_baseline_with_default_options() {
         let options = Options::default();
-        assert_eq!(cargo_args(Phase::Check, &options), vec!["check", "--tests"]);
-        assert_eq!(cargo_args(Phase::Build, &options), vec!["build", "--tests"]);
-        assert_eq!(cargo_args(Phase::Test, &options), vec!["test"]);
+        assert_eq!(
+            cargo_args(None, Phase::Check, &options),
+            vec!["check", "--tests", "--workspace"]
+        );
+        assert_eq!(
+            cargo_args(None, Phase::Build, &options),
+            vec!["build", "--tests", "--workspace"]
+        );
+        assert_eq!(
+            cargo_args(None, Phase::Test, &options),
+            vec!["test", "--workspace"]
+        );
     }
 
     #[test]
-    fn generate_cargo_args_with_additional_cargo_test_args() {
+    fn generate_cargo_args_with_additional_cargo_test_args_and_package_name() {
         let mut options = Options::default();
+        let package_name = "cargo-mutants-testdata-something";
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
-        assert_eq!(cargo_args(Phase::Check, &options), vec!["check", "--tests"]);
-        assert_eq!(cargo_args(Phase::Build, &options), vec!["build", "--tests"]);
         assert_eq!(
-            cargo_args(Phase::Test, &options),
-            vec!["test", "--lib", "--no-fail-fast"]
+            cargo_args(Some(package_name), Phase::Check, &options),
+            vec!["check", "--tests", "--package", package_name]
+        );
+        assert_eq!(
+            cargo_args(Some(package_name), Phase::Build, &options),
+            vec!["build", "--tests", "--package", package_name]
+        );
+        assert_eq!(
+            cargo_args(Some(package_name), Phase::Test, &options),
+            vec!["test", "--package", package_name, "--lib", "--no-fail-fast"]
         );
     }
 
@@ -263,16 +284,22 @@ mod test {
             .additional_cargo_args
             .extend(["--release".to_owned()]);
         assert_eq!(
-            cargo_args(Phase::Check, &options),
-            vec!["check", "--tests", "--release"]
+            cargo_args(None, Phase::Check, &options),
+            vec!["check", "--tests", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_args(Phase::Build, &options),
-            vec!["build", "--tests", "--release"]
+            cargo_args(None, Phase::Build, &options),
+            vec!["build", "--tests", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_args(Phase::Test, &options),
-            vec!["test", "--release", "--lib", "--no-fail-fast"]
+            cargo_args(None, Phase::Test, &options),
+            vec![
+                "test",
+                "--workspace",
+                "--release",
+                "--lib",
+                "--no-fail-fast"
+            ]
         );
     }
 }

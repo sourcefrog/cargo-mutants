@@ -147,6 +147,11 @@ impl Mutant {
         &self.function_name
     }
 
+    /// Return the cargo package name.
+    pub fn package_name(&self) -> &str {
+        &self.source_file.package_name
+    }
+
     /// Return a unified diff for the mutant.
     pub fn diff(&self) -> String {
         let old_label = self.source_file.tree_relative_slashes();
@@ -199,6 +204,7 @@ impl fmt::Debug for Mutant {
             // more concise display of spans
             .field("start", &(self.span.start.line, self.span.start.column))
             .field("end", &(self.span.end.line, self.span.end.column))
+            .field("package_name", &self.package_name())
             .finish()
     }
 }
@@ -220,7 +226,8 @@ impl Serialize for Mutant {
         S: Serializer,
     {
         // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Mutation", 4)?;
+        let mut ss = serializer.serialize_struct("Mutation", 6)?;
+        ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;
@@ -232,6 +239,8 @@ impl Serialize for Mutant {
 
 #[cfg(test)]
 mod test {
+    use std::rc::Rc;
+
     use camino::Utf8Path;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
@@ -243,13 +252,14 @@ mod test {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
             "src/bin/factorial.rs".parse().unwrap(),
+            Rc::new("cargo-mutants-testdata-factorial".to_string()),
         )
         .unwrap();
         let muts = discover_mutants(source_file.into()).unwrap();
         assert_eq!(muts.len(), 2);
         assert_eq!(
             format!("{:?}", muts[0]),
-            r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2) }"#
+            r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
             muts[0].to_string(),
@@ -257,7 +267,7 @@ mod test {
         );
         assert_eq!(
             format!("{:?}", muts[1]),
-            r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2) }"#
+            r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
             muts[1].to_string(),
@@ -270,6 +280,7 @@ mod test {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/hang_avoided_by_attr"),
             "src/lib.rs".parse().unwrap(),
+            Rc::new("cargo-mutants-testdata-hang-avoided".to_string()),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();
@@ -285,6 +296,7 @@ mod test {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
             "src/bin/factorial.rs".parse().unwrap(),
+            Rc::new("cargo-mutants-testdata-factorial".to_string()),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();

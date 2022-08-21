@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use camino::{Utf8Path, Utf8PathBuf};
+use serde::Serialize;
 
 /// Measures how far above its starting point a path ascends.
 ///
@@ -54,7 +55,7 @@ impl Utf8PathSlashes for Utf8Path {
 }
 
 /// A path relative to the top of the source tree.
-#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Serialize)]
 pub struct TreeRelativePathBuf(Utf8PathBuf);
 
 impl fmt::Display for TreeRelativePathBuf {
@@ -75,6 +76,21 @@ impl TreeRelativePathBuf {
         TreeRelativePathBuf(path)
     }
 
+    /// Make an empty tree-relative path, identifying the root.
+    #[allow(dead_code)]
+    pub fn empty() -> Self {
+        TreeRelativePathBuf(Utf8PathBuf::new())
+    }
+
+    #[allow(dead_code)]
+    pub fn from_absolute(path: &Utf8Path, tree_root: &Utf8Path) -> Self {
+        TreeRelativePathBuf(
+            path.strip_prefix(tree_root)
+                .expect("path is within tree root")
+                .to_owned(),
+        )
+    }
+
     pub fn within(&self, tree_path: &Utf8Path) -> Utf8PathBuf {
         tree_path.join(&self.0)
     }
@@ -88,6 +104,12 @@ impl TreeRelativePathBuf {
             .expect("TreeRelativePath has no parent")
             .to_owned()
             .into()
+    }
+}
+
+impl From<&Utf8Path> for TreeRelativePathBuf {
+    fn from(path_buf: &Utf8Path) -> Self {
+        TreeRelativePathBuf::new(path_buf.to_owned())
     }
 }
 

@@ -54,6 +54,15 @@ impl Scenario {
             Scenario::Mutant(mutant) => mutant.log_file_name_base(),
         }
     }
+
+    /// Return the package name that should be tested for this scenario,
+    /// or None to test every package.
+    pub fn package_name(&self) -> Option<&str> {
+        match self {
+            Scenario::Mutant(mutant) => Some(mutant.package_name()),
+            _ => None,
+        }
+    }
 }
 
 /// Run all possible mutation experiments.
@@ -218,7 +227,7 @@ fn run_cargo_phases(
     for &phase in phases {
         let phase_start = Instant::now();
         console.scenario_phase_started(phase);
-        let cargo_args = cargo_args(phase, options);
+        let cargo_args = cargo_args(scenario.package_name(), phase, options);
         let timeout = match phase {
             Phase::Test => options.test_timeout(),
             _ => Duration::MAX,

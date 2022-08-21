@@ -5,11 +5,10 @@
 use std::collections::BTreeSet;
 use std::rc::Rc;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
-
-use tracing::debug;
+use tracing::{debug, info, warn};
 
 use crate::path::TreeRelativePathBuf;
 use crate::*;
@@ -24,10 +23,13 @@ use crate::*;
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
     /// Path relative to the root of the tree.
-    tree_relative_path: TreeRelativePathBuf,
+    pub tree_relative_path: TreeRelativePathBuf,
 
     /// Full copy of the source.
     pub code: Rc<String>,
+
+    /// Package within the workspace.
+    pub package_name: Rc<String>,
 }
 
 impl SourceFile {
@@ -37,6 +39,7 @@ impl SourceFile {
     pub fn new(
         tree_path: &Utf8Path,
         tree_relative_path: TreeRelativePathBuf,
+        package_name: Rc<String>,
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
@@ -45,6 +48,7 @@ impl SourceFile {
         Ok(SourceFile {
             tree_relative_path,
             code: Rc::new(code),
+            package_name,
         })
     }
 
@@ -65,6 +69,7 @@ impl SourceFile {
 /// build dirs.
 #[derive(Debug)]
 pub struct SourceTree {
+    /// Root of the source tree, absolute or relative to the cargo-mutants cwd.
     root: Utf8PathBuf,
     metadata: cargo_metadata::Metadata,
 }
@@ -72,22 +77,25 @@ pub struct SourceTree {
 impl SourceTree {
     /// Open a source tree.
     ///
-    /// This eagerly loads cargo metadata from the enclosed `Cargo.toml`, so the
-    /// tree must be minimally valid Rust.
+    /// This eagerly loads cargo metadata from the enclosed `Cargo.toml`.
     ///
-    /// `path` may be any path pointing within the tree, including a relative path.
-    /// The root of the tree is discovered.
+    /// `path` may be any path pointing within the tree, including a relative
+    /// path.
+    ///
+    /// The root of the tree is discovered by asking Cargo to walk up and find
+    /// the enclosing workspace.
     pub fn new(path: &Utf8Path) -> Result<SourceTree> {
         let cargo_toml_path = cargo::locate_project(path)?;
+        info!("cargo_toml_path = {cargo_toml_path}");
         let root = cargo_toml_path
             .parent()
-            .expect("Cargo.toml path has no parent")
+            .expect("Cargo.toml path has no directory?")
             .to_owned();
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
             .exec()
             .context("run cargo metadata")?;
-        Ok(SourceTree { root, metadata })
+        Ok(SourceTree { metadata, root })
     }
 
     /// Return all the mutations that could possibly be applied to this tree.
@@ -100,51 +108,44 @@ impl SourceTree {
         Ok(r)
     }
 
-    /// Return an iterator of `src/**/*.rs` paths relative to the root.
-    pub fn source_paths(
-        &self,
-        options: &Options,
-    ) -> Result<impl IntoIterator<Item = TreeRelativePathBuf>> {
-        let top_sources = cargo_metadata_sources(&self.metadata)?;
-        indirect_sources(
-            &self.root,
-            top_sources,
-            &options.examine_globset,
-            &options.exclude_globset,
-        )
-    }
-
-    /// Return an iterator of [SourceFile] object, eagerly loading their content.
-    pub fn source_files(&self, options: &Options) -> Result<impl Iterator<Item = SourceFile> + '_> {
-        // TODO: Maybe don't eagerly read them here...?
-        let source_paths = self.source_paths(options)?;
-        let root = self.root.clone();
-        Ok(source_paths.into_iter().filter_map(move |trp| {
-            SourceFile::new(&root, trp.clone())
-                .map_err(|err| {
-                    eprintln!("error reading source {}: {}", trp, err);
-                })
-                .ok()
-        }))
+    /// Return an iterator of [SourceFile] objects representing all source files
+    /// in all packages in the tree, eagerly loading their content.
+    pub fn source_files(&self, options: &Options) -> Result<Vec<SourceFile>> {
+        let mut r = Vec::new();
+        for package_metadata in &self.metadata.workspace_packages() {
+            debug!("walk package {:?}", package_metadata.manifest_path);
+            let top_sources = direct_package_sources(&self.root, package_metadata)?;
+            let source_paths = indirect_source_paths(
+                &self.root,
+                top_sources,
+                &options.examine_globset,
+                &options.exclude_globset,
+            )?;
+            let package_name = Rc::new(package_metadata.name.to_string());
+            for source_path in source_paths {
+                check_interrupted()?;
+                r.push(SourceFile::new(
+                    &self.root,
+                    source_path,
+                    Rc::clone(&package_name),
+                )?);
+            }
+        }
+        Ok(r)
     }
 
     /// Return the path (possibly relative) to the root of the source tree.
     pub fn path(&self) -> &Utf8Path {
         &self.root
     }
-
-    /// Return the name of the root crate, as an identifier for this tree.
-    pub fn root_package_name(&self) -> Result<&str> {
-        Ok(self
-            .metadata
-            .root_package()
-            .ok_or_else(|| anyhow!("directory has no root package"))?
-            .name
-            .as_str())
-    }
 }
 
-fn indirect_sources(
+/// Find all the `.rs` files, by starting from the sources identified by the manifest
+/// and walking down.
+///
+/// This just walks the directory tree rather than following `mod` statements (for now)
+/// so it may pick up some files that are not actually linked in.
+fn indirect_source_paths(
     root_dir: &Utf8Path,
     top_sources: impl IntoIterator<Item = TreeRelativePathBuf>,
     examine_globset: &Option<GlobSet>,
@@ -156,62 +157,66 @@ fn indirect_sources(
         for p in walkdir::WalkDir::new(top_dir.within(root_dir))
             .sort_by_file_name()
             .into_iter()
-            .filter_map(|r| {
-                r.map_err(|err| eprintln!("error walking source tree: {:?}", err))
-                    .ok()
-            })
-            .filter(|entry| entry.file_type().is_file())
-            .map(|entry| entry.into_path())
-            .filter(|path| {
-                path.extension()
-                    .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
-            })
-            .map(move |full_path| {
-                full_path
-                    .strip_prefix(&root_dir)
-                    .expect("strip prefix")
-                    .to_owned()
-            })
-            .filter(|rel_path| {
-                examine_globset
-                    .as_ref()
-                    .map_or(true, |gs| gs.is_match(rel_path))
-            })
-            .filter(|rel_path| {
-                exclude_globset
-                    .as_ref()
-                    .map_or(true, |gs| !gs.is_match(rel_path))
-            })
         {
-            files.insert(p.into());
+            let p = p.with_context(|| "error walking source tree {top_dir}")?;
+            if !p.file_type().is_file() {
+                continue;
+            }
+            let path = p.into_path();
+            if !path
+                .extension()
+                .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
+            {
+                continue;
+            }
+            let relative_path = path
+                .strip_prefix(&root_dir)
+                .expect("strip prefix")
+                .to_owned();
+            if let Some(examine_globset) = examine_globset {
+                if !examine_globset.is_match(&relative_path) {
+                    continue;
+                }
+            }
+            if let Some(exclude_globset) = exclude_globset {
+                if exclude_globset.is_match(&relative_path) {
+                    continue;
+                }
+            }
+            files.insert(relative_path.into());
         }
     }
     Ok(files)
 }
 
-/// Given a path to a cargo manifest, find all the directly-referenced source files.
-fn cargo_metadata_sources(
-    metadata: &cargo_metadata::Metadata,
-) -> Result<BTreeSet<TreeRelativePathBuf>> {
-    let mut found = BTreeSet::new();
-    if let Some(pkg) = metadata.root_package() {
-        let pkg_dir = pkg.manifest_path.parent().unwrap();
-        for target in &pkg.targets {
-            if should_mutate_target(target) {
-                if let Ok(relpath) = target.src_path.strip_prefix(&pkg_dir) {
-                    let relpath = TreeRelativePathBuf::new(relpath.into());
-                    found.insert(relpath);
-                } else {
-                    eprintln!("{:?} is not in {:?}", target.src_path, pkg_dir);
-                }
+/// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
+///
+/// These are the starting points for discovering source files.
+fn direct_package_sources(
+    workspace_root: &Utf8Path,
+    package_metadata: &cargo_metadata::Package,
+) -> Result<Vec<TreeRelativePathBuf>> {
+    let mut found = Vec::new();
+    let pkg_dir = package_metadata.manifest_path.parent().unwrap();
+    for target in &package_metadata.targets {
+        if should_mutate_target(target) {
+            if let Ok(relpath) = target.src_path.strip_prefix(&workspace_root) {
+                let relpath = TreeRelativePathBuf::new(relpath.into());
+                found.push(relpath);
             } else {
-                debug!(
-                    "skipping target {:?} of kinds {:?}",
-                    target.name, target.kind
-                );
+                let message = format!("{:?} is not in {:?}", target.src_path, pkg_dir);
+                eprintln!("{}", message);
+                warn!("{}", message);
             }
+        } else {
+            debug!(
+                "skipping target {:?} of kinds {:?}",
+                target.name, target.kind
+            );
         }
     }
+    found.sort();
+    found.dedup();
     Ok(found)
 }
 
@@ -237,8 +242,7 @@ mod test {
         let source_paths = SourceTree::new(Utf8Path::new("testdata/tree/factorial"))
             .unwrap()
             .source_files(&Options::default())
-            .unwrap()
-            .collect::<Vec<SourceFile>>();
+            .unwrap();
         assert_eq!(source_paths.len(), 1);
         assert_eq!(
             source_paths[0].tree_relative_path().to_string(),
@@ -273,13 +277,12 @@ mod test {
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
 
-        let source_file = SourceFile::new(temp_dir_path, file_name.parse().unwrap()).unwrap();
+        let source_file = SourceFile::new(
+            temp_dir_path,
+            file_name.parse().unwrap(),
+            Rc::new("imaginary-package".to_owned()),
+        )
+        .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
-    }
-
-    #[test]
-    fn source_root_package_name_of_cargo_mutants_itself() {
-        let source_tree = SourceTree::new(".".into()).unwrap();
-        assert_eq!(source_tree.root_package_name().unwrap(), "cargo-mutants");
     }
 }

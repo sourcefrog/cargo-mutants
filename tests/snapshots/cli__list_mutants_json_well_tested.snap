@@ -4,6 +4,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",
@@ -11,6 +12,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
     "line": 16,
     "function": "Foo::double",
@@ -18,6 +20,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
     "line": 22,
     "function": "<impl Display for Foo>::fmt",
@@ -25,6 +28,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
     "line": 28,
     "function": "<impl Debug for &Foo>::fmt",
@@ -32,6 +36,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
     "line": 1,
     "function": "has_nested",
@@ -39,6 +44,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
     "line": 2,
     "function": "has_nested::inner",
@@ -46,6 +52,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
     "line": 5,
     "function": "simple_result",
@@ -53,6 +60,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
     "line": 9,
     "function": "error_if_negative",
@@ -60,6 +68,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 7,
     "function": "returns_unit",
@@ -67,6 +76,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 12,
     "function": "returns_42u32",
@@ -74,6 +84,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 17,
     "function": "divisible_by_three",
@@ -81,6 +92,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "true"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 17,
     "function": "divisible_by_three",
@@ -88,6 +100,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "false"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 26,
     "function": "double_string",
@@ -95,6 +108,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "\"\".into()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 26,
     "function": "double_string",
@@ -102,6 +116,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "replacement": "\"xyzzy\".into()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/struct_with_lifetime.rs",
     "line": 14,
     "function": "Lex<'buf>::buf_len",

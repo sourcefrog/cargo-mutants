@@ -7,6 +7,7 @@ expression: buf
 ```json
 [
   {
+    "package": "mutants-testdata-already-failing-doctests",
     "file": "src/lib.rs",
     "line": 9,
     "function": "takes_one_arg",
@@ -21,6 +22,7 @@ expression: buf
 ```json
 [
   {
+    "package": "mutants-testdata-already-failing-tests",
     "file": "src/lib.rs",
     "line": 1,
     "function": "factorial",
@@ -35,6 +37,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-already-hangs",
     "file": "src/lib.rs",
     "line": 8,
     "function": "infinite_loop",
@@ -49,6 +52,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-cdylib",
     "file": "src/entry.rs",
     "line": 1,
     "function": "factorial",
@@ -75,6 +79,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-dependency",
     "file": "src/lib.rs",
     "line": 1,
     "function": "factorial",
@@ -95,6 +100,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 1,
     "function": "main",
@@ -102,6 +108,7 @@ expression: buf
     "replacement": "()"
   },
   {
+    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 7,
     "function": "factorial",
@@ -116,6 +123,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-hang-avoided-by-attr",
     "file": "src/lib.rs",
     "line": 12,
     "function": "controlled_loop",
@@ -130,6 +138,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
     "line": 7,
     "function": "should_stop",
@@ -137,6 +146,7 @@ expression: buf
     "replacement": "true"
   },
   {
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
     "line": 7,
     "function": "should_stop",
@@ -144,6 +154,7 @@ expression: buf
     "replacement": "false"
   },
   {
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
     "line": 11,
     "function": "controlled_loop",
@@ -158,6 +169,7 @@ expression: buf
 ```json
 [
   {
+    "package": "nightly_only",
     "file": "src/main.rs",
     "line": 2,
     "function": "main",
@@ -172,6 +184,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-override-dependency",
     "file": "src/lib.rs",
     "line": 6,
     "function": "is_even",
@@ -179,6 +192,7 @@ expression: buf
     "replacement": "true"
   },
   {
+    "package": "cargo-mutants-testdata-override-dependency",
     "file": "src/lib.rs",
     "line": 6,
     "function": "is_even",
@@ -193,6 +207,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-patch-dependency",
     "file": "src/lib.rs",
     "line": 6,
     "function": "is_even",
@@ -200,6 +215,7 @@ expression: buf
     "replacement": "true"
   },
   {
+    "package": "cargo-mutants-testdata-patch-dependency",
     "file": "src/lib.rs",
     "line": 6,
     "function": "is_even",
@@ -214,6 +230,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-relative-dependency",
     "file": "src/lib.rs",
     "line": 5,
     "function": "double_factorial",
@@ -228,6 +245,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-replace-dependency",
     "file": "src/lib.rs",
     "line": 6,
     "function": "is_even",
@@ -235,6 +253,7 @@ expression: buf
     "replacement": "true"
   },
   {
+    "package": "cargo-mutants-testdata-replace-dependency",
     "file": "src/lib.rs",
     "line": 6,
     "function": "is_even",
@@ -249,6 +268,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-small-well-tested",
     "file": "src/lib.rs",
     "line": 4,
     "function": "factorial",
@@ -263,6 +283,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-strict-warnings",
     "file": "src/lib.rs",
     "line": 5,
     "function": "some_fn",
@@ -277,6 +298,7 @@ expression: buf
 ```json
 [
   {
+    "package": "mutants-testdata-typecheck-fails",
     "file": "src/lib.rs",
     "line": 5,
     "function": "try_value_coercion",
@@ -284,6 +306,7 @@ expression: buf
     "replacement": "\"\".into()"
   },
   {
+    "package": "mutants-testdata-typecheck-fails",
     "file": "src/lib.rs",
     "line": 5,
     "function": "try_value_coercion",
@@ -298,6 +321,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",
@@ -305,6 +329,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
     "line": 16,
     "function": "Foo::double",
@@ -312,6 +337,7 @@ expression: buf
     "replacement": "()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
     "line": 22,
     "function": "<impl Display for Foo>::fmt",
@@ -319,6 +345,7 @@ expression: buf
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
     "line": 28,
     "function": "<impl Debug for &Foo>::fmt",
@@ -326,6 +353,7 @@ expression: buf
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
     "line": 1,
     "function": "has_nested",
@@ -333,6 +361,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
     "line": 2,
     "function": "has_nested::inner",
@@ -340,6 +369,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
     "line": 5,
     "function": "simple_result",
@@ -347,6 +377,7 @@ expression: buf
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
     "line": 9,
     "function": "error_if_negative",
@@ -354,6 +385,7 @@ expression: buf
     "replacement": "Ok(Default::default())"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 7,
     "function": "returns_unit",
@@ -361,6 +393,7 @@ expression: buf
     "replacement": "()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 12,
     "function": "returns_42u32",
@@ -368,6 +401,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 17,
     "function": "divisible_by_three",
@@ -375,6 +409,7 @@ expression: buf
     "replacement": "true"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 17,
     "function": "divisible_by_three",
@@ -382,6 +417,7 @@ expression: buf
     "replacement": "false"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 26,
     "function": "double_string",
@@ -389,6 +425,7 @@ expression: buf
     "replacement": "\"\".into()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
     "line": 26,
     "function": "double_string",
@@ -396,6 +433,7 @@ expression: buf
     "replacement": "\"xyzzy\".into()"
   },
   {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/struct_with_lifetime.rs",
     "line": 14,
     "function": "Lex<'buf>::buf_len",
@@ -410,6 +448,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/methods.rs",
     "line": 1,
     "function": "double",
@@ -417,6 +456,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/module_methods.rs",
     "line": 1,
     "function": "double",
@@ -424,6 +464,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",
@@ -431,6 +472,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/nested_function.rs",
     "line": 1,
     "function": "has_nested",
@@ -438,6 +480,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/nested_function.rs",
     "line": 2,
     "function": "has_nested::inner",
@@ -445,6 +488,7 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
     "line": 1,
     "function": "has_nested",
@@ -452,10 +496,42 @@ expression: buf
     "replacement": "Default::default()"
   },
   {
+    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
     "line": 2,
     "function": "has_nested::inner",
     "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
+## testdata/tree/workspace
+
+```json
+[
+  {
+    "package": "cargo_mutants_testdata_workspace_utils",
+    "file": "utils/src/lib.rs",
+    "line": 1,
+    "function": "triple",
+    "return_type": "-> i32",
+    "replacement": "Default::default()"
+  },
+  {
+    "package": "main",
+    "file": "main/src/main.rs",
+    "line": 11,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  },
+  {
+    "package": "main2",
+    "file": "main2/src/main.rs",
+    "line": 9,
+    "function": "triple_3",
+    "return_type": "-> i32",
     "replacement": "Default::default()"
   }
 ]

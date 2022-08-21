@@ -374,6 +374,26 @@ fn list_files_json_well_tested() {
 }
 
 #[test]
+fn list_files_json_workspace() {
+    // Demonstrates that we get package names in the json listing.
+    run()
+        .args(["mutants", "--list-files", "--json"])
+        .current_dir("testdata/tree/workspace")
+        .assert_insta("list_files_json_workspace");
+}
+
+#[test]
+fn workspace_tree_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("workspace");
+    run()
+        .args(["mutants", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+    // TODO: Check that --package arguments were passed, maybe by looking in the `outcomes.json` file.
+}
+
+#[test]
 fn copy_testdata_doesnt_include_build_artifacts() {
     // If there is a target or mutants.out in the source directory, we don't want it in the copy,
     // so that the tests are (more) hermetic.
@@ -614,11 +634,11 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(&baseline_log_path).unwrap();
     println!("{}", log_content);
-    regex::Regex::new(r"cargo.* build --tests --release")
+    regex::Regex::new(r"cargo.* build --tests --workspace --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
-    regex::Regex::new(r"cargo.* test --release")
+    regex::Regex::new(r"cargo.* test --workspace --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
