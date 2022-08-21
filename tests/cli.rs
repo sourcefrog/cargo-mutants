@@ -390,7 +390,81 @@ fn workspace_tree_is_well_tested() {
         .arg(tmp_src_dir.path())
         .assert()
         .success();
-    // TODO: Check that --package arguments were passed, maybe by looking in the `outcomes.json` file.
+    // The outcomes.json has some summary data
+    let json_str =
+        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    println!("outcomes.json:\n{}", json_str);
+    let json: serde_json::Value = json_str.parse().unwrap();
+    assert_eq!(json["total_mutants"].as_u64().unwrap(), 3);
+    assert_eq!(json["caught"].as_u64().unwrap(), 3);
+    assert_eq!(json["missed"].as_u64().unwrap(), 0);
+    assert_eq!(json["timeout"].as_u64().unwrap(), 0);
+    let outcomes = json["outcomes"].as_array().unwrap();
+
+    {
+        let sourcetree_json = outcomes[0].as_object().expect("outcomes[0] is an object");
+        assert_eq!(sourcetree_json["scenario"].as_str().unwrap(), "SourceTree");
+        assert_eq!(sourcetree_json["summary"], "Success");
+        let sourcetree_phases = sourcetree_json["phase_results"].as_array().unwrap();
+        assert_eq!(sourcetree_phases.len(), 1);
+        let sourcetree_command = sourcetree_phases[0]["command"].as_array().unwrap();
+        assert_eq!(sourcetree_command[1..], ["build", "--tests", "--workspace"]);
+    }
+
+    {
+        let baseline = outcomes[1].as_object().unwrap();
+        assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
+        assert_eq!(baseline["summary"], "Success");
+        let baseline_phases = baseline["phase_results"].as_array().unwrap();
+        assert_eq!(baseline_phases.len(), 2);
+        assert_eq!(baseline_phases[0]["cargo_result"], "Success");
+        assert_eq!(
+            baseline_phases[0]["command"].as_array().unwrap()[1..],
+            ["build", "--tests", "--workspace"]
+        );
+        assert_eq!(baseline_phases[1]["cargo_result"], "Success");
+        assert_eq!(
+            baseline_phases[1]["command"].as_array().unwrap()[1..],
+            ["test", "--workspace"]
+        );
+    }
+
+    assert_eq!(outcomes.len(), 5);
+    for outcome in &outcomes[2..] {
+        let mutant = &outcome["scenario"]["Mutant"];
+        let package_name = mutant["package"].as_str().unwrap();
+        assert!(!package_name.is_empty());
+        assert_eq!(outcome["summary"], "CaughtMutant");
+        let mutant_phases = outcome["phase_results"].as_array().unwrap();
+        assert_eq!(mutant_phases.len(), 2);
+        assert_eq!(mutant_phases[0]["cargo_result"], "Success");
+        assert_eq!(
+            mutant_phases[0]["command"].as_array().unwrap()[1..],
+            ["build", "--tests", "--package", package_name]
+        );
+        assert_eq!(mutant_phases[1]["cargo_result"], "Failure");
+        assert_eq!(
+            mutant_phases[1]["command"].as_array().unwrap()[1..],
+            ["test", "--package", package_name],
+        );
+    }
+    {
+        let baseline = json["outcomes"][1].as_object().unwrap();
+        assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
+        assert_eq!(baseline["summary"], "Success");
+        let baseline_phases = baseline["phase_results"].as_array().unwrap();
+        assert_eq!(baseline_phases.len(), 2);
+        assert_eq!(baseline_phases[0]["cargo_result"], "Success");
+        assert_eq!(
+            baseline_phases[0]["command"].as_array().unwrap()[1..],
+            ["build", "--tests", "--workspace"]
+        );
+        assert_eq!(baseline_phases[1]["cargo_result"], "Success");
+        assert_eq!(
+            baseline_phases[1]["command"].as_array().unwrap()[1..],
+            ["test", "--workspace"]
+        );
+    }
 }
 
 #[test]
@@ -482,11 +556,14 @@ fn well_tested_tree_quiet() {
             insta::assert_snapshot!(stdout);
             true
         }));
-    // The format of outcomes.json is not pinned down yet, but it should exist.
-    assert!(tmp_src_dir
-        .path()
-        .join("mutants.out/outcomes.json")
-        .exists());
+    let outcomes_json =
+        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    println!("outcomes.json:\n{}", outcomes_json);
+    let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
+    assert_eq!(outcomes["total_mutants"], 15);
+    assert_eq!(outcomes["caught"], 15);
+    assert_eq!(outcomes["unviable"], 0);
+    assert_eq!(outcomes["missed"], 0);
 }
 
 #[test]
@@ -504,7 +581,6 @@ fn well_tested_tree_finds_no_problems() {
             insta::assert_snapshot!(stdout);
             true
         }));
-    // The format of outcomes.json is not pinned down yet, but it should exist.
     assert!(tmp_src_dir
         .path()
         .join("mutants.out/outcomes.json")

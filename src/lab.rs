@@ -14,7 +14,7 @@ use rand::prelude::*;
 use serde::Serialize;
 use tracing::info;
 
-use crate::cargo::{cargo_args, run_cargo};
+use crate::cargo::{cargo_argv, run_cargo};
 use crate::console::{self, plural, Console};
 use crate::mutate::Mutant;
 use crate::outcome::{LabOutcome, Outcome, Phase};
@@ -225,13 +225,13 @@ fn run_cargo_phases(
     for &phase in phases {
         let phase_start = Instant::now();
         console.scenario_phase_started(phase);
-        let cargo_args = cargo_args(scenario.package_name(), phase, options);
+        let cargo_argv = cargo_argv(scenario.package_name(), phase, options);
         let timeout = match phase {
             Phase::Test => options.test_timeout(),
             _ => Duration::MAX,
         };
-        let cargo_result = run_cargo(&cargo_args, in_dir, &mut log_file, timeout, console)?;
-        outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result);
+        let cargo_result = run_cargo(&cargo_argv, in_dir, &mut log_file, timeout, console)?;
+        outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result, &cargo_argv);
         console.scenario_phase_finished(phase);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;

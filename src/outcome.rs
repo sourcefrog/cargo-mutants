@@ -174,11 +174,13 @@ impl Outcome {
         phase: Phase,
         duration: Duration,
         cargo_result: CargoResult,
+        command: &[String],
     ) {
         self.phase_results.push(PhaseResult {
             phase,
             duration,
             cargo_result,
+            command: command.to_owned(),
         });
     }
 
@@ -283,6 +285,8 @@ pub struct PhaseResult {
     pub duration: Duration,
     /// Did it succeed?
     pub cargo_result: CargoResult,
+    /// What command was run, as an argv list.
+    pub command: Vec<String>,
 }
 
 impl Serialize for PhaseResult {
@@ -291,10 +295,11 @@ impl Serialize for PhaseResult {
         S: Serializer,
     {
         // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("PhaseResult", 3)?;
+        let mut ss = serializer.serialize_struct("PhaseResult", 4)?;
         ss.serialize_field("phase", &self.phase)?;
         ss.serialize_field("duration", &self.duration.as_secs_f64())?;
         ss.serialize_field("cargo_result", &self.cargo_result)?;
+        ss.serialize_field("command", &self.command)?;
         ss.end()
     }
 }

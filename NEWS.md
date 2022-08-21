@@ -8,6 +8,8 @@
 
 - Improved: Write `mutants.out/outcomes.json` after the source-tree build and baseline tests so that it can be observed earlier on.
 
+- Improved: `mutants.out/outcomes.json` includes the commands run.
+
 ## 0.2.11
 
 Released 2022-08-20
