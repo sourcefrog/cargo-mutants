@@ -6,6 +6,8 @@
 
 - Improved: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
 
+- Improved: Write `mutants.out/outcomes.json` after the source-tree build and baseline tests so that it can be observed earlier on.
+
 ## 0.2.11
 
 Released 2022-08-20

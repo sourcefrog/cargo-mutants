@@ -96,6 +96,7 @@ pub fn test_unmutated_then_all_mutants(
     if options.build_source {
         let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
         lab_outcome.add(&outcome);
+        output_dir.write_outcomes_json(&lab_outcome)?;
         if !outcome.success() {
             console::print_error(&format!(
                 "cargo {} failed in source tree, not continuing",
@@ -123,6 +124,7 @@ pub fn test_unmutated_then_all_mutants(
         )
     }?;
     lab_outcome.add(&outcome);
+    output_dir.write_outcomes_json(&lab_outcome)?;
     if !outcome.success() {
         console::print_error(&format!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
@@ -168,13 +170,9 @@ pub fn test_unmutated_then_all_mutants(
             )
         })?;
         lab_outcome.add(&outcome);
-
         // Rewrite outcomes.json every time, so we can watch it and so it's not
         // lost if the program stops or is interrupted.
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(output_dir.path().join("outcomes.json"))?),
-            &lab_outcome,
-        )?;
+        output_dir.write_outcomes_json(&lab_outcome)?;
     }
     console.message(&format!(
         "{}\n",

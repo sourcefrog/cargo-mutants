@@ -3,7 +3,7 @@
 //! A `mutants.out` directory holding logs and other output.
 
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
@@ -15,6 +15,7 @@ use fs2::FileExt;
 use path_slash::PathExt;
 use serde::Serialize;
 
+use crate::outcome::LabOutcome;
 use crate::*;
 
 const OUTDIR_NAME: &str = "mutants.out";
@@ -134,6 +135,14 @@ impl OutputDir {
     /// Return the path of the `mutants.out` directory.
     pub fn path(&self) -> &Utf8Path {
         &self.path
+    }
+
+    pub fn write_outcomes_json(&self, lab_outcome: &LabOutcome) -> Result<()> {
+        serde_json::to_writer_pretty(
+            BufWriter::new(File::create(self.path().join("outcomes.json"))?),
+            &lab_outcome,
+        )
+        .context("write outcomes.json")
     }
 }
 
