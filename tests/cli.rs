@@ -804,11 +804,12 @@ fn timeout_when_unmutated_tree_test_hangs() {
 }
 
 #[test]
-fn hang_when_mutated() {
+fn hang_when_mutated_tree_does_not_hang_cargo_mutants_with_explicit_short_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    // Also test that it accepts decimal seconds
     run_assert_cmd()
         .arg("mutants")
-        .args(["-t", "1.9"])
+        .args(["-t", "4.1"])
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
