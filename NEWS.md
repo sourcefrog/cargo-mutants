@@ -2,17 +2,13 @@
 
 ## UNRELEASED
 
-- New: Supports workspaces containing multiple packages.
+- New: Supports workspaces containing multiple packages. Mutants are generated for all relevant targets in all packages, and mutants are subject to the tests of their own package.  `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
 
-- New: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
+- Improved: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
 
 ## 0.2.11
 
 Released 2022-08-20
-
-- New: Partial support for testing within a Cargo workspace.
-
-- Changed: `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
 
 - New `--exclude` command line option to exclude source files from mutants generation, matching a glob.
 
