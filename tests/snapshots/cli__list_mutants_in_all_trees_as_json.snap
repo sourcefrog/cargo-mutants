@@ -52,6 +52,7 @@ expression: buf
 ```json
 [
   {
+    "package": "cargo-mutants-testdata-cdylib",
     "file": "src/entry.rs",
     "line": 1,
     "function": "factorial",
