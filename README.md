@@ -226,6 +226,12 @@ Rust doctests are pretty slow, so if you're using them only as testable
 documentation and not to assert correctness of the code, you can skip them with
 `cargo mutants -- --all-targets`.
 
+### Workspace and package support
+
+cargo-mutants now supports testing Cargo workspaces that contain multiple packages.
+
+All source files in all packages in the workspace are tested. For each mutant, only the containing packages tests are run.
+
 ### Hard-to-test cases
 
 Some functions don't cause a test suite failure if emptied, but also cannot be
@@ -275,7 +281,7 @@ jobs:
 
 ## How to help
 
-Experience reports in GitHub Discussions or Bugs are very welcome:
+Experience reports in [GitHub Discussions](https://github.com/sourcefrog/cargo-mutants/discussions) or issues are very welcome:
 
 - Did it find a bug or important coverage gap?
 - Did it fail to build and test your tree? (Some cases that aren't supported yet
@@ -283,6 +289,8 @@ Experience reports in GitHub Discussions or Bugs are very welcome:
 
 It's especially helpful if you can either point to an open source tree that will
 reproduce the problem (or success) or at least describe how to reproduce it.
+
+If you are interested in contributing a patch, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Goals
 

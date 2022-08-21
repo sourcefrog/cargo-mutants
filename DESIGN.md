@@ -52,16 +52,19 @@ scratch directory.
 
 A source tree may be a single crate or a Cargo workspace. There are several levels of nesting:
 
-* A workspace contains one or more packages,
-* A package contains some source files,
-* Each source file contains some functions,
+* A workspace contains one or more packages.
+* A package contains one or more targets.
+* Each target names one (or possibly-more) top level source files, whose directories are walked to find more source files.
+* Each source file contains some functions.
 * For each function we generate some mutants.
 
-The identity of the containing package is passed through to the `SourceFile` and the muation, because `cargo test` must be run for this single package.
+The name of the containing package is passed through to the `SourceFile` and the `Mutant` objects.
+
+For source tree and baseline builds and tests, we pass Cargo `--workspace` to build and test everything. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
 
 Currently source files are discovered by finding any `bin` or `lib` targets in the package, then taking every `*.rs` file in the same directory as their top-level source file. (This is a bit approximate and will pick up files that might not actually be referenced by a `mod` statement, so may change in the future.)
 
-We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented.
+We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
 
 ## Handling timeouts
 
@@ -75,15 +78,15 @@ to be safe and easy to use on arbitrary trees that might have bugs.
 
 We want to handle timeouts internally for a few reasons, including:
 
-- If one mutation hangs we still want to go on and try others. (So it's not so
+* If one mutation hangs we still want to go on and try others. (So it's not so
   good if the `cargo mutants` process is killed by the user or a CI timeout.)
 
-- The fact that the mutation hung is a potentially interesting signal about the
+* The fact that the mutation hung is a potentially interesting signal about the
   program to report. (Possibly the user will just have to mark
   `should_terminate` as skipped, but at least they can do that once and then
   have other builds go faster.)
 
-- For either CI or interactive use it's better if `cargo mutants` finishes in a
+* For either CI or interactive use it's better if `cargo mutants` finishes in a
   bounded time.
 
 (We are primarily concerned here with timeouts on tests; let's assume that

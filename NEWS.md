@@ -2,7 +2,9 @@
 
 ## UNRELEASED
 
-- Improved: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
+- New: Supports workspaces containing multiple packages.
+
+- New: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
 
 ## 0.2.11
 
