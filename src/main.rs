@@ -193,7 +193,7 @@ fn list_files_as_json(source_tree: &SourceTree, options: &Options) -> Result<()>
                 json!({
                     // to_string so that we get it with slashes.
                     "path": source_file.tree_relative_path.to_string(),
-                    "package": source_file.package_name,
+                    "package": source_file.package_name.as_ref(),
                 })
             })
             .collect(),

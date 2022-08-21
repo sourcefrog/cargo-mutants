@@ -239,6 +239,8 @@ impl Serialize for Mutant {
 
 #[cfg(test)]
 mod test {
+    use std::rc::Rc;
+
     use camino::Utf8Path;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
@@ -250,7 +252,7 @@ mod test {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
             "src/bin/factorial.rs".parse().unwrap(),
-            "cargo-mutants-testdata-factorial",
+            Rc::new("cargo-mutants-testdata-factorial".to_string()),
         )
         .unwrap();
         let muts = discover_mutants(source_file.into()).unwrap();
@@ -278,7 +280,7 @@ mod test {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/hang_avoided_by_attr"),
             "src/lib.rs".parse().unwrap(),
-            "cargo-mutants-testdata-hang-avoided",
+            Rc::new("cargo-mutants-testdata-hang-avoided".to_string()),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();
@@ -294,7 +296,7 @@ mod test {
         let source_file = SourceFile::new(
             Utf8Path::new("testdata/tree/factorial"),
             "src/bin/factorial.rs".parse().unwrap(),
-            "cargo-mutants-testdata-factorial",
+            Rc::new("cargo-mutants-testdata-factorial".to_string()),
         )
         .unwrap();
         let mutants = discover_mutants(source_file.into()).unwrap();

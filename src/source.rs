@@ -29,7 +29,7 @@ pub struct SourceFile {
     pub code: Rc<String>,
 
     /// Package within the workspace.
-    pub package_name: String,
+    pub package_name: Rc<String>,
 }
 
 impl SourceFile {
@@ -39,7 +39,7 @@ impl SourceFile {
     pub fn new(
         tree_path: &Utf8Path,
         tree_relative_path: TreeRelativePathBuf,
-        package_name: &str,
+        package_name: Rc<String>,
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
@@ -48,7 +48,7 @@ impl SourceFile {
         Ok(SourceFile {
             tree_relative_path,
             code: Rc::new(code),
-            package_name: package_name.to_owned(),
+            package_name,
         })
     }
 
@@ -121,12 +121,13 @@ impl SourceTree {
                 &options.examine_globset,
                 &options.exclude_globset,
             )?;
+            let package_name = Rc::new(package_metadata.name.to_string());
             for source_path in source_paths {
                 check_interrupted()?;
                 r.push(SourceFile::new(
                     &self.root,
                     source_path,
-                    &package_metadata.name,
+                    Rc::clone(&package_name),
                 )?);
             }
         }
@@ -279,7 +280,7 @@ mod test {
         let source_file = SourceFile::new(
             temp_dir_path,
             file_name.parse().unwrap(),
-            "imaginary-package",
+            Rc::new("imaginary-package".to_owned()),
         )
         .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
