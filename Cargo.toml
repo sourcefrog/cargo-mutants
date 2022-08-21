@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "0.2.12-pre"
+version = "1.0.0"
 edition = "2018"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -65,9 +65,7 @@ pretty_assertions = "1"
 regex = "1.5"
 
 [workspace]
-members = [
-    "mutants_attrs",
-]
+members = ["mutants_attrs"]
 
 # Exclude all testdata, so that they're more isolated from the real tree, and
 # so that support for testing workspaces does not try to test the whole

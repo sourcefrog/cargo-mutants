@@ -1,6 +1,10 @@
 # cargo-mutants changelog
 
-## UNRELEASED
+## 1.0.0
+
+Released 2022-08-21
+
+A 1.0 release to celebrate that with the addition of workspace handling, cargo-mutants gives useful results on many Rust projects.
 
 - New: Supports workspaces containing multiple packages. Mutants are generated for all relevant targets in all packages, and mutants are subject to the tests of their own package.  `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
 
