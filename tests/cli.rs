@@ -428,13 +428,14 @@ fn small_well_tested_tree_is_clean() {
     println!("log content:\n{}", log_content);
     assert!(log_content.contains("*** mutation diff"));
     assert!(log_content.contains(
-        "*** mutation diff:
+        "\
+*** mutation diff:
 --- src/lib.rs
 +++ replace factorial with Default::default()
-@@ -1,17 +1,13 @@
- //! A small tree with one function with good coverage: a fast-to-run successful
- //! case for cargo-mutants.
-
+@@ -1,17 +1,13 @@"
+    ));
+    assert!(log_content.contains(
+        "\
  pub fn factorial(n: u32) -> u32 {
 -    let mut a = 1;
 -    for i in 2..=n {
@@ -443,7 +444,6 @@ fn small_well_tested_tree_is_clean() {
 -    a
 +Default::default() /* ~ changed by cargo-mutants ~ */
  }
-s
 "
     ));
     // Also, it should contain output from the failed tests with mutations applied.
