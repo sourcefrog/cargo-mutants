@@ -28,6 +28,23 @@ Please run `cargo fmt` and `cargo clippy`. These are checked in CI.
 
 Of course, please add tests for new features or bug fixes, and see the _Testing_ section of [the design doc](DESIGN.md).
 
+### Test naming
+
+Tests should have names that read like English sentences (or subsentences)
+asserting a fact about how the program behaves, like
+`copy_testdata_doesnt_include_build_artifacts`. It's fine if this makes the
+test function names relatively long.
+
+However, also try to avoid "noise" or low-value words in test names.
+`show_version` is clear enough and does not need to be
+`when_run_with_show_version_it_prints_the_version_to_stdout`.
+
+As with other code, if you feel you need to add a comment to explain what it
+does, then first consider whether the test can have a better name.
+
+If the test exercises a particular test tree, option, or function, make sure
+that name literally occurs within the test name.
+
 ### Insta snapshots
 
 Many tests use [Insta](https://insta.rs) to assert the expected output. Insta makes it easy to review and accept changes to expected output, either when there's a real functional change or when for example line numbers or output formatting changes.

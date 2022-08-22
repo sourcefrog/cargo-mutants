@@ -1,5 +1,7 @@
 # cargo-mutants design
 
+See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, etc.
+
 ## Physical structure / source tree overview
 
 `main.rs` -- the `cargo mutants` entry point and command-line parsing.
