@@ -225,6 +225,10 @@ Rust doctests are pretty slow, so if you're using them only as testable
 documentation and not to assert correctness of the code, you can skip them with
 `cargo mutants -- --all-targets`.
 
+On _some but not all_ projects, cargo-mutants can be faster if you use `-C --release`, which will make the build slower but may make the tests faster. Typically this will help on projects with very long CPU-intensive test suites. Cargo-mutants now shows the breakdown of build versus test time which may help you work out if this will help. (On projects like this you might also choose just to turn up optimization for all debug builds in [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.htmlhttps://doc.rust-lang.org/cargo/reference/config.html).
+
+By default cargo-mutants copies the `target/` directory from the source tree. Rust target directories can accumulate excessive volumes of old build products.
+
 ### Workspace and package support
 
 cargo-mutants now supports testing Cargo workspaces that contain multiple packages.
