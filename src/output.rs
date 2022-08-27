@@ -10,10 +10,11 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use camino::Utf8Path;
-use chrono::{DateTime, Utc};
 use fs2::FileExt;
 use path_slash::PathExt;
 use serde::Serialize;
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 
 use crate::outcome::LabOutcome;
 use crate::*;
@@ -34,8 +35,9 @@ struct LockFile {
 
 impl LockFile {
     fn new() -> LockFile {
-        let now: DateTime<Utc> = Utc::now();
-        let start_time = now.to_rfc3339();
+        let start_time = OffsetDateTime::now_utc()
+            .format(&Rfc3339)
+            .expect("format current time");
         LockFile {
             cargo_mutants_version: crate::VERSION.to_string(),
             start_time,
