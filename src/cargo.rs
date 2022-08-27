@@ -140,7 +140,6 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     use nix::errno::Errno;
     use nix::sys::signal::{killpg, Signal};
-    use std::convert::TryInto;
 
     let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
     info!("terminating cargo process {}", pid);
