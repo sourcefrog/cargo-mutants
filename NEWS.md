@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Internal: Switched from Argh to Clap for command-line parsing. There may be some small changes in CLI behavior and help formatting.
+
 ## 1.0.0
 
 Released 2022-08-21

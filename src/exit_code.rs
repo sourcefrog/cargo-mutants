@@ -14,7 +14,7 @@ pub const SUCCESS: i32 = 0;
 
 /// The wrong arguments, etc.
 ///
-/// (1 is also the value returned by argh.)
+/// (1 is also the value returned by Clap.)
 pub const USAGE: i32 = 1;
 
 /// Found one or mutants that were not caught by tests.

@@ -27,8 +27,9 @@ use std::process::exit;
 use std::time::Duration;
 
 use anyhow::Result;
-use argh::FromArgs;
+use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use clap::Parser;
 use path_slash::PathExt;
 use serde_json::json;
 use serde_json::Value;
@@ -52,109 +53,117 @@ const NAME: &str = env!("CARGO_PKG_NAME");
 const DEFAULT_MINIMUM_TEST_TIMEOUT: Duration = Duration::from_secs(20);
 const MINIMUM_TEST_TIMEOUT_ENV_VAR: &str = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT";
 
+#[derive(Parser)]
+#[clap(name = "cargo", bin_name = "cargo")]
+enum Cargo {
+    #[clap(name = "mutants")]
+    Mutants(Args),
+}
+
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///
 /// See <https://github.com/sourcefrog/cargo-mutants> for more information.
-#[derive(FromArgs, PartialEq, Debug)]
+#[derive(Parser, PartialEq, Debug)]
+#[clap(author, about)]
 struct Args {
     /// show cargo output for all invocations (very verbose).
-    #[argh(switch)]
+    #[clap(long)]
     all_logs: bool,
 
     /// print mutants that were caught by tests.
-    #[argh(switch, short = 'v')]
+    #[clap(long, short = 'v')]
     caught: bool,
 
     /// cargo check generated mutants, but don't run tests.
-    #[argh(switch)]
+    #[clap(long)]
     check: bool,
 
     /// show the mutation diffs.
-    #[argh(switch)]
+    #[clap(long)]
     diff: bool,
 
     /// rust crate directory to examine.
-    #[argh(option, short = 'd', default = r#"Utf8PathBuf::from(".")"#)]
-    dir: Utf8PathBuf,
+    #[clap(long, short = 'd')]
+    dir: Option<Utf8PathBuf>,
 
     /// glob for files to examine; with no glob, all files are examined; globs containing
     /// slash match the entire path. If used together with `--exclude` argument, then the files to be examined are matched before the files to be excluded.
-    #[argh(option, short = 'f')]
+    #[clap(long, short = 'f')]
     file: Vec<String>,
 
     /// glob for files to exclude; with no glob, all files are included; globs containing
     /// slash match the entire path. If used together with `--file` argument, then the files to be examined are matched before the files to be excluded.
-    #[argh(option, short = 'e')]
+    #[clap(long, short = 'e')]
     exclude: Vec<String>,
 
     /// output json (only for --list).
-    #[argh(switch)]
+    #[clap(long)]
     json: bool,
 
     /// just list possible mutants, don't run them.
-    #[argh(switch)]
+    #[clap(long)]
     list: bool,
 
     /// list source files, don't run anything.
-    #[argh(switch)]
+    #[clap(long)]
     list_files: bool,
 
     /// don't copy the /target directory, and don't build the source tree first.
-    #[argh(switch)]
+    #[clap(long)]
     no_copy_target: bool,
 
     /// don't print times or tree sizes, to make output deterministic.
-    #[argh(switch)]
+    #[clap(long)]
     no_times: bool,
 
     /// create mutants.out within this directory.
-    #[argh(option, short = 'o')]
+    #[clap(long, short = 'o')]
     output: Option<Utf8PathBuf>,
 
     /// run mutants in random order.
-    #[argh(switch)]
+    #[clap(long)]
     shuffle: bool,
 
     /// run mutants in the fixed order they occur in the source tree.
-    #[argh(switch)]
+    #[clap(long)]
     no_shuffle: bool,
 
     /// maximum run time for all cargo commands, in seconds.
-    #[argh(option, short = 't')]
+    #[clap(long, short = 't')]
     timeout: Option<f64>,
 
     /// print mutations that failed to check or build.
-    #[argh(switch, short = 'V')]
+    #[clap(long, short = 'V')]
     unviable: bool,
 
     /// show version and quit.
-    #[argh(switch)]
+    #[clap(long, action = clap::ArgAction::SetTrue)]
     version: bool,
 
     /// additional args for all cargo invocations.
-    #[argh(option, short = 'C')]
+    #[clap(long, short = 'C', takes_value = true, allow_hyphen_values = true)]
     cargo_arg: Vec<String>,
 
     // The following option captures all the remaining non-option args, to
     // send to cargo.
     /// pass remaining arguments to cargo test after all options and after `--`.
-    #[argh(positional)]
+    #[clap(last = true)]
     cargo_test_args: Vec<String>,
 }
 
 fn main() -> Result<()> {
-    if let Some(subcommand) = env::args().nth(1) {
-        if subcommand != "mutants" {
-            eprintln!("unrecognized cargo subcommand {:?}", subcommand);
+    let args = match Cargo::try_parse() {
+        Ok(Cargo::Mutants(args)) => args,
+        Err(e) => {
+            eprintln!("{}", e);
             exit(exit_code::USAGE);
         }
-    } else {
-        eprintln!("usage: cargo mutants <ARGS>\n   or: cargo-mutants mutants <ARGS>");
-        exit(exit_code::USAGE);
-    }
-    let args: Args = argh::cargo_from_env();
+    };
+    // dbg!(&args);
     let options = Options::try_from(&args)?;
-    let source_tree = SourceTree::new(&args.dir)?;
+    // dbg!(&options);
+    let source_path = args.dir.unwrap_or_else(|| Utf8Path::new(".").to_owned());
+    let source_tree = SourceTree::new(&source_path)?;
     interrupt::install_handler();
     if args.version {
         println!("{} {}", NAME, VERSION);
