@@ -948,13 +948,32 @@ fn timeout_when_unmutated_tree_test_hangs() {
         ));
 }
 
+/// A tree that hangs when some functions are mutated does not hang cargo-mutants
+/// overall, because we impose a timeout. The timeout can be specified on the
+/// command line, with decimal seconds.
+///
+/// This test is a bit at risk of being flaky, because it depends on the progress
+/// of real time and tests can be unexpectedly slow on CI.
+///
+/// The `hang_when_mutated` tree generates three mutants:
+///
+/// * `controlled_loop` could be replaced to return 0 and this will be
+///   detected, because it should normally return at least one.
+///
+/// * `should_stop` could change to always return `true`, in which case
+///   the test will fail and the mutant will be caught because the loop
+///   does only one pass.
+///
+/// * `should_stop` could change to always return `false`, in which case
+///   the loop will never stop, but the test should eventually be killed
+///   by a timeout.
 #[test]
 fn hang_when_mutated_tree_does_not_hang_cargo_mutants_with_explicit_short_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
     run_assert_cmd()
         .arg("mutants")
-        .args(["-t", "4.1"])
+        .args(["-t", "4.1", "-v", "--", "--", "--nocapture"])
         .current_dir(&tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
@@ -962,9 +981,11 @@ fn hang_when_mutated_tree_does_not_hang_cargo_mutants_with_explicit_short_timeou
         .stdout(contains(
             "replace should_stop -> bool with false ... TIMEOUT",
         ))
+        .stdout(contains("replace should_stop -> bool with true ... caught"))
         .stdout(contains(
-            "replace should_stop -> bool with true ... NOT CAUGHT",
+            "replace controlled_loop -> usize with Default::default() ... caught",
         ));
+    // TODO: Inspect outcomes.json.
 }
 
 #[test]

@@ -140,7 +140,7 @@ expression: buf
   {
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 7,
+    "line": 11,
     "function": "should_stop",
     "return_type": "-> bool",
     "replacement": "true"
@@ -148,7 +148,7 @@ expression: buf
   {
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 7,
+    "line": 11,
     "function": "should_stop",
     "return_type": "-> bool",
     "replacement": "false"
@@ -156,10 +156,10 @@ expression: buf
   {
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 11,
+    "line": 21,
     "function": "controlled_loop",
-    "return_type": "",
-    "replacement": "()"
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
   }
 ]
 ```

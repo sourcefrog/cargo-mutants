@@ -63,9 +63,9 @@ src/lib.rs:12: replace controlled_loop with ()
 ## testdata/tree/hang_when_mutated
 
 ```
-src/lib.rs:7: replace should_stop -> bool with true
-src/lib.rs:7: replace should_stop -> bool with false
-src/lib.rs:11: replace controlled_loop with ()
+src/lib.rs:11: replace should_stop -> bool with true
+src/lib.rs:11: replace should_stop -> bool with false
+src/lib.rs:21: replace controlled_loop -> usize with Default::default()
 ```
 
 ## testdata/tree/nightly_only
