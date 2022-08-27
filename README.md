@@ -437,12 +437,12 @@ See also: [more information on how cargo-mutants compares to other techniques an
 
 ## Supported Rust versions
 
-Building cargo-mutants requires a recent stable Rust toolchain.
+cargo-mutants is tested to build on any Rust version from the last 6 months.
 
-Currently it is [tested with 1.58](https://github.com/sourcefrog/cargo-mutants/actions/workflows/msrv.yml).
+Currently it is [tested with Rust 1.59](https://github.com/sourcefrog/cargo-mutants/actions/workflows/msrv.yml).
 
 After installing cargo-mutants, you should be able to use it to run tests under
-any toolchain, even toolchains that are too old to build cargo-mutants, using the standard `+` option to `cargo`:
+any toolchain, even toolchains that are far too old to build cargo-mutants, using the standard `+` option to `cargo`:
 
 ```sh
 cargo +1.48 mutants
