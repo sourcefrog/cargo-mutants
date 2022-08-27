@@ -968,7 +968,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
 ///   the loop will never stop, but the test should eventually be killed
 ///   by a timeout.
 #[test]
-fn hang_when_mutated_tree_does_not_hang_cargo_mutants_with_explicit_short_timeout() {
+fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
     run_assert_cmd()
