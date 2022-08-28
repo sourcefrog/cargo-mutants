@@ -12,10 +12,8 @@ use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
 use tracing::error;
-#[allow(unused_imports)]
+#[allow(unused)]
 use tracing::{debug, info};
-
-use tracing_subscriber::prelude::*;
 
 use crate::cargo::{cargo_argv, run_cargo};
 use crate::console::{plural, Console};
@@ -41,25 +39,9 @@ pub fn test_unmutated_then_all_mutants(
     let output_dir = OutputDir::new(output_in_dir)?;
 
     let console = Console::new();
+    console.setup_global_trace(console_trace_level)?;
 
     console.set_debug_log(output_dir.open_debug_log()?);
-    let debug_log_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(false)
-        .with_file(true) // source file name
-        .with_line_number(true)
-        .with_writer(console.make_debug_log_writer());
-    let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
-    let console_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(true)
-        .with_writer(console.make_terminal_writer())
-        .with_target(false)
-        .without_time()
-        .with_filter(level_filter);
-    tracing_subscriber::registry()
-        .with(debug_log_layer)
-        .with(console_layer)
-        .init();
-
     let mut lab_outcome = LabOutcome::default();
     if options.build_source {
         let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
