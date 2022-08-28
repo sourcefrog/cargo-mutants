@@ -407,10 +407,6 @@ fn style_mutant(mutant: &Mutant) -> String {
     )
 }
 
-pub fn print_error(msg: &str) {
-    println!("{}: {}", style("error").bold().red(), msg);
-}
-
 fn style_elapsed_secs(since: Instant) -> String {
     style_secs(since.elapsed())
 }

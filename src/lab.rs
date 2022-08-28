@@ -18,7 +18,7 @@ use tracing::{debug, info};
 use tracing_subscriber::prelude::*;
 
 use crate::cargo::{cargo_argv, run_cargo};
-use crate::console::{self, plural, Console};
+use crate::console::{plural, Console};
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
 use crate::*;
@@ -94,10 +94,10 @@ pub fn test_unmutated_then_all_mutants(
     lab_outcome.add(&outcome);
     output_dir.write_outcomes_json(&lab_outcome)?;
     if !outcome.success() {
-        console::print_error(&format!(
+        error!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
             outcome.last_phase(),
-        ));
+        );
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
     if !options.has_test_timeout() {
