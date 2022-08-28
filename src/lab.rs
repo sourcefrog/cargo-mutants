@@ -6,14 +6,15 @@ use std::cmp::max;
 use std::fs::File;
 use std::io::BufWriter;
 
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
+use tracing::error;
 #[allow(unused_imports)]
 use tracing::{debug, info};
+
 use tracing_subscriber::prelude::*;
 
 use crate::cargo::{cargo_argv, run_cargo};
@@ -39,7 +40,7 @@ pub fn test_unmutated_then_all_mutants(
     };
     let output_dir = OutputDir::new(output_in_dir)?;
 
-    let console = Arc::new(Console::new());
+    let console = Console::new();
 
     let debug_log = tracing_appender::rolling::never(output_dir.path(), "debug.log");
     let debug_log_layer = tracing_subscriber::fmt::layer()
@@ -48,10 +49,9 @@ pub fn test_unmutated_then_all_mutants(
         .with_line_number(true)
         .with_writer(debug_log);
     let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
-    let console2 = crate::console::ConsoleMakeWriter(Arc::clone(&console));
     let console_layer = tracing_subscriber::fmt::layer()
         .with_ansi(true)
-        .with_writer(console2)
+        .with_writer(console.make_terminal_writer())
         .with_target(false)
         .without_time()
         .with_filter(level_filter);
@@ -66,10 +66,10 @@ pub fn test_unmutated_then_all_mutants(
         lab_outcome.add(&outcome);
         output_dir.write_outcomes_json(&lab_outcome)?;
         if !outcome.success() {
-            console::print_error(&format!(
+            error!(
                 "cargo {} failed in source tree, not continuing",
                 outcome.last_phase(),
-            ));
+            );
             return Ok(lab_outcome); // TODO: Maybe should be Err?
         }
     }

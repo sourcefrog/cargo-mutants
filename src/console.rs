@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
 use camino::Utf8Path;
+use tracing_subscriber::fmt::MakeWriter;
 
 use crate::outcome::SummaryOutcome;
 use crate::*;
@@ -19,13 +20,13 @@ use crate::*;
 /// This wraps the Nutmeg view and model.
 pub struct Console {
     /// The inner view through which progress bars and messages are drawn.
-    view: nutmeg::View<LabModel>,
+    view: Arc<nutmeg::View<LabModel>>,
 }
 
 impl Console {
     pub fn new() -> Console {
         Console {
-            view: nutmeg::View::new(LabModel::default(), nutmeg_options()),
+            view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
         }
     }
 
@@ -137,26 +138,30 @@ impl Console {
     pub fn tick(&self) {
         self.view.update(|_| ())
     }
+
+    /// Return a tracing `MakeWriter` that will send messages via nutmeg to the console.
+    pub fn make_terminal_writer(&self) -> TerminalWriter {
+        TerminalWriter(Arc::clone(&self.view))
+    }
 }
 
-/// Write logs from Trace through the Console to the Nutmeg view.
-pub struct ConsoleMakeWriter(pub Arc<Console>);
+/// Write trace output to the terminal via the console.
+pub struct TerminalWriter(Arc<nutmeg::View<LabModel>>);
 
-impl tracing_subscriber::fmt::MakeWriter<'_> for ConsoleMakeWriter {
+impl<'w> MakeWriter<'w> for TerminalWriter {
     type Writer = Self;
 
     fn make_writer(&self) -> Self::Writer {
-        ConsoleMakeWriter(self.0.clone())
+        TerminalWriter(self.0.clone())
     }
 }
 
-impl io::Write for ConsoleMakeWriter {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.view.message(std::str::from_utf8(buf).unwrap());
+impl std::io::Write for TerminalWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.message(std::str::from_utf8(buf).unwrap());
         Ok(buf.len())
     }
-
-    fn flush(&mut self) -> io::Result<()> {
+    fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
 }
