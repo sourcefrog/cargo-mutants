@@ -8,6 +8,7 @@ use std::rc::Rc;
 use anyhow::{Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
+#[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
 use crate::path::TreeRelativePathBuf;
@@ -86,7 +87,7 @@ impl SourceTree {
     /// the enclosing workspace.
     pub fn new(path: &Utf8Path) -> Result<SourceTree> {
         let cargo_toml_path = cargo::locate_project(path)?;
-        info!("cargo_toml_path = {cargo_toml_path}");
+        debug!("cargo_toml_path = {cargo_toml_path}");
         let root = cargo_toml_path
             .parent()
             .expect("Cargo.toml path has no directory?")
@@ -204,9 +205,7 @@ fn direct_package_sources(
                 let relpath = TreeRelativePathBuf::new(relpath.into());
                 found.push(relpath);
             } else {
-                let message = format!("{:?} is not in {:?}", target.src_path, pkg_dir);
-                eprintln!("{}", message);
-                warn!("{}", message);
+                warn!("{:?} is not in {:?}", target.src_path, pkg_dir);
             }
         } else {
             debug!(

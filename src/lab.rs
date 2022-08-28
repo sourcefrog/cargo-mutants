@@ -5,12 +5,16 @@
 use std::cmp::max;
 use std::fs::File;
 use std::io::BufWriter;
+
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
-use tracing::info;
+#[allow(unused_imports)]
+use tracing::{debug, info};
+use tracing_subscriber::prelude::*;
 
 use crate::cargo::{cargo_argv, run_cargo};
 use crate::console::{self, plural, Console};
@@ -24,11 +28,9 @@ use crate::*;
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
-    options: &Options,
+    mut options: Options,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let mut options: Options = options.clone();
-    let mut lab_outcome = LabOutcome::default();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
         o.as_path()
     } else {
@@ -36,16 +38,28 @@ pub fn test_unmutated_then_all_mutants(
     };
     let output_dir = OutputDir::new(output_in_dir)?;
 
+    let console = Arc::new(Console::new());
+
     let debug_log = tracing_appender::rolling::never(output_dir.path(), "debug.log");
-    tracing_subscriber::fmt()
+    let debug_log_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
         .with_file(true) // source file name
         .with_line_number(true)
-        .with_writer(debug_log)
+        .with_writer(debug_log);
+    let level_filter = tracing_subscriber::filter::LevelFilter::INFO;
+    let console2 = crate::console::ConsoleMakeWriter(Arc::clone(&console));
+    let console_layer = tracing_subscriber::fmt::layer()
+        .with_ansi(true)
+        .with_writer(console2)
+        .with_target(false)
+        .without_time()
+        .with_filter(level_filter);
+    tracing_subscriber::registry()
+        .with(debug_log_layer)
+        .with(console_layer)
         .init();
 
-    let console = Console::new();
-
+    let mut lab_outcome = LabOutcome::default();
     if options.build_source {
         let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
         lab_outcome.add(&outcome);
@@ -166,7 +180,7 @@ fn run_cargo_phases(
     phases: &[Phase],
     console: &Console,
 ) -> Result<Outcome> {
-    info!("start testing {scenario} in {in_dir}");
+    debug!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
     if let Scenario::Mutant(mutant) = scenario {
@@ -190,7 +204,7 @@ fn run_cargo_phases(
             break;
         }
     }
-    info!("{scenario} outcome {:?}", outcome.summary());
+    debug!("{scenario} outcome {:?}", outcome.summary());
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)

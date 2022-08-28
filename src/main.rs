@@ -188,7 +188,7 @@ fn main() -> Result<()> {
             console::list_mutants(&mutants, args.diff);
         }
     } else {
-        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, &options)?;
+        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, options)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

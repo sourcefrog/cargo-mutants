@@ -60,7 +60,7 @@ pub fn run_cargo(
 
     let message = format!("run {}", argv.join(" "),);
     log_file.message(&message);
-    info!("{}", message);
+    debug!("{}", message);
     let mut child = Popen::create(
         argv,
         PopenConfig {
@@ -75,12 +75,10 @@ pub fn run_cargo(
     .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
     let exit_status = loop {
         if start.elapsed() > timeout {
-            let message = format!(
+            info!(
                 "timeout after {:.3}s, terminating cargo process...\n",
                 start.elapsed().as_secs_f32()
             );
-            log_file.message(&message);
-            info!("{}", message);
             terminate_child(child, log_file)?;
             return Ok(CargoResult::Timeout);
         } else if let Err(e) = check_interrupted() {
@@ -99,7 +97,7 @@ pub fn run_cargo(
         start.elapsed().as_secs_f64()
     );
     log_file.message(&message);
-    info!("{}", message);
+    debug!("{}", message);
     check_interrupted()?;
     if exit_status.success() {
         Ok(CargoResult::Success)
@@ -142,7 +140,7 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     use nix::sys::signal::{killpg, Signal};
 
     let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
-    info!("terminating cargo process {}", pid);
+    debug!("terminating cargo process {}", pid);
     if let Err(errno) = killpg(pid, Signal::SIGTERM) {
         if errno == Errno::ESRCH {
             // most likely we raced and it's already gone
@@ -162,7 +160,7 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
 
 #[cfg(not(unix))]
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
-    info!("terminating cargo process {child:?}");
+    debug!("terminating cargo process {child:?}");
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
         let message = format!("failed to terminate child: {}", e);

@@ -4,11 +4,12 @@
 
 use std::borrow::Cow;
 use std::fmt::Write;
+
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
 use camino::Utf8Path;
-use tracing::info;
 
 use crate::outcome::SummaryOutcome;
 use crate::*;
@@ -130,12 +131,33 @@ impl Console {
     }
 
     pub fn message(&self, message: &str) {
-        info!("{}", message);
         self.view.message(message)
     }
 
     pub fn tick(&self) {
         self.view.update(|_| ())
+    }
+}
+
+/// Write logs from Trace through the Console to the Nutmeg view.
+pub struct ConsoleMakeWriter(pub Arc<Console>);
+
+impl tracing_subscriber::fmt::MakeWriter<'_> for ConsoleMakeWriter {
+    type Writer = Self;
+
+    fn make_writer(&self) -> Self::Writer {
+        ConsoleMakeWriter(self.0.clone())
+    }
+}
+
+impl io::Write for ConsoleMakeWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.view.message(std::str::from_utf8(buf).unwrap());
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
     }
 }
 
