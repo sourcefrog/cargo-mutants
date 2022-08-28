@@ -101,7 +101,10 @@ pub fn test_unmutated_then_all_mutants(
         BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
         &mutants,
     )?;
-    println!("Found {} to test", plural(mutants.len(), "mutant"));
+    console.message(&format!(
+        "Found {} to test\n",
+        plural(mutants.len(), "mutant")
+    ));
     if mutants.is_empty() {
         return Err(anyhow!("No mutants found"));
     }

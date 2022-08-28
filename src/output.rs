@@ -15,6 +15,7 @@ use path_slash::PathExt;
 use serde::Serialize;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
+use tracing::info;
 
 use crate::outcome::LabOutcome;
 use crate::*;
@@ -58,7 +59,7 @@ impl LockFile {
             .open(&lock_path)
             .context("open or create lock.json in existing directory")?;
         if lock_file.try_lock_exclusive().is_err() {
-            println!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
+            info!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
             let contended_kind = fs2::lock_contended_error().kind();
             loop {
                 check_interrupted()?;
