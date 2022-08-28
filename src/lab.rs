@@ -29,6 +29,7 @@ use crate::*;
 pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
     mut options: Options,
+    console_trace_level: tracing::Level,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
@@ -46,7 +47,7 @@ pub fn test_unmutated_then_all_mutants(
         .with_file(true) // source file name
         .with_line_number(true)
         .with_writer(debug_log);
-    let level_filter = tracing_subscriber::filter::LevelFilter::INFO;
+    let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
     let console2 = crate::console::ConsoleMakeWriter(Arc::clone(&console));
     let console_layer = tracing_subscriber::fmt::layer()
         .with_ansi(true)

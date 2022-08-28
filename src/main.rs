@@ -100,6 +100,10 @@ struct Args {
     #[clap(long)]
     json: bool,
 
+    /// log level for stdout (trace, debug, info, warn, error).
+    #[clap(long, short = 'L', default_value = "info")]
+    level: tracing::Level,
+
     /// just list possible mutants, don't run them.
     #[clap(long)]
     list: bool,
@@ -188,7 +192,7 @@ fn main() -> Result<()> {
             console::list_mutants(&mutants, args.diff);
         }
     } else {
-        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, options)?;
+        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, options, args.level)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())
