@@ -2,7 +2,7 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
@@ -145,6 +145,15 @@ impl OutputDir {
             &lab_outcome,
         )
         .context("write outcomes.json")
+    }
+
+    pub fn open_debug_log(&self) -> Result<File> {
+        let debug_log_path = self.path.join("debug.log");
+        OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&debug_log_path)
+            .with_context(|| format!("open {debug_log_path}"))
     }
 }
 

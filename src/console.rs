@@ -4,12 +4,13 @@
 
 use std::borrow::Cow;
 use std::fmt::Write;
-
-use std::sync::Arc;
+use std::fs::File;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
 use camino::Utf8Path;
+
 use tracing_subscriber::fmt::MakeWriter;
 
 use crate::outcome::SummaryOutcome;
@@ -21,12 +22,16 @@ use crate::*;
 pub struct Console {
     /// The inner view through which progress bars and messages are drawn.
     view: Arc<nutmeg::View<LabModel>>,
+
+    /// The `mutants.out/debug.log` file, if it's open yet.
+    debug_log: Arc<Mutex<Option<File>>>,
 }
 
 impl Console {
     pub fn new() -> Console {
         Console {
             view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
+            debug_log: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -143,6 +148,17 @@ impl Console {
     pub fn make_terminal_writer(&self) -> TerminalWriter {
         TerminalWriter(Arc::clone(&self.view))
     }
+
+    /// Return a tracing `MakeWriter` that will send messages to the debug log file if
+    /// it's open.
+    pub fn make_debug_log_writer(&self) -> DebugLogWriter {
+        DebugLogWriter(Arc::clone(&self.debug_log))
+    }
+
+    /// Set the debug log file.
+    pub fn set_debug_log(&self, file: File) {
+        *self.debug_log.lock().unwrap() = Some(file);
+    }
 }
 
 /// Write trace output to the terminal via the console.
@@ -161,8 +177,38 @@ impl std::io::Write for TerminalWriter {
         self.0.message(std::str::from_utf8(buf).unwrap());
         Ok(buf.len())
     }
+
     fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
+    }
+}
+
+/// Write trace output to the debug log file if it's open.
+pub struct DebugLogWriter(Arc<Mutex<Option<File>>>);
+
+impl<'w> MakeWriter<'w> for DebugLogWriter {
+    type Writer = Self;
+
+    fn make_writer(&self) -> Self::Writer {
+        DebugLogWriter(self.0.clone())
+    }
+}
+
+impl io::Write for DebugLogWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if let Some(file) = self.0.lock().unwrap().as_mut() {
+            file.write(buf)
+        } else {
+            Ok(buf.len())
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        if let Some(file) = self.0.lock().unwrap().as_mut() {
+            file.flush()
+        } else {
+            Ok(())
+        }
     }
 }
 

@@ -42,12 +42,12 @@ pub fn test_unmutated_then_all_mutants(
 
     let console = Console::new();
 
-    let debug_log = tracing_appender::rolling::never(output_dir.path(), "debug.log");
+    console.set_debug_log(output_dir.open_debug_log()?);
     let debug_log_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
         .with_file(true) // source file name
         .with_line_number(true)
-        .with_writer(debug_log);
+        .with_writer(console.make_debug_log_writer());
     let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
     let console_layer = tracing_subscriber::fmt::layer()
         .with_ansi(true)
