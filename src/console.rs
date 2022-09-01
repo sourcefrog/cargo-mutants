@@ -4,11 +4,16 @@
 
 use std::borrow::Cow;
 use std::fmt::Write;
+use std::fs::File;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use ::console::{style, StyledObject};
 use camino::Utf8Path;
-use tracing::info;
+
+use tracing::Level;
+use tracing_subscriber::fmt::MakeWriter;
+use tracing_subscriber::prelude::*;
 
 use crate::outcome::SummaryOutcome;
 use crate::*;
@@ -18,13 +23,17 @@ use crate::*;
 /// This wraps the Nutmeg view and model.
 pub struct Console {
     /// The inner view through which progress bars and messages are drawn.
-    view: nutmeg::View<LabModel>,
+    view: Arc<nutmeg::View<LabModel>>,
+
+    /// The `mutants.out/debug.log` file, if it's open yet.
+    debug_log: Arc<Mutex<Option<File>>>,
 }
 
 impl Console {
     pub fn new() -> Console {
         Console {
-            view: nutmeg::View::new(LabModel::default(), nutmeg_options()),
+            view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
+            debug_log: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -130,12 +139,101 @@ impl Console {
     }
 
     pub fn message(&self, message: &str) {
-        info!("{}", message);
         self.view.message(message)
     }
 
     pub fn tick(&self) {
         self.view.update(|_| ())
+    }
+
+    /// Return a tracing `MakeWriter` that will send messages via nutmeg to the console.
+    pub fn make_terminal_writer(&self) -> TerminalWriter {
+        TerminalWriter(Arc::clone(&self.view))
+    }
+
+    /// Return a tracing `MakeWriter` that will send messages to the debug log file if
+    /// it's open.
+    pub fn make_debug_log_writer(&self) -> DebugLogWriter {
+        DebugLogWriter(Arc::clone(&self.debug_log))
+    }
+
+    /// Set the debug log file.
+    pub fn set_debug_log(&self, file: File) {
+        *self.debug_log.lock().unwrap() = Some(file);
+    }
+
+    /// Configure tracing to send messages to the console and debug log.
+    ///
+    /// The debug log is opened later and provided by [Console::set_debug_log].
+    pub fn setup_global_trace(&self, console_trace_level: Level) -> Result<()> {
+        let debug_log_layer = tracing_subscriber::fmt::layer()
+            .with_ansi(false)
+            .with_file(true) // source file name
+            .with_line_number(true)
+            .with_writer(self.make_debug_log_writer());
+        let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
+        let console_layer = tracing_subscriber::fmt::layer()
+            .with_ansi(true)
+            .with_writer(self.make_terminal_writer())
+            .with_target(false)
+            .without_time()
+            .with_filter(level_filter);
+        tracing_subscriber::registry()
+            .with(debug_log_layer)
+            .with(console_layer)
+            .init();
+        Ok(())
+    }
+}
+
+/// Write trace output to the terminal via the console.
+pub struct TerminalWriter(Arc<nutmeg::View<LabModel>>);
+
+impl<'w> MakeWriter<'w> for TerminalWriter {
+    type Writer = Self;
+
+    fn make_writer(&self) -> Self::Writer {
+        TerminalWriter(self.0.clone())
+    }
+}
+
+impl std::io::Write for TerminalWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.message(std::str::from_utf8(buf).unwrap());
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// Write trace output to the debug log file if it's open.
+pub struct DebugLogWriter(Arc<Mutex<Option<File>>>);
+
+impl<'w> MakeWriter<'w> for DebugLogWriter {
+    type Writer = Self;
+
+    fn make_writer(&self) -> Self::Writer {
+        DebugLogWriter(self.0.clone())
+    }
+}
+
+impl io::Write for DebugLogWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if let Some(file) = self.0.lock().unwrap().as_mut() {
+            file.write(buf)
+        } else {
+            Ok(buf.len())
+        }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        if let Some(file) = self.0.lock().unwrap().as_mut() {
+            file.flush()
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -341,7 +439,7 @@ impl nutmeg::Model for CopyModel {
 }
 
 pub fn nutmeg_options() -> nutmeg::Options {
-    nutmeg::Options::default().print_holdoff(Duration::from_secs(2))
+    nutmeg::Options::default().print_holdoff(Duration::from_millis(200))
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
@@ -378,10 +476,6 @@ fn style_mutant(mutant: &Mutant) -> String {
         style(mutant.return_type()).magenta(),
         style(mutant.replacement_text()).yellow(),
     )
-}
-
-pub fn print_error(msg: &str) {
-    println!("{}: {}", style("error").bold().red(), msg);
 }
 
 fn style_elapsed_secs(since: Instant) -> String {

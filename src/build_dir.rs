@@ -8,6 +8,7 @@ use std::path::Path;
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
+use tracing::error;
 
 use crate::manifest::fix_cargo_config;
 use crate::*;
@@ -76,7 +77,7 @@ impl BuildDir {
             }
             Err(err) => {
                 view.finish();
-                eprintln!(
+                error!(
                     "error copying source tree {} to {}: {:?}",
                     &source.path().to_slash_path(),
                     &temp_dir.path().to_slash_lossy(),

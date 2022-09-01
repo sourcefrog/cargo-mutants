@@ -2,7 +2,7 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
@@ -15,6 +15,7 @@ use path_slash::PathExt;
 use serde::Serialize;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
+use tracing::info;
 
 use crate::outcome::LabOutcome;
 use crate::*;
@@ -58,7 +59,7 @@ impl LockFile {
             .open(&lock_path)
             .context("open or create lock.json in existing directory")?;
         if lock_file.try_lock_exclusive().is_err() {
-            println!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
+            info!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
             let contended_kind = fs2::lock_contended_error().kind();
             loop {
                 check_interrupted()?;
@@ -145,6 +146,15 @@ impl OutputDir {
             &lab_outcome,
         )
         .context("write outcomes.json")
+    }
+
+    pub fn open_debug_log(&self) -> Result<File> {
+        let debug_log_path = self.path.join("debug.log");
+        OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&debug_log_path)
+            .with_context(|| format!("open {debug_log_path}"))
     }
 }
 

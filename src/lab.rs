@@ -5,15 +5,18 @@
 use std::cmp::max;
 use std::fs::File;
 use std::io::BufWriter;
+
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
-use tracing::info;
+use tracing::error;
+#[allow(unused)]
+use tracing::{debug, info};
 
 use crate::cargo::{cargo_argv, run_cargo};
-use crate::console::{self, plural, Console};
+use crate::console::{plural, Console};
 use crate::outcome::{LabOutcome, Outcome, Phase};
 use crate::output::OutputDir;
 use crate::*;
@@ -24,11 +27,10 @@ use crate::*;
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
     source_tree: &SourceTree,
-    options: &Options,
+    mut options: Options,
+    console_trace_level: tracing::Level,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let mut options: Options = options.clone();
-    let mut lab_outcome = LabOutcome::default();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
         o.as_path()
     } else {
@@ -36,25 +38,20 @@ pub fn test_unmutated_then_all_mutants(
     };
     let output_dir = OutputDir::new(output_in_dir)?;
 
-    let debug_log = tracing_appender::rolling::never(output_dir.path(), "debug.log");
-    tracing_subscriber::fmt()
-        .with_ansi(false)
-        .with_file(true) // source file name
-        .with_line_number(true)
-        .with_writer(debug_log)
-        .init();
-
     let console = Console::new();
+    console.setup_global_trace(console_trace_level)?;
 
+    console.set_debug_log(output_dir.open_debug_log()?);
+    let mut lab_outcome = LabOutcome::default();
     if options.build_source {
         let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
         lab_outcome.add(&outcome);
         output_dir.write_outcomes_json(&lab_outcome)?;
         if !outcome.success() {
-            console::print_error(&format!(
+            error!(
                 "cargo {} failed in source tree, not continuing",
                 outcome.last_phase(),
-            ));
+            );
             return Ok(lab_outcome); // TODO: Maybe should be Err?
         }
     }
@@ -79,10 +76,10 @@ pub fn test_unmutated_then_all_mutants(
     lab_outcome.add(&outcome);
     output_dir.write_outcomes_json(&lab_outcome)?;
     if !outcome.success() {
-        console::print_error(&format!(
+        error!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
             outcome.last_phase(),
-        ));
+        );
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
     if !options.has_test_timeout() {
@@ -104,7 +101,10 @@ pub fn test_unmutated_then_all_mutants(
         BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
         &mutants,
     )?;
-    println!("Found {} to test", plural(mutants.len(), "mutant"));
+    console.message(&format!(
+        "Found {} to test\n",
+        plural(mutants.len(), "mutant")
+    ));
     if mutants.is_empty() {
         return Err(anyhow!("No mutants found"));
     }
@@ -166,7 +166,7 @@ fn run_cargo_phases(
     phases: &[Phase],
     console: &Console,
 ) -> Result<Outcome> {
-    info!("start testing {scenario} in {in_dir}");
+    debug!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
     if let Scenario::Mutant(mutant) = scenario {
@@ -190,7 +190,7 @@ fn run_cargo_phases(
             break;
         }
     }
-    info!("{scenario} outcome {:?}", outcome.summary());
+    debug!("{scenario} outcome {:?}", outcome.summary());
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
