@@ -1,0 +1,14 @@
+on:
+  push:
+    paths:
+      - '.github/workflows/install.yml'
+  schedule:
+    - cron: "17 0 * * 1"
+
+jobs:
+  cargo-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: cargo-install
+        run: |
+          cargo install cargo-mutants
