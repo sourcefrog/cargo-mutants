@@ -585,6 +585,7 @@ fn well_tested_tree_finds_no_problems() {
         .path()
         .join("mutants.out/outcomes.json")
         .exists());
+    check_text_list_output(tmp_src_dir.path(), "well_tested_tree_finds_no_problems");
 }
 
 #[test]
