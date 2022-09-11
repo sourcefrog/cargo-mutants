@@ -659,9 +659,7 @@ fn uncaught_mutant_in_factorial() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/mutants.json")).unwrap();
     insta::assert_snapshot!("mutants.json", mutants_json);
 
-    // There is a `missed.txt` file with the write content.
-    let missed_txt = fs::read_to_string(tmp_src_dir.path().join("mutants.out/missed.txt")).unwrap();
-    insta::assert_snapshot!("uncaught_mutant_in_factorial__missed.txt", missed_txt);
+    check_text_list_output(&tmp_src_dir.path(), "uncaught_mutant_in_factorial");
 }
 
 #[test]
@@ -1131,4 +1129,13 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .assert()
         .success()
         .stdout(contains("1 mutant tested: 1 caught"));
+}
+
+fn check_text_list_output(dir: &Path, test_name: &str) {
+    // There is a `missed.txt` file with the right content, etc.
+    for name in ["missed", "caught", "timeout", "unviable"] {
+        let path = dir.join(format!("mutants.out/{}.txt", name));
+        let content = fs::read_to_string(&path).unwrap();
+        insta::assert_snapshot!(format!("{test_name}__{name}.txt"), content);
+    }
 }

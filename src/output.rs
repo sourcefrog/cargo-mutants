@@ -17,7 +17,7 @@ use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 use tracing::info;
 
-use crate::outcome::LabOutcome;
+use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::*;
 
 const OUTDIR_NAME: &str = "mutants.out";
@@ -91,6 +91,11 @@ pub struct OutputDir {
     lock_file: File,
     /// A file holding a list of missed mutants as text, one per line.
     missed_list: File,
+    /// A file holding a list of caught mutants as text, one per line.
+    caught_list: File,
+    /// A file holding a list of mutants where testing timed out, as text, one per line.
+    timeout_list: File,
+    unviable_list: File,
 }
 
 impl OutputDir {
@@ -121,17 +126,30 @@ impl OutputDir {
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
         fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
-        let missed_list = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .append(true)
+
+        // Create text list files.
+        let mut list_file_options = OpenOptions::new();
+        list_file_options.create(true).append(true);
+        let missed_list = list_file_options
             .open(output_dir.join("missed.txt"))
             .context("create missed.txt")?;
+        let caught_list = list_file_options
+            .open(output_dir.join("caught.txt"))
+            .context("create caught.txt")?;
+        let unviable_list = list_file_options
+            .open(output_dir.join("unviable.txt"))
+            .context("create unviable.txt")?;
+        let timeout_list = list_file_options
+            .open(output_dir.join("timeout.txt"))
+            .context("create timeout.txt")?;
         Ok(OutputDir {
             path: output_dir,
             log_dir,
             lock_file,
             missed_list,
+            caught_list,
+            timeout_list,
+            unviable_list,
         })
     }
 
@@ -164,10 +182,14 @@ impl OutputDir {
     pub fn add_scenario_outcome(&mut self, scenario_outcome: &ScenarioOutcome) -> Result<()> {
         let scenario = &scenario_outcome.scenario;
         if let Scenario::Mutant(mutant) = scenario {
-            if scenario_outcome.mutant_missed() {
-                writeln!(self.missed_list, "{}", mutant.format_as_error_message())
-                    .context("write to missed.txt")?;
-            }
+            let file = match scenario_outcome.summary() {
+                SummaryOutcome::MissedMutant => &mut self.missed_list,
+                SummaryOutcome::CaughtMutant => &mut self.caught_list,
+                SummaryOutcome::Timeout => &mut self.timeout_list,
+                SummaryOutcome::Unviable => &mut self.unviable_list,
+                _ => return Ok(()),
+            };
+            write!(file, "{}", mutant.format_as_error_message()).context("write to list file")?;
         }
         Ok(())
     }
@@ -240,9 +262,12 @@ version = "0.0.0"
                 "Cargo.lock",
                 "Cargo.toml",
                 "mutants.out",
+                "mutants.out/caught.txt",
                 "mutants.out/lock.json",
                 "mutants.out/log",
                 "mutants.out/missed.txt",
+                "mutants.out/timeout.txt",
+                "mutants.out/unviable.txt",
                 "src",
                 "src/lib.rs",
             ]

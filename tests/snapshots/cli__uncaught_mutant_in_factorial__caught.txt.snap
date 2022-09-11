@@ -1,0 +1,5 @@
+---
+source: tests/cli.rs
+expression: content
+---
+src/bin/factorial.rs:7: replace factorial with Default::default()

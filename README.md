@@ -176,7 +176,7 @@ A `mutants.out` directory is created in the source directory, or whichever direc
   version, username, and hostname. `lock.json` is left in `mutants.out` when the
   run completes, but the lock on it is released.
 
-- `missed.txt`, a list of mutants that were not caught by tests.
+- `caught.txt`, `missed.txt`, `timeout.txt`, `unviable.txt`, each listing mutants with the corresponding outcome.
 
 - A `mutants.json` file describing all the generated mutants.
 
