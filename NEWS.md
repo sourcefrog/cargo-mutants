@@ -4,6 +4,8 @@
 
 - New: `missed.txt`, `caught.txt`, `timeout.txt` and `unviable.txt` files are written in to the output directory to make results easier to review later.
 
+- New: `--output` creates the containing directory if it does not exist.
+
 - Internal: Switched from Argh to Clap for command-line parsing. There may be some small changes in CLI behavior and help formatting.
 
 ## 1.0.0

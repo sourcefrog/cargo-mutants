@@ -101,12 +101,18 @@ pub struct OutputDir {
 impl OutputDir {
     /// Create a new `mutants.out` output directory, within the given directory.
     ///
+    /// If `in_dir` does not exist, it's created too, so that users can name a new directory
+    /// with `--output`.
+    ///
     /// If the directory already exists, it's rotated to `mutants.out.old`. If that directory
     /// exists, it's deleted.
     ///
     /// If the directory already exists and `lock.json` exists and is locked, this waits for
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
     pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
+        if !in_dir.exists() {
+            fs::create_dir(&in_dir).context("create output parent directory {in_dir:?}")?;
+        }
         let output_dir = in_dir.join(OUTDIR_NAME);
         if output_dir.exists() {
             LockFile::acquire_lock(output_dir.as_ref())?;

@@ -757,9 +757,13 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
 }
 
 #[test]
+/// The `--output` directory creates the named directory if necessary, and then
+/// creates `mutants.out` within it. `mutants.out` is not created in the
+/// source directory in this case.
 fn output_option() {
     let tmp_src_dir = copy_of_testdata("factorial");
     let output_tmpdir = TempDir::new().unwrap();
+    let output_parent = output_tmpdir.path().join("output_parent");
     assert!(
         !tmp_src_dir.path().join("mutants.out").exists(),
         "mutants.out should not be in a clean copy of the test data"
@@ -767,7 +771,7 @@ fn output_option() {
     run_assert_cmd()
         .arg("mutants")
         .arg("--output")
-        .arg(&output_tmpdir.path())
+        .arg(&output_parent)
         .args(["--check", "--no-times"])
         .arg("-d")
         .arg(&tmp_src_dir.path())
@@ -777,28 +781,19 @@ fn output_option() {
         !tmp_src_dir.path().join("mutants.out").exists(),
         "mutants.out should not be in the source directory after --output was given"
     );
-    assert!(
-        output_tmpdir.path().join("mutants.out").exists(),
-        "mutants.out is in --output directory"
-    );
-    assert!(
-        output_tmpdir
-            .path()
-            .join("mutants.out/mutants.json")
-            .is_file(),
-        "mutants.out/mutants.json is in --output directory"
-    );
-    assert!(
-        output_tmpdir
-            .path()
-            .join("mutants.out/outcomes.json")
-            .is_file(),
-        "mutants.out/outcomes.json is in --output directory"
-    );
-    assert!(
-        output_tmpdir.path().join("mutants.out/debug.log").is_file(),
-        "mutants.out/debug.log is in --output directory"
-    );
+    let mutants_out = output_parent.join("mutants.out");
+    assert!(mutants_out.exists(), "mutants.out is in --output directory");
+    for name in [
+        "mutants.json",
+        "debug.log",
+        "outcomes.json",
+        "missed.txt",
+        "caught.txt",
+        "timeout.txt",
+        "unviable.txt",
+    ] {
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+    }
 }
 
 #[test]
