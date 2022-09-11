@@ -82,6 +82,7 @@ exclude = [
     "testdata/tree/factorial",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
+    "testdata/tree/integration_tests",
     "testdata/tree/override_dependency",
     "testdata/tree/patch_dependency",
     "testdata/tree/relative_dependency",

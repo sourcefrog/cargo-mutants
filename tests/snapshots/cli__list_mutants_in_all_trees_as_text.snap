@@ -68,6 +68,12 @@ src/lib.rs:11: replace should_stop -> bool with false
 src/lib.rs:21: replace controlled_loop -> usize with Default::default()
 ```
 
+## testdata/tree/integration_tests
+
+```
+src/lib.rs:1: replace double -> u32 with Default::default()
+```
+
 ## testdata/tree/nightly_only
 
 ```

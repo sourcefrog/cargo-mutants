@@ -164,6 +164,21 @@ expression: buf
 ]
 ```
 
+## testdata/tree/integration_tests
+
+```json
+[
+  {
+    "package": "cargo-mutants-testdata-integration-tests",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "double",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 ## testdata/tree/nightly_only
 
 ```json

@@ -1,0 +1,6 @@
+---
+source: tests/cli.rs
+expression: content
+---
+src/lib.rs:1: replace double with Default::default()
+

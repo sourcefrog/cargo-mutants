@@ -201,8 +201,12 @@ fn direct_package_sources(
     let pkg_dir = package_metadata.manifest_path.parent().unwrap();
     for target in &package_metadata.targets {
         if should_mutate_target(target) {
-            if let Ok(relpath) = target.src_path.strip_prefix(&workspace_root) {
+            if let Ok(relpath) = target.src_path.strip_prefix(workspace_root) {
                 let relpath = TreeRelativePathBuf::new(relpath.into());
+                debug!(
+                    "found mutation target {} of kind {:?}",
+                    relpath, target.kind
+                );
                 found.push(relpath);
             } else {
                 warn!("{:?} is not in {:?}", target.src_path, pkg_dir);
@@ -220,10 +224,7 @@ fn direct_package_sources(
 }
 
 fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    target
-        .kind
-        .iter()
-        .any(|k| k.ends_with("lib") || k == "bin" || k == "test")
+    target.kind.iter().any(|k| k.ends_with("lib") || k == "bin")
 }
 
 #[cfg(test)]

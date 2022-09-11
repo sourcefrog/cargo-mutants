@@ -614,6 +614,25 @@ fn well_tested_tree_check_only_shuffled() {
 }
 
 #[test]
+fn integration_test_source_is_not_mutated() {
+    let tmp_src_dir = copy_of_testdata("integration_tests");
+    run_assert_cmd()
+        .args(["mutants", "--no-times", "--no-shuffle", "--list-files"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout("src/lib.rs\n");
+    run_assert_cmd()
+        .args(["mutants", "--no-times", "--no-shuffle"])
+        .current_dir(&tmp_src_dir.path())
+        .assert()
+        .success();
+    check_text_list_output(
+        &tmp_src_dir.path(),
+        "integration_test_source_is_not_mutated",
+    );
+}
+#[test]
 fn error_when_no_mutants_found() {
     let tmp_src_dir = copy_of_testdata("everything_skipped");
     run_assert_cmd()
