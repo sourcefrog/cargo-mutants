@@ -8,9 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - name: Cache Cargo
+        uses: actions/cache@v2
         with:
-          toolchain: stable
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-mutants-self-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
       - name: Install cargo-mutants
         run: cargo install --path .
       - name: Run mutant tests
