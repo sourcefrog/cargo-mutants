@@ -17,7 +17,7 @@ use tracing::{debug, info};
 
 use crate::cargo::{cargo_argv, run_cargo};
 use crate::console::{plural, Console};
-use crate::outcome::{LabOutcome, Outcome, Phase};
+use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
 use crate::*;
 
@@ -36,7 +36,7 @@ pub fn test_unmutated_then_all_mutants(
     } else {
         source_tree.path()
     };
-    let output_dir = OutputDir::new(output_in_dir)?;
+    let mut output_dir = OutputDir::new(output_in_dir)?;
 
     let console = Console::new();
     console.setup_global_trace(console_trace_level)?;
@@ -46,7 +46,7 @@ pub fn test_unmutated_then_all_mutants(
     if options.build_source {
         let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
         lab_outcome.add(&outcome);
-        output_dir.write_outcomes_json(&lab_outcome)?;
+        output_dir.update_lab_outcome(&lab_outcome)?;
         if !outcome.success() {
             error!(
                 "cargo {} failed in source tree, not continuing",
@@ -74,7 +74,8 @@ pub fn test_unmutated_then_all_mutants(
         )
     }?;
     lab_outcome.add(&outcome);
-    output_dir.write_outcomes_json(&lab_outcome)?;
+    output_dir.update_lab_outcome(&lab_outcome)?;
+    output_dir.add_scenario_outcome(&outcome)?;
     if !outcome.success() {
         error!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
@@ -123,9 +124,10 @@ pub fn test_unmutated_then_all_mutants(
             )
         })?;
         lab_outcome.add(&outcome);
+        output_dir.add_scenario_outcome(&outcome)?;
         // Rewrite outcomes.json every time, so we can watch it and so it's not
         // lost if the program stops or is interrupted.
-        output_dir.write_outcomes_json(&lab_outcome)?;
+        output_dir.update_lab_outcome(&lab_outcome)?;
     }
     console.message(&format!(
         "{}\n",
@@ -165,7 +167,7 @@ fn run_cargo_phases(
     scenario: &Scenario,
     phases: &[Phase],
     console: &Console,
-) -> Result<Outcome> {
+) -> Result<ScenarioOutcome> {
     debug!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
@@ -174,7 +176,7 @@ fn run_cargo_phases(
     }
     console.scenario_started(scenario, log_file.path());
 
-    let mut outcome = Outcome::new(&log_file, scenario.clone());
+    let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
     for &phase in phases {
         let phase_start = Instant::now();
         console.scenario_phase_started(phase);
@@ -206,7 +208,7 @@ fn build_source_tree(
     output_dir: &OutputDir,
     options: &Options,
     console: &Console,
-) -> Result<Outcome> {
+) -> Result<ScenarioOutcome> {
     let phases: &'static [Phase] = if options.check_only {
         &[Phase::Check]
     } else {

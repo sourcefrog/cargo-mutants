@@ -134,6 +134,16 @@ impl Mutant {
         )
     }
 
+    /// Describe this mutant like a compiler error message, starting with the file and line.
+    pub fn format_as_error_message(&self) -> String {
+        format!(
+            "{}:{}: {}",
+            self.source_file.tree_relative_slashes(),
+            self.span.start.line,
+            self.describe_change()
+        )
+    }
+
     /// Return the text inserted for this mutation.
     pub fn replacement_text(&self) -> &'static str {
         self.op.replacement()

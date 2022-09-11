@@ -48,7 +48,12 @@ impl Console {
     }
 
     /// Update that cargo finished.
-    pub fn scenario_finished(&self, scenario: &Scenario, outcome: &Outcome, options: &Options) {
+    pub fn scenario_finished(
+        &self,
+        scenario: &Scenario,
+        outcome: &ScenarioOutcome,
+        options: &Options,
+    ) {
         self.view.update(|model| match outcome.summary() {
             SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
             SummaryOutcome::MissedMutant => model.mutants_missed += 1,
@@ -443,7 +448,7 @@ pub fn nutmeg_options() -> nutmeg::Options {
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
-pub fn style_outcome(outcome: &Outcome) -> StyledObject<&'static str> {
+pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
     match outcome.summary() {
         SummaryOutcome::CaughtMutant => style("caught").green(),
         SummaryOutcome::MissedMutant => style("NOT CAUGHT").red().bold(),

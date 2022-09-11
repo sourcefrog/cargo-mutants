@@ -658,6 +658,10 @@ fn uncaught_mutant_in_factorial() {
     let mutants_json =
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/mutants.json")).unwrap();
     insta::assert_snapshot!("mutants.json", mutants_json);
+
+    // There is a `missed.txt` file with the write content.
+    let missed_txt = fs::read_to_string(tmp_src_dir.path().join("mutants.out/missed.txt")).unwrap();
+    insta::assert_snapshot!("uncaught_mutant_in_factorial__missed.txt", missed_txt);
 }
 
 #[test]

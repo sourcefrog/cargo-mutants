@@ -89,6 +89,8 @@ pub struct OutputDir {
     log_dir: Utf8PathBuf,
     #[allow(unused)] // Lifetime controls the file lock
     lock_file: File,
+    /// A file holding a list of missed mutants as text, one per line.
+    missed_list: File,
 }
 
 impl OutputDir {
@@ -119,10 +121,17 @@ impl OutputDir {
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
         fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
+        let missed_list = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(output_dir.join("missed.txt"))
+            .context("create missed.txt")?;
         Ok(OutputDir {
             path: output_dir,
             log_dir,
             lock_file,
+            missed_list,
         })
     }
 
@@ -140,12 +149,27 @@ impl OutputDir {
         &self.path
     }
 
-    pub fn write_outcomes_json(&self, lab_outcome: &LabOutcome) -> Result<()> {
+    /// Update the state of the overall lab.
+    ///
+    /// Called multiple times as the lab runs.
+    pub fn update_lab_outcome(&self, lab_outcome: &LabOutcome) -> Result<()> {
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(self.path().join("outcomes.json"))?),
             &lab_outcome,
         )
         .context("write outcomes.json")
+    }
+
+    /// Add the result of testing one scenario.
+    pub fn add_scenario_outcome(&mut self, scenario_outcome: &ScenarioOutcome) -> Result<()> {
+        let scenario = &scenario_outcome.scenario;
+        if let Scenario::Mutant(mutant) = scenario {
+            if scenario_outcome.mutant_missed() {
+                writeln!(self.missed_list, "{}", mutant.format_as_error_message())
+                    .context("write to missed.txt")?;
+            }
+        }
+        Ok(())
     }
 
     pub fn open_debug_log(&self) -> Result<File> {
@@ -204,7 +228,7 @@ version = "0.0.0"
     }
 
     #[test]
-    fn create() {
+    fn create_output_dir() {
         let tmp = minimal_source_tree();
         let tmp_path = tmp.path().try_into().unwrap();
         let src_tree = SourceTree::new(tmp_path).unwrap();
@@ -218,6 +242,7 @@ version = "0.0.0"
                 "mutants.out",
                 "mutants.out/lock.json",
                 "mutants.out/log",
+                "mutants.out/missed.txt",
                 "src",
                 "src/lib.rs",
             ]

@@ -164,7 +164,7 @@ flags the function for cargo-mutants.
 
 ### `mutants.out`
 
-A `mutants.out` directory is created in the source directory. It contains:
+A `mutants.out` directory is created in the source directory, or whichever directory you specify with `--output`. It contains:
 
 - A `logs/` directory, with one log file for each mutation plus the baseline
   unmutated case. The log contains the diff of the mutation plus the output from
@@ -175,6 +175,8 @@ A `mutants.out` directory is created in the source directory. It contains:
   directory at the same time. The lock contains the start time, cargo-mutants
   version, username, and hostname. `lock.json` is left in `mutants.out` when the
   run completes, but the lock on it is released.
+
+- `missed.txt`, a list of mutants that were not caught by tests.
 
 - A `mutants.json` file describing all the generated mutants.
 

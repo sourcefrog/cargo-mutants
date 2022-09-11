@@ -55,7 +55,7 @@ impl fmt::Display for Phase {
 #[derive(Debug, Default, Serialize)]
 pub struct LabOutcome {
     /// All the scenario outcomes, including baseline builds.
-    outcomes: Vec<Outcome>,
+    outcomes: Vec<ScenarioOutcome>,
     total_mutants: usize,
     missed: usize,
     caught: usize,
@@ -67,7 +67,7 @@ pub struct LabOutcome {
 
 impl LabOutcome {
     /// Record the event of one test.
-    pub fn add(&mut self, outcome: &Outcome) {
+    pub fn add(&mut self, outcome: &ScenarioOutcome) {
         self.outcomes.push(outcome.clone());
         if outcome.scenario.is_mutant() {
             self.total_mutants += 1;
@@ -135,7 +135,7 @@ impl LabOutcome {
 /// The result of running one mutation scenario.
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[must_use]
-pub struct Outcome {
+pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
     log_path: Utf8PathBuf,
@@ -145,7 +145,7 @@ pub struct Outcome {
     phase_results: Vec<PhaseResult>,
 }
 
-impl Serialize for Outcome {
+impl Serialize for ScenarioOutcome {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -160,9 +160,9 @@ impl Serialize for Outcome {
     }
 }
 
-impl Outcome {
-    pub fn new(log_file: &LogFile, scenario: Scenario) -> Outcome {
-        Outcome {
+impl ScenarioOutcome {
+    pub fn new(log_file: &LogFile, scenario: Scenario) -> ScenarioOutcome {
+        ScenarioOutcome {
             log_path: log_file.path().to_owned(),
             scenario,
             phase_results: Vec::new(),

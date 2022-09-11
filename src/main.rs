@@ -42,7 +42,7 @@ use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
 use crate::mutate::{Mutant, MutationOp};
 use crate::options::Options;
-use crate::outcome::{Outcome, Phase};
+use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
 use crate::source::{SourceFile, SourceTree};
