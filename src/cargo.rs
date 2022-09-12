@@ -2,11 +2,14 @@
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
+use std::collections::BTreeSet;
 use std::env;
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
+use globset::GlobSet;
 use serde::Serialize;
 use serde_json::Value;
 use subprocess::{Popen, PopenConfig, Redirection};
@@ -14,6 +17,7 @@ use tracing::{debug, info, warn};
 
 use crate::console::Console;
 use crate::log_file::LogFile;
+use crate::path::TreeRelativePathBuf;
 use crate::*;
 
 /// How frequently to check if cargo finished.
@@ -185,50 +189,195 @@ fn setpgid_on_unix() -> PopenConfig {
     Default::default()
 }
 
-/// Find the path of the Cargo.toml file enclosing the given directory.
-///
-/// Returns an error if it's not found.
-pub fn locate_project(path: &Utf8Path) -> Result<Utf8PathBuf> {
-    let cargo_bin = cargo_bin();
-    let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
-    let mut child = Popen::create(
-        &argv,
-        PopenConfig {
-            stdin: Redirection::Pipe,
-            stdout: Redirection::Pipe,
-            stderr: Redirection::Pipe,
-            cwd: Some(path.as_os_str().to_owned()),
-            ..Default::default()
-        },
-    )
-    .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
-    let (stdout, stderr) = child
-        .communicate(Some(""))
-        .context("communicate with cargo locate-project")
-        .map(|(a, b)| (a.unwrap(), b.unwrap()))?;
-    if !child
-        .wait()
-        .context("wait for cargo locate-project")?
-        .success()
-        || stdout.is_empty()
-    {
-        return Err(anyhow!(stderr));
+/// A source tree where we can run cargo commands.
+#[derive(Debug)]
+pub struct CargoSourceTree {
+    pub root: Utf8PathBuf,
+    cargo_toml_path: Utf8PathBuf,
+}
+
+impl CargoSourceTree {
+    /// Open the source tree enclosing the given path.
+    ///
+    /// Returns an error if it's not found.
+    pub fn open(path: &Utf8Path) -> Result<CargoSourceTree> {
+        let cargo_bin = cargo_bin();
+        let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
+        let mut child = Popen::create(
+            &argv,
+            PopenConfig {
+                stdin: Redirection::Pipe,
+                stdout: Redirection::Pipe,
+                stderr: Redirection::Pipe,
+                cwd: Some(path.as_os_str().to_owned()),
+                ..Default::default()
+            },
+        )
+        .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
+        let (stdout, stderr) = child
+            .communicate(Some(""))
+            .context("communicate with cargo locate-project")
+            .map(|(a, b)| (a.unwrap(), b.unwrap()))?;
+        if !child
+            .wait()
+            .context("wait for cargo locate-project")?
+            .success()
+            || stdout.is_empty()
+        {
+            return Err(anyhow!(stderr));
+        }
+        debug!("locate-project output: {stdout}");
+        let val: Value =
+            serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
+        let cargo_toml_path: Utf8PathBuf = val["root"]
+            .as_str()
+            .context("cargo locate-project output has no root: {stdout:?}")?
+            .to_owned()
+            .into();
+        assert!(cargo_toml_path.is_file());
+        let root = cargo_toml_path
+            .parent()
+            .expect("cargo_toml_path has a parent")
+            .to_owned();
+        assert!(root.is_dir());
+        Ok(CargoSourceTree {
+            root,
+            cargo_toml_path,
+        })
     }
-    debug!("locate-project output: {stdout}");
-    let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
-    let root = &val["root"];
-    root.as_str()
-        .context("cargo locate-project output has no root: {stdout:?}")?
-        .parse()
-        .context("parse cargo locate-project output root to path")
+}
+
+impl SourceTree for CargoSourceTree {
+    fn path(&self) -> &Utf8Path {
+        &self.root
+    }
+
+    /// Find all source files that can be mutated within a tree, including their cargo packages.
+    fn source_files(&self, options: &Options) -> Result<Vec<SourceFile>> {
+        debug!("cargo_toml_path = {}", self.cargo_toml_path);
+        check_interrupted()?;
+        let metadata = cargo_metadata::MetadataCommand::new()
+            .manifest_path(&self.cargo_toml_path)
+            .exec()
+            .context("run cargo metadata")?;
+        check_interrupted()?;
+
+        let mut r = Vec::new();
+        for package_metadata in &metadata.workspace_packages() {
+            debug!("walk package {:?}", package_metadata.manifest_path);
+            let top_sources = direct_package_sources(&self.root, package_metadata)?;
+            let source_paths = indirect_source_paths(
+                &self.root,
+                top_sources,
+                &options.examine_globset,
+                &options.exclude_globset,
+            )?;
+            let package_name = Rc::new(package_metadata.name.to_string());
+            for source_path in source_paths {
+                check_interrupted()?;
+                r.push(SourceFile::new(
+                    &self.root,
+                    source_path,
+                    Rc::clone(&package_name),
+                )?);
+            }
+        }
+        Ok(r)
+    }
+}
+
+/// Find all the `.rs` files, by starting from the sources identified by the manifest
+/// and walking down.
+///
+/// This just walks the directory tree rather than following `mod` statements (for now)
+/// so it may pick up some files that are not actually linked in.
+fn indirect_source_paths(
+    root: &Utf8Path,
+    top_sources: impl IntoIterator<Item = TreeRelativePathBuf>,
+    examine_globset: &Option<GlobSet>,
+    exclude_globset: &Option<GlobSet>,
+) -> Result<BTreeSet<TreeRelativePathBuf>> {
+    let dirs: BTreeSet<TreeRelativePathBuf> = top_sources.into_iter().map(|p| p.parent()).collect();
+    let mut files: BTreeSet<TreeRelativePathBuf> = BTreeSet::new();
+    for top_dir in dirs {
+        for p in walkdir::WalkDir::new(top_dir.within(root))
+            .sort_by_file_name()
+            .into_iter()
+        {
+            let p = p.with_context(|| "error walking source tree {top_dir}")?;
+            if !p.file_type().is_file() {
+                continue;
+            }
+            let path = p.into_path();
+            if !path
+                .extension()
+                .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
+            {
+                continue;
+            }
+            let relative_path = path.strip_prefix(&root).expect("strip prefix").to_owned();
+            if let Some(examine_globset) = examine_globset {
+                if !examine_globset.is_match(&relative_path) {
+                    continue;
+                }
+            }
+            if let Some(exclude_globset) = exclude_globset {
+                if exclude_globset.is_match(&relative_path) {
+                    continue;
+                }
+            }
+            files.insert(relative_path.into());
+        }
+    }
+    Ok(files)
+}
+
+/// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
+///
+/// These are the starting points for discovering source files.
+fn direct_package_sources(
+    workspace_root: &Utf8Path,
+    package_metadata: &cargo_metadata::Package,
+) -> Result<Vec<TreeRelativePathBuf>> {
+    let mut found = Vec::new();
+    let pkg_dir = package_metadata.manifest_path.parent().unwrap();
+    for target in &package_metadata.targets {
+        if should_mutate_target(target) {
+            if let Ok(relpath) = target.src_path.strip_prefix(workspace_root) {
+                let relpath = TreeRelativePathBuf::new(relpath.into());
+                debug!(
+                    "found mutation target {} of kind {:?}",
+                    relpath, target.kind
+                );
+                found.push(relpath);
+            } else {
+                warn!("{:?} is not in {:?}", target.src_path, pkg_dir);
+            }
+        } else {
+            debug!(
+                "skipping target {:?} of kinds {:?}",
+                target.name, target.kind
+            );
+        }
+    }
+    found.sort();
+    found.dedup();
+    Ok(found)
+}
+
+fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
+    target.kind.iter().any(|k| k.ends_with("lib") || k == "bin")
 }
 
 #[cfg(test)]
 mod test {
+    use std::ffi::OsStr;
+
     use pretty_assertions::assert_eq;
 
-    use super::cargo_argv;
     use crate::{Options, Phase};
+
+    use super::*;
 
     #[test]
     fn generate_cargo_args_for_baseline_with_default_options() {
@@ -295,5 +444,34 @@ mod test {
                 "--no-fail-fast"
             ]
         );
+    }
+
+    #[test]
+    fn error_opening_outside_of_crate() {
+        CargoSourceTree::open(Utf8Path::new("/")).unwrap_err();
+    }
+
+    #[test]
+    fn source_files_in_testdata_factorial() {
+        let source_paths = CargoSourceTree::open(Utf8Path::new("testdata/tree/factorial"))
+            .unwrap()
+            .source_files(&Options::default())
+            .unwrap();
+        assert_eq!(source_paths.len(), 1);
+        assert_eq!(
+            source_paths[0].tree_relative_path().to_string(),
+            "src/bin/factorial.rs",
+        );
+    }
+
+    #[test]
+    fn open_subdirectory_of_crate_opens_the_crate() {
+        let source_tree = CargoSourceTree::open(Utf8Path::new("testdata/tree/factorial/src"))
+            .expect("open source tree from subdirectory");
+        let path = source_tree.path();
+        assert!(path.is_dir());
+        assert!(path.join("Cargo.toml").is_file());
+        assert!(path.join("src/bin/factorial.rs").is_file());
+        assert_eq!(path.file_name().unwrap(), OsStr::new("factorial"));
     }
 }

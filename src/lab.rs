@@ -15,7 +15,7 @@ use tracing::error;
 #[allow(unused)]
 use tracing::{debug, info};
 
-use crate::cargo::{cargo_argv, run_cargo};
+use crate::cargo::{cargo_argv, run_cargo, CargoSourceTree};
 use crate::console::{plural, Console};
 use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
@@ -26,7 +26,7 @@ use crate::*;
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
-    source_tree: &SourceTree,
+    source_tree: &CargoSourceTree,
     mut options: Options,
     console_trace_level: tracing::Level,
 ) -> Result<LabOutcome> {
@@ -204,7 +204,7 @@ fn run_cargo_phases(
 /// dependencies, or the Rust toolchain. We do this in the source so that repeated runs of `cargo
 /// mutants` won't have to repeat this work in every scratch directory.
 fn build_source_tree(
-    source_tree: &SourceTree,
+    source_tree: &dyn SourceTree,
     output_dir: &OutputDir,
     options: &Options,
     console: &Console,

@@ -6,6 +6,8 @@ See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, 
 
 `main.rs` -- the `cargo mutants` entry point and command-line parsing.
 
+`cargo.rs` -- Run Cargo subprocesses, including dealing with timeouts and understanding Cargo output.
+
 `console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
 
@@ -31,8 +33,6 @@ file is, what happened (success/failure/timeout/etc), and whether a mutation was
 applied.
 
 `output.rs` -- Manages the `mutants.out` directory.
-
-`run.rs` -- Run Cargo subprocesses, including dealing with timeouts.
 
 `scenario.rs` -- Each of the build/test cycles is a "scenario": either building the source tree, testing the baseline, or testing a mutant.
 

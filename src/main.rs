@@ -36,7 +36,7 @@ use serde_json::Value;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
-use crate::cargo::CargoResult;
+use crate::cargo::{CargoResult, CargoSourceTree};
 use crate::interrupt::check_interrupted;
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
@@ -167,7 +167,7 @@ fn main() -> Result<()> {
     let options = Options::try_from(&args)?;
     // dbg!(&options);
     let source_path = args.dir.unwrap_or_else(|| Utf8Path::new(".").to_owned());
-    let source_tree = SourceTree::new(&source_path)?;
+    let source_tree = CargoSourceTree::open(&source_path)?;
     interrupt::install_handler();
     if args.version {
         println!("{} {}", NAME, VERSION);
@@ -198,7 +198,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn list_files_as_json(source_tree: &SourceTree, options: &Options) -> Result<()> {
+fn list_files_as_json(source_tree: &dyn SourceTree, options: &Options) -> Result<()> {
     let list = Value::Array(
         source_tree
             .source_files(options)?

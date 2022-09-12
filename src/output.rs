@@ -259,13 +259,12 @@ version = "0.0.0"
     fn create_output_dir() {
         let tmp = minimal_source_tree();
         let tmp_path = tmp.path().try_into().unwrap();
-        let src_tree = SourceTree::new(tmp_path).unwrap();
+        let src_tree = CargoSourceTree::open(tmp_path).unwrap();
         let output_dir = OutputDir::new(src_tree.path()).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
             &[
                 "",
-                "Cargo.lock",
                 "Cargo.toml",
                 "mutants.out",
                 "mutants.out/caught.txt",
