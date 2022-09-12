@@ -111,7 +111,7 @@ impl OutputDir {
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
     pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
         if !in_dir.exists() {
-            fs::create_dir(&in_dir).context("create output parent directory {in_dir:?}")?;
+            fs::create_dir(in_dir).context("create output parent directory {in_dir:?}")?;
         }
         let output_dir = in_dir.join(OUTDIR_NAME);
         if output_dir.exists() {

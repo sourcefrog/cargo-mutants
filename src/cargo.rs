@@ -315,7 +315,7 @@ fn indirect_source_paths(
             {
                 continue;
             }
-            let relative_path = path.strip_prefix(&root).expect("strip prefix").to_owned();
+            let relative_path = path.strip_prefix(root).expect("strip prefix").to_owned();
             if let Some(examine_globset) = examine_globset {
                 if !examine_globset.is_match(&relative_path) {
                     continue;

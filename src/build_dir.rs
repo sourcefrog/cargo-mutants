@@ -68,7 +68,7 @@ impl BuildDir {
                         || !(dir_entry.file_type().unwrap().is_dir() && path == target_path)))
             });
         match copy_options
-            .copy_tree(source.path(), &temp_dir.path())
+            .copy_tree(source.path(), temp_dir.path())
             .context("copy source tree to lab directory")
         {
             Ok(stats) => {
