@@ -107,6 +107,7 @@ dependencies = [
  "insta",
  "itertools",
  "lazy_static",
+ "mutants 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix",
  "nutmeg",
  "path-slash",
@@ -541,6 +542,12 @@ dependencies = [
 [[package]]
 name = "mutants"
 version = "0.0.3"
+
+[[package]]
+name = "mutants"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc0287524726960e07b119cebd01678f852f147742ae0d925e6a520dca956126"
 
 [[package]]
 name = "nix"
