@@ -166,6 +166,8 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     Ok(())
 }
 
+// We do not yet have a way to mutate this only on Windows, and I mostly test on Unix, so it's just skipped for now.
+#[mutants::skip]
 #[cfg(not(unix))]
 fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
     debug!("terminating cargo process {child:?}");
