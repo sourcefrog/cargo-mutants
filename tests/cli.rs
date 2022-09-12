@@ -6,6 +6,7 @@ use std::fmt::Write;
 use std::fs::{self, read_dir};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
 use assert_cmd::prelude::OutputAssertExt;
 use itertools::Itertools;
@@ -945,6 +946,14 @@ fn source_tree_typecheck_fails() {
         .stdout(contains("build failed in source tree, not continuing"));
 }
 
+/// In this tree, as the name suggests, tests will hang in a clean tree.
+///
+/// cargo-mutants should notice this when doing baseline tests and return a clean result.
+///
+/// We run the cargo-mutants subprocess with an enclosing timeout, so that the outer test will
+/// fail rather than hang if cargo-mutants own timeout doesn't work as intended.
+///
+/// All these timeouts are a little brittle if the test machine is very slow.
 #[test]
 fn timeout_when_unmutated_tree_test_hangs() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
@@ -953,6 +962,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .args(["--timeout", "2.9"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
+        .timeout(Duration::from_secs(15))
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
         .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\ds").unwrap())
@@ -990,6 +1000,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         .args(["-t", "4.1", "-v", "--", "--", "--nocapture"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
+        .timeout(Duration::from_secs(15))
         .assert()
         .code(3) // exit_code::TIMEOUT
         .stdout(contains(
