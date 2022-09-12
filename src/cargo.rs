@@ -190,6 +190,7 @@ fn setpgid_on_unix() -> PopenConfig {
     }
 }
 
+#[mutants::skip] // Has no effect, so can't be tested.
 #[cfg(not(unix))]
 fn setpgid_on_unix() -> PopenConfig {
     Default::default()
