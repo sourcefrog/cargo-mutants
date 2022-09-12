@@ -19,7 +19,12 @@ pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
-    test_timeout: Duration,
+    /// The time limit for test tasks, if set.
+    ///
+    /// If this is not set by the user it's None, in which case there is no time limit
+    /// on the baseline test, and then the mutated tests get a multiple of the time
+    /// taken by the baseline test.
+    pub test_timeout: Option<Duration>,
 
     pub print_caught: bool,
     pub print_unviable: bool,
@@ -51,23 +56,6 @@ pub struct Options {
     pub output_in_dir: Option<Utf8PathBuf>,
 }
 
-impl Options {
-    /// Return the maximum run time for `cargo test` commands.
-    ///
-    /// Build and check are not affected.
-    pub fn test_timeout(&self) -> Duration {
-        self.test_timeout
-    }
-
-    pub fn has_test_timeout(&self) -> bool {
-        self.test_timeout < Duration::MAX
-    }
-
-    pub fn set_test_timeout(&mut self, test_timeout: Duration) {
-        self.test_timeout = test_timeout;
-    }
-}
-
 impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
@@ -88,10 +76,7 @@ impl TryFrom<&Args> for Options {
             shuffle: !args.no_shuffle,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
-            test_timeout: args
-                .timeout
-                .map(Duration::from_secs_f64)
-                .unwrap_or(Duration::MAX),
+            test_timeout: args.timeout.map(Duration::from_secs_f64),
         })
     }
 }

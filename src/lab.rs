@@ -27,7 +27,7 @@ use crate::*;
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
     source_tree: &CargoSourceTree,
-    mut options: Options,
+    options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
@@ -70,6 +70,7 @@ pub fn test_unmutated_then_all_mutants(
         &options,
         &Scenario::Baseline,
         phases,
+        options.test_timeout.unwrap_or(Duration::MAX),
         console,
     )?;
     lab_outcome.add(&outcome);
@@ -82,15 +83,19 @@ pub fn test_unmutated_then_all_mutants(
         );
         return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
-    if !options.has_test_timeout() {
-        if let Some(baseline_duration) = outcome.test_duration() {
-            let auto_timeout = max(minimum_test_timeout()?, baseline_duration.mul_f32(5.0));
-            options.set_test_timeout(auto_timeout);
-            if options.show_times {
-                console.autoset_timeout(auto_timeout);
-            }
+
+    let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
+        timeout
+    } else if let Some(baseline_test_duration) = outcome.test_duration() {
+        // If we didn't run tests in the baseline, e.g. for `--check`, there might be no duration.
+        let auto_timeout = max(minimum_test_timeout()?, baseline_test_duration.mul_f32(5.0));
+        if options.show_times {
+            console.autoset_timeout(auto_timeout);
         }
-    }
+        auto_timeout
+    } else {
+        Duration::MAX
+    };
 
     console.start_testing_mutants(mutants.len());
     for mutant in mutants {
@@ -102,6 +107,7 @@ pub fn test_unmutated_then_all_mutants(
                 &options,
                 &scenario,
                 phases,
+                mutated_test_timeout,
                 console,
             )
         })?;
@@ -148,6 +154,7 @@ fn run_cargo_phases(
     options: &Options,
     scenario: &Scenario,
     phases: &[Phase],
+    test_timeout: Duration,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
     debug!("start testing {scenario} in {in_dir}");
@@ -164,7 +171,7 @@ fn run_cargo_phases(
         console.scenario_phase_started(phase);
         let cargo_argv = cargo_argv(scenario.package_name(), phase, options);
         let timeout = match phase {
-            Phase::Test => options.test_timeout(),
+            Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
         let cargo_result = run_cargo(&cargo_argv, in_dir, &mut log_file, timeout, console)?;
