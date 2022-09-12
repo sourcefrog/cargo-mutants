@@ -59,7 +59,7 @@ pub struct Options {
 impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
-    fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
+    fn try_from(args: &Args) -> Result<Options> {
         if args.no_copy_target {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
         }
