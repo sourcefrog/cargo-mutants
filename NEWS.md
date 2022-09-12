@@ -1,12 +1,14 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 1.0.1
+
+Released 2022-09-12
 
 - Fixed: Don't try to mutate functions within test targets, e.g. within `tests/**/*.rs`.
 
 - New: `missed.txt`, `caught.txt`, `timeout.txt` and `unviable.txt` files are written in to the output directory to make results easier to review later.
 
-- New: `--output` creates the containing directory if it does not exist.
+- New: `--output` creates the specified directory if it does not exist.
 
 - Internal: Switched from Argh to Clap for command-line parsing. There may be some small changes in CLI behavior and help formatting.
 
