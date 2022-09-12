@@ -6,6 +6,8 @@
 
 - Changed: Find mutants before doing a baseline test, so that you will find out earlier if there's nothing to test.
 
+- New: Set `INSTA_UPDATE=no` so that tests that use the Insta library (as cargo-mutants does for its own tests) don't write updates back into the source directory, and don't falsely pass.
+
 ## 1.0.1
 
 Released 2022-09-12
