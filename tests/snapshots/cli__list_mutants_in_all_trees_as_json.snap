@@ -164,6 +164,29 @@ expression: buf
 ]
 ```
 
+## testdata/tree/insta
+
+```json
+[
+  {
+    "package": "cargo-mutants-testdata-insta",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "say_hello",
+    "return_type": "-> String",
+    "replacement": "\"\".into()"
+  },
+  {
+    "package": "cargo-mutants-testdata-insta",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "say_hello",
+    "return_type": "-> String",
+    "replacement": "\"xyzzy\".into()"
+  }
+]
+```
+
 ## testdata/tree/integration_tests
 
 ```json

@@ -1145,6 +1145,21 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .stdout(contains("1 mutant tested: 1 caught"));
 }
 
+#[test]
+fn insta_tree_succeeds_and_leaves_no_snaphots() {
+    let tmp_src_dir = copy_of_testdata("insta");
+    run_assert_cmd()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--caught"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .success();
+    let caught_txt = fs::read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt")).unwrap();
+    insta::assert_snapshot!(caught_txt);
+    // TODO: Check that there are no `.new` files in the source directory.
+    // TODO: Run this again with INSTA_UPDATE=always.
+}
+
 fn check_text_list_output(dir: &Path, test_name: &str) {
     // There is a `missed.txt` file with the right content, etc.
     for name in ["missed", "caught", "timeout", "unviable"] {
