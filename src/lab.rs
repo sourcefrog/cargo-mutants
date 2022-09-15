@@ -40,6 +40,23 @@ pub fn test_unmutated_then_all_mutants(
     console.set_debug_log(output_dir.open_debug_log()?);
     let mut lab_outcome = LabOutcome::new();
 
+    let mut mutants = source_tree.mutants(&options)?;
+    if options.shuffle {
+        mutants.shuffle(&mut rand::thread_rng());
+    }
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
+        &mutants,
+    )?;
+    console.message(&format!(
+        "Found {} to test\n",
+        plural(mutants.len(), "mutant")
+    ));
+    if mutants.is_empty() {
+        return Err(anyhow!("No mutants found"));
+    }
+    let mutants = mutants;
+
     let build_dir = BuildDir::new(source_tree, &options)?;
     let build_dir_path = build_dir.path();
     let phases: &[Phase] = if options.check_only {
@@ -73,23 +90,6 @@ pub fn test_unmutated_then_all_mutants(
                 console.autoset_timeout(auto_timeout);
             }
         }
-    }
-
-    let mut mutants = source_tree.mutants(&options)?;
-    if options.shuffle {
-        mutants.shuffle(&mut rand::thread_rng());
-    }
-
-    serde_json::to_writer_pretty(
-        BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
-        &mutants,
-    )?;
-    console.message(&format!(
-        "Found {} to test\n",
-        plural(mutants.len(), "mutant")
-    ));
-    if mutants.is_empty() {
-        return Err(anyhow!("No mutants found"));
     }
 
     console.start_testing_mutants(mutants.len());

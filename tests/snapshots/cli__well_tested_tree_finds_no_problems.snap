@@ -2,9 +2,9 @@
 source: tests/cli.rs
 expression: stdout
 ---
+Found 15 mutants to test
 Copy source to scratch directory ... done
 Unmutated baseline ... ok
-Found 15 mutants to test
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with Default::default() ... caught
 src/methods.rs:16: replace Foo::double with () ... caught
 src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default()) ... caught

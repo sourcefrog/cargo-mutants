@@ -905,15 +905,7 @@ fn source_tree_parse_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"Unmutated baseline \.\.\. FAILED in \d+\.\ds").unwrap())
-        .stdout(contains(r#"This isn't Rust..."#).name("The problem source line"))
-        .stdout(contains("*** baseline"))
-        .stdout(contains("build --tests")) // Caught at the check phase
-        .stdout(contains("lib.rs:3"))
-        .stdout(contains("*** cargo result: "))
-        .stdout(contains(
-            "build failed in an unmutated tree, so no mutants were tested",
-        ));
+        .stderr(contains("Error: failed to parse src/lib.rs"));
 }
 
 #[test]

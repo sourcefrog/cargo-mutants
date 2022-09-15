@@ -6,16 +6,20 @@
 
 use std::sync::Arc;
 
+use anyhow::Context;
 use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
 use syn::ItemFn;
+use tracing::debug;
 
 use crate::*;
 
 /// Find all possible mutants in a source file.
 pub fn discover_mutants(source_file: Arc<SourceFile>) -> Result<Vec<Mutant>> {
-    let syn_file = syn::parse_str::<syn::File>(&source_file.code)?;
+    debug!("scan {}", source_file.tree_relative_slashes());
+    let syn_file = syn::parse_str::<syn::File>(&source_file.code)
+        .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
         source_file,
         mutants: Vec::new(),
