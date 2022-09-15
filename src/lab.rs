@@ -28,7 +28,7 @@ use crate::*;
 pub fn test_unmutated_then_all_mutants(
     source_tree: &CargoSourceTree,
     mut options: Options,
-    console_trace_level: tracing::Level,
+    console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
@@ -37,24 +37,8 @@ pub fn test_unmutated_then_all_mutants(
         source_tree.path()
     };
     let mut output_dir = OutputDir::new(output_in_dir)?;
-
-    let console = Console::new();
-    console.setup_global_trace(console_trace_level)?;
-
     console.set_debug_log(output_dir.open_debug_log()?);
-    let mut lab_outcome = LabOutcome::default();
-    if options.build_source {
-        let outcome = build_source_tree(source_tree, &output_dir, &options, &console)?;
-        lab_outcome.add(&outcome);
-        output_dir.update_lab_outcome(&lab_outcome)?;
-        if !outcome.success() {
-            error!(
-                "cargo {} failed in source tree, not continuing",
-                outcome.last_phase(),
-            );
-            return Ok(lab_outcome); // TODO: Maybe should be Err?
-        }
-    }
+    let mut lab_outcome = LabOutcome::new();
 
     let build_dir = BuildDir::new(source_tree, &options)?;
     let build_dir_path = build_dir.path();
@@ -63,16 +47,14 @@ pub fn test_unmutated_then_all_mutants(
     } else {
         &[Phase::Build, Phase::Test]
     };
-    let outcome = {
-        run_cargo_phases(
-            build_dir_path,
-            &output_dir,
-            &options,
-            &Scenario::Baseline,
-            phases,
-            &console,
-        )
-    }?;
+    let outcome = run_cargo_phases(
+        build_dir_path,
+        &output_dir,
+        &options,
+        &Scenario::Baseline,
+        phases,
+        console,
+    )?;
     lab_outcome.add(&outcome);
     output_dir.update_lab_outcome(&lab_outcome)?;
     output_dir.add_scenario_outcome(&outcome)?;
@@ -120,7 +102,7 @@ pub fn test_unmutated_then_all_mutants(
                 &options,
                 &scenario,
                 phases,
-                &console,
+                console,
             )
         })?;
         lab_outcome.add(&outcome);
@@ -196,30 +178,4 @@ fn run_cargo_phases(
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
-}
-
-/// Build tests in the original source tree.
-///
-/// This brings the source `target` directory basically up to date with any changes to the source,
-/// dependencies, or the Rust toolchain. We do this in the source so that repeated runs of `cargo
-/// mutants` won't have to repeat this work in every scratch directory.
-fn build_source_tree(
-    source_tree: &dyn SourceTree,
-    output_dir: &OutputDir,
-    options: &Options,
-    console: &Console,
-) -> Result<ScenarioOutcome> {
-    let phases: &'static [Phase] = if options.check_only {
-        &[Phase::Check]
-    } else {
-        &[Phase::Build]
-    };
-    run_cargo_phases(
-        source_tree.path(),
-        output_dir,
-        options,
-        &Scenario::SourceTree,
-        phases,
-        console,
-    )
 }

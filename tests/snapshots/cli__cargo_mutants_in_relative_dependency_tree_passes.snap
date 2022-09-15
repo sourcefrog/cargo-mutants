@@ -2,6 +2,7 @@
 source: tests/cli.rs
 expression: stdout
 ---
+[33m WARN[0m --no-copy-target is deprecated and has no effect; target/ is never copied
 Copy source to scratch directory ... done
 Unmutated baseline ... ok
 Found 1 mutant to test

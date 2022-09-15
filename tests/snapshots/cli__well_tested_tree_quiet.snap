@@ -2,8 +2,7 @@
 source: tests/cli.rs
 expression: stdout
 ---
-Freshen source tree ... ok
-Copy source and build products to scratch directory ... done
+Copy source to scratch directory ... done
 Unmutated baseline ... ok
 Found 15 mutants to test
 15 mutants tested: 15 caught

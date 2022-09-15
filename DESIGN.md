@@ -1,5 +1,7 @@
 # cargo-mutants design
 
+See [README.md](README.md) for an overview of how the project works.
+
 See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, etc.
 
 ## Physical structure / source tree overview

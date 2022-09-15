@@ -379,14 +379,8 @@ Showing _interesting results_ mean:
 
 The basic approach is:
 
-- First, run `cargo build --tests` in the source tree to
-  "freshen" it so that the mutated copies will have a good starting point. (This
-  is skipped with `--no-copy-target`.)
-
 - Make a copy of the source tree into a scratch directory, excluding
-  version-control directories like `.git` and optionally excluding the `/target`
-  directory. The same directory is reused across all the mutations to benefit
-  from incremental builds.
+  version-control directories like `.git` and the `/target` directory. The same directory is reused across all the mutations to benefit from incremental builds.
 
   - After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
     `.cargo/config.toml` for relative dependencies. If there are any, the paths are

@@ -2,8 +2,7 @@
 source: tests/cli.rs
 expression: stdout
 ---
-Freshen source tree ... ok
-Copy source and build products to scratch directory ... done
+Copy source to scratch directory ... done
 Unmutated baseline ... ok
 Found 1 mutant to test
 src/entry.rs:1: replace factorial -> u32 with Default::default() ... caught

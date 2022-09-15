@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use camino::Utf8PathBuf;
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use tracing::warn;
 
 use crate::*;
 
@@ -39,12 +40,6 @@ pub struct Options {
 
     /// Additional arguments to `cargo test`.
     pub additional_cargo_test_args: Vec<String>,
-
-    /// Copy the `/target/` directory from the source tree.
-    pub copy_target: bool,
-
-    /// Build the source directory before copying it.
-    pub build_source: bool,
 
     /// Files to examine.
     pub examine_globset: Option<GlobSet>,
@@ -77,17 +72,16 @@ impl TryFrom<&Args> for Options {
     type Error = anyhow::Error;
 
     fn try_from(args: &Args) -> std::result::Result<Options, anyhow::Error> {
-        let examine_globset = build_glob_set(&args.file)?;
-        let exclude_globset = build_glob_set(&args.exclude)?;
+        if args.no_copy_target {
+            warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
+        }
 
         Ok(Options {
             additional_cargo_args: args.cargo_arg.clone(),
             additional_cargo_test_args: args.cargo_test_args.clone(),
-            build_source: !args.no_copy_target,
             check_only: args.check,
-            copy_target: !args.no_copy_target,
-            examine_globset,
-            exclude_globset,
+            examine_globset: build_glob_set(&args.file)?,
+            exclude_globset: build_glob_set(&args.exclude)?,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,

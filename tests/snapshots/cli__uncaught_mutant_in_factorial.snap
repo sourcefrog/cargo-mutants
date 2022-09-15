@@ -2,8 +2,7 @@
 source: tests/cli.rs
 expression: redact_timestamps_sizes(stdout)
 ---
-Freshen source tree ... ok in x.xxxs build
-Copy source and build products to scratch directory ... xxx MB in x.xxxs
+Copy source to scratch directory ... xxx MB in x.xxxs
 Unmutated baseline ... ok in x.xxxs build + x.xxxs test
 Auto-set test timeout to x.xxxs
 Found 2 mutants to test

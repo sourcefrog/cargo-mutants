@@ -512,7 +512,6 @@ fn style_mb(bytes: u64) -> StyledObject<String> {
 
 pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
     match scenario {
-        Scenario::SourceTree => "Freshen source tree".into(),
         Scenario::Baseline => "Unmutated baseline".into(),
         Scenario::Mutant(mutant) => console::style_mutant(mutant).into(),
     }

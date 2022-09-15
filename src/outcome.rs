@@ -66,6 +66,10 @@ pub struct LabOutcome {
 }
 
 impl LabOutcome {
+    pub fn new() -> LabOutcome {
+        LabOutcome::default()
+    }
+
     /// Record the event of one test.
     pub fn add(&mut self, outcome: &ScenarioOutcome) {
         self.outcomes.push(outcome.clone());
@@ -248,7 +252,7 @@ impl ScenarioOutcome {
 
     pub fn summary(&self) -> SummaryOutcome {
         match self.scenario {
-            Scenario::SourceTree | Scenario::Baseline => {
+            Scenario::Baseline => {
                 if self.has_timeout() {
                     SummaryOutcome::Timeout
                 } else if self.success() {

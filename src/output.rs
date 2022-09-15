@@ -289,24 +289,19 @@ version = "0.0.0"
 
         // Create an initial output dir with one log.
         let output_dir = OutputDir::new(temp_dir_path).unwrap();
-        output_dir.create_log(&Scenario::SourceTree).unwrap();
+        output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
-            .join("mutants.out/log/source_tree.log")
+            .join("mutants.out/log/baseline.log")
             .is_file());
         drop(output_dir); // release the lock.
 
         // The second time we create it in the same directory, the old one is moved away.
         let output_dir = OutputDir::new(temp_dir_path).unwrap();
-        output_dir.create_log(&Scenario::SourceTree).unwrap();
         output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
-            .join("mutants.out.old/log/source_tree.log")
-            .is_file());
-        assert!(temp_dir
-            .path()
-            .join("mutants.out/log/source_tree.log")
+            .join("mutants.out.old/log/baseline.log")
             .is_file());
         assert!(temp_dir
             .path()
@@ -316,18 +311,14 @@ version = "0.0.0"
 
         // The third time (and later), the .old directory is removed.
         let output_dir = OutputDir::new(temp_dir_path).unwrap();
-        output_dir.create_log(&Scenario::SourceTree).unwrap();
+        output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
-            .path()
-            .join("mutants.out/log/source_tree.log")
-            .is_file());
-        assert!(!temp_dir
             .path()
             .join("mutants.out/log/baseline.log")
             .is_file());
         assert!(temp_dir
             .path()
-            .join("mutants.out.old/log/source_tree.log")
+            .join("mutants.out.old/log/baseline.log")
             .is_file());
         assert!(temp_dir
             .path()

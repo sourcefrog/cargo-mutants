@@ -403,17 +403,7 @@ fn workspace_tree_is_well_tested() {
     let outcomes = json["outcomes"].as_array().unwrap();
 
     {
-        let sourcetree_json = outcomes[0].as_object().expect("outcomes[0] is an object");
-        assert_eq!(sourcetree_json["scenario"].as_str().unwrap(), "SourceTree");
-        assert_eq!(sourcetree_json["summary"], "Success");
-        let sourcetree_phases = sourcetree_json["phase_results"].as_array().unwrap();
-        assert_eq!(sourcetree_phases.len(), 1);
-        let sourcetree_command = sourcetree_phases[0]["command"].as_array().unwrap();
-        assert_eq!(sourcetree_command[1..], ["build", "--tests", "--workspace"]);
-    }
-
-    {
-        let baseline = outcomes[1].as_object().unwrap();
+        let baseline = outcomes[0].as_object().unwrap();
         assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
         assert_eq!(baseline["summary"], "Success");
         let baseline_phases = baseline["phase_results"].as_array().unwrap();
@@ -430,8 +420,8 @@ fn workspace_tree_is_well_tested() {
         );
     }
 
-    assert_eq!(outcomes.len(), 5);
-    for outcome in &outcomes[2..] {
+    assert_eq!(outcomes.len(), 4);
+    for outcome in &outcomes[1..] {
         let mutant = &outcome["scenario"]["Mutant"];
         let package_name = mutant["package"].as_str().unwrap();
         assert!(!package_name.is_empty());
@@ -450,7 +440,7 @@ fn workspace_tree_is_well_tested() {
         );
     }
     {
-        let baseline = json["outcomes"][1].as_object().unwrap();
+        let baseline = json["outcomes"][0].as_object().unwrap();
         assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
         assert_eq!(baseline["summary"], "Success");
         let baseline_phases = baseline["phase_results"].as_array().unwrap();
@@ -695,9 +685,8 @@ fn factorial_mutants_with_all_logs() {
         .assert()
         .code(2)
         .stderr("")
-        .stdout(is_match(r"source tree \.\.\. ok in \d+\.\ds").unwrap())
         .stdout(is_match(
-r"Copy source and build products to scratch directory \.\.\. \d+ MB in \d+\.\ds"
+r"Copy source to scratch directory \.\.\. \d+ MB in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
 r"Unmutated baseline \.\.\. ok in \d+\.\ds"
@@ -916,13 +905,15 @@ fn source_tree_parse_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\ds").unwrap())
+        .stdout(is_match(r"Unmutated baseline \.\.\. FAILED in \d+\.\ds").unwrap())
         .stdout(contains(r#"This isn't Rust..."#).name("The problem source line"))
-        .stdout(contains("*** source tree"))
+        .stdout(contains("*** baseline"))
         .stdout(contains("build --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:3"))
         .stdout(contains("*** cargo result: "))
-        .stdout(contains("build failed in source tree, not continuing"));
+        .stdout(contains(
+            "build failed in an unmutated tree, so no mutants were tested",
+        ));
 }
 
 #[test]
@@ -934,16 +925,18 @@ fn source_tree_typecheck_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"source tree \.\.\. FAILED in \d+\.\ds").unwrap())
+        .stdout(is_match(r"Unmutated baseline \.\.\. FAILED in \d+\.\ds").unwrap())
         .stdout(
             contains(r#""1" + 2 // Doesn't work in Rust: just as well!"#)
                 .name("The problem source line"),
         )
-        .stdout(contains("*** source tree"))
+        .stdout(contains("*** baseline"))
         .stdout(contains("build --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:6"))
         .stdout(contains("*** cargo result: "))
-        .stdout(contains("build failed in source tree, not continuing"));
+        .stdout(contains(
+            "build failed in an unmutated tree, so no mutants were tested",
+        ));
 }
 
 /// In this tree, as the name suggests, tests will hang in a clean tree.

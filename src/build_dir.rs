@@ -45,12 +45,7 @@ impl BuildDir {
             .tempdir()
             .context("create temp dir")?;
         let build_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
-        let copy_target = options.copy_target;
-        let name = if copy_target {
-            "Copy source and build products to scratch directory"
-        } else {
-            "Copy source to scratch directory"
-        };
+        let name = "Copy source to scratch directory";
         let view = nutmeg::View::new(
             console::CopyModel::new(name, options),
             console::nutmeg_options(),
@@ -62,10 +57,8 @@ impl BuildDir {
                 check_interrupted()
                     .map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
             })
-            .filter(|path, dir_entry| {
-                Ok(!SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex))
-                    && (copy_target
-                        || !(dir_entry.file_type().unwrap().is_dir() && path == target_path)))
+            .filter(|path, _dir_entry| {
+                Ok(!(SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex)) || path == target_path))
             });
         match copy_options
             .copy_tree(source.path(), temp_dir.path())

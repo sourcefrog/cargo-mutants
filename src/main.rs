@@ -37,6 +37,7 @@ use serde_json::Value;
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
 use crate::cargo::{CargoResult, CargoSourceTree};
+use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
@@ -163,7 +164,9 @@ fn main() -> Result<()> {
             exit(exit_code::USAGE);
         }
     };
-    // dbg!(&args);
+    let console = Console::new();
+    console.setup_global_trace(args.level)?;
+
     let options = Options::try_from(&args)?;
     // dbg!(&options);
     let source_path = args.dir.unwrap_or_else(|| Utf8Path::new(".").to_owned());
@@ -192,7 +195,7 @@ fn main() -> Result<()> {
             console::list_mutants(&mutants, args.diff);
         }
     } else {
-        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, options, args.level)?;
+        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

@@ -4,7 +4,6 @@ expression: "&names"
 ---
 [
     "baseline.log",
-    "source_tree.log",
     "src__bin__factorial.rs_line_1.log",
     "src__bin__factorial.rs_line_7.log",
 ]
