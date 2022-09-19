@@ -45,9 +45,8 @@ impl BuildDir {
             .tempdir()
             .context("create temp dir")?;
         let build_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
-        let name = "Copy source to scratch directory";
         let view = nutmeg::View::new(
-            console::CopyModel::new(name, options),
+            console::CopyModel::new("Copy source to scratch directory", options),
             console::nutmeg_options(),
         );
         let target_path = Path::new("target");
