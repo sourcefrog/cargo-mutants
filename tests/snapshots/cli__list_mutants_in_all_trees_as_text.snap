@@ -68,6 +68,13 @@ src/lib.rs:11: replace should_stop -> bool with false
 src/lib.rs:21: replace controlled_loop -> usize with Default::default()
 ```
 
+## testdata/tree/insta
+
+```
+src/lib.rs:1: replace say_hello -> String with "".into()
+src/lib.rs:1: replace say_hello -> String with "xyzzy".into()
+```
+
 ## testdata/tree/integration_tests
 
 ```

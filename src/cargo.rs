@@ -61,6 +61,10 @@ pub fn run_cargo(
     // <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
     // TODO: Maybe this should append instead of overwriting it...?
     env.push(("RUSTFLAGS".into(), "--cap-lints=allow".into()));
+    // The tests might use Insta <https://insta.rs>, and we don't want it to write
+    // updates to the source tree, and we *certainly* don't want it to write
+    // updates and then let the test pass.
+    env.push(("INSTA_UPDATE".into(), "no".into()));
 
     let message = format!("run {}", argv.join(" "),);
     log_file.message(&message);
