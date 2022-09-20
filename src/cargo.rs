@@ -90,8 +90,7 @@ pub fn run_cargo(
             terminate_child(child, log_file)?;
             return Ok(CargoResult::Timeout);
         } else if let Err(e) = check_interrupted() {
-            warn!("interrupted: {}", e);
-            console.message(&console::style_interrupted());
+            debug!("interrupted, terminating cargo process...");
             terminate_child(child, log_file)?;
             return Err(e);
         } else if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {

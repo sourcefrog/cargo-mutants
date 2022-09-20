@@ -6,6 +6,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::anyhow;
+use tracing::error;
 
 use crate::Result;
 
@@ -19,6 +20,7 @@ pub fn install_handler() {
 /// Return an error if the program was interrupted and should exit.
 pub fn check_interrupted() -> Result<()> {
     if INTERRUPTED.load(Ordering::SeqCst) {
+        error!("interrupted");
         Err(anyhow!("interrupted"))
     } else {
         Ok(())
