@@ -1,7 +1,0 @@
----
-source: tests/cli.rs
-expression: caught_txt
----
-src/lib.rs:1: replace say_hello with "".into()
-src/lib.rs:1: replace say_hello with "xyzzy".into()
-
