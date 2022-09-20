@@ -18,6 +18,7 @@ pub fn install_handler() {
 }
 
 /// Return an error if the program was interrupted and should exit.
+#[mutants::skip] // With this mutated too many of the tests will hang.
 pub fn check_interrupted() -> Result<()> {
     if INTERRUPTED.load(Ordering::SeqCst) {
         error!("interrupted");
