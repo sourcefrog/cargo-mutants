@@ -1,7 +1,10 @@
+permissions:
+  contents: read
+
 on:
   push:
     paths:
-      - '.github/workflows/install.yml'
+      - ".github/workflows/install.yml"
   schedule:
     - cron: "17 0 * * 1"
 

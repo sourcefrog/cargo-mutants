@@ -1,5 +1,8 @@
 name: MSRV
 
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:
