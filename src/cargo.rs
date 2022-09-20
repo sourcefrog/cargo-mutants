@@ -160,9 +160,10 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
             return Err(anyhow!(message));
         }
     }
-    child
+    let exit_status = child
         .wait()
         .context("wait for child after terminating pgroup")?;
+    debug!("terminated child exit status {exit_status:?}");
     Ok(())
 }
 

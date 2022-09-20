@@ -4,8 +4,10 @@
 
 use std::fmt::Write;
 use std::fs::{self, read_dir};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread::sleep;
 use std::time::Duration;
 
 use assert_cmd::prelude::OutputAssertExt;
@@ -18,6 +20,7 @@ use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use regex::Regex;
+use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
@@ -961,6 +964,78 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .stdout(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
+}
+
+/// If the test hangs and the user (in this case the test suite) interrupts it, then
+/// the `cargo test` child should be killed.
+///
+/// This is a bit hard to directly observe: the property that we really most care
+/// about is that _all_ grandchild processes are also killed and nothing is left
+/// behind. (On Unix, this is accomplished by use of a pgroup.) However that's a bit
+/// hard to mechanically check without reading and interpreting the process tree, which
+/// seems likely to be a bit annoying to do portably and without flakes.
+/// (But maybe we still should?)
+///
+/// An easier thing to test is that the cargo-mutants process _thinks_ it has killed
+/// the children, and we can observe this in the debug log.
+///
+/// In this test cargo-mutants has a very long timeout, but the test driver has a
+/// short timeout, so it should kill cargo-mutants.
+#[cfg(unix)] // Currently only sends SIGINT; could be ported.
+#[test]
+fn interrupt_caught_and_kills_children() {
+    let tmp_src_dir = copy_of_testdata("already_hangs");
+    // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
+    // which doesn't give it a chance to clean up. And, `std::process::Command` only
+    // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
+    let config = PopenConfig {
+        stdout: Redirection::Pipe,
+        stderr: Redirection::Pipe,
+        cwd: Some(tmp_src_dir.path().as_os_str().to_owned()),
+        ..Default::default()
+    };
+    let args = [
+        MAIN_BINARY.to_str().unwrap(),
+        "mutants",
+        "--timeout=300",
+        "--level=trace",
+    ];
+    println!("Running: {args:?}");
+    let mut child = Popen::create(&args, config).expect("spawn child");
+    sleep(Duration::from_secs(1)); // Let it get started
+    assert!(child.poll().is_none(), "child exited early");
+    println!("Send SIGINT");
+    nix::sys::signal::kill(
+        nix::unistd::Pid::from_raw(child.pid().unwrap().try_into().unwrap()),
+        nix::sys::signal::Signal::SIGINT,
+    )
+    .expect("send SIGINT");
+    child
+        .wait_timeout(Duration::from_secs(2))
+        .expect("wait for child")
+        .expect("child exited");
+
+    let mut stdout = String::new();
+    child
+        .stdout
+        .as_mut()
+        .unwrap()
+        .read_to_string(&mut stdout)
+        .expect("read stdout");
+    println!("stdout:\n{stdout}");
+
+    let mut stderr = String::new();
+    child
+        .stderr
+        .as_mut()
+        .unwrap()
+        .read_to_string(&mut stderr)
+        .expect("read stderr");
+    println!("stderr:\n{stderr}");
+
+    assert!(stdout.contains("interrupted"));
+    assert!(stdout.contains("terminating cargo process"));
+    assert!(stdout.contains("terminated child exit status"));
 }
 
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants
