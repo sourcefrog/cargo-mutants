@@ -21,6 +21,14 @@ the tests really check the code's behavior.
 cargo install cargo-mutants
 ```
 
+To install shell completions run for example:
+
+```sh
+cargo mutants --completions fish >~/.config/fish/completions/cargo-mutants.fish
+```
+
+```sh
+
 ## Using cargo-mutants
 
 Just run `cargo mutants` in a Rust source directory, and it will point out

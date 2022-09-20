@@ -29,7 +29,9 @@ use std::time::Duration;
 use anyhow::Result;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use clap::CommandFactory;
 use clap::Parser;
+use clap_complete::{generate, Shell};
 use path_slash::PathExt;
 use serde_json::json;
 use serde_json::Value;
@@ -78,6 +80,10 @@ struct Args {
     /// cargo check generated mutants, but don't run tests.
     #[clap(long)]
     check: bool,
+
+    /// generate autocompletions for the given shell.
+    #[clap(long)]
+    completions: Option<Shell>,
 
     /// show the mutation diffs.
     #[clap(long)]
@@ -174,6 +180,8 @@ fn main() -> Result<()> {
     interrupt::install_handler();
     if args.version {
         println!("{} {}", NAME, VERSION);
+    } else if let Some(shell) = args.completions {
+        generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
     } else if args.list_files {
         if args.json {
             list_files_as_json(&source_tree, &options)?;

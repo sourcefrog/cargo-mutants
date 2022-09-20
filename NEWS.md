@@ -2,6 +2,8 @@
 
 ## UNRELEASED
 
+- New: `cargo mutants --completions` to generate shell completions using `clap_complete`.
+
 - Changed: Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. So, `cargo mutants` now never builds in the source directory, and never copies `target/`. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
 
 - Changed: Find mutants before doing a baseline test, so that you will find out earlier if there's nothing to test.

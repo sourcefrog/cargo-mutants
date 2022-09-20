@@ -1172,3 +1172,22 @@ fn check_text_list_output(dir: &Path, test_name: &str) {
         insta::assert_snapshot!(format!("{test_name}__{name}.txt"), content);
     }
 }
+
+/// `cargo mutants --completions SHELL` produces a shell script for some
+/// well-known shells.
+///
+/// We won't check the content but let's just make sure that it succeeds
+/// and produces some non-empty output.
+#[test]
+fn completions_option_generates_something() {
+    for shell in ["bash", "fish", "zsh", "powershell"] {
+        println!("completions for {shell}");
+        run_assert_cmd()
+            .arg("mutants")
+            .arg("--completions")
+            .arg(shell)
+            .assert()
+            .success()
+            .stdout(predicate::str::is_empty().not());
+    }
+}
