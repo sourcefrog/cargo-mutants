@@ -5,6 +5,6 @@ expression: stdout
 Found 1 mutant to test
 Copy source to scratch directory ... done
 Unmutated baseline ... ok
-src/lib.rs:12: replace controlled_loop with () ... ok
+src/lib.rs:14: replace controlled_loop with () ... ok
 1 mutant tested: 1 succeeded
 

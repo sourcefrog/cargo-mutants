@@ -6,7 +6,10 @@ use std::thread::sleep;
 use std::time::Duration;
 
 pub fn infinite_loop() {
-    for i in 0.. {
+    // Not really infinite, so that orphaned processes don't hang around forever.
+    // They shouldn't normally happen, but they might when cargo-mutants is itself
+    // being mutation tested, or has a bug, etc.
+    for i in 0..600 {
         println!("{}", i);
         sleep(Duration::from_secs(1));
     }

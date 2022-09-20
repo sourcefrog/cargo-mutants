@@ -57,15 +57,15 @@ src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
 ## testdata/tree/hang_avoided_by_attr
 
 ```
-src/lib.rs:12: replace controlled_loop with ()
+src/lib.rs:14: replace controlled_loop with ()
 ```
 
 ## testdata/tree/hang_when_mutated
 
 ```
-src/lib.rs:11: replace should_stop -> bool with true
-src/lib.rs:11: replace should_stop -> bool with false
-src/lib.rs:21: replace controlled_loop -> usize with Default::default()
+src/lib.rs:12: replace should_stop -> bool with true
+src/lib.rs:12: replace should_stop -> bool with false
+src/lib.rs:25: replace controlled_loop -> usize with Default::default()
 ```
 
 ## testdata/tree/insta
