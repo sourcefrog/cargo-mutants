@@ -20,6 +20,12 @@ use pretty_assertions::assert_eq;
 use regex::Regex;
 use tempfile::{tempdir, TempDir};
 
+/// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
+/// long enough that even commands that do a lot of work can pass even on slow
+/// CI VMs and even on Windows, but short enough that the test does not hang
+/// forever.
+const OUTER_TIMEOUT: Duration = Duration::from_secs(120);
+
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
     static ref DURATION_RE: Regex = Regex::new(r"(\d+\.\d{1,3}s|\d+:\d{2})").unwrap();
@@ -947,7 +953,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .args(["--timeout", "2.9"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
-        .timeout(Duration::from_secs(15))
+        .timeout(OUTER_TIMEOUT)
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
         .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\ds").unwrap())
@@ -985,7 +991,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         .args(["-t", "4.1", "-v", "--", "--", "--nocapture"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
-        .timeout(Duration::from_secs(15))
+        .timeout(OUTER_TIMEOUT)
         .assert()
         .code(3) // exit_code::TIMEOUT
         .stdout(contains(
