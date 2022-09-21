@@ -93,3 +93,49 @@ fn clean_filename(s: &str) -> String {
         })
         .collect::<String>()
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn clean_filename_removes_special_characters() {
+        assert_eq!(
+            clean_filename("1/2\\3:4<5>6?7*8|9\"0"),
+            "1__2_3_4_5_6_7_8_9_0"
+        );
+    }
+
+    #[test]
+    fn last_line_of_file() {
+        let mut tempfile = tempfile::NamedTempFile::new().unwrap();
+        let path: Utf8PathBuf = tempfile.path().to_owned().try_into().unwrap();
+
+        assert_eq!(
+            last_line(&path).unwrap(),
+            "",
+            "empty file has an empty last line"
+        );
+
+        tempfile.write_all(b"hello").unwrap();
+        assert_eq!(
+            last_line(&path).unwrap(),
+            "hello",
+            "single line file with no terminator has that line as last line"
+        );
+
+        tempfile.write_all(b"\n\n\n").unwrap();
+        assert_eq!(
+            last_line(&path).unwrap(),
+            "hello",
+            "trailing blank lines are ignored"
+        );
+
+        tempfile.write_all(b"that's all folks!\n").unwrap();
+        assert_eq!(
+            last_line(&path).unwrap(),
+            "that's all folks!",
+            "newline terminated last line is returned"
+        );
+    }
+}
