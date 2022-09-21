@@ -1014,20 +1014,24 @@ fn interrupt_caught_and_kills_children() {
         "--timeout=300",
         "--level=trace",
     ];
+
     println!("Running: {args:?}");
     let mut child = Popen::create(&args, config).expect("spawn child");
     sleep(Duration::from_secs(1)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
+
     println!("Send SIGINT");
     nix::sys::signal::kill(
         nix::unistd::Pid::from_raw(child.pid().unwrap().try_into().unwrap()),
         nix::sys::signal::Signal::SIGINT,
     )
     .expect("send SIGINT");
-    child
+
+    let exit_status = child
         .wait_timeout(Duration::from_secs(2))
         .expect("wait for child")
         .expect("child exited");
+    println!("Child exited with status: {:?}", exit_status);
 
     let mut stdout = String::new();
     child
