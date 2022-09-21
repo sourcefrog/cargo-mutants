@@ -61,6 +61,10 @@ glob. If the glob contains `/` it matches against the path from the source tree
 root; otherwise it matches only against the file name. If used together with `--file` argument,
 then the files to be examined are matched before the files to be excluded.
 
+`-F`, `--re REGEX`: Only test mutants whose full name, as shown in `cargo mutants --list`, matches the given regex. The name includes the filename and return value, so you can also match against them.
+
+`-E`, `--exclude-re REGEX`: Don't test mutants whose full name matches the given regex.
+
 `--list`: Show what mutants could be generated, without running them.
 
 `--diff`: With `--list`, also include a diff of the source change for each mutant.

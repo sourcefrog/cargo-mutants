@@ -1,10 +1,14 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: `--re` and `--exclude-re` options to filter by mutant name, including the path. The regexps match against the strings printed by `--list`.
+
 ## 1.0.2
 
 Released 2022-09-24
 
-- New: `cargo mutants --completions` to generate shell completions using `clap_complete`.
+- New: `cargo mutants --completions SHELL` to generate shell completions using `clap_complete`.
 
 - Changed: `carg-mutants` no longer builds in the source directory, and no longer copies the `target/` directory to the scratch directory. Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
 

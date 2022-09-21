@@ -81,6 +81,16 @@ pub trait SourceTree: std::fmt::Debug {
             check_interrupted()?;
             mutants.extend(discover_mutants(sf.into())?);
         }
+        if let Some(examine_names) = &options.examine_names {
+            if !examine_names.is_empty() {
+                mutants.retain(|m| examine_names.is_match(&m.to_string()));
+            }
+        }
+        if let Some(exclude_names) = &options.exclude_names {
+            if !exclude_names.is_empty() {
+                mutants.retain(|m| !exclude_names.is_match(&m.to_string()));
+            }
+        }
         Ok(mutants)
     }
 }

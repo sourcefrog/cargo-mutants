@@ -126,6 +126,8 @@ impl Mutant {
     }
 
     /// Describe the mutant briefly, not including the location.
+    ///
+    /// The result is like `replace source::SourceFile::new with Default::default()`.
     pub fn describe_change(&self) -> String {
         format!(
             "replace {} with {}",

@@ -40,6 +40,9 @@ tracing-subscriber = "0.3"
 walkdir = "2.3"
 whoami = "1.2"
 
+[dependencies.regex]
+version = "1.5"
+
 [dependencies.cp_r]
 version = "0.5.1"
 

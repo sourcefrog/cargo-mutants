@@ -98,10 +98,18 @@ struct Args {
     #[clap(long, short = 'f')]
     file: Vec<String>,
 
+    /// regex for mutations to examine, matched against the names shown by `--list`.
+    #[clap(long = "re", short = 'F')]
+    examine_re: Vec<String>,
+
     /// glob for files to exclude; with no glob, all files are included; globs containing
     /// slash match the entire path. If used together with `--file` argument, then the files to be examined are matched before the files to be excluded.
     #[clap(long, short = 'e')]
     exclude: Vec<String>,
+
+    /// regex for mutations to exclude, matched against the names shown by `--list`.
+    #[clap(long, short = 'E')]
+    exclude_re: Vec<String>,
 
     /// output json (only for --list).
     #[clap(long)]

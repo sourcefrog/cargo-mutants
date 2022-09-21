@@ -335,6 +335,47 @@ fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
 }
 
 #[test]
+fn list_mutants_regex_filters() {
+    run()
+        .arg("mutants")
+        .args(["--list", "--re", "divisible"])
+        .arg("-d")
+        .arg("testdata/tree/well_tested")
+        .assert_insta("list_mutants_regex_filters");
+}
+
+#[test]
+fn list_mutants_regex_anchored_matches_full_line() {
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--re",
+            r"^src/simple_fns.rs:\d+: replace returns_unit with \(\)$",
+        ])
+        .arg("-d")
+        .arg("testdata/tree/well_tested")
+        .assert_insta("list_mutants_regex_anchored_matches_full_line");
+}
+
+#[test]
+fn list_mutants_regex_filters_json() {
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--re",
+            "divisible",
+            "--exclude-re",
+            "false",
+            "--json",
+        ])
+        .arg("-d")
+        .arg("testdata/tree/well_tested")
+        .assert_insta("list_mutants_regex_filters_json");
+}
+
+#[test]
 fn tree_with_child_directories_is_well_tested() {
     let tmp_src_dir = copy_of_testdata("with_child_directories");
     run()
@@ -995,7 +1036,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
 ///
 /// In this test cargo-mutants has a very long timeout, but the test driver has a
 /// short timeout, so it should kill cargo-mutants.
-#[cfg(unix)] // Currently only sends SIGINT; could be ported.
+#[cfg(unix)] // TODO: Maybe this is now portable with `.terminate()`?
 #[test]
 fn interrupt_caught_and_kills_children() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
@@ -1017,6 +1058,7 @@ fn interrupt_caught_and_kills_children() {
 
     println!("Running: {args:?}");
     let mut child = Popen::create(&args, config).expect("spawn child");
+    // TODO: Watch the output, maybe using `subprocess`, rather than just guessing how long it needs.
     sleep(Duration::from_secs(4)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
 

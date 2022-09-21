@@ -1,0 +1,14 @@
+---
+source: tests/cli.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+[
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/simple_fns.rs",
+    "line": 17,
+    "function": "divisible_by_three",
+    "return_type": "-> bool",
+    "replacement": "true"
+  }
+]

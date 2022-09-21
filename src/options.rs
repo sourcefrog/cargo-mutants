@@ -7,8 +7,10 @@
 use std::convert::TryFrom;
 use std::time::Duration;
 
+use anyhow::Context;
 use camino::Utf8PathBuf;
 use globset::{Glob, GlobSet, GlobSetBuilder};
+use regex::RegexSet;
 use tracing::warn;
 
 use crate::*;
@@ -49,8 +51,14 @@ pub struct Options {
     /// Files to examine.
     pub examine_globset: Option<GlobSet>,
 
-    /// Files to exclude
+    /// Files to exclude.
     pub exclude_globset: Option<GlobSet>,
+
+    /// Mutants to examine, as a regexp matched against the full name.
+    pub examine_names: Option<RegexSet>,
+
+    /// Mutants to skip, as a regexp matched against the full name.
+    pub exclude_names: Option<RegexSet>,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
@@ -68,7 +76,13 @@ impl TryFrom<&Args> for Options {
             additional_cargo_args: args.cargo_arg.clone(),
             additional_cargo_test_args: args.cargo_test_args.clone(),
             check_only: args.check,
+            examine_names: Some(
+                RegexSet::new(&args.examine_re).context("Compiling examine_re regex")?,
+            ),
             examine_globset: build_glob_set(&args.file)?,
+            exclude_names: Some(
+                RegexSet::new(&args.exclude_re).context("Compiling exclude_re regex")?,
+            ),
             exclude_globset: build_glob_set(&args.exclude)?,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
