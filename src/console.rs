@@ -114,6 +114,14 @@ impl Console {
         ));
     }
 
+    /// Update that we discovered some mutants to test.
+    pub fn discovered_mutants(&self, mutants: &[Mutant]) {
+        self.message(&format!(
+            "Found {} to test\n",
+            plural(mutants.len(), "mutant")
+        ));
+    }
+
     /// Update that work is starting on testing a given number of mutants.
     pub fn start_testing_mutants(&self, n_mutants: usize) {
         self.view.update(|model| {

@@ -13,7 +13,7 @@ use tracing::error;
 use tracing::{debug, info};
 
 use crate::cargo::{cargo_argv, run_cargo, CargoSourceTree};
-use crate::console::{plural, Console};
+use crate::console::Console;
 use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
 use crate::*;
@@ -42,10 +42,7 @@ pub fn test_unmutated_then_all_mutants(
         mutants.shuffle(&mut rand::thread_rng());
     }
     output_dir.write_mutants_list(&mutants)?;
-    console.message(&format!(
-        "Found {} to test\n",
-        plural(mutants.len(), "mutant")
-    ));
+    console.discovered_mutants(&mutants);
     if mutants.is_empty() {
         return Err(anyhow!("No mutants found"));
     }
