@@ -940,6 +940,20 @@ fn source_tree_typecheck_fails() {
         ));
 }
 
+/// `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` overrides the detected minimum timeout.
+#[test]
+fn minimum_test_timeout_from_env() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run_assert_cmd()
+        .arg("mutants")
+        .env("CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT", "1234")
+        .current_dir(tmp_src_dir.path())
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Auto-set test timeout to 1234.0s"));
+}
+
 /// In this tree, as the name suggests, tests will hang in a clean tree.
 ///
 /// cargo-mutants should notice this when doing baseline tests and return a clean result.
