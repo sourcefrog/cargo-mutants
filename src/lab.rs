@@ -3,9 +3,6 @@
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::max;
-use std::fs::File;
-use std::io::BufWriter;
-
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
@@ -44,10 +41,7 @@ pub fn test_unmutated_then_all_mutants(
     if options.shuffle {
         mutants.shuffle(&mut rand::thread_rng());
     }
-    serde_json::to_writer_pretty(
-        BufWriter::new(File::create(output_dir.path().join("mutants.json"))?),
-        &mutants,
-    )?;
+    output_dir.write_mutants_list(&mutants)?;
     console.message(&format!(
         "Found {} to test\n",
         plural(mutants.len(), "mutant")

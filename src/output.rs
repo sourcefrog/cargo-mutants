@@ -25,7 +25,9 @@ const ROTATED_NAME: &str = "mutants.out.old";
 const LOCK_JSON: &str = "lock.json";
 const LOCK_POLL: Duration = Duration::from_millis(100);
 
-/// The contents of a `lock.json` written into the output directory and used as a lock file.
+/// The contents of a `lock.json` written into the output directory and used as
+/// a lock file to ensure that two cargo-mutants invocations don't try to write
+/// to the same `mutants.out` simultneously.
 #[derive(Debug, Serialize)]
 struct LockFile {
     cargo_mutants_version: String,
@@ -178,7 +180,7 @@ impl OutputDir {
     /// Called multiple times as the lab runs.
     pub fn update_lab_outcome(&self, lab_outcome: &LabOutcome) -> Result<()> {
         serde_json::to_writer_pretty(
-            BufWriter::new(File::create(self.path().join("outcomes.json"))?),
+            BufWriter::new(File::create(self.path.join("outcomes.json"))?),
             &lab_outcome,
         )
         .context("write outcomes.json")
@@ -207,6 +209,14 @@ impl OutputDir {
             .append(true)
             .open(&debug_log_path)
             .with_context(|| format!("open {debug_log_path}"))
+    }
+
+    pub fn write_mutants_list(&self, mutants: &[Mutant]) -> Result<()> {
+        serde_json::to_writer_pretty(
+            BufWriter::new(File::create(self.path.join("mutants.json"))?),
+            mutants,
+        )
+        .context("write mutants.json")
     }
 }
 
