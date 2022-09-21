@@ -156,6 +156,8 @@ flags the function for cargo-mutants.
 
 **Note:** Currently, `cargo-mutants` does not (yet) evaluate attributes like `cfg_attr`, it only looks for the sequence `mutants::skip` in the attribute.
 
+**Note:** Rust's "inner macro attributes" feature is currently unstable, so `#![mutants::skip]` can't be used at the top of a file in stable Rust.
+
 ### Exit codes
 
 - **0**: Success. No mutants were found that weren't caught by tests.
