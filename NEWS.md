@@ -4,11 +4,11 @@
 
 - New: `cargo mutants --completions` to generate shell completions using `clap_complete`.
 
-- Changed: Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. So, `cargo mutants` now never builds in the source directory, and never copies `target/`. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
+- Changed: `carg-mutants` no longer builds in the source directory, and no longer copies the `target/` directory to the scratch directory. Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
 
-- Changed: Find mutants before doing a baseline test, so that you will find out earlier if there's nothing to test.
+- Changed: `cargo-mutants` finds all possible mutations before doing the baseline test, so that you can see earlier how many there will be.
 
-- New: Set `INSTA_UPDATE=no` so that tests that use the Insta library (as cargo-mutants does for its own tests) don't write updates back into the source directory, and don't falsely pass.
+- New: Set `INSTA_UPDATE=no` so that tests that use the [Insta](https://insta.rs/) library don't write updates back into the source directory, and so don't falsely pass.
 
 ## 1.0.1
 
