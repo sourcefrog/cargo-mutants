@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## UNRELEASED
+## 1.0.2
+
+Released 2022-09-24
 
 - New: `cargo mutants --completions` to generate shell completions using `clap_complete`.
 
