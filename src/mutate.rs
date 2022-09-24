@@ -134,16 +134,6 @@ impl Mutant {
         )
     }
 
-    /// Describe this mutant like a compiler error message, starting with the file and line.
-    pub fn format_as_error_message(&self) -> String {
-        format!(
-            "{}:{}: {}",
-            self.source_file.tree_relative_slashes(),
-            self.span.start.line,
-            self.describe_change()
-        )
-    }
-
     /// Return the text inserted for this mutation.
     pub fn replacement_text(&self) -> &'static str {
         self.op.replacement()
@@ -221,12 +211,16 @@ impl fmt::Debug for Mutant {
 }
 
 impl fmt::Display for Mutant {
+    /// Describe this mutant like a compiler error message, starting with the file and line.
+    ///
+    /// The result is like `src/source.rs:123: replace source::SourceFile::new with Default::default()`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} in {}",
-            self.describe_change(),
-            self.describe_location(),
+            "{}:{}: {}",
+            self.source_file.tree_relative_slashes(),
+            self.span.start.line,
+            self.describe_change()
         )
     }
 }
@@ -274,7 +268,7 @@ mod test {
         );
         assert_eq!(
             muts[0].to_string(),
-            "replace main with () in src/bin/factorial.rs:1"
+            "src/bin/factorial.rs:1: replace main with ()"
         );
         assert_eq!(
             format!("{:?}", muts[1]),
@@ -282,7 +276,7 @@ mod test {
         );
         assert_eq!(
             muts[1].to_string(),
-            "replace factorial with Default::default() in src/bin/factorial.rs:7"
+            "src/bin/factorial.rs:7: replace factorial with Default::default()"
         );
     }
 

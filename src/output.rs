@@ -197,7 +197,7 @@ impl OutputDir {
                 SummaryOutcome::Unviable => &mut self.unviable_list,
                 _ => return Ok(()),
             };
-            writeln!(file, "{}", mutant.format_as_error_message()).context("write to list file")?;
+            writeln!(file, "{}", mutant).context("write to list file")?;
         }
         Ok(())
     }
