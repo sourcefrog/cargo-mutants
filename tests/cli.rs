@@ -1017,7 +1017,7 @@ fn interrupt_caught_and_kills_children() {
 
     println!("Running: {args:?}");
     let mut child = Popen::create(&args, config).expect("spawn child");
-    sleep(Duration::from_secs(2)); // Let it get started
+    sleep(Duration::from_secs(4)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
 
     println!("Send SIGINT");
