@@ -1081,7 +1081,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     // Also test that it accepts decimal seconds
     run_assert_cmd()
         .arg("mutants")
-        .args(["-t", "4.1", "-v", "--", "--", "--nocapture"])
+        .args(["-t", "8.1", "-v", "--", "--", "--nocapture"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
