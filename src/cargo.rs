@@ -84,7 +84,7 @@ pub fn run_cargo(
     let exit_status = loop {
         if start.elapsed() > timeout {
             info!(
-                "timeout after {:.3}s, terminating cargo process...\n",
+                "timeout after {:.1}s, terminating cargo process...",
                 start.elapsed().as_secs_f32()
             );
             terminate_child(child, log_file)?;
