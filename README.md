@@ -27,8 +27,6 @@ To install shell completions run for example:
 cargo mutants --completions fish >~/.config/fish/completions/cargo-mutants.fish
 ```
 
-```sh
-
 ## Using cargo-mutants
 
 Just run `cargo mutants` in a Rust source directory, and it will point out
@@ -70,15 +68,6 @@ then the files to be examined are matched before the files to be excluded.
 `--json`: With `--list`, show the list in json.
 
 `--check`: Run `cargo check` on all generated mutants to find out which ones are viable, but don't actually run the tests.
-
-`--no-copy-target`: Don't copy the `/target` directory from the source, and
-don't freshen the source directory before copying it. The first "baseline" build
-in the scratch directory will be a clean build with nothing in `/target`. This
-will typically be slower (which is why `/target` is copied by default) but it
-might help in debugging any issues with the build. (And, in niche cases where
-there is a very large volume of old unreferenced content in `/target`, it might
-conceivably be faster, but that's probably better dealt with by `cargo clean` in
-the source directory.)
 
 `--no-shuffle`: Test mutants in the fixed order they're found in the source
 rather than the default behavior of running them in random order. (Shuffling is
