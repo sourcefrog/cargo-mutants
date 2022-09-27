@@ -286,7 +286,7 @@ impl nutmeg::Model for LabModel {
                     "Trying mutant {}/{}, {} done",
                     self.i_mutant,
                     self.n_mutants,
-                    nutmeg::percent_done(self.i_mutant, self.n_mutants),
+                    nutmeg::percent_done(self.i_mutant.saturating_sub(1), self.n_mutants),
                 )
                 .unwrap();
                 if self.mutants_missed > 0 {
@@ -308,18 +308,21 @@ impl nutmeg::Model for LabModel {
                 // if self.failures > 0 {
                 //     write!(s, ", {} failures", self.failures).unwrap();
                 // }
-                writeln!(
-                    s,
-                    ", {} elapsed, about {} remaining",
-                    style_minutes_seconds(elapsed),
-                    style(nutmeg::estimate_remaining(
-                        &lab_start_time,
-                        self.i_mutant,
-                        self.n_mutants
-                    ))
-                    .cyan()
-                )
-                .unwrap();
+                write!(s, ", {} elapsed", style_minutes_seconds(elapsed)).unwrap();
+                if self.i_mutant > 2 {
+                    write!(
+                        s,
+                        ", about {} remaining",
+                        style(nutmeg::estimate_remaining(
+                            &lab_start_time,
+                            self.i_mutant.saturating_sub(1),
+                            self.n_mutants
+                        ))
+                        .cyan()
+                    )
+                    .unwrap();
+                }
+                writeln!(s).unwrap();
             }
             s.push_str(&scenario_model.render(width));
         }
