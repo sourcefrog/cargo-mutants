@@ -1,0 +1,6 @@
+---
+source: tests/cli.rs
+expression: content
+---
+src/lib.rs:11: replace make_an_s with Default::default()
+

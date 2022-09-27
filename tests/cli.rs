@@ -655,6 +655,27 @@ fn well_tested_tree_check_only_shuffled() {
 }
 
 #[test]
+fn unviable_mutation_of_struct_with_no_default() {
+    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
+    run_assert_cmd()
+        .args(["mutants", "--no-times", "--no-shuffle", "-v", "-V"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::is_match(
+                r"src/lib.rs:\d+: replace make_an_s -> S with Default::default\(\) \.\.\. unviable",
+            )
+            .unwrap(),
+        );
+    check_text_list_output(
+        tmp_src_dir.path(),
+        "unviable_mutation_of_struct_with_no_default",
+    );
+}
+
+#[test]
 fn integration_test_source_is_not_mutated() {
     let tmp_src_dir = copy_of_testdata("integration_tests");
     run_assert_cmd()

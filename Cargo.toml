@@ -95,6 +95,7 @@ exclude = [
     "testdata/tree/replace_dependency",
     "testdata/tree/small_well_tested",
     "testdata/tree/strict_warnings",
+    "testdata/tree/struct_with_no_default",
     "testdata/tree/well_tested",
     "testdata/tree/with_child_directories",
 ]

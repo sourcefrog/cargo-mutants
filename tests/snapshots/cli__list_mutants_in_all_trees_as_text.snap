@@ -126,6 +126,12 @@ src/lib.rs:4: replace factorial -> u32 with Default::default()
 src/lib.rs:5: replace some_fn -> usize with Default::default()
 ```
 
+## testdata/tree/struct_with_no_default
+
+```
+src/lib.rs:11: replace make_an_s -> S with Default::default()
+```
+
 ## testdata/tree/typecheck_fails
 
 ```

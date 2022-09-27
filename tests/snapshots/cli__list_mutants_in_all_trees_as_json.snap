@@ -331,6 +331,21 @@ expression: buf
 ]
 ```
 
+## testdata/tree/struct_with_no_default
+
+```json
+[
+  {
+    "package": "cargo-mutants-testdata-struct-with-no-default",
+    "file": "src/lib.rs",
+    "line": 11,
+    "function": "make_an_s",
+    "return_type": "-> S",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 ## testdata/tree/typecheck_fails
 
 ```json
