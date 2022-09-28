@@ -11,7 +11,7 @@ use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
 use syn::ItemFn;
-use tracing::debug;
+use tracing::{debug, span, trace, Level};
 
 use crate::*;
 
@@ -76,10 +76,16 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     /// Visit top-level `fn foo()`.
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
         // TODO: Filter out more inapplicable fns.
-        if attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
+        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        let _span = span!(Level::TRACE, "item_fn", function_name).entered();
+        if attrs_excluded(&i.attrs) {
+            trace!("excluded by attrs");
             return; // don't look inside it either
         }
-        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        if block_is_empty(&i.block) {
+            trace!("function body is empty");
+            return;
+        }
         self.in_namespace(&function_name, |self_| {
             self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span);
             syn::visit::visit_item_fn(self_, i);
