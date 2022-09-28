@@ -2,4 +2,13 @@
 source: tests/cli.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
-[]
+[
+  {
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
+    "file": "src/lib.rs",
+    "line": 17,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  }
+]

@@ -34,6 +34,7 @@ src/entry.rs:1: replace factorial -> u32 with Default::default()
 ## testdata/tree/cfg_attr_test_skip
 
 ```
+src/lib.rs:17: replace double -> usize with Default::default()
 ```
 
 ## testdata/tree/dependency

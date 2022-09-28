@@ -71,7 +71,16 @@ expression: buf
 ## testdata/tree/cfg_attr_test_skip
 
 ```json
-[]
+[
+  {
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
+    "file": "src/lib.rs",
+    "line": 17,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "Default::default()"
+  }
+]
 ```
 
 ## testdata/tree/dependency
