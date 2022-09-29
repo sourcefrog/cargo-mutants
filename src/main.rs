@@ -57,9 +57,9 @@ const DEFAULT_MINIMUM_TEST_TIMEOUT: Duration = Duration::from_secs(20);
 const MINIMUM_TEST_TIMEOUT_ENV_VAR: &str = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT";
 
 #[derive(Parser)]
-#[clap(name = "cargo", bin_name = "cargo")]
+#[command(name = "cargo", bin_name = "cargo")]
 enum Cargo {
-    #[clap(name = "mutants")]
+    #[command(name = "mutants")]
     Mutants(Args),
 }
 
@@ -67,106 +67,106 @@ enum Cargo {
 ///
 /// See <https://github.com/sourcefrog/cargo-mutants> for more information.
 #[derive(Parser, PartialEq, Debug)]
-#[clap(author, about)]
+#[command(author, about)]
 struct Args {
     /// show cargo output for all invocations (very verbose).
-    #[clap(long)]
+    #[arg(long)]
     all_logs: bool,
 
     /// print mutants that were caught by tests.
-    #[clap(long, short = 'v')]
+    #[arg(long, short = 'v')]
     caught: bool,
 
     /// cargo check generated mutants, but don't run tests.
-    #[clap(long)]
+    #[arg(long)]
     check: bool,
 
     /// generate autocompletions for the given shell.
-    #[clap(long)]
+    #[arg(long)]
     completions: Option<Shell>,
 
     /// show the mutation diffs.
-    #[clap(long)]
+    #[arg(long)]
     diff: bool,
 
     /// rust crate directory to examine.
-    #[clap(long, short = 'd')]
+    #[arg(long, short = 'd')]
     dir: Option<Utf8PathBuf>,
 
     /// glob for files to examine; with no glob, all files are examined; globs containing
     /// slash match the entire path. If used together with `--exclude` argument, then the files to be examined are matched before the files to be excluded.
-    #[clap(long, short = 'f')]
+    #[arg(long, short = 'f')]
     file: Vec<String>,
 
     /// regex for mutations to examine, matched against the names shown by `--list`.
-    #[clap(long = "re", short = 'F')]
+    #[arg(long = "re", short = 'F')]
     examine_re: Vec<String>,
 
     /// glob for files to exclude; with no glob, all files are included; globs containing
     /// slash match the entire path. If used together with `--file` argument, then the files to be examined are matched before the files to be excluded.
-    #[clap(long, short = 'e')]
+    #[arg(long, short = 'e')]
     exclude: Vec<String>,
 
     /// regex for mutations to exclude, matched against the names shown by `--list`.
-    #[clap(long, short = 'E')]
+    #[arg(long, short = 'E')]
     exclude_re: Vec<String>,
 
     /// output json (only for --list).
-    #[clap(long)]
+    #[arg(long)]
     json: bool,
 
     /// log level for stdout (trace, debug, info, warn, error).
-    #[clap(long, short = 'L', default_value = "info")]
+    #[arg(long, short = 'L', default_value = "info")]
     level: tracing::Level,
 
     /// just list possible mutants, don't run them.
-    #[clap(long)]
+    #[arg(long)]
     list: bool,
 
     /// list source files, don't run anything.
-    #[clap(long)]
+    #[arg(long)]
     list_files: bool,
 
     /// don't copy the /target directory, and don't build the source tree first.
-    #[clap(long)]
+    #[arg(long)]
     no_copy_target: bool,
 
     /// don't print times or tree sizes, to make output deterministic.
-    #[clap(long)]
+    #[arg(long)]
     no_times: bool,
 
     /// create mutants.out within this directory.
-    #[clap(long, short = 'o')]
+    #[arg(long, short = 'o')]
     output: Option<Utf8PathBuf>,
 
     /// run mutants in random order.
-    #[clap(long)]
+    #[arg(long)]
     shuffle: bool,
 
     /// run mutants in the fixed order they occur in the source tree.
-    #[clap(long)]
+    #[arg(long)]
     no_shuffle: bool,
 
     /// maximum run time for all cargo commands, in seconds.
-    #[clap(long, short = 't')]
+    #[arg(long, short = 't')]
     timeout: Option<f64>,
 
     /// print mutations that failed to check or build.
-    #[clap(long, short = 'V')]
+    #[arg(long, short = 'V')]
     unviable: bool,
 
     /// show version and quit.
-    #[clap(long, action = clap::ArgAction::SetTrue)]
+    #[arg(long, action = clap::ArgAction::SetTrue)]
     version: bool,
 
     /// additional args for all cargo invocations.
-    #[clap(long, short = 'C', takes_value = true, allow_hyphen_values = true)]
+    #[arg(long, short = 'C', allow_hyphen_values = true)]
     cargo_arg: Vec<String>,
 
     // The following option captures all the remaining non-option args, to
     // send to cargo.
     /// pass remaining arguments to cargo test after all options and after `--`.
-    #[clap(last = true)]
+    #[arg(last = true)]
     cargo_test_args: Vec<String>,
 }
 
