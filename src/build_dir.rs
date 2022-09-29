@@ -3,12 +3,11 @@
 //! A temporary directory containing mutated source to run cargo builds and tests.
 
 use std::convert::TryInto;
-use std::path::Path;
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
-use tracing::error;
+use tracing::{error, trace};
 
 use crate::manifest::fix_cargo_config;
 use crate::*;
@@ -23,6 +22,7 @@ const SOURCE_EXCLUDE: &[&str] = &[
     ".pijul",
     "mutants.out",
     "mutants.out.old",
+    "target",
 ];
 
 /// A temporary directory initialized with a copy of the source, where mutations can be tested.
@@ -49,7 +49,6 @@ impl BuildDir {
             console::CopyModel::new("Copy source to scratch directory", options),
             console::nutmeg_options(),
         );
-        let target_path = Path::new("target");
         let copy_options = cp_r::CopyOptions::new()
             .after_entry_copied(|path, _ft, stats| {
                 view.update(|model| model.bytes_copied(stats.file_bytes));
@@ -57,7 +56,13 @@ impl BuildDir {
                     .map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
             })
             .filter(|path, _dir_entry| {
-                Ok(!(SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex)) || path == target_path))
+                let excluded = SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex));
+                if excluded {
+                    trace!("Excluding {path:?}");
+                } else {
+                    trace!("Copy {path:?}");
+                }
+                Ok(!excluded)
             });
         match copy_options
             .copy_tree(source.path(), temp_dir.path())
