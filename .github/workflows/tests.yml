@@ -40,13 +40,13 @@ jobs:
             ~/.cargo/git
             target
           key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-      - name: Build
-        run: cargo build --all-targets
-      - name: Test
-        run: cargo test --workspace
       - name: Clippy
         run: cargo clippy -- -D clippy::all
       - name: rustfmt
         run: cargo fmt --all -- --check
+      - name: Build
+        run: cargo build --all-targets
+      - name: Test
+        run: cargo test --workspace
       - name: Install
         run: cargo install --path .
