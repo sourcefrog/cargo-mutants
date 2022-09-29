@@ -284,12 +284,16 @@ impl nutmeg::Model for LabModel {
             }
             if let Some(lab_start_time) = self.lab_start_time {
                 let elapsed = lab_start_time.elapsed();
+                let percent = if self.n_mutants > 0 {
+                    ((self.i_mutant.saturating_sub(1) as f64) / (self.n_mutants as f64) * 100.0)
+                        .round()
+                } else {
+                    0.0
+                };
                 write!(
                     s,
-                    "Trying mutant {}/{}, {} done",
-                    self.i_mutant,
-                    self.n_mutants,
-                    nutmeg::percent_done(self.i_mutant.saturating_sub(1), self.n_mutants),
+                    "Trying mutant {}/{}, {percent}% done",
+                    self.i_mutant, self.n_mutants,
                 )
                 .unwrap();
                 if self.mutants_missed > 0 {
