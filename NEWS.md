@@ -1,6 +1,10 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 1.0.3
+
+Released 2021-09-29
+
+- cargo-mutants is now finds no uncaught mutants in itself! Various tests were added and improved, particularly around handling timeouts.
 
 - New: `--re` and `--exclude-re` options to filter by mutant name, including the path. The regexps match against the strings printed by `--list`.
 
