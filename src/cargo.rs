@@ -13,7 +13,8 @@ use globset::GlobSet;
 use serde::Serialize;
 use serde_json::Value;
 use subprocess::{Popen, PopenConfig, Redirection};
-use tracing::{debug, info, warn};
+#[allow(unused_imports)]
+use tracing::{debug, info, span, trace, warn, Level};
 
 use crate::console::Console;
 use crate::log_file::LogFile;
@@ -142,12 +143,30 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
 }
 
 fn terminate_child(mut child: Popen) -> Result<()> {
+    let _span = span!(Level::DEBUG, "terminate_child", pid = child.pid()).entered();
     debug!("terminating cargo process");
     terminate_child_impl(&mut child)?;
-    let exit_status = child
-        .wait()
-        .context("wait for child after terminating pgroup")?;
-    debug!("terminated child exit status {exit_status:?}");
+    trace!("wait for child after termination");
+    if let Some(exit_status) = child
+        .wait_timeout(Duration::from_secs(10))
+        .context("wait for child after terminating pgroup")?
+    {
+        debug!("terminated child exit status {exit_status:?}");
+    } else {
+        warn!("child did not exit after termination");
+        let kill_result = child.kill();
+        warn!("force kill child: {:?}", kill_result);
+        if kill_result.is_ok() {
+            if let Ok(Some(exit_status)) = child
+                .wait_timeout(Duration::from_secs(10))
+                .context("wait for child after force kill")
+            {
+                debug!("force kill child exit status {exit_status:?}");
+            } else {
+                warn!("child did not exit after force kill");
+            }
+        }
+    }
     Ok(())
 }
 
