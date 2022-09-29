@@ -1,5 +1,7 @@
 # cargo-mutants changelog
 
+## Unreleased
+
 ## 1.0.3
 
 Released 2021-09-29
