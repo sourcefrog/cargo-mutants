@@ -792,7 +792,7 @@ fn factorial_mutants_no_copy_target() {
     let tmp_src_dir = copy_of_testdata("factorial");
     run_assert_cmd()
         .arg("mutants")
-        .args(["--no-copy-target", "--no-times"])
+        .args(["--no-times"])
         .arg("-d")
         .arg(tmp_src_dir.path())
         .assert()
@@ -1194,13 +1194,10 @@ fn log_file_names_are_short_and_dont_collide() {
 #[test]
 fn cargo_mutants_in_override_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used. We also pass `--no-copy-target`
-    // so that we don't do a freshening build first, so nothing should write into the
-    // source directory.
+    // relative dependency `../dependency` is still used.
     run_assert_cmd()
         .arg("mutants")
         .arg("--no-times")
-        .arg("--no-copy-target")
         .arg("--no-shuffle")
         .arg("-d")
         .arg("testdata/tree/override_dependency")
@@ -1215,13 +1212,10 @@ fn cargo_mutants_in_override_dependency_tree_passes() {
 #[test]
 fn cargo_mutants_in_relative_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used. We also pass `--no-copy-target`
-    // so that we don't do a freshening build first, so nothing should write into the
-    // source directory.
+    // relative dependency `../dependency` is still used.
     run_assert_cmd()
         .arg("mutants")
         .arg("--no-times")
-        .arg("--no-copy-target")
         .arg("--no-shuffle")
         .arg("-d")
         .arg("testdata/tree/relative_dependency")
@@ -1236,13 +1230,10 @@ fn cargo_mutants_in_relative_dependency_tree_passes() {
 #[test]
 fn cargo_mutants_in_replace_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used. We also pass `--no-copy-target`
-    // so that we don't do a freshening build first, so nothing should write into the
-    // source directory.
+    // relative dependency `../dependency` is still used.
     run_assert_cmd()
         .arg("mutants")
         .arg("--no-times")
-        .arg("--no-copy-target")
         .arg("--no-shuffle")
         .arg("-d")
         .arg("testdata/tree/replace_dependency")
@@ -1257,13 +1248,10 @@ fn cargo_mutants_in_replace_dependency_tree_passes() {
 #[test]
 fn cargo_mutants_in_patch_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used. We also pass `--no-copy-target`
-    // so that we don't do a freshening build first, so nothing should write into the
-    // source directory.
+    // relative dependency `../dependency` is still used.
     run_assert_cmd()
         .arg("mutants")
         .arg("--no-times")
-        .arg("--no-copy-target")
         .arg("--no-shuffle")
         .arg("-d")
         .arg("testdata/tree/patch_dependency")
