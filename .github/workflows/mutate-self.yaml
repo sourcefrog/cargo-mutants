@@ -22,7 +22,7 @@ jobs:
           cargo install --path .
       - name: Mutants
         run: |
-          cargo mutants --no-shuffle --exclude console.rs
+          cargo mutants --no-shuffle --exclude console.rs --unviable --caught
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()
