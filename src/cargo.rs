@@ -141,23 +141,9 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
     cargo_args
 }
 
-#[cfg(unix)]
 fn terminate_child(mut child: Popen) -> Result<()> {
-    use nix::errno::Errno;
-    use nix::sys::signal::{killpg, Signal};
-
-    let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
-    debug!("terminating cargo process {}", pid);
-    if let Err(errno) = killpg(pid, Signal::SIGTERM) {
-        if errno == Errno::ESRCH {
-            // most likely we raced and it's already gone
-            return Ok(());
-        } else {
-            let message = format!("failed to terminate child: {}", errno);
-            warn!("{}", message);
-            return Err(anyhow!(message));
-        }
-    }
+    debug!("terminating cargo process");
+    terminate_child_impl(&child)?;
     let exit_status = child
         .wait()
         .context("wait for child after terminating pgroup")?;
@@ -165,18 +151,33 @@ fn terminate_child(mut child: Popen) -> Result<()> {
     Ok(())
 }
 
+#[cfg(unix)]
+fn terminate_child_impl(child: &Popen) -> Result<()> {
+    use nix::errno::Errno;
+    use nix::sys::signal::{killpg, Signal};
+
+    let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
+    if let Err(errno) = killpg(pid, Signal::SIGTERM) {
+        // It might have already exited, in which case we can proceed to wait for it.
+        if errno != Errno::ESRCH {
+            let message = format!("failed to terminate child: {}", errno);
+            warn!("{}", message);
+            return Err(anyhow!(message));
+        }
+    }
+    Ok(())
+}
+
 // We do not yet have a way to mutate this only on Windows, and I mostly test on Unix, so it's just skipped for now.
 #[mutants::skip]
 #[cfg(not(unix))]
-fn terminate_child(mut child: Popen) -> Result<()> {
-    debug!("terminating cargo process {child:?}");
+fn terminate_child_impl(child: &Popen) -> Result<()> {
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
         let message = format!("failed to terminate child: {}", e);
         warn!("{}", message);
         return Err(anyhow!(message));
     }
-    child.wait().context("wait for child after kill")?;
     Ok(())
 }
 
