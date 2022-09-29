@@ -1082,8 +1082,10 @@ fn interrupt_caught_and_kills_children() {
     sleep(Duration::from_secs(4)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
 
+    println!("Sending terminate to cargo-mutants...");
     child.terminate().expect("terminate child");
 
+    println!("Wait for cargo-mutants to exit...");
     let exit_status = child
         .wait_timeout(Duration::from_secs(4))
         .expect("wait for child")
