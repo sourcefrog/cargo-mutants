@@ -87,11 +87,11 @@ pub fn run_cargo(
                 "timeout after {:.1}s, terminating cargo process...",
                 start.elapsed().as_secs_f32()
             );
-            terminate_child(child, log_file)?;
+            terminate_child(child)?;
             return Ok(CargoResult::Timeout);
         } else if let Err(e) = check_interrupted() {
             debug!("interrupted, terminating cargo process...");
-            terminate_child(child, log_file)?;
+            terminate_child(child)?;
             return Err(e);
         } else if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
             break status;
@@ -142,7 +142,7 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
 }
 
 #[cfg(unix)]
-fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
+fn terminate_child(mut child: Popen) -> Result<()> {
     use nix::errno::Errno;
     use nix::sys::signal::{killpg, Signal};
 
@@ -155,7 +155,6 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
         } else {
             let message = format!("failed to terminate child: {}", errno);
             warn!("{}", message);
-            log_file.message(&message);
             return Err(anyhow!(message));
         }
     }
@@ -169,13 +168,12 @@ fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
 // We do not yet have a way to mutate this only on Windows, and I mostly test on Unix, so it's just skipped for now.
 #[mutants::skip]
 #[cfg(not(unix))]
-fn terminate_child(mut child: Popen, log_file: &mut LogFile) -> Result<()> {
+fn terminate_child(mut child: Popen) -> Result<()> {
     debug!("terminating cargo process {child:?}");
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
         let message = format!("failed to terminate child: {}", e);
         warn!("{}", message);
-        log_file.message(&message);
         return Err(anyhow!(message));
     }
     child.wait().context("wait for child after kill")?;
@@ -233,7 +231,7 @@ impl CargoSourceTree {
         {
             return Err(anyhow!(stderr));
         }
-        debug!("locate-project output: {stdout}");
+        debug!("locate-project output: {}", stdout.trim());
         let val: Value =
             serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
         let cargo_toml_path: Utf8PathBuf = val["root"]
