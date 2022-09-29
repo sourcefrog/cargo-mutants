@@ -1058,6 +1058,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
 /// In this test cargo-mutants has a very long timeout, but the test driver has a
 /// short timeout, so it should kill cargo-mutants.
 #[test]
+#[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
 fn interrupt_caught_and_kills_children() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
