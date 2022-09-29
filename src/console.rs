@@ -179,10 +179,13 @@ impl Console {
     ///
     /// The debug log is opened later and provided by [Console::set_debug_log].
     pub fn setup_global_trace(&self, console_trace_level: Level) -> Result<()> {
+        // Show time relative to the start of the program.
+        let uptime = tracing_subscriber::fmt::time::uptime();
         let debug_log_layer = tracing_subscriber::fmt::layer()
             .with_ansi(false)
             .with_file(true) // source file name
             .with_line_number(true)
+            .with_timer(uptime)
             .with_writer(self.make_debug_log_writer());
         let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
         let console_layer = tracing_subscriber::fmt::layer()
