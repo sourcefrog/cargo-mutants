@@ -25,7 +25,7 @@ jobs:
           cargo mutants --no-shuffle --exclude console.rs
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
-        if: failure()
+        if: always()
         with:
           name: mutants.out
           path: mutants.out
