@@ -192,7 +192,7 @@ impl Console {
             .with_ansi(true)
             .with_writer(self.make_terminal_writer())
             .with_target(false)
-            .without_time()
+            .with_timer(uptime)
             .with_filter(level_filter);
         tracing_subscriber::registry()
             .with(debug_log_layer)
