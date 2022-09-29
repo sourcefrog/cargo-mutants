@@ -1057,7 +1057,6 @@ fn timeout_when_unmutated_tree_test_hangs() {
 ///
 /// In this test cargo-mutants has a very long timeout, but the test driver has a
 /// short timeout, so it should kill cargo-mutants.
-#[cfg(unix)] // TODO: Maybe this is now portable with `.terminate()`?
 #[test]
 fn interrupt_caught_and_kills_children() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
@@ -1083,15 +1082,10 @@ fn interrupt_caught_and_kills_children() {
     sleep(Duration::from_secs(4)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
 
-    println!("Send SIGINT");
-    nix::sys::signal::kill(
-        nix::unistd::Pid::from_raw(child.pid().unwrap().try_into().unwrap()),
-        nix::sys::signal::Signal::SIGINT,
-    )
-    .expect("send SIGINT");
+    child.terminate().expect("terminate child");
 
     let exit_status = child
-        .wait_timeout(Duration::from_secs(2))
+        .wait_timeout(Duration::from_secs(4))
         .expect("wait for child")
         .expect("child exited");
     println!("Child exited with status: {:?}", exit_status);
