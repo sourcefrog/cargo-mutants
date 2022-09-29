@@ -143,7 +143,7 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
 
 fn terminate_child(mut child: Popen) -> Result<()> {
     debug!("terminating cargo process");
-    terminate_child_impl(&child)?;
+    terminate_child_impl(&mut child)?;
     let exit_status = child
         .wait()
         .context("wait for child after terminating pgroup")?;
@@ -152,7 +152,7 @@ fn terminate_child(mut child: Popen) -> Result<()> {
 }
 
 #[cfg(unix)]
-fn terminate_child_impl(child: &Popen) -> Result<()> {
+fn terminate_child_impl(child: &mut Popen) -> Result<()> {
     use nix::errno::Errno;
     use nix::sys::signal::{killpg, Signal};
 
@@ -171,7 +171,7 @@ fn terminate_child_impl(child: &Popen) -> Result<()> {
 // We do not yet have a way to mutate this only on Windows, and I mostly test on Unix, so it's just skipped for now.
 #[mutants::skip]
 #[cfg(not(unix))]
-fn terminate_child_impl(child: &Popen) -> Result<()> {
+fn terminate_child_impl(child: &mut Popen) -> Result<()> {
     if let Err(e) = child.terminate() {
         // most likely we raced and it's already gone
         let message = format!("failed to terminate child: {}", e);
