@@ -27,7 +27,7 @@ use tempfile::{tempdir, TempDir};
 /// long enough that even commands that do a lot of work can pass even on slow
 /// CI VMs and even on Windows, but short enough that the test does not hang
 /// forever.
-const OUTER_TIMEOUT: Duration = Duration::from_secs(120);
+const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
@@ -161,11 +161,12 @@ fn list_mutants_in_all_trees_as_json() {
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
         writeln!(buf, "## {}\n", dir_path.to_slash_lossy()).unwrap();
-        let cmd_assert = run()
+        let cmd_assert = run_assert_cmd()
             .arg("mutants")
             .arg("--list")
             .arg("--json")
             .current_dir(&dir_path)
+            .timeout(OUTER_TIMEOUT)
             .assert()
             .success();
         let json_str = String::from_utf8_lossy(&cmd_assert.get_output().stdout);
@@ -179,14 +180,14 @@ fn list_mutants_in_all_trees_as_text() {
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
         writeln!(buf, "## {}\n\n```", dir_path.to_slash_lossy()).unwrap();
-        let stdout = run()
+        let cmd_assert = run_assert_cmd()
             .arg("mutants")
             .arg("--list")
             .current_dir(&dir_path)
-            .output()
-            .unwrap()
-            .stdout;
-        buf.push_str(&String::from_utf8_lossy(&stdout));
+            .timeout(OUTER_TIMEOUT)
+            .assert()
+            .success();
+        buf.push_str(&String::from_utf8_lossy(&cmd_assert.get_output().stdout));
         buf.push_str("```\n\n");
     }
     insta::assert_snapshot!(buf);
