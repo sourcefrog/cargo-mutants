@@ -1088,11 +1088,17 @@ fn interrupt_caught_and_kills_children() {
     child.terminate().expect("terminate child");
 
     println!("Wait for cargo-mutants to exit...");
-    let exit_status = child
-        .wait_timeout(Duration::from_secs(4))
-        .expect("wait for child")
-        .expect("child exited");
-    println!("Child exited with status: {:?}", exit_status);
+    match child.wait_timeout(Duration::from_secs(4)) {
+        Err(e) => panic!("failed to wait for child: {}", e),
+        Ok(None) => {
+            println!("child did not exit after interrupt");
+            child.kill().expect("kill child");
+            child.wait().expect("wait for child after kill");
+        }
+        Ok(Some(status)) => {
+            println!("cargo-mutants exited with status: {status:?}");
+        }
+    }
 
     let mut stdout = String::new();
     child
