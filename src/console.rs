@@ -15,7 +15,7 @@ use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::prelude::*;
 
-use crate::outcome::SummaryOutcome;
+use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::*;
 
 /// An interface to the console for the rest of cargo-mutants.
@@ -149,6 +149,13 @@ impl Console {
                 .expect("scenario_model exists")
                 .phase_finished(phase);
         })
+    }
+
+    pub fn lab_finished(&self, lab_outcome: &LabOutcome, start_time: Instant, options: &Options) {
+        self.message(&format!(
+            "{}\n",
+            lab_outcome.summary_string(start_time, &options)
+        ));
     }
 
     pub fn message(&self, message: &str) {

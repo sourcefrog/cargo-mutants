@@ -108,10 +108,7 @@ pub fn test_unmutated_then_all_mutants(
         // lost if the program stops or is interrupted.
         output_dir.update_lab_outcome(&lab_outcome)?;
     }
-    console.message(&format!(
-        "{}\n",
-        lab_outcome.summary_string(start_time, &options)
-    ));
+    console.lab_finished(&lab_outcome, start_time, &options);
     Ok(lab_outcome)
 }
 
