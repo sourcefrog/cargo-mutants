@@ -15,6 +15,7 @@ mod options;
 mod outcome;
 mod output;
 mod path;
+mod process;
 mod scenario;
 mod source;
 mod textedit;

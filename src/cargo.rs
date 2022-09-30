@@ -6,20 +6,22 @@ use std::collections::BTreeSet;
 use std::env;
 use std::io::Read;
 use std::rc::Rc;
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
+use ::subprocess::{Popen, PopenConfig, Redirection};
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use globset::GlobSet;
 use serde::Serialize;
 use serde_json::Value;
-use subprocess::{Popen, PopenConfig, Redirection};
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use crate::console::Console;
 use crate::log_file::LogFile;
 use crate::path::TreeRelativePathBuf;
+use crate::process::{Process, ProcessStatus};
 use crate::*;
 
 /// How frequently to check if cargo finished.
@@ -42,7 +44,6 @@ pub enum CargoResult {
     Success,
     /// Cargo failed for some reason.
     Failure,
-    // TODO: Perhaps distinguish different failure codes.
 }
 
 impl CargoResult {
@@ -61,60 +62,38 @@ pub fn run_cargo(
 ) -> Result<CargoResult> {
     let start = Instant::now();
 
-    let mut env = PopenConfig::current_env();
     // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
     // <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
     // TODO: Maybe this should append instead of overwriting it...?
-    env.push(("RUSTFLAGS".into(), "--cap-lints=allow".into()));
     // The tests might use Insta <https://insta.rs>, and we don't want it to write
     // updates to the source tree, and we *certainly* don't want it to write
     // updates and then let the test pass.
-    env.push(("INSTA_UPDATE".into(), "no".into()));
 
-    let message = format!("run {}", argv.join(" "),);
-    log_file.message(&message);
-    debug!("{}", message);
-    let mut child = Popen::create(
-        argv,
-        PopenConfig {
-            stdin: Redirection::None,
-            stdout: Redirection::File(log_file.open_append()?),
-            stderr: Redirection::Merge,
-            cwd: Some(in_dir.as_os_str().to_owned()),
-            env: Some(env),
-            ..setpgid_on_unix()
-        },
-    )
-    .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
-    let exit_status = loop {
-        if start.elapsed() > timeout {
-            info!(
-                "timeout after {:.1}s, terminating cargo process...",
-                start.elapsed().as_secs_f32()
-            );
-            terminate_child(child)?;
-            return Ok(CargoResult::Timeout);
-        } else if let Err(e) = check_interrupted() {
-            debug!("interrupted, terminating cargo process...");
-            terminate_child(child)?;
-            return Err(e);
-        } else if let Some(status) = child.wait_timeout(WAIT_POLL_INTERVAL)? {
-            break status;
+    let env = [("RUSTFLAGS", "--cap-lints=allow"), ("INSTA_UPDATE", "no")];
+
+    let mut child = Process::start(argv, &env, in_dir, timeout, log_file)?;
+
+    let process_status = loop {
+        if let Some(exit_status) = child.poll()? {
+            break exit_status;
+        } else {
+            console.tick();
+            sleep(WAIT_POLL_INTERVAL);
         }
-        console.tick();
     };
+
     let message = format!(
         "cargo result: {:?} in {:.3}s",
-        exit_status,
+        process_status,
         start.elapsed().as_secs_f64()
     );
     log_file.message(&message);
     debug!("{}", message);
     check_interrupted()?;
-    if exit_status.success() {
-        Ok(CargoResult::Success)
-    } else {
-        Ok(CargoResult::Failure)
+    match process_status {
+        ProcessStatus::Timeout => Ok(CargoResult::Timeout),
+        ProcessStatus::Failure => Ok(CargoResult::Failure),
+        ProcessStatus::Success => Ok(CargoResult::Success),
     }
 }
 
@@ -144,78 +123,6 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
         cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
     }
     cargo_args
-}
-
-fn terminate_child(mut child: Popen) -> Result<()> {
-    let _span = span!(Level::DEBUG, "terminate_child", pid = child.pid()).entered();
-    debug!("terminating cargo process");
-    terminate_child_impl(&mut child)?;
-    trace!("wait for child after termination");
-    if let Some(exit_status) = child
-        .wait_timeout(Duration::from_secs(10))
-        .context("wait for child after terminating pgroup")?
-    {
-        debug!("terminated child exit status {exit_status:?}");
-    } else {
-        warn!("child did not exit after termination");
-        let kill_result = child.kill();
-        warn!("force kill child: {:?}", kill_result);
-        if kill_result.is_ok() {
-            if let Ok(Some(exit_status)) = child
-                .wait_timeout(Duration::from_secs(10))
-                .context("wait for child after force kill")
-            {
-                debug!("force kill child exit status {exit_status:?}");
-            } else {
-                warn!("child did not exit after force kill");
-            }
-        }
-    }
-    Ok(())
-}
-
-#[cfg(unix)]
-fn terminate_child_impl(child: &mut Popen) -> Result<()> {
-    use nix::errno::Errno;
-    use nix::sys::signal::{killpg, Signal};
-
-    let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
-    if let Err(errno) = killpg(pid, Signal::SIGTERM) {
-        // It might have already exited, in which case we can proceed to wait for it.
-        if errno != Errno::ESRCH {
-            let message = format!("failed to terminate child: {}", errno);
-            warn!("{}", message);
-            return Err(anyhow!(message));
-        }
-    }
-    Ok(())
-}
-
-// We do not yet have a way to mutate this only on Windows, and I mostly test on Unix, so it's just skipped for now.
-#[mutants::skip]
-#[cfg(not(unix))]
-fn terminate_child_impl(child: &mut Popen) -> Result<()> {
-    if let Err(e) = child.terminate() {
-        // most likely we raced and it's already gone
-        let message = format!("failed to terminate child: {}", e);
-        warn!("{}", message);
-        return Err(anyhow!(message));
-    }
-    Ok(())
-}
-
-#[cfg(unix)]
-fn setpgid_on_unix() -> PopenConfig {
-    PopenConfig {
-        setpgid: true,
-        ..Default::default()
-    }
-}
-
-#[mutants::skip] // Has no effect, so can't be tested.
-#[cfg(not(unix))]
-fn setpgid_on_unix() -> PopenConfig {
-    Default::default()
 }
 
 /// A source tree where we can run cargo commands.

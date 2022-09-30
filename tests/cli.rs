@@ -1119,7 +1119,7 @@ fn interrupt_caught_and_kills_children() {
     println!("stderr:\n{stderr}");
 
     assert!(stdout.contains("interrupted"));
-    assert!(stdout.contains("terminating cargo process"));
+    assert!(stdout.contains("terminating child process"));
     assert!(stdout.contains("terminated child exit status"));
 }
 
