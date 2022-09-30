@@ -11,13 +11,14 @@ use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
 use syn::ItemFn;
-use tracing::{debug, span, trace, Level};
+use tracing::{debug, debug_span, span, trace, Level};
 
 use crate::*;
 
 /// Find all possible mutants in a source file.
 pub fn discover_mutants(source_file: Arc<SourceFile>) -> Result<Vec<Mutant>> {
-    debug!("scan {}", source_file.tree_relative_slashes());
+    let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
+    debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
