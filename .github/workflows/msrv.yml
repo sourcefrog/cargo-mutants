@@ -23,7 +23,7 @@ jobs:
   test:
     strategy:
       matrix:
-        toolchain: [1.59]
+        toolchain: [1.60]
 
     runs-on: ubuntu-latest
     steps:
