@@ -154,7 +154,7 @@ impl Console {
     pub fn lab_finished(&self, lab_outcome: &LabOutcome, start_time: Instant, options: &Options) {
         self.message(&format!(
             "{}\n",
-            lab_outcome.summary_string(start_time, &options)
+            lab_outcome.summary_string(start_time, options)
         ));
     }
 
