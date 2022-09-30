@@ -168,7 +168,9 @@ impl Console {
 
     /// Return a tracing `MakeWriter` that will send messages via nutmeg to the console.
     pub fn make_terminal_writer(&self) -> TerminalWriter {
-        TerminalWriter(Arc::clone(&self.view))
+        TerminalWriter {
+            view: Arc::clone(&self.view),
+        }
     }
 
     /// Return a tracing `MakeWriter` that will send messages to the debug log file if
@@ -210,19 +212,26 @@ impl Console {
 }
 
 /// Write trace output to the terminal via the console.
-pub struct TerminalWriter(Arc<nutmeg::View<LabModel>>);
+pub struct TerminalWriter {
+    view: Arc<nutmeg::View<LabModel>>,
+}
 
 impl<'w> MakeWriter<'w> for TerminalWriter {
     type Writer = Self;
 
     fn make_writer(&self) -> Self::Writer {
-        TerminalWriter(self.0.clone())
+        TerminalWriter {
+            view: Arc::clone(&self.view),
+        }
     }
 }
 
 impl std::io::Write for TerminalWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.message(std::str::from_utf8(buf).unwrap());
+        // This calls `message` rather than `View::write` because the latter
+        // only requires a &View and it handles locking internally, without
+        // requiring exclusive use of the Arc<View>.
+        self.view.message(std::str::from_utf8(buf).unwrap());
         Ok(buf.len())
     }
 
