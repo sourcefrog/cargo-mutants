@@ -8,9 +8,9 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use rand::prelude::*;
-use tracing::error;
 #[allow(unused)]
 use tracing::{debug, info};
+use tracing::{debug_span, error};
 
 use crate::cargo::{cargo_argv, run_cargo, CargoSourceTree};
 use crate::console::Console;
@@ -55,29 +55,33 @@ pub fn test_unmutated_then_all_mutants(
     } else {
         &[Phase::Build, Phase::Test]
     };
-    let outcome = run_cargo_phases(
-        build_dir_path,
-        &output_dir,
-        &options,
-        &Scenario::Baseline,
-        phases,
-        options.test_timeout.unwrap_or(Duration::MAX),
-        console,
-    )?;
-    lab_outcome.add(&outcome);
-    output_dir.update_lab_outcome(&lab_outcome)?;
-    output_dir.add_scenario_outcome(&outcome)?;
-    if !outcome.success() {
-        error!(
-            "cargo {} failed in an unmutated tree, so no mutants were tested",
-            outcome.last_phase(),
-        );
-        return Ok(lab_outcome); // TODO: Maybe should be Err?
+    let baseline_outcome;
+    {
+        let _span = debug_span!("baseline").entered();
+        baseline_outcome = run_cargo_phases(
+            build_dir_path,
+            &output_dir,
+            &options,
+            &Scenario::Baseline,
+            phases,
+            options.test_timeout.unwrap_or(Duration::MAX),
+            console,
+        )?;
+        lab_outcome.add(&baseline_outcome);
+        output_dir.update_lab_outcome(&lab_outcome)?;
+        output_dir.add_scenario_outcome(&baseline_outcome)?;
+        if !baseline_outcome.success() {
+            error!(
+                "cargo {} failed in an unmutated tree, so no mutants were tested",
+                baseline_outcome.last_phase(),
+            );
+            return Ok(lab_outcome); // TODO: Maybe should be Err?
+        }
     }
 
     let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
         timeout
-    } else if let Some(baseline_test_duration) = outcome.test_duration() {
+    } else if let Some(baseline_test_duration) = baseline_outcome.test_duration() {
         // If we didn't run tests in the baseline, e.g. for `--check`, there might be no duration.
         let auto_timeout = max(minimum_test_timeout()?, baseline_test_duration.mul_f32(5.0));
         if options.show_times {
@@ -90,6 +94,8 @@ pub fn test_unmutated_then_all_mutants(
 
     console.start_testing_mutants(mutants.len());
     for mutant in mutants {
+        let _span = debug_span!("mutant", location = %mutant.describe_location()).entered();
+        debug!("testing mutant {}", mutant.describe_change());
         let scenario = Scenario::Mutant(mutant.clone());
         let outcome = mutant.with_mutation_applied(&build_dir, || {
             run_cargo_phases(
@@ -145,7 +151,6 @@ fn run_cargo_phases(
     test_timeout: Duration,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
-    debug!("start testing {scenario} in {in_dir}");
     let mut log_file = output_dir.create_log(scenario)?;
     log_file.message(&scenario.to_string());
     if let Scenario::Mutant(mutant) = scenario {
@@ -169,7 +174,7 @@ fn run_cargo_phases(
             break;
         }
     }
-    debug!("{scenario} outcome {:?}", outcome.summary());
+    debug!("outcome {:?}", outcome.summary());
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)

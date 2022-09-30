@@ -58,7 +58,7 @@ impl BuildDir {
             .filter(|path, _dir_entry| {
                 let excluded = SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex));
                 if excluded {
-                    trace!("Excluding {path:?}");
+                    trace!("Skip {path:?}");
                 } else {
                     trace!("Copy {path:?}");
                 }
