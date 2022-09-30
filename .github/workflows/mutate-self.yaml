@@ -1,7 +1,14 @@
 # Run cargo mutants on itself
 name: cargo-mutants
 
-on: [pull_request, push]
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - ci-mutants
 
 jobs:
   cargo-mutants:
