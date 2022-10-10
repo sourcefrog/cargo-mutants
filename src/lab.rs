@@ -48,7 +48,7 @@ pub fn test_unmutated_then_all_mutants(
     }
     let mutants = mutants;
 
-    let build_dir = BuildDir::new(source_tree, &console, &options)?;
+    let build_dir = BuildDir::new(source_tree, console, &options)?;
     let build_dir_path = build_dir.path();
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
