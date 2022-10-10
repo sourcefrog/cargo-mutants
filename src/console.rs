@@ -18,6 +18,8 @@ use tracing_subscriber::prelude::*;
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::*;
 
+static COPY_MESSAGE: &str = "Copy source to scratch directory";
+
 /// An interface to the console for the rest of cargo-mutants.
 ///
 /// This wraps the Nutmeg view and model.
@@ -27,13 +29,16 @@ pub struct Console {
 
     /// The `mutants.out/debug.log` file, if it's open yet.
     debug_log: Arc<Mutex<Option<File>>>,
+
+    show_times: bool,
 }
 
 impl Console {
-    pub fn new() -> Console {
+    pub fn new(show_times: bool) -> Console {
         Console {
             view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
             debug_log: Arc::new(Mutex::new(None)),
+            show_times,
         }
     }
 
@@ -112,6 +117,52 @@ impl Console {
             "Auto-set test timeout to {}\n",
             style_secs(timeout)
         ));
+    }
+
+    pub fn start_copy(&self) {
+        self.view.update(|model| {
+            assert!(model.copy_model.is_none());
+            model.copy_model = Some(CopyModel::new());
+        });
+    }
+
+    pub fn finish_copy(&self) {
+        self.view.update(|model| {
+            model.copy_model = None;
+        });
+    }
+
+    pub fn copy_progress(&self, total_bytes: u64) {
+        self.view.update(|model| {
+            model
+                .copy_model
+                .as_mut()
+                .expect("copy in progress")
+                .bytes_copied(total_bytes)
+        });
+    }
+
+    pub fn copy_succeeded(&self, total_bytes: u64) {
+        let start = self
+            .view
+            .inspect_model(|model| model.copy_model.as_ref().expect("copy in progress").start);
+        self.view.update(|model| model.copy_model = None);
+        let message = if self.show_times {
+            format!(
+                "{} ... {} in {}\n",
+                COPY_MESSAGE,
+                style_mb(total_bytes),
+                style_elapsed_secs(start)
+            )
+        } else {
+            format!("{} ... {}\n", COPY_MESSAGE, style("done").green())
+        };
+        self.view.message(&message);
+    }
+
+    pub fn copy_failed(&self) {
+        // Error message is emitted to trace by the caller.
+        self.view.update(|model| model.copy_model = None);
     }
 
     /// Update that we discovered some mutants to test.
@@ -416,36 +467,24 @@ impl nutmeg::Model for ScenarioModel {
 }
 
 /// A Nutmeg model for progress in copying a tree.
-pub struct CopyModel {
+struct CopyModel {
     bytes_copied: u64,
     start: Instant,
-    name: &'static str,
-    succeeded: bool,
-    show_times: bool,
 }
 
 impl CopyModel {
-    pub fn new(name: &'static str, options: &Options) -> CopyModel {
+    fn new() -> CopyModel {
         CopyModel {
-            name,
             start: Instant::now(),
             bytes_copied: 0,
-            succeeded: false,
-            show_times: options.show_times,
         }
     }
 
     /// Update that some bytes have been copied.
     ///
     /// `bytes_copied` is the total bytes copied so far.
-    pub fn bytes_copied(&mut self, bytes_copied: u64) {
+    fn bytes_copied(&mut self, bytes_copied: u64) {
         self.bytes_copied = bytes_copied
-    }
-
-    /// Update that the copy succeeded, and set the _total_ number of bytes copies.
-    pub fn succeed(&mut self, total_bytes_copied: u64) {
-        self.succeeded = true;
-        self.bytes_copied = total_bytes_copied;
     }
 }
 
@@ -453,31 +492,14 @@ impl nutmeg::Model for CopyModel {
     fn render(&mut self, _width: usize) -> String {
         format!(
             "{} ... {} in {}",
-            self.name,
+            COPY_MESSAGE,
             style_mb(self.bytes_copied),
             style_elapsed_secs(self.start),
         )
     }
-
-    fn final_message(&mut self) -> String {
-        if self.succeeded {
-            if self.show_times {
-                format!(
-                    "{} ... {} in {}",
-                    self.name,
-                    style_mb(self.bytes_copied),
-                    style_elapsed_secs(self.start)
-                )
-            } else {
-                format!("{} ... {}", self.name, style("done").green())
-            }
-        } else {
-            format!("{} ... {}", self.name, style("failed").bold().red())
-        }
-    }
 }
 
-pub fn nutmeg_options() -> nutmeg::Options {
+fn nutmeg_options() -> nutmeg::Options {
     nutmeg::Options::default().print_holdoff(Duration::from_millis(200))
 }
 

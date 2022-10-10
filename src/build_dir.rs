@@ -37,7 +37,7 @@ pub struct BuildDir {
 
 impl BuildDir {
     /// Make a new build dir, copying from a source directory.
-    pub fn new(source: &dyn SourceTree, options: &Options) -> Result<BuildDir> {
+    pub fn new(source: &dyn SourceTree, console: &Console, _options: &Options) -> Result<BuildDir> {
         let name_tail = source.path().file_name().unwrap_or("");
         let temp_dir = tempfile::Builder::new()
             .prefix(&format!("cargo-mutants-{}-", name_tail))
@@ -45,13 +45,10 @@ impl BuildDir {
             .tempdir()
             .context("create temp dir")?;
         let build_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
-        let view = nutmeg::View::new(
-            console::CopyModel::new("Copy source to scratch directory", options),
-            console::nutmeg_options(),
-        );
+        console.start_copy();
         let copy_options = cp_r::CopyOptions::new()
             .after_entry_copied(|path, _ft, stats| {
-                view.update(|model| model.bytes_copied(stats.file_bytes));
+                console.copy_progress(stats.file_bytes);
                 check_interrupted()
                     .map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
             })
@@ -69,11 +66,11 @@ impl BuildDir {
             .context("copy source tree to lab directory")
         {
             Ok(stats) => {
-                view.update(|model| model.succeed(stats.file_bytes));
-                view.finish();
+                console.copy_succeeded(stats.file_bytes);
+                console.finish_copy();
             }
             Err(err) => {
-                view.finish();
+                console.copy_failed();
                 error!(
                     "error copying source tree {} to {}: {:?}",
                     &source.path().to_slash_path(),
