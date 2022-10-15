@@ -1,3 +1,5 @@
+// Copyright 2021, 2022 Martin Pool
+
 //! Manage a subprocess, with polling, timeouts, termination, and so on.
 //!
 //! This module is above the external `subprocess` crate, but has no
@@ -7,17 +9,21 @@
 //! grandchild processses are also signalled if it's interrupted.
 
 use std::ffi::OsString;
+use std::io::Read;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use subprocess::{Popen, PopenConfig, Redirection};
 #[allow(unused_imports)]
-use tracing::{debug, error, info, span, trace, warn, Level};
+use tracing::{debug, debug_span, error, info, span, trace, warn, Level};
 
 use crate::interrupt::check_interrupted;
 use crate::log_file::LogFile;
 use crate::Result;
+
+/// How long to wait for metadata-only Cargo commands.
+const METADATA_TIMEOUT: Duration = Duration::from_secs(20);
 
 pub struct Process {
     child: Popen,
@@ -170,4 +176,57 @@ fn setpgid_on_unix() -> PopenConfig {
 #[cfg(not(unix))]
 fn setpgid_on_unix() -> PopenConfig {
     Default::default()
+}
+
+/// Run a command and return its stdout output as a string.
+///
+/// If the command exits non-zero, the error includes any messages it wrote to stderr.
+///
+/// The runtime is capped by [METADATA_TIMEOUT].
+pub fn get_command_output(argv: &[&str], cwd: &Utf8Path) -> Result<String> {
+    // TODO: Perhaps redirect to files so this doesn't jam if there's a lot of output.
+    // For the commands we use this for today, which only produce small output, it's OK.
+    let _span = debug_span!("get_command_output", argv = ?argv).entered();
+    let mut child = Popen::create(
+        argv,
+        PopenConfig {
+            stdin: Redirection::None,
+            stdout: Redirection::Pipe,
+            stderr: Redirection::Pipe,
+            cwd: Some(cwd.as_os_str().to_owned()),
+            ..Default::default()
+        },
+    )
+    .with_context(|| format!("failed to spawn {argv:?}"))?;
+    match child.wait_timeout(METADATA_TIMEOUT) {
+        Err(e) => {
+            let message = format!("failed to wait for {argv:?}: {e}");
+            return Err(anyhow!(message));
+        }
+        Ok(None) => {
+            let message = format!("{argv:?} timed out",);
+            return Err(anyhow!(message));
+        }
+        Ok(Some(status)) if status.success() => {}
+        Ok(Some(status)) => {
+            let mut stderr = String::new();
+            let _ = child
+                .stderr
+                .take()
+                .expect("child has stderr")
+                .read_to_string(&mut stderr);
+            error!("child failed with status {status:?}: {stderr}");
+            let message = format!("{argv:?} failed with status {status:?}: {stderr}");
+            return Err(anyhow!(message));
+        }
+    }
+    let mut stdout = String::new();
+    child
+        .stdout
+        .take()
+        .expect("child has stdout")
+        .read_to_string(&mut stdout)
+        .context("failed to read child stdout")?;
+    debug!("output: {}", stdout.trim());
+    Ok(stdout)
 }

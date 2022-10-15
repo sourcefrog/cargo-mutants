@@ -4,12 +4,11 @@
 
 use std::collections::BTreeSet;
 use std::env;
-use std::io::Read;
 use std::rc::Rc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use ::subprocess::{Popen, PopenConfig, Redirection};
+#[allow(unused_imports)]
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use globset::GlobSet;
@@ -21,14 +20,11 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 use crate::console::Console;
 use crate::log_file::LogFile;
 use crate::path::TreeRelativePathBuf;
-use crate::process::{Process, ProcessStatus};
+use crate::process::{get_command_output, Process, ProcessStatus};
 use crate::*;
 
 /// How frequently to check if cargo finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
-
-/// How long to wait for metadata-only Cargo commands.
-const METADATA_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// The result of running a single Cargo command.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
@@ -154,41 +150,7 @@ impl CargoSourceTree {
 fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
     let cargo_bin = cargo_bin();
     let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
-    let argv_joined = argv.join(" ");
-    let mut child = Popen::create(
-        &argv,
-        PopenConfig {
-            stdin: Redirection::None,
-            stdout: Redirection::Pipe,
-            stderr: Redirection::Pipe,
-            cwd: Some(path.as_os_str().to_owned()),
-            ..Default::default()
-        },
-    )
-    .with_context(|| format!("failed to spawn {}", argv_joined))?;
-    match child.wait_timeout(METADATA_TIMEOUT) {
-        Err(e) => {
-            let message = format!("failed to wait for {}: {}", argv_joined, e);
-            return Err(anyhow!(message));
-        }
-        Ok(None) => {
-            let message = format!("{} timed out", argv_joined);
-            return Err(anyhow!(message));
-        }
-        Ok(Some(status)) if status.success() => {}
-        Ok(Some(status)) => {
-            let message = format!("{} failed with status {:?}", argv_joined, status);
-            return Err(anyhow!(message));
-        }
-    }
-    let mut stdout = String::new();
-    child
-        .stdout
-        .take()
-        .expect("child has stdout")
-        .read_to_string(&mut stdout)
-        .with_context(|| format!("failed to read stdout of {}", argv_joined))?;
-    debug!("locate-project output: {}", stdout.trim());
+    let stdout = get_command_output(&argv, path).context("run cargo locate-project")?;
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let cargo_toml_path: Utf8PathBuf = val["root"]
         .as_str()

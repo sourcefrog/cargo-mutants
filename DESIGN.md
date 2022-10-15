@@ -8,7 +8,9 @@ See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, 
 
 `main.rs` -- the `cargo mutants` entry point and command-line parsing.
 
-`cargo.rs` -- Run Cargo subprocesses, including dealing with timeouts and understanding Cargo output.
+`cargo.rs` -- Knows how to compose Cargo commands.
+
+Actually running subprocesses is delegated to `process.rs`, so that we can later potentially run different build tools to Cargo.
 
 `console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
