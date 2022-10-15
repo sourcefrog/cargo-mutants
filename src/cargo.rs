@@ -37,7 +37,7 @@ pub fn run_cargo(
 
     // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
     // <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
-    // TODO: Maybe this should append instead of overwriting it...?
+    //
     // The tests might use Insta <https://insta.rs>, and we don't want it to write
     // updates to the source tree, and we *certainly* don't want it to write
     // updates and then let the test pass.

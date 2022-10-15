@@ -6,7 +6,6 @@ use std::cmp::max;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
-use camino::Utf8Path;
 use rand::prelude::*;
 #[allow(unused)]
 use tracing::{debug, info};
@@ -48,8 +47,7 @@ pub fn test_unmutated_then_all_mutants(
     }
     let mutants = mutants;
 
-    let build_dir = BuildDir::new(source_tree, console, &options)?;
-    let build_dir_path = build_dir.path();
+    let mut build_dir = BuildDir::new(source_tree, console, &options)?;
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
     } else {
@@ -58,9 +56,9 @@ pub fn test_unmutated_then_all_mutants(
     let baseline_outcome;
     {
         let _span = debug_span!("baseline").entered();
-        baseline_outcome = run_cargo_phases(
-            build_dir_path,
-            &output_dir,
+        baseline_outcome = test_scenario(
+            &mut build_dir,
+            &mut output_dir,
             &options,
             &Scenario::Baseline,
             phases,
@@ -69,7 +67,6 @@ pub fn test_unmutated_then_all_mutants(
         )?;
         lab_outcome.add(&baseline_outcome);
         output_dir.update_lab_outcome(&lab_outcome)?;
-        output_dir.add_scenario_outcome(&baseline_outcome)?;
         if !baseline_outcome.success() {
             error!(
                 "cargo {} failed in an unmutated tree, so no mutants were tested",
@@ -97,19 +94,19 @@ pub fn test_unmutated_then_all_mutants(
         let _span = debug_span!("mutant", location = %mutant.describe_location()).entered();
         debug!("testing mutant {}", mutant.describe_change());
         let scenario = Scenario::Mutant(mutant.clone());
-        let outcome = mutant.with_mutation_applied(&build_dir, || {
-            run_cargo_phases(
-                build_dir_path,
-                &output_dir,
-                &options,
-                &scenario,
-                phases,
-                mutated_test_timeout,
-                console,
-            )
-        })?;
+        mutant.apply(&build_dir)?;
+        let r = test_scenario(
+            &mut build_dir,
+            &mut output_dir,
+            &options,
+            &scenario,
+            phases,
+            mutated_test_timeout,
+            console,
+        );
+        mutant.unapply(&build_dir)?; // Unapply even if there's an error.
+        let outcome = r?;
         lab_outcome.add(&outcome);
-        output_dir.add_scenario_outcome(&outcome)?;
         // Rewrite outcomes.json every time, so we can watch it and so it's not
         // lost if the program stops or is interrupted.
         output_dir.update_lab_outcome(&lab_outcome)?;
@@ -133,18 +130,15 @@ fn minimum_test_timeout() -> Result<Duration> {
     }
 }
 
-/// Successively run cargo check, build, test, and return the overall outcome in a build
-/// directory, which might have a mutation applied or not.
+/// Test various phases of one scenario in a build dir.
 ///
 /// This runs the given phases in order until one fails.
 ///
-/// `in_dir` may be the path of either a source tree (for freshening) or a
-/// [BuildDir] (for baseline and mutation builds.)
-///
-/// Return the outcome of the last phase run.
-fn run_cargo_phases(
-    in_dir: &Utf8Path,
-    output_dir: &OutputDir,
+/// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
+/// duration of the test.
+fn test_scenario(
+    build_dir: &mut BuildDir,
+    output_dir: &mut OutputDir,
     options: &Options,
     scenario: &Scenario,
     phases: &[Phase],
@@ -167,13 +161,20 @@ fn run_cargo_phases(
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let cargo_result = run_cargo(&cargo_argv, in_dir, &mut log_file, timeout, console)?;
+        let cargo_result = run_cargo(
+            &cargo_argv,
+            build_dir.path(),
+            &mut log_file,
+            timeout,
+            console,
+        )?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result, &cargo_argv);
         console.scenario_phase_finished(phase);
         if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
             break;
         }
     }
+    output_dir.add_scenario_outcome(&outcome)?;
     debug!("outcome {:?}", outcome.summary());
     console.scenario_finished(scenario, &outcome, options);
 

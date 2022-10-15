@@ -166,16 +166,12 @@ impl Mutant {
             .to_string()
     }
 
-    /// Run a function with this mutation applied, then revert it afterwards, even if the function
-    /// returns an error.
-    pub fn with_mutation_applied<F, T>(&self, build_dir: &BuildDir, mut func: F) -> Result<T>
-    where
-        F: FnMut() -> Result<T>,
-    {
-        self.write_in_dir(build_dir, &self.mutated_code())?;
-        let r = func();
-        self.write_in_dir(build_dir, self.original_code())?;
-        r
+    pub fn apply(&self, build_dir: &BuildDir) -> Result<()> {
+        self.write_in_dir(build_dir, &self.mutated_code())
+    }
+
+    pub fn unapply(&self, build_dir: &BuildDir) -> Result<()> {
+        self.write_in_dir(build_dir, self.original_code())
     }
 
     fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
