@@ -44,7 +44,6 @@ impl Console {
         let start = Instant::now();
         let scenario_model = ScenarioModel::new(scenario, start, log_file.to_owned());
         self.view.update(|model| {
-            model.i_mutant += scenario.is_mutant() as usize;
             model.scenario_model = Some(scenario_model);
         });
     }
@@ -56,13 +55,16 @@ impl Console {
         outcome: &ScenarioOutcome,
         options: &Options,
     ) {
-        self.view.update(|model| match outcome.summary() {
-            SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
-            SummaryOutcome::MissedMutant => model.mutants_missed += 1,
-            SummaryOutcome::Timeout => model.timeouts += 1,
-            SummaryOutcome::Unviable => model.unviable += 1,
-            SummaryOutcome::Success => model.successes += 1,
-            SummaryOutcome::Failure => model.failures += 1,
+        self.view.update(|model| {
+            model.mutants_done += scenario.is_mutant() as usize;
+            match outcome.summary() {
+                SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
+                SummaryOutcome::MissedMutant => model.mutants_missed += 1,
+                SummaryOutcome::Timeout => model.timeouts += 1,
+                SummaryOutcome::Unviable => model.unviable += 1,
+                SummaryOutcome::Success => model.successes += 1,
+                SummaryOutcome::Failure => model.failures += 1,
+            }
         });
 
         if (outcome.mutant_caught() && !options.print_caught)
@@ -145,14 +147,17 @@ impl Console {
             "Found {} to test\n",
             plural(mutants.len(), "mutant")
         ));
-    }
-
-    /// Update that work is starting on testing a given number of mutants.
-    pub fn start_testing_mutants(&self, n_mutants: usize) {
+        let n_mutants = mutants.len();
         self.view.update(|model| {
             model.n_mutants = n_mutants;
             model.lab_start_time = Some(Instant::now());
         })
+    }
+
+    /// Update that work is starting on testing a given number of mutants.
+    pub fn start_testing_mutants(&self, _n_mutants: usize) {
+        self.view
+            .update(|model| model.mutants_start_time = Some(Instant::now()));
     }
 
     /// A new phase of this scenario started.
@@ -303,7 +308,9 @@ struct LabModel {
     copy_model: Option<CopyModel>,
     scenario_model: Option<ScenarioModel>,
     lab_start_time: Option<Instant>,
-    i_mutant: usize,
+    // The instant when we started trying mutation scenarios, after running the baseline.
+    mutants_start_time: Option<Instant>,
+    mutants_done: usize,
     n_mutants: usize,
     mutants_caught: usize,
     mutants_missed: usize,
@@ -326,15 +333,14 @@ impl nutmeg::Model for LabModel {
             if let Some(lab_start_time) = self.lab_start_time {
                 let elapsed = lab_start_time.elapsed();
                 let percent = if self.n_mutants > 0 {
-                    ((self.i_mutant.saturating_sub(1) as f64) / (self.n_mutants as f64) * 100.0)
-                        .round()
+                    ((self.mutants_done as f64) / (self.n_mutants as f64) * 100.0).round()
                 } else {
                     0.0
                 };
                 write!(
                     s,
-                    "Trying mutant {}/{}, {percent}% done",
-                    self.i_mutant, self.n_mutants,
+                    "{}/{} mutants tested, {percent}% done",
+                    self.mutants_done, self.n_mutants,
                 )
                 .unwrap();
                 if self.mutants_missed > 0 {
@@ -357,13 +363,13 @@ impl nutmeg::Model for LabModel {
                 //     write!(s, ", {} failures", self.failures).unwrap();
                 // }
                 write!(s, ", {} elapsed", style_minutes_seconds(elapsed)).unwrap();
-                if self.i_mutant > 2 {
+                if self.mutants_done > 2 {
                     write!(
                         s,
                         ", about {} remaining",
                         style(nutmeg::estimate_remaining(
-                            &lab_start_time,
-                            self.i_mutant.saturating_sub(1),
+                            &self.mutants_start_time.unwrap(),
+                            self.mutants_done,
                             self.n_mutants
                         ))
                         .cyan()
