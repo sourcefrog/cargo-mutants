@@ -43,4 +43,11 @@ impl Scenario {
             _ => None,
         }
     }
+
+    pub fn mutant(&self) -> &Mutant {
+        match self {
+            Scenario::Mutant(mutant) => mutant,
+            _ => panic!("not a mutant scenario"),
+        }
+    }
 }

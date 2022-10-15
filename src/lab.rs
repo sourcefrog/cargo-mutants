@@ -44,7 +44,6 @@ pub fn test_unmutated_then_all_mutants(
     if mutants.is_empty() {
         return Err(anyhow!("No mutants found"));
     }
-    let mutants = mutants;
 
     let mut build_dir = BuildDir::new(source_tree, console, &options)?;
     let phases: &[Phase] = if options.check_only {
@@ -89,12 +88,12 @@ pub fn test_unmutated_then_all_mutants(
     };
 
     console.start_testing_mutants(mutants.len());
-    for (mutant_id, mutant) in mutants.iter().enumerate() {
+    for (mutant_id, mutant) in mutants.into_iter().enumerate() {
         let _span = debug_span!("mutant", id = mutant_id).entered();
         debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
-        let scenario = Scenario::Mutant(mutant.clone());
-        mutant.apply(&build_dir)?;
-        let r = test_scenario(
+        let scenario = Scenario::Mutant(mutant);
+        scenario.mutant().apply(&build_dir)?;
+        let result = test_scenario(
             &mut build_dir,
             &mut output_dir,
             &options,
@@ -103,9 +102,8 @@ pub fn test_unmutated_then_all_mutants(
             mutated_test_timeout,
             console,
         );
-        mutant.unapply(&build_dir)?; // Unapply even if there's an error.
-        let outcome = r?;
-        lab_outcome.add(&outcome);
+        scenario.mutant().unapply(&build_dir)?; // Unapply even if there's an error.
+        lab_outcome.add(&result?);
         // Rewrite outcomes.json every time, so we can watch it and so it's not
         // lost if the program stops or is interrupted.
         output_dir.update_lab_outcome(&lab_outcome)?;
