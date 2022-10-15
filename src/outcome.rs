@@ -84,6 +84,7 @@ impl LabOutcome {
                 SummaryOutcome::Failure => self.failure += 1,
             }
         }
+        self.outcomes.push(outcome);
     }
 
     /// Return the overall program exit code reflecting this outcome.
