@@ -98,6 +98,8 @@ pub struct OutputDir {
     /// A file holding a list of mutants where testing timed out, as text, one per line.
     timeout_list: File,
     unviable_list: File,
+    /// The accumulated overall lab outcome.
+    pub lab_outcome: LabOutcome,
 }
 
 impl OutputDir {
@@ -152,6 +154,7 @@ impl OutputDir {
             .context("create timeout.txt")?;
         Ok(OutputDir {
             path: output_dir,
+            lab_outcome: LabOutcome::new(),
             log_dir,
             lock_file,
             missed_list,
@@ -178,16 +181,18 @@ impl OutputDir {
     /// Update the state of the overall lab.
     ///
     /// Called multiple times as the lab runs.
-    pub fn update_lab_outcome(&self, lab_outcome: &LabOutcome) -> Result<()> {
+    pub fn write_lab_outcome(&self) -> Result<()> {
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(self.path.join("outcomes.json"))?),
-            &lab_outcome,
+            &self.lab_outcome,
         )
         .context("write outcomes.json")
     }
 
     /// Add the result of testing one scenario.
     pub fn add_scenario_outcome(&mut self, scenario_outcome: &ScenarioOutcome) -> Result<()> {
+        self.lab_outcome.add(scenario_outcome.to_owned());
+        self.write_lab_outcome()?;
         let scenario = &scenario_outcome.scenario;
         if let Scenario::Mutant(mutant) = scenario {
             let file = match scenario_outcome.summary() {
@@ -217,6 +222,10 @@ impl OutputDir {
             mutants,
         )
         .context("write mutants.json")
+    }
+
+    pub fn take_lab_outcome(self) -> LabOutcome {
+        self.lab_outcome
     }
 }
 

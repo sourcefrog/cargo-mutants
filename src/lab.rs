@@ -33,7 +33,6 @@ pub fn test_unmutated_then_all_mutants(
     };
     let mut output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
-    let mut lab_outcome = LabOutcome::new();
 
     let mut mutants = source_tree.mutants(&options)?;
     if options.shuffle {
@@ -63,14 +62,12 @@ pub fn test_unmutated_then_all_mutants(
             console,
         )?
     };
-    lab_outcome.add(baseline_outcome.clone());
-    output_dir.update_lab_outcome(&lab_outcome)?;
     if !baseline_outcome.success() {
         error!(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
             baseline_outcome.last_phase(),
         );
-        return Ok(lab_outcome); // TODO: Maybe should be Err?
+        return Ok(output_dir.take_lab_outcome()); // TODO: Maybe should be Err?
     }
 
     let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
@@ -91,7 +88,7 @@ pub fn test_unmutated_then_all_mutants(
     for (mutant_id, mutant) in mutants.into_iter().enumerate() {
         let _span = debug_span!("mutant", id = mutant_id).entered();
         debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
-        let outcome = test_scenario(
+        let _outcome = test_scenario(
             &mut build_dirs[0],
             &mut output_dir,
             &options,
@@ -100,13 +97,9 @@ pub fn test_unmutated_then_all_mutants(
             mutated_test_timeout,
             console,
         )?;
-        lab_outcome.add(outcome);
-        // Rewrite outcomes.json every time, so we can watch it and so it's not
-        // lost if the program stops or is interrupted.
-        output_dir.update_lab_outcome(&lab_outcome)?;
     }
-    console.lab_finished(&lab_outcome, start_time, &options);
-    Ok(lab_outcome)
+    console.lab_finished(&output_dir.lab_outcome, start_time, &options);
+    Ok(output_dir.take_lab_outcome())
 }
 
 /// Test various phases of one scenario in a build dir.
