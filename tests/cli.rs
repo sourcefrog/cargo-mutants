@@ -758,9 +758,6 @@ fn factorial_mutants_with_all_logs() {
         .code(2)
         .stderr("")
         .stdout(is_match(
-r"Copy source to scratch directory \.\.\. \d+ MB in \d+\.\ds"
-        ).unwrap())
-        .stdout(is_match(
 r"Unmutated baseline \.\.\. ok in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(

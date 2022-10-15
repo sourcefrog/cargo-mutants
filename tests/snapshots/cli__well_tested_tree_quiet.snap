@@ -3,7 +3,6 @@ source: tests/cli.rs
 expression: stdout
 ---
 Found 15 mutants to test
-Copy source to scratch directory ... done
 Unmutated baseline ... ok
 15 mutants tested: 15 caught
 

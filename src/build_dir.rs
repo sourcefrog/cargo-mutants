@@ -8,7 +8,7 @@ use std::fmt;
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
-use tracing::{error, trace};
+use tracing::{debug, error, trace};
 
 use crate::manifest::fix_cargo_config;
 use crate::*;
@@ -115,11 +115,12 @@ fn copy_tree(
         .context("copy tree")
     {
         Ok(stats) => {
-            console.copy_succeeded(stats.file_bytes);
-            console.finish_copy();
+            debug!(
+                files = stats.files,
+                file_bytes = stats.file_bytes / 1_000_000,
+            );
         }
         Err(err) => {
-            console.copy_failed();
             error!(
                 "error copying {} to {}: {:?}",
                 &from_path.to_slash_path(),
@@ -129,5 +130,6 @@ fn copy_tree(
             return Err(err);
         }
     }
+    console.finish_copy();
     Ok(temp_dir)
 }

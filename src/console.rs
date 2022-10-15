@@ -29,16 +29,15 @@ pub struct Console {
 
     /// The `mutants.out/debug.log` file, if it's open yet.
     debug_log: Arc<Mutex<Option<File>>>,
-
-    show_times: bool,
+    // show_times: bool,
 }
 
 impl Console {
-    pub fn new(show_times: bool) -> Console {
+    pub fn new(_show_times: bool) -> Console {
         Console {
             view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
             debug_log: Arc::new(Mutex::new(None)),
-            show_times,
+            // show_times,
         }
     }
 
@@ -140,29 +139,6 @@ impl Console {
                 .expect("copy in progress")
                 .bytes_copied(total_bytes)
         });
-    }
-
-    pub fn copy_succeeded(&self, total_bytes: u64) {
-        let start = self
-            .view
-            .inspect_model(|model| model.copy_model.as_ref().expect("copy in progress").start);
-        self.view.update(|model| model.copy_model = None);
-        let message = if self.show_times {
-            format!(
-                "{} ... {} in {}\n",
-                COPY_MESSAGE,
-                style_mb(total_bytes),
-                style_elapsed_secs(start)
-            )
-        } else {
-            format!("{} ... {}\n", COPY_MESSAGE, style("done").green())
-        };
-        self.view.message(&message);
-    }
-
-    pub fn copy_failed(&self) {
-        // Error message is emitted to trace by the caller.
-        self.view.update(|model| model.copy_model = None);
     }
 
     /// Update that we discovered some mutants to test.

@@ -3,7 +3,6 @@ source: tests/cli.rs
 expression: stdout
 ---
 Found 15 mutants to test
-Copy source to scratch directory ... done
 Unmutated baseline ... ok
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with Default::default() ... ok
 src/methods.rs:16: replace Foo::double with () ... ok
