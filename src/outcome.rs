@@ -72,8 +72,7 @@ impl LabOutcome {
     }
 
     /// Record the event of one test.
-    pub fn add(&mut self, outcome: &ScenarioOutcome) {
-        self.outcomes.push(outcome.clone());
+    pub fn add(&mut self, outcome: ScenarioOutcome) {
         if outcome.scenario.is_mutant() {
             self.total_mutants += 1;
             match outcome.summary() {

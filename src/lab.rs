@@ -51,10 +51,9 @@ pub fn test_unmutated_then_all_mutants(
     } else {
         &[Phase::Build, Phase::Test]
     };
-    let baseline_outcome;
-    {
+    let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
-        baseline_outcome = test_scenario(
+        test_scenario(
             &mut build_dir,
             &mut output_dir,
             &options,
@@ -62,16 +61,16 @@ pub fn test_unmutated_then_all_mutants(
             phases,
             options.test_timeout.unwrap_or(Duration::MAX),
             console,
-        )?;
-        lab_outcome.add(&baseline_outcome);
-        output_dir.update_lab_outcome(&lab_outcome)?;
-        if !baseline_outcome.success() {
-            error!(
-                "cargo {} failed in an unmutated tree, so no mutants were tested",
-                baseline_outcome.last_phase(),
-            );
-            return Ok(lab_outcome); // TODO: Maybe should be Err?
-        }
+        )?
+    };
+    lab_outcome.add(baseline_outcome.clone());
+    output_dir.update_lab_outcome(&lab_outcome)?;
+    if !baseline_outcome.success() {
+        error!(
+            "cargo {} failed in an unmutated tree, so no mutants were tested",
+            baseline_outcome.last_phase(),
+        );
+        return Ok(lab_outcome); // TODO: Maybe should be Err?
     }
 
     let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
@@ -91,40 +90,22 @@ pub fn test_unmutated_then_all_mutants(
     for (mutant_id, mutant) in mutants.into_iter().enumerate() {
         let _span = debug_span!("mutant", id = mutant_id).entered();
         debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
-        let scenario = Scenario::Mutant(mutant);
-        scenario.mutant().apply(&build_dir)?;
-        let result = test_scenario(
+        let outcome = test_scenario(
             &mut build_dir,
             &mut output_dir,
             &options,
-            &scenario,
+            &Scenario::Mutant(mutant),
             phases,
             mutated_test_timeout,
             console,
-        );
-        scenario.mutant().unapply(&build_dir)?; // Unapply even if there's an error.
-        lab_outcome.add(&result?);
+        )?;
+        lab_outcome.add(outcome);
         // Rewrite outcomes.json every time, so we can watch it and so it's not
         // lost if the program stops or is interrupted.
         output_dir.update_lab_outcome(&lab_outcome)?;
     }
     console.lab_finished(&lab_outcome, start_time, &options);
     Ok(lab_outcome)
-}
-
-/// Return the minimum timeout for cargo tests (used if the baseline tests are fast),
-/// from either the environment or a built-in default.
-fn minimum_test_timeout() -> Result<Duration> {
-    let var_name = crate::MINIMUM_TEST_TIMEOUT_ENV_VAR;
-    if let Some(env_timeout) = env::var_os(var_name) {
-        let env_timeout = env_timeout
-            .to_string_lossy()
-            .parse()
-            .with_context(|| format!("invalid {var_name}"))?;
-        Ok(Duration::from_secs(env_timeout))
-    } else {
-        Ok(DEFAULT_MINIMUM_TEST_TIMEOUT)
-    }
 }
 
 /// Test various phases of one scenario in a build dir.
@@ -146,6 +127,7 @@ fn test_scenario(
     log_file.message(&scenario.to_string());
     if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
+        mutant.apply(build_dir)?;
     }
     console.scenario_started(scenario, log_file.path());
 
@@ -171,9 +153,27 @@ fn test_scenario(
             break;
         }
     }
+    if let Scenario::Mutant(mutant) = scenario {
+        mutant.unapply(build_dir)?;
+    }
     output_dir.add_scenario_outcome(&outcome)?;
     debug!(outcome = ?outcome.summary());
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
+}
+
+/// Return the minimum timeout for cargo tests (used if the baseline tests are fast),
+/// from either the environment or a built-in default.
+fn minimum_test_timeout() -> Result<Duration> {
+    let var_name = crate::MINIMUM_TEST_TIMEOUT_ENV_VAR;
+    if let Some(env_timeout) = env::var_os(var_name) {
+        let env_timeout = env_timeout
+            .to_string_lossy()
+            .parse()
+            .with_context(|| format!("invalid {var_name}"))?;
+        Ok(Duration::from_secs(env_timeout))
+    } else {
+        Ok(DEFAULT_MINIMUM_TEST_TIMEOUT)
+    }
 }
