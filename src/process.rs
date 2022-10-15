@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
+use serde::Serialize;
 use subprocess::{Popen, PopenConfig, Redirection};
 #[allow(unused_imports)]
 use tracing::{debug, debug_span, error, info, span, trace, warn, Level};
@@ -157,11 +158,21 @@ fn terminate_child_impl(child: &mut Popen) -> Result<()> {
 }
 
 /// The result of running a single child process.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum ProcessStatus {
     Success,
     Failure,
     Timeout,
+}
+
+impl ProcessStatus {
+    pub fn success(&self) -> bool {
+        *self == ProcessStatus::Success
+    }
+
+    pub fn timeout(&self) -> bool {
+        *self == ProcessStatus::Timeout
+    }
 }
 
 #[cfg(unix)]

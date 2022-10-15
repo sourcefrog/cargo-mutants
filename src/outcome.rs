@@ -15,6 +15,7 @@ use serde::Serializer;
 use crate::console::{duration_minutes_seconds, plural};
 use crate::exit_code;
 use crate::log_file::LogFile;
+use crate::process::ProcessStatus;
 use crate::*;
 
 /// What phase of running a scenario.
@@ -177,7 +178,7 @@ impl ScenarioOutcome {
         &mut self,
         phase: Phase,
         duration: Duration,
-        cargo_result: CargoResult,
+        cargo_result: ProcessStatus,
         command: &[String],
     ) {
         self.phase_results.push(PhaseResult {
@@ -196,7 +197,7 @@ impl ScenarioOutcome {
         self.phase_results.last().unwrap().phase
     }
 
-    pub fn last_phase_result(&self) -> CargoResult {
+    pub fn last_phase_result(&self) -> ProcessStatus {
         self.phase_results.last().unwrap().cargo_result
     }
 
@@ -217,20 +218,20 @@ impl ScenarioOutcome {
     pub fn has_timeout(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.cargo_result == CargoResult::Timeout)
+            .any(|pr| pr.cargo_result.timeout())
     }
 
     pub fn check_or_build_failed(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.phase != Phase::Test && pr.cargo_result == CargoResult::Failure)
+            .any(|pr| pr.phase != Phase::Test && pr.cargo_result == ProcessStatus::Failure)
     }
 
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
     pub fn mutant_caught(&self) -> bool {
         self.scenario.is_mutant()
             && self.last_phase() == Phase::Test
-            && self.last_phase_result() == CargoResult::Failure
+            && self.last_phase_result() == ProcessStatus::Failure
     }
 
     /// True if this outcome is a missed mutant: it's a mutant and the tests succeeded.
@@ -288,7 +289,7 @@ pub struct PhaseResult {
     /// How long did it take?
     pub duration: Duration,
     /// Did it succeed?
-    pub cargo_result: CargoResult,
+    pub cargo_result: ProcessStatus,
     /// What command was run, as an argv list.
     pub command: Vec<String>,
 }

@@ -12,7 +12,6 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
 use globset::GlobSet;
-use serde::Serialize;
 use serde_json::Value;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
@@ -26,28 +25,6 @@ use crate::*;
 /// How frequently to check if cargo finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
-/// The result of running a single Cargo command.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
-pub enum CargoResult {
-    // Note: This is not, for now, a Result, because it seems like there is
-    // no clear "normal" success: sometimes a non-zero exit is what we want, etc.
-    // They seem to be all on the same level as far as how the caller should respond.
-    // However, failing to even start Cargo is simply an Error, and should
-    // probably stop the cargo-mutants job.
-    /// Cargo was killed by a timeout.
-    Timeout,
-    /// Cargo exited successfully.
-    Success,
-    /// Cargo failed for some reason.
-    Failure,
-}
-
-impl CargoResult {
-    pub fn success(&self) -> bool {
-        matches!(self, CargoResult::Success)
-    }
-}
-
 /// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
 pub fn run_cargo(
     argv: &[String],
@@ -55,7 +32,7 @@ pub fn run_cargo(
     log_file: &mut LogFile,
     timeout: Duration,
     console: &Console,
-) -> Result<CargoResult> {
+) -> Result<ProcessStatus> {
     let start = Instant::now();
 
     // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
@@ -86,11 +63,7 @@ pub fn run_cargo(
     log_file.message(&message);
     debug!("{}", message);
     check_interrupted()?;
-    match process_status {
-        ProcessStatus::Timeout => Ok(CargoResult::Timeout),
-        ProcessStatus::Failure => Ok(CargoResult::Failure),
-        ProcessStatus::Success => Ok(CargoResult::Success),
-    }
+    Ok(process_status)
 }
 
 /// Return the name of the cargo binary.

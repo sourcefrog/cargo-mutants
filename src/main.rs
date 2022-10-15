@@ -39,7 +39,7 @@ use serde_json::Value;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
-use crate::cargo::{CargoResult, CargoSourceTree};
+use crate::cargo::CargoSourceTree;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::log_file::{last_line, LogFile};
