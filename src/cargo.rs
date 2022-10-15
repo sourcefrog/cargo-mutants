@@ -61,7 +61,7 @@ pub fn run_cargo(
         start.elapsed().as_secs_f64()
     );
     log_file.message(&message);
-    debug!("{}", message);
+    debug!(cargo_result = ?process_status, elapsed = ?start.elapsed());
     check_interrupted()?;
     Ok(process_status)
 }

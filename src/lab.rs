@@ -8,8 +8,7 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, Context, Result};
 use rand::prelude::*;
 #[allow(unused)]
-use tracing::{debug, info};
-use tracing::{debug_span, error};
+use tracing::{debug, debug_span, error, info};
 
 use crate::cargo::{cargo_argv, run_cargo, CargoSourceTree};
 use crate::console::Console;
@@ -90,9 +89,9 @@ pub fn test_unmutated_then_all_mutants(
     };
 
     console.start_testing_mutants(mutants.len());
-    for mutant in mutants {
-        let _span = debug_span!("mutant", location = %mutant.describe_location()).entered();
-        debug!("testing mutant {}", mutant.describe_change());
+    for (mutant_id, mutant) in mutants.iter().enumerate() {
+        let _span = debug_span!("mutant", id = mutant_id).entered();
+        debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
         let scenario = Scenario::Mutant(mutant.clone());
         mutant.apply(&build_dir)?;
         let r = test_scenario(
@@ -175,7 +174,7 @@ fn test_scenario(
         }
     }
     output_dir.add_scenario_outcome(&outcome)?;
-    debug!("outcome {:?}", outcome.summary());
+    debug!(outcome = ?outcome.summary());
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
