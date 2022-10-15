@@ -179,7 +179,7 @@ fn main() -> Result<()> {
             exit(exit_code::USAGE);
         }
     };
-    let console = Console::new(!args.no_times);
+    let console = Console::new();
     console.setup_global_trace(args.level)?;
 
     let options = Options::try_from(&args)?;

@@ -29,15 +29,13 @@ pub struct Console {
 
     /// The `mutants.out/debug.log` file, if it's open yet.
     debug_log: Arc<Mutex<Option<File>>>,
-    // show_times: bool,
 }
 
 impl Console {
-    pub fn new(_show_times: bool) -> Console {
+    pub fn new() -> Console {
         Console {
             view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
             debug_log: Arc::new(Mutex::new(None)),
-            // show_times,
         }
     }
 
