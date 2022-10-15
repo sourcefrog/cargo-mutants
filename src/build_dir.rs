@@ -3,6 +3,7 @@
 //! A temporary directory containing mutated source to run cargo builds and tests.
 
 use std::convert::TryInto;
+use std::fmt;
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -26,69 +27,35 @@ const SOURCE_EXCLUDE: &[&str] = &[
 ];
 
 /// A temporary directory initialized with a copy of the source, where mutations can be tested.
-#[derive(Debug)]
 pub struct BuildDir {
     /// The path of the root of the temporary directory.
     path: Utf8PathBuf,
+    /// A prefix for tempdir names, based on the name of the source directory.
+    name_base: String,
     /// Holds a reference to the temporary directory, so that it will be deleted when this
     /// object is dropped.
-    _temp_dir: TempDir,
+    #[allow(dead_code)]
+    temp_dir: TempDir,
 }
 
 impl BuildDir {
     /// Make a new build dir, copying from a source directory.
-    pub fn new(source: &dyn SourceTree, console: &Console, _options: &Options) -> Result<BuildDir> {
-        let name_tail = source.path().file_name().unwrap_or("");
-        let temp_dir = tempfile::Builder::new()
-            .prefix(&format!("cargo-mutants-{}-", name_tail))
-            .suffix(".tmp")
-            .tempdir()
-            .context("create temp dir")?;
-        let build_path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
-        console.start_copy();
-        let copy_options = cp_r::CopyOptions::new()
-            .after_entry_copied(|path, _ft, stats| {
-                console.copy_progress(stats.file_bytes);
-                check_interrupted()
-                    .map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
-            })
-            .filter(|path, _dir_entry| {
-                let excluded = SOURCE_EXCLUDE.iter().any(|ex| path.ends_with(ex));
-                if excluded {
-                    trace!("Skip {path:?}");
-                } else {
-                    trace!("Copy {path:?}");
-                }
-                Ok(!excluded)
-            });
-        match copy_options
-            .copy_tree(source.path(), temp_dir.path())
-            .context("copy source tree to lab directory")
-        {
-            Ok(stats) => {
-                console.copy_succeeded(stats.file_bytes);
-                console.finish_copy();
-            }
-            Err(err) => {
-                console.copy_failed();
-                error!(
-                    "error copying source tree {} to {}: {:?}",
-                    &source.path().to_slash_path(),
-                    &temp_dir.path().to_slash_lossy(),
-                    err
-                );
-                return Err(err);
-            }
-        }
+    ///
+    /// [SOURCE_EXCLUDE] is excluded.
+    pub fn new(source: &dyn SourceTree, console: &Console) -> Result<BuildDir> {
+        let name_base = format!("cargo-mutants-{}-", source.path().file_name().unwrap_or(""));
         let source_abs = source
             .path()
             .canonicalize_utf8()
             .expect("canonicalize source path");
-        fix_manifest(&build_path.join("Cargo.toml"), &source_abs)?;
-        fix_cargo_config(&build_path, &source_abs)?;
+        let temp_dir = copy_tree(source.path(), &name_base, SOURCE_EXCLUDE, console)?;
+        let path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
+        fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
+        fix_cargo_config(&path, &source_abs)?;
         let build_dir = BuildDir {
-            _temp_dir: temp_dir,
-            path: build_path,
+            temp_dir,
+            name_base,
+            path,
         };
         Ok(build_dir)
     }
@@ -96,4 +63,71 @@ impl BuildDir {
     pub fn path(&self) -> &Utf8Path {
         self.path.as_path()
     }
+
+    /// Make a copy of this build dir, including its target directory.
+    #[allow(dead_code)]
+    pub fn copy(&self, console: &Console) -> Result<BuildDir> {
+        let temp_dir = copy_tree(&self.path, &self.name_base, &[], console)?;
+        Ok(BuildDir {
+            path: temp_dir.path().to_owned().try_into().unwrap(),
+            temp_dir,
+            name_base: self.name_base.clone(),
+        })
+    }
+}
+
+impl fmt::Debug for BuildDir {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BuildDir")
+            .field("path", &self.path)
+            .finish()
+    }
+}
+
+fn copy_tree(
+    from_path: &Utf8Path,
+    name_base: &str,
+    exclude: &[&str],
+    console: &Console,
+) -> Result<TempDir> {
+    let temp_dir = tempfile::Builder::new()
+        .prefix(&name_base)
+        .suffix(".tmp")
+        .tempdir()
+        .context("create temp dir")?;
+    console.start_copy();
+    let copy_options = cp_r::CopyOptions::new()
+        .after_entry_copied(|path, _ft, stats| {
+            console.copy_progress(stats.file_bytes);
+            check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
+        })
+        .filter(|path, _dir_entry| {
+            let excluded = exclude.iter().any(|ex| path.ends_with(ex));
+            if excluded {
+                trace!("Skip {path:?}");
+            } else {
+                trace!("Copy {path:?}");
+            }
+            Ok(!excluded)
+        });
+    match copy_options
+        .copy_tree(from_path, temp_dir.path())
+        .context("copy tree")
+    {
+        Ok(stats) => {
+            console.copy_succeeded(stats.file_bytes);
+            console.finish_copy();
+        }
+        Err(err) => {
+            console.copy_failed();
+            error!(
+                "error copying {} to {}: {:?}",
+                &from_path.to_slash_path(),
+                &temp_dir.path().to_slash_lossy(),
+                err
+            );
+            return Err(err);
+        }
+    }
+    Ok(temp_dir)
 }

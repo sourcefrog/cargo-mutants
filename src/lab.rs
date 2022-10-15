@@ -45,7 +45,7 @@ pub fn test_unmutated_then_all_mutants(
         return Err(anyhow!("No mutants found"));
     }
 
-    let mut build_dir = BuildDir::new(source_tree, console, &options)?;
+    let mut build_dirs = vec![BuildDir::new(source_tree, console)?];
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
     } else {
@@ -54,7 +54,7 @@ pub fn test_unmutated_then_all_mutants(
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(
-            &mut build_dir,
+            &mut build_dirs[0],
             &mut output_dir,
             &options,
             &Scenario::Baseline,
@@ -86,12 +86,13 @@ pub fn test_unmutated_then_all_mutants(
         Duration::MAX
     };
 
+    // build_dirs.push(build_dirs[0].copy(console)?);
     console.start_testing_mutants(mutants.len());
     for (mutant_id, mutant) in mutants.into_iter().enumerate() {
         let _span = debug_span!("mutant", id = mutant_id).entered();
         debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
         let outcome = test_scenario(
-            &mut build_dir,
+            &mut build_dirs[0],
             &mut output_dir,
             &options,
             &Scenario::Mutant(mutant),
