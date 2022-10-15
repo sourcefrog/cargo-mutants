@@ -339,21 +339,35 @@ impl nutmeg::Model for LabModel {
                 };
                 write!(
                     s,
-                    "{}/{} mutants tested, {percent}% done",
-                    self.mutants_done, self.n_mutants,
+                    "{}/{} mutants tested, {}% done",
+                    style(self.mutants_done).cyan(),
+                    style(self.n_mutants).cyan(),
+                    style(percent).cyan(),
                 )
                 .unwrap();
                 if self.mutants_missed > 0 {
-                    write!(s, ", {} missed", self.mutants_missed).unwrap();
+                    write!(
+                        s,
+                        ", {} {}",
+                        style(self.mutants_missed).cyan(),
+                        style("missed").red()
+                    )
+                    .unwrap();
                 }
                 if self.timeouts > 0 {
-                    write!(s, ", {} timeouts", self.timeouts).unwrap();
+                    write!(
+                        s,
+                        ", {} {}",
+                        style(self.timeouts).cyan(),
+                        style("timeout").red()
+                    )
+                    .unwrap();
                 }
                 if self.mutants_caught > 0 {
-                    write!(s, ", {} caught", self.mutants_caught).unwrap();
+                    write!(s, ", {} caught", style(self.mutants_caught).cyan()).unwrap();
                 }
                 if self.unviable > 0 {
-                    write!(s, ", {} unviable", self.unviable).unwrap();
+                    write!(s, ", {} unviable", style(self.unviable).cyan()).unwrap();
                 }
                 // Maybe don't report these, because they're uninteresting?
                 // if self.successes > 0 {
