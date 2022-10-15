@@ -40,9 +40,8 @@ impl Process {
         log_file: &mut LogFile,
     ) -> Result<Process> {
         let start = Instant::now();
-        let message = format!("run {}", argv.join(" "),);
-        log_file.message(&message);
-        debug!("{}", message);
+        log_file.message(&format!("run {}", argv.join(" ")));
+        debug!("start {argv:?}");
         let mut os_env = PopenConfig::current_env();
         os_env.extend(
             env.iter()
@@ -157,6 +156,7 @@ fn terminate_child_impl(child: &mut Popen) -> Result<()> {
     Ok(())
 }
 
+/// The result of running a single child process.
 #[derive(Debug, PartialEq, Eq)]
 pub enum ProcessStatus {
     Success,
