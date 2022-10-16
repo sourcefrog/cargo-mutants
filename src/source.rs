@@ -2,7 +2,7 @@
 
 //! Access to a Rust source tree and files.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use camino::Utf8Path;
@@ -25,10 +25,10 @@ pub struct SourceFile {
     pub tree_relative_path: TreeRelativePathBuf,
 
     /// Full copy of the source.
-    pub code: Rc<String>,
+    pub code: Arc<String>,
 
     /// Package within the workspace.
-    pub package_name: Rc<String>,
+    pub package_name: Arc<String>,
 }
 
 impl SourceFile {
@@ -38,7 +38,7 @@ impl SourceFile {
     pub fn new(
         tree_path: &Utf8Path,
         tree_relative_path: TreeRelativePathBuf,
-        package_name: Rc<String>,
+        package_name: Arc<String>,
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
@@ -46,7 +46,7 @@ impl SourceFile {
             .replace("\r\n", "\n");
         Ok(SourceFile {
             tree_relative_path,
-            code: Rc::new(code),
+            code: Arc::new(code),
             package_name,
         })
     }
@@ -117,7 +117,7 @@ mod test {
         let source_file = SourceFile::new(
             temp_dir_path,
             file_name.parse().unwrap(),
-            Rc::new("imaginary-package".to_owned()),
+            Arc::new("imaginary-package".to_owned()),
         )
         .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");

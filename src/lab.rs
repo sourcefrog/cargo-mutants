@@ -67,7 +67,9 @@ pub fn test_unmutated_then_all_mutants(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
             baseline_outcome.last_phase(),
         );
-        return Ok(output_dir.take_lab_outcome()); // TODO: Maybe should be Err?
+        // TODO: Maybe should be Err, but it would need to be an error that can map to the right
+        // exit code.
+        return Ok(output_dir.take_lab_outcome());
     }
 
     let mutated_test_timeout = if let Some(timeout) = options.test_timeout {

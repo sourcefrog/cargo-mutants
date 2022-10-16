@@ -4,7 +4,7 @@
 
 use std::collections::BTreeSet;
 use std::env;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -159,13 +159,13 @@ impl SourceTree for CargoSourceTree {
                 &options.examine_globset,
                 &options.exclude_globset,
             )?;
-            let package_name = Rc::new(package_metadata.name.to_string());
+            let package_name = Arc::new(package_metadata.name.to_string());
             for source_path in source_paths {
                 check_interrupted()?;
                 r.push(SourceFile::new(
                     &self.root,
                     source_path,
-                    Rc::clone(&package_name),
+                    Arc::clone(&package_name),
                 )?);
             }
         }
