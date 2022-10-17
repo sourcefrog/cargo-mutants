@@ -115,10 +115,7 @@ fn copy_tree(
         .context("copy tree")
     {
         Ok(stats) => {
-            debug!(
-                files = stats.files,
-                file_bytes = stats.file_bytes / 1_000_000,
-            );
+            debug!(files = stats.files, file_bytes = stats.file_bytes,);
         }
         Err(err) => {
             error!(
