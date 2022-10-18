@@ -463,12 +463,6 @@ Possibly it could learn to get type information from the compiler (or
 rust-analyzer?), which would help it generate more interesting viable mutants,
 and fewer unviable mutants.
 
-To make this faster on large trees, we could keep several scratch trees and
-test them in parallel, which is likely to exploit CPU resources more
-thoroughly than Cargo's own parallelism: in particular Cargo tends to fall
-down to a single task during linking, and often comes down to running a single
-straggler test at a time. <https://github.com/sourcefrog/cargo-mutants/issues/39>
-
 ## Code of Conduct
 
 Interaction with or participation in this project is governed by the [Rust Code
