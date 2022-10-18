@@ -27,7 +27,6 @@ pub fn test_unmutated_then_all_mutants(
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
-    let jobs = options.jobs.unwrap_or(1);
     let start_time = Instant::now();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
         o.as_path()
@@ -92,6 +91,7 @@ pub fn test_unmutated_then_all_mutants(
         Duration::MAX
     };
 
+    let jobs = std::cmp::max(1, std::cmp::min(options.jobs.unwrap_or(1), mutants.len()));
     // Create more build dirs
     // TODO: Progress indicator; maybe run them in parallel.
     console.build_dirs_start(jobs - 1);
