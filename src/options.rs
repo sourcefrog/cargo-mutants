@@ -62,6 +62,8 @@ pub struct Options {
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
+
+    pub jobs: Option<usize>,
 }
 
 impl TryFrom<&Args> for Options {
@@ -84,6 +86,7 @@ impl TryFrom<&Args> for Options {
                 RegexSet::new(&args.exclude_re).context("Compiling exclude_re regex")?,
             ),
             exclude_globset: build_glob_set(&args.exclude)?,
+            jobs: args.jobs,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,

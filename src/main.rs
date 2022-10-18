@@ -94,11 +94,6 @@ struct Args {
     #[arg(long, short = 'd')]
     dir: Option<Utf8PathBuf>,
 
-    /// glob for files to examine; with no glob, all files are examined; globs containing
-    /// slash match the entire path. If used together with `--exclude` argument, then the files to be examined are matched before the files to be excluded.
-    #[arg(long, short = 'f')]
-    file: Vec<String>,
-
     /// regex for mutations to examine, matched against the names shown by `--list`.
     #[arg(long = "re", short = 'F')]
     examine_re: Vec<String>,
@@ -111,6 +106,15 @@ struct Args {
     /// regex for mutations to exclude, matched against the names shown by `--list`.
     #[arg(long, short = 'E')]
     exclude_re: Vec<String>,
+
+    /// glob for files to examine; with no glob, all files are examined; globs containing
+    /// slash match the entire path. If used together with `--exclude` argument, then the files to be examined are matched before the files to be excluded.
+    #[arg(long, short = 'f')]
+    file: Vec<String>,
+
+    /// run this many cargo build/test jobs in parallel.
+    #[arg(long, short = 'j')]
+    jobs: Option<usize>,
 
     /// output json (only for --list).
     #[arg(long)]

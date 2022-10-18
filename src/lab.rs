@@ -27,8 +27,7 @@ pub fn test_unmutated_then_all_mutants(
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
-    // let n_threads = 16; // TODO: In Options and autodetected
-    let jobs = 1;
+    let jobs = options.jobs.unwrap_or(1);
     let start_time = Instant::now();
     let output_in_dir = if let Some(o) = &options.output_in_dir {
         o.as_path()

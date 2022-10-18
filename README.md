@@ -69,6 +69,8 @@ then the files to be examined are matched before the files to be excluded.
 
 `--diff`: With `--list`, also include a diff of the source change for each mutant.
 
+`--jobs`: Run this many jobs in parallel.
+
 `--json`: With `--list`, show the list in json.
 
 `--check`: Run `cargo check` on all generated mutants to find out which ones are viable, but don't actually run the tests.
@@ -211,6 +213,20 @@ The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.
 When a test times out, you can mark it with `#[mutants::skip]` so that future
 `cargo mutants` runs go faster.
 
+### Parallelism
+
+The `--jobs` or `-j` option allows to test multiple mutants in parallel, by spawning several Cargo processes.
+
+This can be somewhat faster by using up CPU resources that would otherwise be idle when Cargo or unit tests aren't fulling exploiting available parallelism. In my experiments parallel testing can give a 25% performance improvement on some trees. The effect is very dependent on the tree under test: tests that already use 100% of CPU for their entire runtime will see less benefit from parallelism.
+
+The default is currently to run only one job at a time. It's reasonable to set this to any value up to the number of CPU cores, or even a bit more, if you have enough RAM to run that many parallel jobs.
+
+Note that, because Cargo and Rust tests also create multiple threads, high values for this option can use machine resources much more greedily than running any single `cargo test` process. This avoids wasted/idle resources and gets results faster. However, it  may have effects including memory exhaustion (which may cause tasks to be killed), or high thermal load. The best setting will depend on many factors including the behavior of your program's test suite, the amount of memory on your system, and your system's behavior under high thermal load.
+
+`-j 4` may be a good starting point, even if you have many more CPUs. Start there and watch memory and CPU usage, and tune towards a setting where all cores are always utilized without memory usage going too high, and without thermal issues.
+
+Because tests may be slower with high parallelism, you may see some spurious timeouts, and you may need to set `--timeout` manually to allow enough safety margin.
+
 ### Performance
 
 Most of the runtime for cargo-mutants is spent in running the program test suite
@@ -234,7 +250,7 @@ On _some but not all_ projects, cargo-mutants can be faster if you use `-C --rel
 
 By default cargo-mutants copies the `target/` directory from the source tree. Rust target directories can accumulate excessive volumes of old build products.
 
-cargo-mutants causes the Rust toolchain (and, often, the program under test) to read and write *many* temporary files. Setting the temporary directory onto a ramdisk can improve performance significantly. For example on Linux:
+cargo-mutants causes the Rust toolchain (and, often, the program under test) to read and write *many* temporary files. Setting the temporary directory onto a ramdisk can improve performance significantly. This is particularly important with parallel builds, which might otherwise hit disk bandwidth limits. For example on Linux:
 
     sudo mkdir /ram
     sudo mount -t tmpfs /ram /ram  # or put this in fstab, or just change /tmp
