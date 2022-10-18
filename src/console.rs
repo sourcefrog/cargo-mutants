@@ -515,7 +515,7 @@ impl nutmeg::Model for CopyModel {
 }
 
 fn nutmeg_options() -> nutmeg::Options {
-    nutmeg::Options::default().print_holdoff(Duration::from_millis(200))
+    nutmeg::Options::default().print_holdoff(Duration::from_millis(50))
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
