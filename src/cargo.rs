@@ -8,10 +8,9 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use anyhow::bail;
 #[allow(unused_imports)]
-use anyhow::{anyhow, Context, Result};
-use camino::Utf8Path;
+use anyhow::{anyhow, bail, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
 use serde_json::Value;
 #[allow(unused_imports)]
@@ -28,24 +27,26 @@ const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
 pub fn run_cargo(
+    build_dir: &BuildDir,
     argv: &[String],
-    in_dir: &Utf8Path,
     log_file: &mut LogFile,
     timeout: Duration,
     console: &Console,
+    rustflags: &str,
 ) -> Result<ProcessStatus> {
     let start = Instant::now();
 
-    // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
-    // <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
-    //
     // The tests might use Insta <https://insta.rs>, and we don't want it to write
     // updates to the source tree, and we *certainly* don't want it to write
     // updates and then let the test pass.
 
-    let env = [("RUSTFLAGS", "--cap-lints=allow"), ("INSTA_UPDATE", "no")];
+    let env = [
+        ("CARGO_ENCODED_RUSTFLAGS", rustflags),
+        ("INSTA_UPDATE", "no"),
+    ];
+    debug!(?env);
 
-    let mut child = Process::start(argv, &env, in_dir, timeout, log_file)?;
+    let mut child = Process::start(argv, &env, build_dir.path(), timeout, log_file)?;
 
     let process_status = loop {
         if let Some(exit_status) = child.poll()? {
@@ -113,10 +114,44 @@ impl CargoSourceTree {
             .expect("cargo_toml_path has a parent")
             .to_owned();
         assert!(root.is_dir());
+
         Ok(CargoSourceTree {
             root,
             cargo_toml_path,
         })
+    }
+
+    /// Return appropriate CARGO_ENCODED_RUSTFLAGS for building this tree, including any changes to cap-lints.
+    ///
+    /// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
+    /// <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
+    pub fn rustflags(&self) -> String {
+        let mut rustflags: Vec<String> =
+            if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
+                rustflags
+                    .to_str()
+                    .expect("CARGO_ENCODED_RUSTFLAGS is not valid UTF-8")
+                    .split(|c| c == '\x1f')
+                    .map(|s| s.to_owned())
+                    .collect()
+            } else if let Some(rustflags) = env::var_os("RUSTFLAGS") {
+                rustflags
+                    .to_str()
+                    .expect("RUSTFLAGS is not valid UTF-8")
+                    .split(' ')
+                    .map(|s| s.to_owned())
+                    .collect()
+            } else {
+                // TODO: Determine the right target triple and profile?
+                let config_paths = enclosing_config_files(&self.root);
+                debug!("search config files {config_paths:?}");
+                // TODO: All matching target.<triple>.rustflags and target.<cfg>.rustflags config entries joined together.
+                // TODO: build.rustflags config value.
+                Vec::new()
+            };
+        rustflags.push("--cap-lints=allow".to_owned());
+        debug!("adjusted rustflags: {:?}", rustflags);
+        rustflags.join("\x1f")
     }
 }
 
@@ -261,6 +296,58 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
     target.kind.iter().any(|k| k.ends_with("lib") || k == "bin")
 }
 
+/// Return a list of cargo config.toml files enclosing a directory, and in the
+/// cargo home directory.
+///
+/// Only actually existing files are returned.
+fn enclosing_config_files(path: &Utf8Path) -> Result<Vec<Utf8PathBuf>> {
+    // https://doc.rust-lang.org/cargo/reference/config.html#hierarchical-structure
+    // NOTE: The docs are ambiguous on what order the arrays are joined; but it
+    // seems to make sense to put the most-specific (first-searched) one *last*
+    // so that it can override earlier values.
+    // TODO: Unit test this walking up some directory tree?
+    let mut path = path.canonicalize_utf8().context("canonicalize path")?;
+    let mut r: Vec<Utf8PathBuf> = Vec::new();
+    loop {
+        for suffix in &[".cargo/config.toml", ".cargo/config"] {
+            let config_path = path.join(suffix);
+            if config_path.exists() {
+                r.push(config_path);
+                break;
+            }
+        }
+        if let Some(parent) = path.parent() {
+            path = parent.to_owned();
+        } else {
+            break;
+        }
+    }
+    if let Some(cargo_home) = cargo_home() {
+        for filename in ["config.toml", "config"] {
+            let config_path = cargo_home.join(filename);
+            if config_path.exists() {
+                if !r.contains(&config_path) {
+                    r.push(config_path);
+                }
+                break;
+            }
+        }
+    }
+    Ok(r)
+}
+
+fn cargo_home() -> Option<Utf8PathBuf> {
+    if let Some(home) = env::var_os("CARGO_HOME") {
+        let home = home.to_str().expect("CARGO_HOME is not valid UTF-8");
+        Some(Utf8PathBuf::from(home))
+    } else if let Some(home) = dirs::home_dir() {
+        let home: Utf8PathBuf = home.try_into().expect("home_dir is not valid UTF-8");
+        Some(home.join(".cargo"))
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::ffi::OsStr;
@@ -365,5 +452,25 @@ mod test {
         assert!(path.join("Cargo.toml").is_file());
         assert!(path.join("src/bin/factorial.rs").is_file());
         assert_eq!(path.file_name().unwrap(), OsStr::new("factorial"));
+    }
+
+    /// Either CARGO_HOME is set, or at least it can be found in HOME.
+    #[test]
+    fn cargo_home_is_found_in_test_environment() {
+        assert!(super::cargo_home().is_some());
+    }
+
+    /// In the common case where the source is inside HOME, we still don't get duplicated config paths.
+    #[test]
+    fn enclosing_config_files_has_no_duplicates() {
+        let paths = enclosing_config_files("testdata/tree/small_well_tested".into()).unwrap();
+        for i in 0..paths.len() {
+            for j in (i + 1)..(paths.len()) {
+                assert_ne!(
+                    paths[i], paths[j],
+                    "duplicate config file found in {paths:?}"
+                );
+            }
+        }
     }
 }

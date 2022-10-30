@@ -36,6 +36,8 @@ pub fn test_unmutated_then_all_mutants(
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
 
+    let rustflags = source_tree.rustflags();
+
     let mut mutants = source_tree.mutants(&options)?;
     if options.shuffle {
         mutants.shuffle(&mut rand::thread_rng());
@@ -63,6 +65,7 @@ pub fn test_unmutated_then_all_mutants(
             phases,
             options.test_timeout.unwrap_or(Duration::MAX),
             console,
+            &rustflags,
         )?
     };
     if !baseline_outcome.success() {
@@ -128,6 +131,7 @@ pub fn test_unmutated_then_all_mutants(
                             phases,
                             mutated_test_timeout,
                             console,
+                            &rustflags,
                         )
                         .expect("scenario test");
                     } else {
@@ -163,6 +167,7 @@ fn test_scenario(
     phases: &[Phase],
     test_timeout: Duration,
     console: &Console,
+    rustflags: &str,
 ) -> Result<ScenarioOutcome> {
     let mut log_file = output_mutex
         .lock()
@@ -185,11 +190,12 @@ fn test_scenario(
             _ => Duration::MAX,
         };
         let cargo_result = run_cargo(
+            &build_dir,
             &cargo_argv,
-            build_dir.path(),
             &mut log_file,
             timeout,
             console,
+            rustflags,
         )?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result, &cargo_argv);
         console.scenario_phase_finished(scenario, phase);
