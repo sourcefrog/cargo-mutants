@@ -254,10 +254,11 @@ By default cargo-mutants copies the `target/` directory from the source tree. Ru
 
 cargo-mutants causes the Rust toolchain (and, often, the program under test) to read and write _many_ temporary files. Setting the temporary directory onto a ramdisk can improve performance significantly. This is particularly important with parallel builds, which might otherwise hit disk bandwidth limits. For example on Linux:
 
-    sudo mkdir /ram
-    sudo mount -t tmpfs /ram /ram  # or put this in fstab, or just change /tmp
-
-    env TMPDIR=/ram cargo mutants
+```shell
+sudo mkdir /ram
+sudo mount -t tmpfs /ram /ram  # or put this in fstab, or just change /tmp
+env TMPDIR=/ram cargo mutants
+```
 
 ### Workspace and package support
 
