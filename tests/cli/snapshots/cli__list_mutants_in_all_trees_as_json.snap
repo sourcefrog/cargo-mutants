@@ -1,5 +1,5 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: buf
 ---
 ## testdata/tree/already_failing_doctests
@@ -374,6 +374,37 @@ expression: buf
     "function": "try_value_coercion",
     "return_type": "-> String",
     "replacement": "\"xyzzy\".into()"
+  }
+]
+```
+
+## testdata/tree/unapply
+
+```json
+[
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/a.rs",
+    "line": 1,
+    "function": "one",
+    "return_type": "-> i32",
+    "replacement": "Default::default()"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/b.rs",
+    "line": 1,
+    "function": "one_untested",
+    "return_type": "-> i32",
+    "replacement": "Default::default()"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/c.rs",
+    "line": 1,
+    "function": "one",
+    "return_type": "-> i32",
+    "replacement": "Default::default()"
   }
 ]
 ```

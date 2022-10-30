@@ -1,0 +1,9 @@
+---
+source: tests/cli/main.rs
+expression: stdout
+---
+Found 3 mutants to test
+Unmutated baseline ... ok
+src/b.rs:1: replace one_untested -> i32 with Default::default() ... NOT CAUGHT
+3 mutants tested: 1 missed, 2 caught
+

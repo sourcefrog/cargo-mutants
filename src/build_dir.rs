@@ -143,9 +143,10 @@ mod test {
         let build_dir = BuildDir::new(&source_tree, &Console::new()).unwrap();
         let debug_form = format!("{:?}", build_dir);
         assert!(
-            Regex::new(r#"^BuildDir \{ path: "[^"]*/cargo-mutants-factorial[^"]*" \}$"#)
+            Regex::new(r#"^BuildDir \{ path: "[^"]*[/\\]cargo-mutants-factorial[^"]*" \}$"#)
                 .unwrap()
-                .is_match(&debug_form)
+                .is_match(&debug_form),
+            "debug form is {debug_form:?}",
         );
     }
 }

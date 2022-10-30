@@ -1,5 +1,5 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: buf
 ---
 ## testdata/tree/already_failing_doctests
@@ -138,6 +138,14 @@ src/lib.rs:11: replace make_an_s -> S with Default::default()
 ```
 src/lib.rs:5: replace try_value_coercion -> String with "".into()
 src/lib.rs:5: replace try_value_coercion -> String with "xyzzy".into()
+```
+
+## testdata/tree/unapply
+
+```
+src/a.rs:1: replace one -> i32 with Default::default()
+src/b.rs:1: replace one_untested -> i32 with Default::default()
+src/c.rs:1: replace one -> i32 with Default::default()
 ```
 
 ## testdata/tree/well_tested

@@ -1269,6 +1269,28 @@ fn cargo_mutants_in_patch_dependency_tree_passes() {
         }));
 }
 
+/// This test would fail if mutants aren't correctly removed from the tree after
+/// testing, which would cause all later mutants to be incorrectly marked as
+/// caught.
+///
+/// This was suggested by `Mutant::unapply` being marked as missed.
+#[test]
+fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
+    // This needs --no-shuffle because failure to unapply will show up when the
+    // uncaught mutant is not the first file tested.
+    let tmp_src_dir = copy_of_testdata("unapply");
+    run_assert_cmd()
+        .args(&["mutants", "--no-times", "--no-shuffle"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(2) // some were missed
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
 #[test]
 fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
     let tmp_src_dir = copy_of_testdata("strict_warnings");
