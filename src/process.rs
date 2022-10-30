@@ -67,6 +67,7 @@ impl Process {
         })
     }
 
+    #[mutants::skip] // It's hard to avoid timeouts if this never works...
     pub fn poll(&mut self) -> Result<Option<ProcessStatus>> {
         let elapsed = self.start.elapsed();
         if elapsed > self.timeout {
