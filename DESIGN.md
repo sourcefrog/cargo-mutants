@@ -195,8 +195,6 @@ Also, a file `mutants.out/debug.log` is written using [tracing](https://docs.rs/
 
 ## Parallelism
 
-(This section is not fully implemented yet.)
-
 cargo-mutants supports running multiple tests in parallel. Although both Cargo builds and Rust tests can parallelize internally, they can also both end up waiting for a single compilation unit, link, or straggling test. Running multiple tests in parallel makes better use of machine resources when each individual test becomes serialized.
 
 The initial baseline build is done in a single job, with no parallelism at the cargo-mutants layer.
@@ -204,4 +202,3 @@ The initial baseline build is done in a single job, with no parallelism at the c
 If the baseline test completes successfully, its build directory is copied to make a total of one per parallel job. Unlike the initial copy from the source directory, this includes the `target` directory, since it should now be up to date for the compiler options that cargo-mutants will use.
 
 We then launch the appropriate number of threads, each of which has its own build directory. They each build and test new mutants until everything is done, or until there's an error that stops all processing.
-
