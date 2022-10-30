@@ -23,6 +23,8 @@ use regex::Regex;
 use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
+mod jobs;
+
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
 /// long enough that even commands that do a lot of work can pass even on slow
 /// CI VMs and even on Windows, but short enough that the test does not hang
