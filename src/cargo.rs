@@ -8,6 +8,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
+use anyhow::bail;
 #[allow(unused_imports)]
 use anyhow::{anyhow, Context, Result};
 use camino::Utf8Path;
@@ -122,8 +123,12 @@ impl CargoSourceTree {
 /// Run `cargo locate-project` to find the path of the `Cargo.toml` enclosing this path.
 fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
     let cargo_bin = cargo_bin();
+    if !path.is_dir() {
+        bail!("{} is not a directory", path);
+    }
     let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
-    let stdout = get_command_output(&argv, path).context("run cargo locate-project")?;
+    let stdout = get_command_output(&argv, path)
+        .with_context(|| format!("run cargo locate-project in {path:?}"))?;
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let cargo_toml_path: Utf8PathBuf = val["root"]
         .as_str()
