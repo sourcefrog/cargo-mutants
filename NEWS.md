@@ -1,16 +1,18 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 1.1.0
+
+Released 2022-10-30
 
 *Fearless concurrency!*
 
-- cargo-mutants can now run multiple cargo build and test tasks in parallel, to make better use of machine resources and find mutants faster.
+- cargo-mutants can now run multiple cargo build and test tasks in parallel, to make better use of machine resources and find mutants faster, controlled by `--jobs`.
 
 - The minimum Rust version to build cargo-mutants is now 1.63.0. It can still be used to test code under older toolchains.
 
 ## 1.0.3
 
-Released 2021-09-29
+Released 2022-09-29
 
 - cargo-mutants is now finds no uncaught mutants in itself! Various tests were added and improved, particularly around handling timeouts.
 
