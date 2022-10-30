@@ -23,8 +23,6 @@ pub struct LogFile {
 
 impl LogFile {
     pub fn create_in(log_dir: &Utf8Path, scenario_name: &str) -> Result<LogFile> {
-        // TODO: Maybe remember what files have already been created to avoid this loop, although
-        // realistically it seems unlikely to be hit often...
         let basename = clean_filename(scenario_name);
         for i in 0..1000 {
             let t = if i == 0 {

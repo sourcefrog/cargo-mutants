@@ -592,7 +592,6 @@ pub fn plural(n: usize, noun: &str) -> String {
     if n == 1 {
         format!("{} {}", n, noun)
     } else {
-        // TODO: Special cases for irregular nouns if they occur...
         format!("{} {}s", n, noun)
     }
 }

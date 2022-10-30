@@ -120,7 +120,6 @@ pub fn test_unmutated_then_all_mutants(
                         let _span = debug_span!("mutant", id = mutant_id).entered();
                         debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
                         // We don't care about the outcome; it's been collected into the output_dir.
-                        // TODO: Teach the console that multiple mutants might be underway
                         let _outcome = test_scenario(
                             &mut build_dir,
                             &output_mutex,
