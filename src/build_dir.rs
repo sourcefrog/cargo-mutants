@@ -130,3 +130,22 @@ fn copy_tree(
     // console.finish_copy();
     Ok(temp_dir)
 }
+
+#[cfg(test)]
+mod test {
+    use regex::Regex;
+
+    use super::*;
+
+    #[test]
+    fn build_dir_debug_form() {
+        let source_tree = CargoSourceTree::open("testdata/tree/factorial".into()).unwrap();
+        let build_dir = BuildDir::new(&source_tree, &Console::new()).unwrap();
+        let debug_form = format!("{:?}", build_dir);
+        assert!(
+            Regex::new(r#"^BuildDir \{ path: "[^"]*/cargo-mutants-factorial[^"]*" \}$"#)
+                .unwrap()
+                .is_match(&debug_form)
+        );
+    }
+}
