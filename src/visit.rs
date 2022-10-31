@@ -2,8 +2,9 @@
 
 //! Visit the abstract syntax tree and discover things to mutate.
 //!
-//! Knowledge of the syn API is localized here.
+//! Knowledge of the `syn` API is localized here.
 
+use std::collections::VecDeque;
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -11,23 +12,96 @@ use quote::ToTokens;
 use syn::visit::Visit;
 use syn::Attribute;
 use syn::ItemFn;
+use tracing::warn;
 use tracing::{debug, debug_span, span, trace, Level};
 
+use crate::path::TreeRelativePathBuf;
+use crate::source::{SourceFile, SourceTree};
 use crate::*;
 
+pub fn discover_mutants(source_tree: &dyn SourceTree, options: &Options) -> Result<Vec<Mutant>> {
+    walk_tree(source_tree, options).map(|x| x.0)
+}
+
+pub fn discover_files(
+    source_tree: &dyn SourceTree,
+    options: &Options,
+) -> Result<Vec<Arc<SourceFile>>> {
+    walk_tree(source_tree, options).map(|x| x.1)
+}
+
+/// Discover all mutants and all source files.
+///
+/// The list of source files includes even those with no mutants.
+fn walk_tree(
+    source_tree: &dyn SourceTree,
+    options: &Options,
+) -> Result<(Vec<Mutant>, Vec<Arc<SourceFile>>)> {
+    let mut mutants = Vec::new();
+    let mut seen_files: Vec<Arc<SourceFile>> = Vec::new();
+    let tree_path = source_tree.path();
+
+    let mut file_queue: VecDeque<Arc<SourceFile>> = source_tree.root_files(options)?.into();
+    while let Some(source_file) = file_queue.pop_front() {
+        seen_files.push(source_file.clone());
+        check_interrupted()?;
+        let package_name = source_file.package_name.clone();
+        let (mut file_mutants, more_files) = walk_file(tree_path, source_file.clone())?;
+        // We'll still walk down through files that don't match globs, so that
+        // we have a chance to find modules underneath them. However, we won't
+        // collect any mutants from them.
+        for path in more_files {
+            file_queue.push_back(Arc::new(SourceFile::new(
+                tree_path,
+                path,
+                package_name.clone(),
+            )?));
+        }
+        if let Some(examine_globset) = &options.examine_globset {
+            if !examine_globset.is_match(source_file.tree_relative_path.as_ref()) {
+                continue;
+            }
+        }
+        if let Some(exclude_globset) = &options.exclude_globset {
+            if exclude_globset.is_match(source_file.tree_relative_path.as_ref()) {
+                continue;
+            }
+        }
+        if let Some(examine_names) = &options.examine_names {
+            if !examine_names.is_empty() {
+                file_mutants.retain(|m| examine_names.is_match(&m.to_string()));
+            }
+        }
+        if let Some(exclude_names) = &options.exclude_names {
+            if !exclude_names.is_empty() {
+                file_mutants.retain(|m| !exclude_names.is_match(&m.to_string()));
+            }
+        }
+        mutants.append(&mut file_mutants);
+    }
+    Ok((mutants, seen_files))
+}
+
 /// Find all possible mutants in a source file.
-pub fn discover_mutants(source_file: Arc<SourceFile>) -> Result<Vec<Mutant>> {
+///
+/// Returns the mutants found, and more files discovered by `mod` statements to visit.
+pub fn walk_file(
+    tree_path: &Utf8Path,
+    source_file: Arc<SourceFile>,
+) -> Result<(Vec<Mutant>, Vec<TreeRelativePathBuf>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
+        tree_path: tree_path.to_owned(),
         source_file,
+        more_files: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
     };
     visitor.visit_file(&syn_file);
-    Ok(visitor.mutants)
+    Ok((visitor.mutants, visitor.more_files))
 }
 
 /// `syn` visitor that recursively traverses the syntax tree, accumulating places
@@ -39,8 +113,14 @@ struct DiscoveryVisitor {
     /// The file being visited.
     source_file: Arc<SourceFile>,
 
+    /// The root of the source tree.
+    tree_path: Utf8PathBuf,
+
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
+
+    /// Files discovered by `mod` statements.
+    more_files: Vec<TreeRelativePathBuf>,
 }
 
 impl DiscoveryVisitor {
@@ -134,13 +214,40 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
         self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
     }
 
-    /// Visit `mod foo { ... }`.
+    /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
-        if !attrs_excluded(&node.attrs) {
-            self.in_namespace(&node.ident.to_string(), |v| {
-                syn::visit::visit_item_mod(v, node)
-            });
+        if attrs_excluded(&node.attrs) {
+            trace!("mod {:?} excluded by attrs", node.ident);
+            return;
         }
+        trace!("visit mod {:?}", node.ident);
+        // If there's no content in braces, we should look for this file. It
+        // could be 'foo.rs' or 'foo/mod.rs', within the same directory as
+        // the current file.
+        if node.content.is_none() {
+            let dir = self.source_file.tree_relative_path.parent();
+            let mut found = false;
+            for &ext in &[".rs", "/mod.rs"] {
+                let path = dir.join(format!("{}{}", node.ident, ext));
+                let full_path = path.within(&self.tree_path);
+                trace!("look in {}", full_path);
+                if full_path.is_file() {
+                    self.more_files.push(path);
+                    found = true;
+                }
+            }
+            if !found {
+                warn!(
+                    "{}:{}: mod {:?} not found",
+                    self.source_file.tree_relative_path,
+                    node.mod_token.span.start().line,
+                    node.ident
+                );
+            }
+        }
+        self.in_namespace(&node.ident.to_string(), |v| {
+            syn::visit::visit_item_mod(v, node)
+        });
     }
 }
 

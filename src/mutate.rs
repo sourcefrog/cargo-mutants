@@ -61,7 +61,7 @@ impl MutationOp {
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mutant {
     /// Which file is being mutated.
-    source_file: Arc<SourceFile>,
+    pub source_file: Arc<SourceFile>,
 
     /// The function that's being mutated.
     function_name: Arc<String>,
@@ -242,8 +242,6 @@ impl Serialize for Mutant {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
     use camino::Utf8Path;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
@@ -252,41 +250,34 @@ mod test {
 
     #[test]
     fn discover_factorial_mutants() {
-        let source_file = SourceFile::new(
-            Utf8Path::new("testdata/tree/factorial"),
-            "src/bin/factorial.rs".parse().unwrap(),
-            Arc::new("cargo-mutants-testdata-factorial".to_string()),
-        )
-        .unwrap();
-        let muts = discover_mutants(source_file.into()).unwrap();
-        assert_eq!(muts.len(), 2);
+        let tree_path = Utf8Path::new("testdata/tree/factorial");
+        let source_tree = CargoSourceTree::open(&tree_path).unwrap();
+        let options = Options::default();
+        let mutants = discover_mutants(&source_tree, &options).unwrap();
+        assert_eq!(mutants.len(), 2);
         assert_eq!(
-            format!("{:?}", muts[0]),
+            format!("{:?}", mutants[0]),
             r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
-            muts[0].to_string(),
+            mutants[0].to_string(),
             "src/bin/factorial.rs:1: replace main with ()"
         );
         assert_eq!(
-            format!("{:?}", muts[1]),
+            format!("{:?}", mutants[1]),
             r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
-            muts[1].to_string(),
+            mutants[1].to_string(),
             "src/bin/factorial.rs:7: replace factorial with Default::default()"
         );
     }
 
     #[test]
     fn filter_by_attributes() {
-        let source_file = SourceFile::new(
-            Utf8Path::new("testdata/tree/hang_avoided_by_attr"),
-            "src/lib.rs".parse().unwrap(),
-            Arc::new("cargo-mutants-testdata-hang-avoided".to_string()),
-        )
-        .unwrap();
-        let mutants = discover_mutants(source_file.into()).unwrap();
+        let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
+        let source_tree = CargoSourceTree::open(&tree_path).unwrap();
+        let mutants = discover_mutants(&source_tree, &Options::default()).unwrap();
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
@@ -296,13 +287,9 @@ mod test {
 
     #[test]
     fn mutate_factorial() {
-        let source_file = SourceFile::new(
-            Utf8Path::new("testdata/tree/factorial"),
-            "src/bin/factorial.rs".parse().unwrap(),
-            Arc::new("cargo-mutants-testdata-factorial".to_string()),
-        )
-        .unwrap();
-        let mutants = discover_mutants(source_file.into()).unwrap();
+        let tree_path = Utf8Path::new("testdata/tree/factorial");
+        let source_tree = CargoSourceTree::open(&tree_path).unwrap();
+        let mutants = discover_mutants(&source_tree, &Options::default()).unwrap();
         assert_eq!(mutants.len(), 2);
 
         let mut mutated_code = mutants[0].mutated_code();

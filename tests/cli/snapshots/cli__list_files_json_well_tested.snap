@@ -1,8 +1,12 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/lib.rs"
+  },
   {
     "package": "cargo-mutants-testdata-well-tested",
     "path": "src/empty_fns.rs"
@@ -14,10 +18,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "package": "cargo-mutants-testdata-well-tested",
     "path": "src/item_mod.rs"
-  },
-  {
-    "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/lib.rs"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",

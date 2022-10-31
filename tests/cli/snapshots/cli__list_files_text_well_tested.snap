@@ -1,11 +1,11 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
+src/lib.rs
 src/empty_fns.rs
 src/inside_mod.rs
 src/item_mod.rs
-src/lib.rs
 src/methods.rs
 src/nested_function.rs
 src/result.rs

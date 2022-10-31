@@ -16,6 +16,7 @@ use crate::cargo::{cargo_argv, run_cargo, rustflags, CargoSourceTree};
 use crate::console::Console;
 use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
+use crate::visit::discover_mutants;
 use crate::*;
 
 /// Run all possible mutation experiments.
@@ -37,8 +38,7 @@ pub fn test_unmutated_then_all_mutants(
     console.set_debug_log(output_dir.open_debug_log()?);
 
     let rustflags = rustflags();
-
-    let mut mutants = source_tree.mutants(&options)?;
+    let mut mutants = discover_mutants(source_tree, &options)?;
     if options.shuffle {
         mutants.shuffle(&mut rand::thread_rng());
     }

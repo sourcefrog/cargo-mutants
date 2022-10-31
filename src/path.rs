@@ -95,15 +95,26 @@ impl TreeRelativePathBuf {
         tree_path.join(&self.0)
     }
 
+    pub fn join(&self, p: impl AsRef<Utf8Path>) -> Self {
+        TreeRelativePathBuf(self.0.join(p))
+    }
+
     /// Return the tree-relative path of the containing directory.
     ///
     /// Panics if there is no parent, i.e. if self is already the tree root.
+    #[allow(dead_code)]
     pub fn parent(&self) -> TreeRelativePathBuf {
         self.0
             .parent()
             .expect("TreeRelativePath has no parent")
             .to_owned()
             .into()
+    }
+}
+
+impl AsRef<Utf8Path> for TreeRelativePathBuf {
+    fn as_ref(&self) -> &Utf8Path {
+        &self.0
     }
 }
 

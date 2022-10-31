@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Improved: cargo-mutants appends to `RUSTFLAGS` instead of overwriting it, and reads `CARGO_ENCODED_RUSTFLAGS`. This makes it possible to pass flags to the code under test, for example to use the Mold linker.
+- Fixed support for the Mold linker, or for other options passed via `RUSTFLAGS` or `CARGO_ENCODED_RUSTFLAGS`. (See the instructions in README.md).
+
+- Source trees are walked by following `mod` statements rather than globbing the directory. This is more correct if there are files that are not referenced by `mod` statements. Once attributes on modules are stable in Rust (<https://github.com/rust-lang/rust/issues/54727>) this opens a path to skip mods using attributes.
 
 ## 1.1.0
 

@@ -23,7 +23,7 @@ mod visit;
 
 use std::convert::TryFrom;
 use std::env;
-use std::io;
+use std::io::{self, Write};
 use std::process::exit;
 use std::time::Duration;
 
@@ -34,8 +34,7 @@ use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::{generate, Shell};
 use path_slash::PathExt;
-use serde_json::json;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
@@ -50,7 +49,7 @@ use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
 use crate::source::{SourceFile, SourceTree};
-use crate::visit::discover_mutants;
+use crate::visit::{discover_files, discover_mutants};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -196,16 +195,9 @@ fn main() -> Result<()> {
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
     } else if args.list_files {
-        if args.json {
-            list_files_as_json(&source_tree, &options)?;
-        } else {
-            let source_files = source_tree.source_files(&options)?;
-            for f in source_files {
-                println!("{}", f.tree_relative_slashes());
-            }
-        }
+        list_files(&source_tree, &options, args.json)?;
     } else if args.list {
-        let mutants = source_tree.mutants(&options)?;
+        let mutants = discover_mutants(&source_tree, &options)?;
         if args.json {
             if args.diff {
                 eprintln!("--list --diff --json is not (yet) supported");
@@ -222,20 +214,27 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn list_files_as_json(source_tree: &dyn SourceTree, options: &Options) -> Result<()> {
-    let list = Value::Array(
-        source_tree
-            .source_files(options)?
-            .iter()
-            .map(|source_file| {
-                json!({
-                    // to_string so that we get it with slashes.
-                    "path": source_file.tree_relative_path.to_string(),
-                    "package": source_file.package_name.as_ref(),
+fn list_files(source_tree: &CargoSourceTree, options: &Options, json: bool) -> Result<()> {
+    let files = discover_files(source_tree, options)?;
+    let mut out = io::BufWriter::new(io::stdout());
+    if json {
+        let json_list = Value::Array(
+            files
+                .iter()
+                .map(|source_file| {
+                    json!({
+                        // to_string so that we get it with slashes.
+                        "path": source_file.tree_relative_path.to_string(),
+                        "package": source_file.package_name.as_ref(),
+                    })
                 })
-            })
-            .collect(),
-    );
-    serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &list)?;
+                .collect(),
+        );
+        serde_json::to_writer_pretty(out, &json_list)?;
+    } else {
+        for file in files {
+            writeln!(out, "{}", file.tree_relative_path)?;
+        }
+    }
     Ok(())
 }

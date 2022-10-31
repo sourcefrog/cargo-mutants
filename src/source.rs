@@ -19,16 +19,16 @@ use crate::*;
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct SourceFile {
+    /// Package within the workspace.
+    pub package_name: Arc<String>,
+
     /// Path relative to the root of the tree.
     pub tree_relative_path: TreeRelativePathBuf,
 
     /// Full copy of the source.
     pub code: Arc<String>,
-
-    /// Package within the workspace.
-    pub package_name: Arc<String>,
 }
 
 impl SourceFile {
@@ -69,30 +69,13 @@ impl SourceFile {
 /// It knows its filesystem path, and can provide a list of source files, from
 /// which mutations can be generated.
 pub trait SourceTree: std::fmt::Debug {
-    /// Find mutatable source files in the tree.
-    fn source_files(&self, options: &Options) -> Result<Vec<SourceFile>>;
+    /// Return a list of crate root files for the tree.
+    ///
+    /// These are the `lib.rs`, `main.rs`, etc. From these, all the other source files can be found by walking `mod` statements.
+    fn root_files(&self, options: &Options) -> Result<Vec<Arc<SourceFile>>>;
 
     /// Path of the root of the tree.
     fn path(&self) -> &Utf8Path;
-
-    fn mutants(&self, options: &Options) -> Result<Vec<Mutant>> {
-        let mut mutants = Vec::new();
-        for sf in self.source_files(options)? {
-            check_interrupted()?;
-            mutants.extend(discover_mutants(sf.into())?);
-        }
-        if let Some(examine_names) = &options.examine_names {
-            if !examine_names.is_empty() {
-                mutants.retain(|m| examine_names.is_match(&m.to_string()));
-            }
-        }
-        if let Some(exclude_names) = &options.exclude_names {
-            if !exclude_names.is_empty() {
-                mutants.retain(|m| !exclude_names.is_match(&m.to_string()));
-            }
-        }
-        Ok(mutants)
-    }
 }
 
 #[cfg(test)]

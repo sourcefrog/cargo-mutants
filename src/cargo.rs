@@ -2,7 +2,6 @@
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
-use std::collections::BTreeSet;
 use std::env;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -11,7 +10,6 @@ use std::time::{Duration, Instant};
 #[allow(unused_imports)]
 use anyhow::{anyhow, bail, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
-use globset::GlobSet;
 use serde_json::Value;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
@@ -180,8 +178,7 @@ impl SourceTree for CargoSourceTree {
         &self.root
     }
 
-    /// Find all source files that can be mutated within a tree, including their cargo packages.
-    fn source_files(&self, options: &Options) -> Result<Vec<SourceFile>> {
+    fn root_files(&self, _options: &Options) -> Result<Vec<Arc<SourceFile>>> {
         debug!("cargo_toml_path = {}", self.cargo_toml_path);
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
@@ -193,71 +190,18 @@ impl SourceTree for CargoSourceTree {
         let mut r = Vec::new();
         for package_metadata in &metadata.workspace_packages() {
             debug!("walk package {:?}", package_metadata.manifest_path);
-            let top_sources = direct_package_sources(&self.root, package_metadata)?;
-            let source_paths = indirect_source_paths(
-                &self.root,
-                top_sources,
-                &options.examine_globset,
-                &options.exclude_globset,
-            )?;
             let package_name = Arc::new(package_metadata.name.to_string());
-            for source_path in source_paths {
+            for source_path in direct_package_sources(&self.root, package_metadata)? {
                 check_interrupted()?;
-                r.push(SourceFile::new(
+                r.push(Arc::new(SourceFile::new(
                     &self.root,
                     source_path,
-                    Arc::clone(&package_name),
-                )?);
+                    package_name.clone(),
+                )?));
             }
         }
         Ok(r)
     }
-}
-
-/// Find all the `.rs` files, by starting from the sources identified by the manifest
-/// and walking down.
-///
-/// This just walks the directory tree rather than following `mod` statements (for now)
-/// so it may pick up some files that are not actually linked in.
-fn indirect_source_paths(
-    root: &Utf8Path,
-    top_sources: impl IntoIterator<Item = TreeRelativePathBuf>,
-    examine_globset: &Option<GlobSet>,
-    exclude_globset: &Option<GlobSet>,
-) -> Result<BTreeSet<TreeRelativePathBuf>> {
-    let dirs: BTreeSet<TreeRelativePathBuf> = top_sources.into_iter().map(|p| p.parent()).collect();
-    let mut files: BTreeSet<TreeRelativePathBuf> = BTreeSet::new();
-    for top_dir in dirs {
-        for p in walkdir::WalkDir::new(top_dir.within(root))
-            .sort_by_file_name()
-            .into_iter()
-        {
-            let p = p.with_context(|| "error walking source tree {top_dir}")?;
-            if !p.file_type().is_file() {
-                continue;
-            }
-            let path = p.into_path();
-            if !path
-                .extension()
-                .map_or(false, |p| p.eq_ignore_ascii_case("rs"))
-            {
-                continue;
-            }
-            let relative_path = path.strip_prefix(root).expect("strip prefix").to_owned();
-            if let Some(examine_globset) = examine_globset {
-                if !examine_globset.is_match(&relative_path) {
-                    continue;
-                }
-            }
-            if let Some(exclude_globset) = exclude_globset {
-                if exclude_globset.is_match(&relative_path) {
-                    continue;
-                }
-            }
-            files.insert(relative_path.into());
-        }
-    }
-    Ok(files)
 }
 
 /// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
@@ -377,19 +321,6 @@ mod test {
     #[test]
     fn error_opening_outside_of_crate() {
         CargoSourceTree::open(Utf8Path::new("/")).unwrap_err();
-    }
-
-    #[test]
-    fn source_files_in_testdata_factorial() {
-        let source_paths = CargoSourceTree::open(Utf8Path::new("testdata/tree/factorial"))
-            .unwrap()
-            .source_files(&Options::default())
-            .unwrap();
-        assert_eq!(source_paths.len(), 1);
-        assert_eq!(
-            source_paths[0].tree_relative_path().to_string(),
-            "src/bin/factorial.rs",
-        );
     }
 
     #[test]
