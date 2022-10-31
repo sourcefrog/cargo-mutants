@@ -202,3 +202,14 @@ The initial baseline build is done in a single job, with no parallelism at the c
 If the baseline test completes successfully, its build directory is copied to make a total of one per parallel job. Unlike the initial copy from the source directory, this includes the `target` directory, since it should now be up to date for the compiler options that cargo-mutants will use.
 
 We then launch the appropriate number of threads, each of which has its own build directory. They each build and test new mutants until everything is done, or until there's an error that stops all processing.
+
+## `RUSTFLAGS`
+
+Cargo has a somewhat complex system for controlling flags passed to `rustc`. cargo-mutants uses this to pass `--cap-lints` to avoid failures due to strict lints.
+
+However, for other settings, we want to keep using whatever flags the user has configured in their environment, in the source tree, or in their per-user configuration. Unfortunately the Cargo `RUSTFLAGS` or `CARGO_ENCODED_RUSTFLAGS` variables entirely replace, instead of appending to, the user's flags.
+
+Fully handling this seems to
+require us to reimplement some of Cargo's logic from <https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags> to find the right target and config, in the right files, determine the user's flags, and then append our own.
+
+For now, cargo-mutants appends to the environment variables but does not attempt to read the config files.

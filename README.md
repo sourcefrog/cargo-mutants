@@ -240,10 +240,6 @@ will also make normal development more pleasant.
 
 There's lots of good advice on the web, including <https://matklad.github.io/2021/09/04/fast-rust-builds.html>.
 
-In particular, on Linux, using the [Mold linker](https://github.com/rui314/mold)
-can improve build times significantly: because cargo-mutants does many
-incremental builds, link time is important.
-
 Rust doctests are pretty slow, so if you're using them only as testable
 documentation and not to assert correctness of the code, you can skip them with
 `cargo mutants -- --all-targets`.
@@ -259,6 +255,16 @@ sudo mkdir /ram
 sudo mount -t tmpfs /ram /ram  # or put this in fstab, or just change /tmp
 env TMPDIR=/ram cargo mutants
 ```
+
+### Using the Mold linker
+
+Using the [Mold linker](https://github.com/rui314/mold) on Unix can give a 20% performance improvement, depending on the tree.
+Because cargo-mutants does many
+incremental builds, link time is important, especially if the test suite is relatively fast.
+
+Because of limitations in the way cargo-mutants runs Cargo, the standard way of configuring Mold for Rust in `~/.cargo/config.toml` won't work.
+
+Instead, set the `RUSTFLAGS` environment variable to `-Clink-arg=-fuse-ld=mold`.
 
 ### Workspace and package support
 
@@ -488,6 +494,8 @@ cargo-mutants sees the AST of the tree but doesn't fully "understand" the types.
 Possibly it could learn to get type information from the compiler (or
 rust-analyzer?), which would help it generate more interesting viable mutants,
 and fewer unviable mutants.
+
+cargo-mutants reads `CARGO_ENCODED_RUSTFLAGS` and `RUSTFLAGS` environment variables, and sets `CARGO_ENCODED_RUSTFLAGS`.  It does not read `.cargo/config.toml` files, and so any rust flags set there will be ignored.
 
 ## Code of Conduct
 

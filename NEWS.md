@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: cargo-mutants appends to `RUSTFLAGS` instead of overwriting it, and reads `CARGO_ENCODED_RUSTFLAGS`. This makes it possible to pass flags to the code under test, for example to use the Mold linker.
+
 ## 1.1.0
 
 Released 2022-10-30

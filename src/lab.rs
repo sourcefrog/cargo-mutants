@@ -12,7 +12,7 @@ use rand::prelude::*;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
-use crate::cargo::{cargo_argv, run_cargo, CargoSourceTree};
+use crate::cargo::{cargo_argv, run_cargo, rustflags, CargoSourceTree};
 use crate::console::Console;
 use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
@@ -36,6 +36,8 @@ pub fn test_unmutated_then_all_mutants(
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
 
+    let rustflags = rustflags();
+
     let mut mutants = source_tree.mutants(&options)?;
     if options.shuffle {
         mutants.shuffle(&mut rand::thread_rng());
@@ -48,11 +50,6 @@ pub fn test_unmutated_then_all_mutants(
 
     let output_mutex = Mutex::new(output_dir);
     let mut build_dirs = vec![BuildDir::new(source_tree, console)?];
-    let phases: &[Phase] = if options.check_only {
-        &[Phase::Check]
-    } else {
-        &[Phase::Build, Phase::Test]
-    };
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(
@@ -60,9 +57,9 @@ pub fn test_unmutated_then_all_mutants(
             &output_mutex,
             &options,
             &Scenario::Baseline,
-            phases,
             options.test_timeout.unwrap_or(Duration::MAX),
             console,
+            &rustflags,
         )?
     };
     if !baseline_outcome.success() {
@@ -125,9 +122,9 @@ pub fn test_unmutated_then_all_mutants(
                             &output_mutex,
                             &options,
                             &Scenario::Mutant(mutant),
-                            phases,
                             mutated_test_timeout,
                             console,
+                            &rustflags,
                         )
                         .expect("scenario test");
                     } else {
@@ -151,8 +148,6 @@ pub fn test_unmutated_then_all_mutants(
 
 /// Test various phases of one scenario in a build dir.
 ///
-/// This runs the given phases in order until one fails.
-///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
 fn test_scenario(
@@ -160,9 +155,9 @@ fn test_scenario(
     output_mutex: &Mutex<OutputDir>,
     options: &Options,
     scenario: &Scenario,
-    phases: &[Phase],
     test_timeout: Duration,
     console: &Console,
+    rustflags: &str,
 ) -> Result<ScenarioOutcome> {
     let mut log_file = output_mutex
         .lock()
@@ -176,6 +171,11 @@ fn test_scenario(
     console.scenario_started(scenario, log_file.path());
 
     let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
+    let phases: &[Phase] = if options.check_only {
+        &[Phase::Check]
+    } else {
+        &[Phase::Build, Phase::Test]
+    };
     for &phase in phases {
         let phase_start = Instant::now();
         console.scenario_phase_started(scenario, phase);
@@ -185,11 +185,12 @@ fn test_scenario(
             _ => Duration::MAX,
         };
         let cargo_result = run_cargo(
+            build_dir,
             &cargo_argv,
-            build_dir.path(),
             &mut log_file,
             timeout,
             console,
+            rustflags,
         )?;
         outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result, &cargo_argv);
         console.scenario_phase_finished(scenario, phase);

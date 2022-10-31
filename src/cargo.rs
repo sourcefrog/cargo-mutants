@@ -8,10 +8,9 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use anyhow::bail;
 #[allow(unused_imports)]
-use anyhow::{anyhow, Context, Result};
-use camino::Utf8Path;
+use anyhow::{anyhow, bail, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
 use serde_json::Value;
 #[allow(unused_imports)]
@@ -28,24 +27,26 @@ const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 /// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
 pub fn run_cargo(
+    build_dir: &BuildDir,
     argv: &[String],
-    in_dir: &Utf8Path,
     log_file: &mut LogFile,
     timeout: Duration,
     console: &Console,
+    rustflags: &str,
 ) -> Result<ProcessStatus> {
     let start = Instant::now();
 
-    // See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
-    // <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
-    //
     // The tests might use Insta <https://insta.rs>, and we don't want it to write
     // updates to the source tree, and we *certainly* don't want it to write
     // updates and then let the test pass.
 
-    let env = [("RUSTFLAGS", "--cap-lints=allow"), ("INSTA_UPDATE", "no")];
+    let env = [
+        ("CARGO_ENCODED_RUSTFLAGS", rustflags),
+        ("INSTA_UPDATE", "no"),
+    ];
+    debug!(?env);
 
-    let mut child = Process::start(argv, &env, in_dir, timeout, log_file)?;
+    let mut child = Process::start(argv, &env, build_dir.path(), timeout, log_file)?;
 
     let process_status = loop {
         if let Some(exit_status) = child.poll()? {
@@ -113,11 +114,46 @@ impl CargoSourceTree {
             .expect("cargo_toml_path has a parent")
             .to_owned();
         assert!(root.is_dir());
+
         Ok(CargoSourceTree {
             root,
             cargo_toml_path,
         })
     }
+}
+
+/// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
+///
+/// This does not currently read config files; it's too complicated.
+///
+/// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
+/// <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
+pub fn rustflags() -> String {
+    let mut rustflags: Vec<String> = if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS")
+    {
+        rustflags
+            .to_str()
+            .expect("CARGO_ENCODED_RUSTFLAGS is not valid UTF-8")
+            .split(|c| c == '\x1f')
+            .map(|s| s.to_owned())
+            .collect()
+    } else if let Some(rustflags) = env::var_os("RUSTFLAGS") {
+        rustflags
+            .to_str()
+            .expect("RUSTFLAGS is not valid UTF-8")
+            .split(' ')
+            .map(|s| s.to_owned())
+            .collect()
+    } else {
+        // TODO: We could read the config files, but working out the right target and config seems complicated
+        // given the information available here.
+        // TODO: All matching target.<triple>.rustflags and target.<cfg>.rustflags config entries joined together.
+        // TODO: build.rustflags config value.
+        Vec::new()
+    };
+    rustflags.push("--cap-lints=allow".to_owned());
+    debug!("adjusted rustflags: {:?}", rustflags);
+    rustflags.join("\x1f")
 }
 
 /// Run `cargo locate-project` to find the path of the `Cargo.toml` enclosing this path.
