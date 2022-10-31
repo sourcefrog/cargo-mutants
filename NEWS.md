@@ -1,6 +1,10 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 1.1.1
+
+Released 2022-10-31
+
+*Spooky mutants!*
 
 - Fixed support for the Mold linker, or for other options passed via `RUSTFLAGS` or `CARGO_ENCODED_RUSTFLAGS`. (See the instructions in README.md).
 
