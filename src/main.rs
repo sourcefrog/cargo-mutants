@@ -187,14 +187,19 @@ fn main() -> Result<()> {
 
     let options = Options::try_from(&args)?;
     // dbg!(&options);
+
+    if args.version {
+        println!("{} {}", NAME, VERSION);
+        return Ok(());
+    } else if let Some(shell) = args.completions {
+        generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
+        return Ok(());
+    }
+
     let source_path = args.dir.unwrap_or_else(|| Utf8Path::new(".").to_owned());
     let source_tree = CargoSourceTree::open(&source_path)?;
     interrupt::install_handler();
-    if args.version {
-        println!("{} {}", NAME, VERSION);
-    } else if let Some(shell) = args.completions {
-        generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
-    } else if args.list_files {
+    if args.list_files {
         list_files(&source_tree, &options, args.json)?;
     } else if args.list {
         let mutants = discover_mutants(&source_tree, &options)?;
