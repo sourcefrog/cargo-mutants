@@ -184,6 +184,7 @@ fn main() -> Result<()> {
     };
     let console = Console::new();
     console.setup_global_trace(args.level)?;
+    interrupt::install_handler();
 
     let options = Options::try_from(&args)?;
     // dbg!(&options);
@@ -198,7 +199,6 @@ fn main() -> Result<()> {
 
     let source_path = args.dir.unwrap_or_else(|| Utf8Path::new(".").to_owned());
     let source_tree = CargoSourceTree::open(&source_path)?;
-    interrupt::install_handler();
     if args.list_files {
         list_files(&source_tree, &options, args.json)?;
     } else if args.list {
