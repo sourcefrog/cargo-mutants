@@ -418,6 +418,20 @@ fn list_files_text_well_tested() {
 }
 
 #[test]
+fn list_files_respects_file_filters() {
+    // Files matching excludes *are* visited to find references to other modules,
+    // but they're not included in --list-files.
+    run()
+        .arg("mutants")
+        .args(["--list-files", "--exclude", "lib.rs"])
+        .current_dir("testdata/tree/well_tested")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("methods.rs"))
+        .stdout(predicate::str::contains("lib.rs").not());
+}
+
+#[test]
 fn list_files_json_well_tested() {
     run()
         .arg("mutants")

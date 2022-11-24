@@ -43,13 +43,13 @@ fn walk_tree(
 
     let mut file_queue: VecDeque<Arc<SourceFile>> = source_tree.root_files(options)?.into();
     while let Some(source_file) = file_queue.pop_front() {
-        seen_files.push(source_file.clone());
         check_interrupted()?;
         let package_name = source_file.package_name.clone();
-        let (mut file_mutants, more_files) = walk_file(tree_path, source_file.clone())?;
+        let (mut file_mutants, more_files) = walk_file(tree_path, Arc::clone(&source_file))?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
-        // collect any mutants from them.
+        // collect any mutants from them, and they don't count as "seen" for
+        // `--list-files`.
         for path in more_files {
             file_queue.push_back(Arc::new(SourceFile::new(
                 tree_path,
@@ -57,13 +57,16 @@ fn walk_tree(
                 package_name.clone(),
             )?));
         }
+        let path = &source_file.tree_relative_path;
         if let Some(examine_globset) = &options.examine_globset {
-            if !examine_globset.is_match(source_file.tree_relative_path.as_ref()) {
+            if !examine_globset.is_match(path.as_ref()) {
+                trace!("{path:?} does not match examine globset");
                 continue;
             }
         }
         if let Some(exclude_globset) = &options.exclude_globset {
-            if exclude_globset.is_match(source_file.tree_relative_path.as_ref()) {
+            if exclude_globset.is_match(path.as_ref()) {
+                trace!("{path:?} excluded by globset");
                 continue;
             }
         }
@@ -78,6 +81,7 @@ fn walk_tree(
             }
         }
         mutants.append(&mut file_mutants);
+        seen_files.push(Arc::clone(&source_file));
     }
     Ok((mutants, seen_files))
 }

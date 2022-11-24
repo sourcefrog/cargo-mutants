@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Fixed: Files that are excluded by filters are also excluded from `--list-files`.
+
 ## 1.1.1
 
 Released 2022-10-31
