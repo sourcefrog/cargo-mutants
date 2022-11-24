@@ -4,6 +4,7 @@
 
 mod build_dir;
 mod cargo;
+mod config;
 mod console;
 mod exit_code;
 mod interrupt;
@@ -21,7 +22,6 @@ mod source;
 mod textedit;
 mod visit;
 
-use std::convert::TryFrom;
 use std::env;
 use std::io::{self, Write};
 use std::process::exit;
@@ -35,6 +35,7 @@ use clap::Parser;
 use clap_complete::{generate, Shell};
 use path_slash::PathExt;
 use serde_json::{json, Value};
+use tracing::debug;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
@@ -186,9 +187,6 @@ fn main() -> Result<()> {
     console.setup_global_trace(args.level)?;
     interrupt::install_handler();
 
-    let options = Options::try_from(&args)?;
-    // dbg!(&options);
-
     if args.version {
         println!("{} {}", NAME, VERSION);
         return Ok(());
@@ -197,8 +195,16 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let source_path = args.dir.unwrap_or_else(|| Utf8Path::new(".").to_owned());
-    let source_tree = CargoSourceTree::open(&source_path)?;
+    let source_path: &Utf8Path = if let Some(p) = &args.dir {
+        p
+    } else {
+        Utf8Path::new(".")
+    };
+    let source_tree = CargoSourceTree::open(source_path)?;
+    let config = config::Config::read_tree_config(&source_tree)?;
+    debug!(?config);
+    let options = Options::new(&args, &config)?;
+    debug!(?options);
     if args.list_files {
         list_files(&source_tree, &options, args.json)?;
     } else if args.list {

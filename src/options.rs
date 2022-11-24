@@ -4,7 +4,6 @@
 //!
 //! The [Options] structure is built from command-line options and then widely passed around.
 
-use std::convert::TryFrom;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -13,7 +12,7 @@ use globset::{Glob, GlobSet, GlobSetBuilder};
 use regex::RegexSet;
 use tracing::warn;
 
-use crate::*;
+use crate::{config::Config, *};
 
 /// Options for running experiments.
 #[derive(Default, Debug, Clone)]
@@ -66,10 +65,8 @@ pub struct Options {
     pub jobs: Option<usize>,
 }
 
-impl TryFrom<&Args> for Options {
-    type Error = anyhow::Error;
-
-    fn try_from(args: &Args) -> Result<Options> {
+impl Options {
+    pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
         if args.no_copy_target {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
         }
@@ -81,11 +78,13 @@ impl TryFrom<&Args> for Options {
             examine_names: Some(
                 RegexSet::new(&args.examine_re).context("Compiling examine_re regex")?,
             ),
-            examine_globset: build_glob_set(&args.file)?,
+            examine_globset: build_glob_set(args.file.iter().chain(config.examine_globs.iter()))?,
             exclude_names: Some(
                 RegexSet::new(&args.exclude_re).context("Compiling exclude_re regex")?,
             ),
-            exclude_globset: build_glob_set(&args.exclude)?,
+            exclude_globset: build_glob_set(
+                args.exclude.iter().chain(config.exclude_globs.iter()),
+            )?,
             jobs: args.jobs,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
@@ -98,13 +97,17 @@ impl TryFrom<&Args> for Options {
     }
 }
 
-fn build_glob_set(glob_set: &Vec<String>) -> Result<Option<GlobSet>> {
-    if glob_set.is_empty() {
+fn build_glob_set<S: AsRef<str>, I: IntoIterator<Item = S>>(
+    glob_set: I,
+) -> Result<Option<GlobSet>> {
+    let mut glob_set = glob_set.into_iter().peekable();
+    if glob_set.peek().is_none() {
         return Ok(None);
     }
 
     let mut builder = GlobSetBuilder::new();
     for glob_str in glob_set {
+        let glob_str = glob_str.as_ref();
         if glob_str.contains('/') || glob_str.contains(std::path::MAIN_SEPARATOR) {
             builder.add(Glob::new(glob_str)?);
         } else {

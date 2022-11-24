@@ -10,10 +10,8 @@ use std::sync::Arc;
 use anyhow::Context;
 use quote::ToTokens;
 use syn::visit::Visit;
-use syn::Attribute;
-use syn::ItemFn;
-use tracing::warn;
-use tracing::{debug, debug_span, span, trace, Level};
+use syn::{Attribute, ItemFn};
+use tracing::{debug, debug_span, span, trace, warn, Level};
 
 use crate::path::TreeRelativePathBuf;
 use crate::source::{SourceFile, SourceTree};

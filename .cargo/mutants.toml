@@ -1,0 +1,3 @@
+# cargo-mutants configuration
+
+exclude_globs = [ "src/console.rs" ]

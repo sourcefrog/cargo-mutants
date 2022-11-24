@@ -23,6 +23,7 @@ use regex::Regex;
 use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
+mod config;
 mod jobs;
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
