@@ -497,6 +497,14 @@ and fewer unviable mutants.
 
 cargo-mutants reads `CARGO_ENCODED_RUSTFLAGS` and `RUSTFLAGS` environment variables, and sets `CARGO_ENCODED_RUSTFLAGS`.  It does not read `.cargo/config.toml` files, and so any rust flags set there will be ignored.
 
+## Integrations and related work
+
+### vim-cargomutants
+
+[`vim-cargomutants`](https://github.com/yining/vim-cargomutants) provides commands
+view cargo-mutants results, see the diff of mutations, and to launch cargo-mutants
+from within vim.
+
 ## Code of Conduct
 
 Interaction with or participation in this project is governed by the [Rust Code
