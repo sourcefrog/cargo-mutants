@@ -51,20 +51,6 @@ but not adequately tested.
 
 `-d`, `--dir`: Test the Rust tree in the given directory, rather than the default directory.
 
-`-f`, `--file FILE`: Mutate only functions in files matching the given name or
-glob. If the glob contains `/` it matches against the path from the source tree
-root; otherwise it matches only against the file name. If used together with `--exclude` argument,
-then the files to be examined are matched before the files to be excluded.
-
-`-e`, `--exclude FILE`: Exclude files from mutants generation, matching the given name or
-glob. If the glob contains `/` it matches against the path from the source tree
-root; otherwise it matches only against the file name. If used together with `--file` argument,
-then the files to be examined are matched before the files to be excluded.
-
-`-F`, `--re REGEX`: Only test mutants whose full name, as shown in `cargo mutants --list`, matches the given regex. The name includes the filename and return value, so you can also match against them.
-
-`-E`, `--exclude-re REGEX`: Don't test mutants whose full name matches the given regex.
-
 `--list`: Show what mutants could be generated, without running them.
 
 `--diff`: With `--list`, also include a diff of the source change for each mutant.
@@ -91,6 +77,81 @@ that cause a hang. By default a timeout is automatically determined.
 
 `--cargo-arg`: Passes the option argument to `cargo check`, `build`, and `test`.
 For example, `--cargo-arg --release`.
+
+### Filtering files
+
+Two options (each with short and long names) control which files are mutated:
+
+`-f GLOB`, `--file GLOB`: Mutate only functions in files matching
+the glob.
+
+`-e GLOB`, `--exclude GLOB`: Exclude files that match the glob.
+
+These options may be repeated.
+
+If any `-f` options are given, only source files that match are
+considered; otherwise all files are considered. This list is then further
+reduced by exclusions.
+
+If the glob contains `/` (or on Windows, `\`), then it matches against the path from the root of the source
+tree. For example, `src/*/*.rs` will exclude all files in subdirectories of `src`.
+
+If the glob does not contain a path separator, it matches against filenames
+in any directory.
+
+`/` matches the path separator on both Unix and Windows.
+
+Note that the glob must contain `.rs` (or a matching wildcard) to match
+source files with that suffix. For example, `-f network` will match
+`src/network/mod.rs` but it will _not_ match `src/network.rs`.
+
+Files that are excluded are still parsed (and so must be syntactically
+valid), and `mod` statements in them are followed to discover other
+source files. So, for example, you can exclude `src/main.rs` but still
+test mutants in other files referenced by `mod` statements in `main.rs`.
+
+The results of filters can be previewed with the `--list-files` and `--list`
+options.
+
+Examples:
+
+* `cargo mutants -f visit.rs -f change.rs` -- test mutants only in files
+  called `visit.rs` or `change.rs` (in any directory).
+
+* `cargo mutants -e console.rs` -- test mutants in any file except `console.rs`.
+
+* `cargo mutants -f src/db/*.rs` -- test mutants in any file in this directory.
+
+### Filtering functions and mutants
+
+Two options filter mutants by the full name of the mutant, which includes the
+function name, file name, and a description of the change.
+
+Mutant names are shown by `cargo mutants --list`, and the same command can be
+used to preview the effect of filters.
+
+`-F REGEX`, `--re REGEX`: Only test mutants whose full name matches the given regex.
+
+`-E REGEX`, `--exclude-re REGEX`: Exclude mutants whose full name matches
+the given regex.
+
+These options may be repeated.
+
+The regex matches a substring and can be anchored with `^` and `$`.
+
+The regex syntax is defined by the [`regex`](https://docs.rs/regex/latest/regex/)
+crate.
+
+These filters are applied after filtering by filename, and `--re` is applied before
+`--exclude-re`.
+
+Examples:
+
+* `-E 'impl Debug'` -- don't test `impl Debug` methods, because coverage of them
+  might be considered unimportant.
+
+* `-F 'impl Serialize' -F 'impl Deserialize'` -- test implementations of these
+  two traits.
 
 ### Passing arguments to `cargo test`
 
