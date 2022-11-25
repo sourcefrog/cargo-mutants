@@ -179,19 +179,19 @@ passing when run from a different location, such as a relative `path` in
 Otherwise, cargo mutants generates every mutant it can. All mutants fall in to
 one of these categories:
 
-- **caught** — A test failed with this mutant applied. This is a good sign about
+* **caught** — A test failed with this mutant applied. This is a good sign about
   test coverage. You can look in `mutants.out/log` to see which tests failed.
 
-- **missed** — No test failed with this mutation applied, which seems to
+* **missed** — No test failed with this mutation applied, which seems to
   indicate a gap in test coverage. Or, it may be that the mutant is
   undistinguishable from the correct code. You may wish to add a better test, or
   mark that the function should be skipped.
 
-- **unviable** — The attempted mutation doesn't compile. This is inconclusive about test coverage and
+* **unviable** — The attempted mutation doesn't compile. This is inconclusive about test coverage and
   no action is needed, but indicates an opportunity for cargo-mutants to either
   generate better mutants, or at least not generate unviable mutants.
 
-- **timeout** — The mutation caused the test suite to run for a long time, until it was eventually killed. You might want to investigate the cause and potentially mark the function to be skipped.
+* **timeout** — The mutation caused the test suite to run for a long time, until it was eventually killed. You might want to investigate the cause and potentially mark the function to be skipped.
 
 By default only missed mutants and timeouts are printed because they're the most actionable. Others can be shown with the `-v` and `-V` options.
 
@@ -214,39 +214,59 @@ flags the function for cargo-mutants.
 
 **Note:** Rust's "inner macro attributes" feature is currently unstable, so `#![mutants::skip]` can't be used at the top of a file in stable Rust.
 
+### Config file
+
+cargo-mutants looks for a `.cargo/mutants.toml` file in the root of the source
+directory. If a config file exists, the values are appended to the corresponding
+command-line arguments.
+
+Configured exclusions may be particularly important when there are modules that
+are inherently hard to test, and the project has made a decision to accept lower
+test coverage for them.
+
+The following configuration options are supported:
+
+```toml
+exclude_globs = ["src/main.rs", "src/cache/*.rs"] # same as -e
+examine_globs = ["src/important/*.rs"] # same as -f, test *only* these files
+
+exclude_re = ["impl Debug"] # same as -E
+examine_re = ["impl Serialize", "impl Deserialize"] # same as -F, test *only* matches
+```
+
 ### Exit codes
 
-- **0**: Success. No mutants were found that weren't caught by tests.
+* **0**: Success. No mutants were found that weren't caught by tests.
 
-- **1**: Usage error: bad command-line arguments etc.
+* **1**: Usage error: bad command-line arguments etc.
 
-- **2**: Found some mutants that were not covered by tests.
+* **2**: Found some mutants that were not covered by tests.
 
-- **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
+* **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
   or the timeout is too low.
 
-- **4**: The tests are already failing or hanging before any mutations are
+* **4**: The tests are already failing or hanging before any mutations are
   applied, so no mutations were tested.
 
 ### `mutants.out`
 
 A `mutants.out` directory is created in the source directory, or whichever directory you specify with `--output`. It contains:
 
-- A `logs/` directory, with one log file for each mutation plus the baseline
+* A `logs/` directory, with one log file for each mutation plus the baseline
   unmutated case. The log contains the diff of the mutation plus the output from
   cargo.
 
-- A `lock.json`, on which an [fs2 lock](https://docs.rs/fs2) is held while
+* A `lock.json`, on which an [fs2 lock](https://docs.rs/fs2) is held while
   cargo-mutants is running, to avoid two tasks trying to write to the same
   directory at the same time. The lock contains the start time, cargo-mutants
   version, username, and hostname. `lock.json` is left in `mutants.out` when the
   run completes, but the lock on it is released.
 
-- `caught.txt`, `missed.txt`, `timeout.txt`, `unviable.txt`, each listing mutants with the corresponding outcome.
+* `caught.txt`, `missed.txt`, `timeout.txt`, `unviable.txt`, each listing mutants with the corresponding outcome.
 
-- A `mutants.json` file describing all the generated mutants.
+* A `mutants.json` file describing all the generated mutants.
 
-- An `outcomes.json` file describing the results of all tests.
+* An `outcomes.json` file describing the results of all tests.
 
 ### Hangs and timeouts
 
@@ -342,12 +362,12 @@ performance side effects.
 Ideally, these should be tested, but doing so in a way that's not flaky can be
 difficult. cargo-mutants can help in a few ways:
 
-- It helps to at least highlight to the developer that the function is not
+* It helps to at least highlight to the developer that the function is not
   covered by tests, and so should perhaps be treated with extra care, or tested
   manually.
-- A `#[mutants::skip]` annotation can be added to suppress warnings and explain
+* A `#[mutants::skip]` annotation can be added to suppress warnings and explain
   the decision.
-- Sometimes these effects can be tested by making the side-effect observable
+* Sometimes these effects can be tested by making the side-effect observable
   with, for example, a counter of the number of memory allocations or cache
   misses/hits.
 
@@ -384,8 +404,8 @@ jobs:
 
 Experience reports in [GitHub Discussions](https://github.com/sourcefrog/cargo-mutants/discussions) or issues are very welcome:
 
-- Did it find a bug or important coverage gap?
-- Did it fail to build and test your tree? (Some cases that aren't supported yet
+* Did it find a bug or important coverage gap?
+* Did it fail to build and test your tree? (Some cases that aren't supported yet
   are already listed in this doc or the bug tracker.)
 
 It's especially helpful if you can either point to an open source tree that will
@@ -401,16 +421,16 @@ the tests might be insufficient.**
 
 Being _easy_ to use means:
 
-- cargo-mutants requires no changes to the source tree or other setup: just
+* cargo-mutants requires no changes to the source tree or other setup: just
   install and run. So, if it does not find anything interesting to say about a
   well-tested tree, it didn't cost you much. (This worked out really well:
   `cargo install cargo-mutants && cargo mutants` will do it.)
 
-- There is no chance that running cargo-mutants will change the released
+* There is no chance that running cargo-mutants will change the released
   behavior of your program (other than by helping you to fix bugs!), because you
   don't need to change the source to use it.
 
-- cargo-mutants should be reasonably fast even on large Rust trees. The overall
+* cargo-mutants should be reasonably fast even on large Rust trees. The overall
   run time is, roughly, the product of the number of viable mutations multiplied
   by the time to run the test suite for each mutation. Typically, one `cargo
   mutants` run will give you all the information it can find about missing test
@@ -420,24 +440,24 @@ Being _easy_ to use means:
   for each mutant, but that can still be significant for large trees. There's
   room to improve by testing multiple mutants in parallel.)
 
-- cargo-mutants should run correctly on any Rust source trees that are built and
+* cargo-mutants should run correctly on any Rust source trees that are built and
   tested by Cargo, that will build and run their tests in a copy of the tree,
   and that have hermetic tests. (It's not all the way there yet; in particular
   it assumes the source is in `src/`.)
 
-- cargo-mutants shouldn't crash or hang, even if it generates mutants that cause
+* cargo-mutants shouldn't crash or hang, even if it generates mutants that cause
   the software under test to crash or hang. (This is generally met today:
   cargo-mutants runs tests with an automatically set and configurable timeout.)
 
-- The results should be reproducible, assuming the build and test suite is
+* The results should be reproducible, assuming the build and test suite is
   deterministic. (This should be true today; please file a bug if it's not. Mutants are run in random order unless `--no-shuffle` is specified, but this should not affect the results.)
 
-- cargo-mutants should avoid generating unviable mutants that don't compile,
+* cargo-mutants should avoid generating unviable mutants that don't compile,
   because that wastes time. However, when it's uncertain whether the mutant will
   build, it's worth trying things that _might_ find interesting results even if
   they might fail to build.  (It does currently generate _some_ unviable mutants, but typically not too many, and they don't have a large effect on runtime in most trees.)
 
-- Realistically, cargo-mutants may generate some mutants that aren't caught by
+* Realistically, cargo-mutants may generate some mutants that aren't caught by
   tests but also aren't interesting, or aren't feasible to test. In those cases
   it should be easy to permanently dismiss them (e.g. by adding a
   `#[mutants::skip]` attribute or a config file.) (The attribute exists but
@@ -445,66 +465,66 @@ Being _easy_ to use means:
 
 Showing _interesting results_ mean:
 
-- cargo-mutants should tell you about places where the code could be wrong and
+* cargo-mutants should tell you about places where the code could be wrong and
   the test suite wouldn't catch it. If it doesn't find any interesting results
   on typical trees, there's no point. Aspirationally, it will even find useful
   results in code with high line coverage, when there is code that is reached by
   a test, but no test depends on its behavior.
 
-- In superbly-tested projects cargo-mutants may find nothing to say, but hey, at
+* In superbly-tested projects cargo-mutants may find nothing to say, but hey, at
   least it was easy to run, and hopefully the assurance that the tests really do
   seem to be good is useful data.
 
-- _Most_, ideally all, findings should indicate something that really should be
+* _Most_, ideally all, findings should indicate something that really should be
   tested more, or that may already be buggy, or that's at least worth looking at.
 
-- It should be easy to understand what the output is telling you about a
+* It should be easy to understand what the output is telling you about a
   potential bug that wouldn't be caught. (This seems true today.) It might take
   some thought to work out _why_ the existing tests don't cover it, or how to
   check it, but at least you know where to begin.
 
-- As much as possible cargo-mutants should avoid generating trivial mutants,
+* As much as possible cargo-mutants should avoid generating trivial mutants,
   where the mutated code is effectively equivalent to the original code, and so
   it's not interesting that the test suite doesn't catch the change. (Not much
   has been done here yet.)
 
-- For trees that are thoroughly tested, you can use `cargo mutants` in CI to
+* For trees that are thoroughly tested, you can use `cargo mutants` in CI to
   check that they remain so.
 
 ## How it works
 
 The basic approach is:
 
-- Make a copy of the source tree into a scratch directory, excluding
+* Make a copy of the source tree into a scratch directory, excluding
   version-control directories like `.git` and the `/target` directory. The same directory is reused across all the mutations to benefit from incremental builds.
 
-  - After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
+  * After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
     `.cargo/config.toml` for relative dependencies. If there are any, the paths are
     rewritten to be absolute, so that they still work when cargo is run in the
     scratch directory.
 
-  - Before applying any mutations, check that `cargo test` succeeds in the
+  * Before applying any mutations, check that `cargo test` succeeds in the
     scratch directory: perhaps a test is already broken, or perhaps the tree
     doesn't build when copied because it relies on relative paths to find
     dependencies, etc.
 
-- Build a list of mutations:
-  - Run `cargo metadata` to find directories containing Rust source files.
-  - Walk all source files and parse each one looking for functions.
-  - Skip functions that should not be mutated for any of several reasons:
+* Build a list of mutations:
+  * Run `cargo metadata` to find directories containing Rust source files.
+  * Walk all source files and parse each one looking for functions.
+  * Skip functions that should not be mutated for any of several reasons:
     because they're tests, because they have a `#[mutants::skip]` attribute,
     etc.
-  - For each function, depending on its return type, generate every mutation
+  * For each function, depending on its return type, generate every mutation
     pattern that produces a result of that type.
 
-- For each mutation:
-  - Apply the mutation to the scratch tree by patching the affected file.
-  - Run `cargo test` in the tree, saving output to a log file.
-  - If the build fails or the tests fail, that's good: the mutation was somehow
+* For each mutation:
+  * Apply the mutation to the scratch tree by patching the affected file.
+  * Run `cargo test` in the tree, saving output to a log file.
+  * If the build fails or the tests fail, that's good: the mutation was somehow
     caught.
-  - If the build and tests succeed, that might mean test coverage was
+  * If the build and tests succeed, that might mean test coverage was
     inadequate, or it might mean we accidentally generated a no-op mutation.
-  - Revert the mutation to return the tree to its clean state.
+  * Revert the mutation to return the tree to its clean state.
 
 The file is parsed using the [`syn`](https://docs.rs/syn) crate, but mutations
 are applied textually, rather than to the token stream, so that unmutated code
