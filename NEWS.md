@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 1.2.0
+
+*Thankful mutants!*
 
 - Fixed: Files that are excluded by filters are also excluded from `--list-files`.
 
