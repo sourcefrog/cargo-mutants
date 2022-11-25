@@ -33,6 +33,10 @@ pub struct Config {
     pub exclude_re: Vec<String>,
     /// Examine only mutants matching these regexps.
     pub examine_re: Vec<String>,
+    /// Pass extra args to every cargo invocation.
+    pub additional_cargo_args: Vec<String>,
+    /// Pass extra args to cargo test.
+    pub additional_cargo_test_args: Vec<String>,
 }
 
 impl Config {

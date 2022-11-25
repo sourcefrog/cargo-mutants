@@ -74,8 +74,18 @@ impl Options {
         }
 
         Ok(Options {
-            additional_cargo_args: args.cargo_arg.clone(),
-            additional_cargo_test_args: args.cargo_test_args.clone(),
+            additional_cargo_args: args
+                .cargo_arg
+                .iter()
+                .cloned()
+                .chain(config.additional_cargo_args.iter().cloned())
+                .collect(),
+            additional_cargo_test_args: args
+                .cargo_test_args
+                .iter()
+                .cloned()
+                .chain(config.additional_cargo_test_args.iter().cloned())
+                .collect(),
             check_only: args.check,
             examine_names: Some(
                 RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))

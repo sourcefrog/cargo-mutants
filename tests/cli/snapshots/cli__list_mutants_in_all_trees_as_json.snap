@@ -127,6 +127,21 @@ expression: buf
 ]
 ```
 
+## testdata/tree/fails_without_feature
+
+```json
+[
+  {
+    "package": "cargo-mutants-testdata-fails-without-feature",
+    "file": "src/bin/factorial.rs",
+    "line": 9,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "Default::default()"
+  }
+]
+```
+
 ## testdata/tree/hang_avoided_by_attr
 
 ```json

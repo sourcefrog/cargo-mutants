@@ -7,8 +7,8 @@
 - Fixed: `--exclude-re` and `--re` can match against the return type as shown in
   `--list`.
 
-- New: a `.cargo/mutants.toml` file can be used to configure standard filters
-  for a project.
+- New: A `.cargo/mutants.toml` file can be used to configure standard filters
+  and cargo args for a project.
 
 ## 1.1.1
 

@@ -85,6 +85,7 @@ exclude = [
     "testdata/tree/dependency",
     "testdata/tree/everything_skipped",
     "testdata/tree/factorial",
+    "testdata/tree/fails_without_feature",
     "testdata/tree/hang_avoided_by_attr/",
     "testdata/tree/hang_when_mutated",
     "testdata/tree/insta",

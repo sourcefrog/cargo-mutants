@@ -1,0 +1,16 @@
+[package]
+name = "cargo-mutants-testdata-fails-without-feature"
+version = "0.0.0"
+edition = "2021"
+authors = ["Martin Pool"]
+publish = false
+
+[dependencies.mutants]
+version = "0.0.3"
+
+[features]
+needed = []
+
+[[bin]]
+name = "factorial"
+doctest = false

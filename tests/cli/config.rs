@@ -119,3 +119,56 @@ fn list_with_config_file_regexps() {
             "src/simple_fns.rs:17: replace divisible_by_three -> bool with false\n",
         ));
 }
+
+#[test]
+fn tree_fails_without_needed_feature() {
+    // The point of this tree is to check that Cargo features can be turned on,
+    // but let's make sure it does fail as intended if they're not.
+    let testdata = copy_of_testdata("fails_without_feature");
+    run_assert_cmd()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .failure()
+        .stdout(predicates::str::contains(
+            "test failed in an unmutated tree",
+        ));
+}
+
+#[test]
+fn additional_cargo_args() {
+    // The point of this tree is to check that Cargo features can be turned on,
+    // but let's make sure it does fail as intended if they're not.
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        additional_cargo_args = ["--features", "needed"]
+        "#,
+    );
+    run_assert_cmd()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("1 caught"));
+}
+
+#[test]
+fn additional_cargo_test_args() {
+    // The point of this tree is to check that Cargo features can be turned on,
+    // but let's make sure it does fail as intended if they're not.
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        additional_cargo_test_args = ["--all-features", ]
+        "#,
+    );
+    run_assert_cmd()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("1 caught"));
+}
