@@ -98,3 +98,24 @@ src/item_mod.rs\n",
         .success()
         .stdout(predicates::str::contains("simple_fns.rs").not());
 }
+
+#[test]
+fn list_with_config_file_regexps() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"
+        # comments are ok
+        examine_re = ["divisible"]
+        exclude_re = ["-> bool with true"]
+        "#,
+    );
+    run_assert_cmd()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(
+            "src/simple_fns.rs:17: replace divisible_by_three -> bool with false\n",
+        ));
+}

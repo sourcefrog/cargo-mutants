@@ -564,7 +564,7 @@ fn small_well_tested_tree_is_clean() {
         "\
 *** mutation diff:
 --- src/lib.rs
-+++ replace factorial with Default::default()
++++ replace factorial -> u32 with Default::default()
 @@ -1,17 +1,13 @@"
     ));
     assert!(log_content.contains(

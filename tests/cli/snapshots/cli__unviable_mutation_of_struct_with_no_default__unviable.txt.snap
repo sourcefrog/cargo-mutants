@@ -1,6 +1,6 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: content
 ---
-src/lib.rs:11: replace make_an_s with Default::default()
+src/lib.rs:11: replace make_an_s -> S with Default::default()
 

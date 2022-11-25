@@ -1,5 +1,5 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 src/bin/factorial.rs:1: replace main with ()
@@ -22,7 +22,7 @@ src/bin/factorial.rs:1: replace main with ()
 
 src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
 --- src/bin/factorial.rs
-+++ replace factorial with Default::default()
++++ replace factorial -> u32 with Default::default()
 @@ -1,19 +1,15 @@
  fn main() {
      for i in 1..=6 {

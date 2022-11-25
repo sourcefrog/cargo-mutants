@@ -127,12 +127,18 @@ impl Mutant {
 
     /// Describe the mutant briefly, not including the location.
     ///
-    /// The result is like `replace source::SourceFile::new with Default::default()`.
+    /// The result is like `replace factorial -> u32 with Default::default()`.
     pub fn describe_change(&self) -> String {
         format!(
-            "replace {} with {}",
-            self.function_name(),
-            self.op.replacement()
+            "replace {name}{space}{type} with {replacement}",
+            name = self.function_name(),
+            space = if self.return_type.is_empty() {
+                ""
+            } else {
+                " "
+            },
+            type = self.return_type(),
+            replacement = self.op.replacement()
         )
     }
 
@@ -213,12 +219,14 @@ impl fmt::Display for Mutant {
     ///
     /// The result is like `src/source.rs:123: replace source::SourceFile::new with Default::default()`.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // This is like `style_mutant`, but without colors.
+        // The text content should be the same.
         write!(
             f,
-            "{}:{}: {}",
-            self.source_file.tree_relative_slashes(),
-            self.span.start.line,
-            self.describe_change()
+            "{file}:{line}: {change}",
+            file = self.source_file.tree_relative_slashes(),
+            line = self.span.start.line,
+            change = self.describe_change()
         )
     }
 }
@@ -269,7 +277,7 @@ mod test {
         );
         assert_eq!(
             mutants[1].to_string(),
-            "src/bin/factorial.rs:7: replace factorial with Default::default()"
+            "src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()"
         );
     }
 

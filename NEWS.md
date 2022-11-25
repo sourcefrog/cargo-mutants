@@ -4,6 +4,12 @@
 
 - Fixed: Files that are excluded by filters are also excluded from `--list-files`.
 
+- Fixed: `--exclude-re` and `--re` can match against the return type as shown in
+  `--list`.
+
+- New: a `.cargo/mutants.toml` file can be used to configure standard filters
+  for a project.
+
 ## 1.1.1
 
 Released 2022-10-31

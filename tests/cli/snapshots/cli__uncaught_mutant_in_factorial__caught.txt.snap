@@ -1,5 +1,6 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: content
 ---
-src/bin/factorial.rs:7: replace factorial with Default::default()
+src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
+

@@ -62,10 +62,12 @@ pub struct Options {
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
 
+    /// Run this many `cargo build` or `cargo test` tasks in parallel.
     pub jobs: Option<usize>,
 }
 
 impl Options {
+    /// Build options by merging command-line args and config file.
     pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
         if args.no_copy_target {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
@@ -76,11 +78,13 @@ impl Options {
             additional_cargo_test_args: args.cargo_test_args.clone(),
             check_only: args.check,
             examine_names: Some(
-                RegexSet::new(&args.examine_re).context("Compiling examine_re regex")?,
+                RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
+                    .context("Compiling examine_re regex")?,
             ),
             examine_globset: build_glob_set(args.file.iter().chain(config.examine_globs.iter()))?,
             exclude_names: Some(
-                RegexSet::new(&args.exclude_re).context("Compiling exclude_re regex")?,
+                RegexSet::new(args.exclude_re.iter().chain(config.exclude_re.iter()))
+                    .context("Compiling exclude_re regex")?,
             ),
             exclude_globset: build_glob_set(
                 args.exclude.iter().chain(config.exclude_globs.iter()),

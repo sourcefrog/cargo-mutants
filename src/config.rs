@@ -5,6 +5,8 @@
 //! The config file is read after parsing command line arguments,
 //! and after finding the source tree, because these together
 //! determine its location.
+//!
+//! The config file is then merged in to the [Options].
 
 use std::default::Default;
 use std::fs::read_to_string;
@@ -13,7 +15,8 @@ use anyhow::Context;
 use camino::Utf8Path;
 use serde::Deserialize;
 
-use crate::{source::SourceTree, Result};
+use crate::source::SourceTree;
+use crate::Result;
 
 /// Configuration read from a config file.
 ///
@@ -22,8 +25,14 @@ use crate::{source::SourceTree, Result};
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Generate mutants from source files matching these globs.
     pub examine_globs: Vec<String>,
+    /// Exclude mutants from source files matching these globs.
     pub exclude_globs: Vec<String>,
+    /// Exclude mutants from source files matches these regexps.
+    pub exclude_re: Vec<String>,
+    /// Examine only mutants matching these regexps.
+    pub examine_re: Vec<String>,
 }
 
 impl Config {

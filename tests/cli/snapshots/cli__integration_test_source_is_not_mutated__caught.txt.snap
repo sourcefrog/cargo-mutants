@@ -1,6 +1,6 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: content
 ---
-src/lib.rs:1: replace double with Default::default()
+src/lib.rs:1: replace double -> u32 with Default::default()
 

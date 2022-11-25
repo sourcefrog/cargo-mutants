@@ -540,6 +540,8 @@ pub fn list_mutants(mutants: &[Mutant], show_diffs: bool) {
 }
 
 fn style_mutant(mutant: &Mutant) -> String {
+    // This is like `impl Display for Mutant`, but with colors.
+    // The text content should be the same.
     format!(
         "{}: replace {}{}{} with {}",
         mutant.describe_location(),
