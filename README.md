@@ -18,7 +18,7 @@ the tests really check the code's behavior.
 ## Install
 
 ```sh
-cargo install cargo-mutants
+cargo install --locked cargo-mutants
 ```
 
 To install shell completions run for example:
@@ -393,7 +393,7 @@ jobs:
         with:
           toolchain: stable
       - name: Install cargo-mutants
-        run: cargo install cargo-mutants
+        run: cargo install --locked cargo-mutants
       - name: Run mutant tests
         run: cargo mutants -- --all-features
       - name: Archive results
