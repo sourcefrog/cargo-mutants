@@ -1,0 +1,6 @@
+[book]
+authors = ["Martin Pool"]
+language = "en"
+multilingual = false
+src = "src"
+title = "cargo-mutants"
