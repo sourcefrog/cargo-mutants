@@ -1,0 +1,38 @@
+# Run cargo mutants on itself
+name: cargo-mutants
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - ci-mutants
+
+jobs:
+  cargo-mutants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key:
+            cargo-mutants-self-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - name: Install
+        run: |
+          cargo install --path .
+      - name: Mutants
+        run: |
+          cargo mutants --no-shuffle --exclude console.rs
+      - name: Archive mutants.out
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mutants.out
+          path: mutants.out

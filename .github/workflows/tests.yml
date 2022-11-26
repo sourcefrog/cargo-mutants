@@ -1,0 +1,52 @@
+name: Tests
+
+permissions:
+  contents: read
+
+on:
+  push:
+  pull_request:
+
+# see https://matklad.github.io/2021/09/04/fast-rust-builds.html
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  CI: 1
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-W rust-2021-compatibility"
+  RUSTUP_MAX_RETRIES: 10
+  CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT: 60
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Show Cargo and rustc version
+        run: |
+          cargo --version
+          rustc --version
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - name: Clippy
+        run: cargo clippy -- -D clippy::all
+      - name: rustfmt
+        run: cargo fmt --all -- --check
+      - name: Build
+        run: cargo build --all-targets
+      - name: Test
+        run: cargo test --workspace
+      - name: Install
+        run: cargo install --path .
