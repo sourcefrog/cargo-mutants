@@ -21,31 +21,17 @@ the tests really check the code's behavior.
 cargo install --locked cargo-mutants
 ```
 
-To install shell completions run for example:
+## Quick start
+
+From within a Rust source directory, just run
 
 ```sh
-cargo mutants --completions fish >~/.config/fish/completions/cargo-mutants.fish
+cargo mutants
 ```
 
-## Using cargo-mutants
+## Further reading
 
-Just run `cargo mutants` in a Rust source directory, and it will point out
-functions that may be inadequately tested:
-
-```sh
-; cargo mutants
-Freshen source tree ... ok in 0.031s
-Copy source and build products to scratch directory ... 192 MB in 0.116s
-Unmutated baseline ... ok in 0.235s
-Auto-set test timeout to 20.0s
-Found 17 mutants to test
-src/lib.rs:168: replace <??>::new -> CopyOptions < 'f > with Default::default() ... NOT CAUGHT in 0.736s
-src/lib.rs:386: replace Error::source -> Option < & (dyn std :: error :: Error + 'static) > with Default::default() ... NOT CAUGHT in 0.643s
-src/lib.rs:485: replace copy_symlink -> Result < () > with Ok(Default::default()) ... NOT CAUGHT in 0.767s
-```
-
-In v0.5.1 of the `cp_r` crate, the `copy_symlink` function was reached by a test
-but not adequately tested.
+See the user guide at <https://mutants.rs/>.
 
 ### Command-line options
 
@@ -153,22 +139,6 @@ Examples:
 * `-F 'impl Serialize' -F 'impl Deserialize'` -- test implementations of these
   two traits.
 
-### Passing arguments to `cargo test`
-
-Command-line options following a `--` delimiter are passed through to
-`cargo test`, which can be used for example to exclude doctests (which tend to
-be slow to build and run):
-
-```sh
-cargo mutants -- --all-targets
-```
-
-You can use a second double-dash to pass options through to the test targets:
-
-```sh
-cargo mutants -- -- --test-threads 1 --nocapture
-```
-
 ### Understanding the results
 
 If tests fail in a clean copy of the tree, there might be an (intermittent)
@@ -194,83 +164,6 @@ one of these categories:
 * **timeout** — The mutation caused the test suite to run for a long time, until it was eventually killed. You might want to investigate the cause and potentially mark the function to be skipped.
 
 By default only missed mutants and timeouts are printed because they're the most actionable. Others can be shown with the `-v` and `-V` options.
-
-### Skipping functions
-
-To mark functions so they are not mutated:
-
-1. Add a Cargo dependency on the [mutants](https://crates.io/crates/mutants)
-   crate, version "0.0.3" or later. (This must be a regular `dependency` not a
-   `dev-dependency`, because the annotation will be on non-test code.)
-
-2. Mark functions with `#[mutants::skip]` or other attributes containing `mutants::skip` (e.g. `#[cfg_attr(test, mutants::skip)]`).
-
-See `testdata/tree/hang_avoided_by_attr/` for an example.
-
-The crate is tiny and the attribute has no effect on the compiled code. It only
-flags the function for cargo-mutants.
-
-**Note:** Currently, `cargo-mutants` does not (yet) evaluate attributes like `cfg_attr`, it only looks for the sequence `mutants::skip` in the attribute.
-
-**Note:** Rust's "inner macro attributes" feature is currently unstable, so `#![mutants::skip]` can't be used at the top of a file in stable Rust.
-
-### Config file
-
-cargo-mutants looks for a `.cargo/mutants.toml` file in the root of the source
-directory. If a config file exists, the values are appended to the corresponding
-command-line arguments. (This may cause problems if you use `--` twice on the
-command line to pass arguments to the inner test binary.)
-
-Configured exclusions may be particularly important when there are modules that
-are inherently hard to test, and the project has made a decision to accept lower
-test coverage for them.
-
-The following configuration options are supported:
-
-```toml
-exclude_globs = ["src/main.rs", "src/cache/*.rs"] # same as -e
-examine_globs = ["src/important/*.rs"] # same as -f, test *only* these files
-
-exclude_re = ["impl Debug"] # same as -E
-examine_re = ["impl Serialize", "impl Deserialize"] # same as -F, test *only* matches
-
-additional_cargo_args = ["--all-features"]
-additional_cargo_test_args = ["--jobs=1"]
-```
-
-### Exit codes
-
-* **0**: Success. No mutants were found that weren't caught by tests.
-
-* **1**: Usage error: bad command-line arguments etc.
-
-* **2**: Found some mutants that were not covered by tests.
-
-* **3**: Some tests timed out: possibly the mutatations caused an infinite loop,
-  or the timeout is too low.
-
-* **4**: The tests are already failing or hanging before any mutations are
-  applied, so no mutations were tested.
-
-### `mutants.out`
-
-A `mutants.out` directory is created in the source directory, or whichever directory you specify with `--output`. It contains:
-
-* A `logs/` directory, with one log file for each mutation plus the baseline
-  unmutated case. The log contains the diff of the mutation plus the output from
-  cargo.
-
-* A `lock.json`, on which an [fs2 lock](https://docs.rs/fs2) is held while
-  cargo-mutants is running, to avoid two tasks trying to write to the same
-  directory at the same time. The lock contains the start time, cargo-mutants
-  version, username, and hostname. `lock.json` is left in `mutants.out` when the
-  run completes, but the lock on it is released.
-
-* `caught.txt`, `missed.txt`, `timeout.txt`, `unviable.txt`, each listing mutants with the corresponding outcome.
-
-* A `mutants.json` file describing all the generated mutants.
-
-* An `outcomes.json` file describing the results of all tests.
 
 ### Hangs and timeouts
 
@@ -374,35 +267,6 @@ difficult. cargo-mutants can help in a few ways:
 * Sometimes these effects can be tested by making the side-effect observable
   with, for example, a counter of the number of memory allocations or cache
   misses/hits.
-
-### Continuous integration
-
-Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
-
-```yml
-name: cargo-mutants
-
-on: [pull_request, push]
-
-jobs:
-  cargo-mutants:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Install cargo-mutants
-        run: cargo install --locked cargo-mutants
-      - name: Run mutant tests
-        run: cargo mutants -- --all-features
-      - name: Archive results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: mutation-report
-          path: mutants.out
-```
 
 ## How to help
 
@@ -550,19 +414,6 @@ practical sweet-spot to discover missing tests, while still making it feasible
 to exhaustively generate every mutant, at least for moderate-sized trees.
 
 See also: [more information on how cargo-mutants compares to other techniques and tools](https://github.com/sourcefrog/cargo-mutants/wiki/Compared).
-
-## Supported Rust versions
-
-Building cargo-mutants requires a reasonably recent stable (or nightly or beta) Rust toolchain.
-
-Currently it is [tested with Rust 1.63](https://github.com/sourcefrog/cargo-mutants/actions/workflows/msrv.yml).
-
-After installing cargo-mutants, you should be able to use it to run tests under
-any toolchain, even toolchains that are far too old to build cargo-mutants, using the standard `+` option to `cargo`:
-
-```sh
-cargo +1.48 mutants
-```
 
 ### Limitations, caveats, known bugs, and future enhancements
 
