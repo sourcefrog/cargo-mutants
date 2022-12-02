@@ -88,7 +88,7 @@ fn walk_tree(
 /// Find all possible mutants in a source file.
 ///
 /// Returns the mutants found, and more files discovered by `mod` statements to visit.
-pub fn walk_file(
+fn walk_file(
     tree_path: &Utf8Path,
     source_file: Arc<SourceFile>,
 ) -> Result<(Vec<Mutant>, Vec<TreeRelativePathBuf>)> {
