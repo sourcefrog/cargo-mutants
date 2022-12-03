@@ -144,6 +144,7 @@ pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
     log_path: Utf8PathBuf,
+    diff_path: Utf8PathBuf,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.
@@ -155,20 +156,22 @@ impl Serialize for ScenarioOutcome {
     where
         S: Serializer,
     {
-        // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Outcome", 4)?;
+        // custom serialize to omit inessential info and to inline a summary.
+        let mut ss = serializer.serialize_struct("Outcome", 5)?;
         ss.serialize_field("scenario", &self.scenario)?;
-        ss.serialize_field("log_path", &self.log_path)?;
         ss.serialize_field("summary", &self.summary())?;
+        ss.serialize_field("log_path", &self.log_path)?;
+        ss.serialize_field("diff_path", &self.diff_path)?;
         ss.serialize_field("phase_results", &self.phase_results)?;
         ss.end()
     }
 }
 
 impl ScenarioOutcome {
-    pub fn new(log_file: &LogFile, scenario: Scenario) -> ScenarioOutcome {
+    pub fn new(log_file: &LogFile, diff_path: Utf8PathBuf, scenario: Scenario) -> ScenarioOutcome {
         ScenarioOutcome {
             log_path: log_file.path().to_owned(),
+            diff_path,
             scenario,
             phase_results: Vec::new(),
         }

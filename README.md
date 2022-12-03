@@ -260,6 +260,8 @@ A `mutants.out` directory is created in the source directory, or whichever direc
   unmutated case. The log contains the diff of the mutation plus the output from
   cargo.
 
+* A `diff/` directory, with one diff file for each mutation.
+
 * A `lock.json`, on which an [fs2 lock](https://docs.rs/fs2) is held while
   cargo-mutants is running, to avoid two tasks trying to write to the same
   directory at the same time. The lock contains the start time, cargo-mutants
@@ -270,7 +272,7 @@ A `mutants.out` directory is created in the source directory, or whichever direc
 
 * A `mutants.json` file describing all the generated mutants.
 
-* An `outcomes.json` file describing the results of all tests.
+* An `outcomes.json` file describing the results of all tests, including the path of the log and diff files.
 
 ### Hangs and timeouts
 

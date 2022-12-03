@@ -191,10 +191,13 @@ impl Mutant {
             .with_context(|| format!("failed to write mutated code to {:?}", path))
     }
 
+    /// Return a filename part, without slashes or extension, that can be used for log and diff files.
     pub fn log_file_name_base(&self) -> String {
+        // TODO: Also include a unique number so that they can't collide, even
+        // with similar mutants on the same line?
         format!(
             "{}_line_{}",
-            self.source_file.tree_relative_slashes(),
+            self.source_file.tree_relative_slashes().replace('/', "__"),
             self.span.start.line
         )
     }

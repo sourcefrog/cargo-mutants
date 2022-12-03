@@ -89,6 +89,7 @@ impl LockFile {
 pub struct OutputDir {
     path: Utf8PathBuf,
     log_dir: Utf8PathBuf,
+    diff_dir: Utf8PathBuf,
     #[allow(unused)] // Lifetime controls the file lock
     lock_file: File,
     /// A file holding a list of missed mutants as text, one per line.
@@ -136,6 +137,8 @@ impl OutputDir {
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
         fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
+        let diff_dir = output_dir.join("diff");
+        fs::create_dir(&diff_dir).context("create diff dir")?;
 
         // Create text list files.
         let mut list_file_options = OpenOptions::new();
@@ -156,6 +159,7 @@ impl OutputDir {
             path: output_dir,
             lab_outcome: LabOutcome::new(),
             log_dir,
+            diff_dir,
             lock_file,
             missed_list,
             caught_list,
@@ -205,6 +209,21 @@ impl OutputDir {
             writeln!(file, "{}", mutant).context("write to list file")?;
         }
         Ok(())
+    }
+
+    pub fn write_diff_file(&self, scenario: &Scenario) -> Result<Utf8PathBuf> {
+        // TODO: Unify with the cleaning/uniquifying code in LogFile...
+        let diff_filename = self
+            .diff_dir
+            .join(format!("{}.diff", scenario.log_file_name_base()));
+        let diff = if let Scenario::Mutant(mutant) = scenario {
+            mutant.diff()
+        } else {
+            String::new()
+        };
+        fs::write(&diff_filename, diff.as_bytes())
+            .with_context(|| format!("write diff file {diff_filename:?}"))?;
+        Ok(diff_filename)
     }
 
     pub fn open_debug_log(&self) -> Result<File> {
@@ -287,6 +306,7 @@ version = "0.0.0"
                 "Cargo.toml",
                 "mutants.out",
                 "mutants.out/caught.txt",
+                "mutants.out/diff",
                 "mutants.out/lock.json",
                 "mutants.out/log",
                 "mutants.out/missed.txt",

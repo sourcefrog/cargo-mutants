@@ -169,8 +169,9 @@ fn test_scenario(
         mutant.apply(build_dir)?;
     }
     console.scenario_started(scenario, log_file.path());
+    let diff_filename = output_mutex.lock().unwrap().write_diff_file(scenario)?;
 
-    let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
+    let mut outcome = ScenarioOutcome::new(&log_file, diff_filename, scenario.clone());
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
     } else {

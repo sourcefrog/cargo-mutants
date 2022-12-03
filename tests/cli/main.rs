@@ -2,6 +2,7 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::collections::HashSet;
 use std::fmt::Write;
 use std::fs::{self, read_dir};
 use std::io::Read;
@@ -11,6 +12,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use assert_cmd::prelude::OutputAssertExt;
+use camino::Utf8Path;
 use itertools::Itertools;
 // use assert_cmd::prelude::*;
 // use assert_cmd::Command;
@@ -523,6 +525,14 @@ fn workspace_tree_is_well_tested() {
             baseline_phases[1]["command"].as_array().unwrap()[1..],
             ["test", "--workspace"]
         );
+    }
+
+    // The outcomes all have `diff_path` keys and they all identify files.
+    let mut all_diffs = HashSet::new();
+    for outcome_json in json["outcomes"].as_array().unwrap() {
+        let diff_path = outcome_json["diff_path"].as_str().unwrap();
+        assert!(Utf8Path::new(diff_path).is_file());
+        assert!(all_diffs.insert(diff_path));
     }
 }
 
