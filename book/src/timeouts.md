@@ -16,18 +16,16 @@ file](filter_mutants.md).
 
 ## Timeouts
 
-To avoid hangs, cargo-mutants will kill the test suite after a timeout.
+To avoid hangs, cargo-mutants will kill the test suite after a timeout and
+continue to the next mutant.
 
-cargo-mutants measures the time to run the test suite in the unmodified tree.
+By default, the timeout is set automatically. cargo-mutants measures the time to
+run the test suite in the unmodified tree, and then sets a timeout for mutated
+tests at 5x the time to run tests with no mutations, and a minimum of 20
+seconds.
 
-`cargo-mutants` then automatically sets a timeout when running tests with
-mutations applied, and reports mutations that hit a timeout. The automatic
-timeout is the greater of 20 seconds, or 5x the time to run tests with no
-mutations.
-
-The `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in
-seconds, sets a minimum timeout, but allows it to be larger if the unmodified
-test suite takes a long time to run.
+The minimum of 20 seconds can be overriden by the
+`CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in seconds.
 
 You can also set an explicit timeout with the `--timeout` option, also measured
 in seconds. If this option is specified then the timeout is also applied to the

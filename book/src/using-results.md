@@ -35,7 +35,8 @@ to do about them is up to you, bearing in mind your goals and priorities for
 your project, but here are some suggestions:
 
 First, look at the overall list of missed mutants: there might be patterns such
-as a cluster of related functions all having missed mutants.
+as a cluster of related functions all having missed mutants. Probably some will
+stand out as potentially more important to the correct function of your program.
 
 You should first look for any mutations where it's very _surprising_ that they
 were not caught by any tests, given what you know about the codebase. For
@@ -56,7 +57,8 @@ break if the private function was buggy, and then add a test for that.
 
 Try to avoid writing tests that are too tightly targeted to the mutant, which is
 really just an _example_ of something that could be wrong, and instead write
-tests that assert the _correct_ behavior.
+tests that assert the _correct_ behavior at the right level of abstraction,
+preferably through a public interface.
 
 If it's not clear why the tests aren't already failing, it may help to manually
 inject the same mutation into your working tree and then run the tests under a
@@ -66,12 +68,18 @@ made.)
 
 You may notice some messages about missed mutants in functions that you feel are
 not very important to test, such as `Debug` implementations. You can use the
-`--re` and `--exclude-re` options to filter out these mutants, or mark them as
+ `--exclude-re` options to filter out these mutants, or mark them as
 skipped with `#[mutants::skip]`. (Or, you might decide that you do want to add
 unit tests for the `Debug` representation, but perhaps as a lower priority than
 investigating mutants in more important code.)
 
 In some cases cargo-mutants will generate a mutant that is effectively the same as the original code, and so not really incorrect. cargo-mutants tries to avoid doing this, but if it does happen then you can mark the function as skipped.
+
+## Iterating on mutant coverage
+
+After you've changed your program to address some of the missed mutants, you can
+run `cargo mutants` again with the [`--file` option](skip_files.md) to re-test
+only functions from the changed files.
 
 ## Hard-to-test cases
 

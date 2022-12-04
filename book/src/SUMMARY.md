@@ -21,5 +21,7 @@
   - [Continuous integration](ci.md)
 - [How it works](how-it-works.md)
   - [Goals](goals.md)
+  - [Mutations vs coverage](vs-coverage.md)
+  - [Differences from fuzzing](vs-fuzzing.md)
   - [Limitations](limitations.md)
   - [How to help](how-to-help.md)
