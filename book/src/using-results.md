@@ -36,3 +36,21 @@ When faced with a missed mutant there are many ways to "cheat" and make the muta
 These might be appropriate choices but they also might not move the program in the right direction.
 
 One good question is: why didn't an existing test catch this? Some programs, like cargo-mutants itself, are designed to be tested primarily on their public interface, either an API, a command-line interface or a network API. Ask which part of the public interface's behavior should have failed if this function was mutated. Why didn't a test already catch that? Could you extend an existing test to check it?
+
+## Hard-to-test cases
+
+Some functions don't cause a test suite failure if emptied, but also cannot be
+removed. For example, functions to do with managing caches or that have other
+performance side effects.
+
+Ideally, these should be tested, but doing so in a way that's not flaky can be
+difficult. cargo-mutants can help in a few ways:
+
+* It helps to at least highlight to the developer that the function is not
+  covered by tests, and so should perhaps be treated with extra care, or tested
+  manually.
+* A `#[mutants::skip]` annotation can be added to suppress warnings and explain
+  the decision.
+* Sometimes these effects can be tested by making the side-effect observable
+  with, for example, a counter of the number of memory allocations or cache
+  misses/hits.

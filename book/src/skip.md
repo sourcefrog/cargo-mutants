@@ -57,5 +57,8 @@ mod test {
 
 ## Skipping files
 
-**Note:** Rust's "inner macro attributes" feature is currently unstable, so `#![mutants::skip]` can't be used in module scope or on a `mod` statement.
-However, you can use the `exclude_globs` key in [`.cargo/mutants.toml`](config.md) to exclude files.
+**Note:** Rust's "inner macro attributes" feature is currently unstable, so
+`#![mutants::skip]` can't be used in module scope or on a `mod` statement.
+
+However, you can use the `exclude_globs` key in
+[`.cargo/mutants.toml`](config.md), or the `--exclude` command-line option, to exclude files.

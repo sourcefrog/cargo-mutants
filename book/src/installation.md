@@ -6,20 +6,6 @@ Install cargo-mutants from source:
 cargo install --locked cargo-mutants
 ```
 
-## Shell completion
-
-The `--completions SHELL` emits completion scripts for the given shell.
-
-The right place to install these depends on your shell and operating system.
-
-For example, for Fish[^fishconf]:
-
-```sh
-cargo mutants --completions fish >~/.config/fish/conf.d/cargo-mutants-completions.fish
-```
-
-[^fishconf]: This command installs them to `conf.d` instead of `completions` because you may have completions for several `cargo` plugins.
-
 ## Supported Rust versions
 
 Building cargo-mutants requires a reasonably recent stable (or nightly or beta) Rust toolchain.
