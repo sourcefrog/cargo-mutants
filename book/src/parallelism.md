@@ -8,7 +8,7 @@ However, running many jobs simultaneously may also put high demands on the syste
 
 The best setting will depend on many factors including the behavior of your program's test suite, the amount of memory on your system, and your system's behavior under high thermal load.
 
-The default is currently to run only one job at a time. It's reasonable to set this to any value up to the number of CPU cores.
+The default is currently to run only one job at a time. Setting this higher than the number of CPU cores is unlikely to be helpful.
 
 `-j 4` may be a good starting point, even if you have many more CPUs. Start there and watch memory and CPU usage, and tune towards a setting where all cores are always utilized without memory usage going too high, and without thermal issues.
 

@@ -1,6 +1,8 @@
 # Exit codes
 
-* **0**: Success. No mutants were found that weren't caught by tests.
+cargo-mutants returns an exit code that can be used by scripts or CI.
+
+* **0**: Success! Every viable mutant that was tested was caught by a test.
 
 * **1**: Usage error: bad command-line arguments etc.
 
@@ -11,3 +13,5 @@
 
 * **4**: The tests are already failing or hanging before any mutations are
   applied, so no mutations were tested.
+
+For more detailed machine-readable information, use the [`mutants.out` directory](mutants-out.md).

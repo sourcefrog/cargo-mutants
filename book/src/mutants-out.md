@@ -1,6 +1,11 @@
-# mutants.out
+# The `mutants.out` directory
 
-A `mutants.out` directory is created in the source directory, or whichever directory you specify with `--output`. It contains:
+A `mutants.out` directory is created in the original source directory. You can put the output directory elsewhere with the `--output` option.
+
+On each run, any existing `mutants.out` is renamed to `mutants.out.old`, and any
+existing `mutants.out.old` is deleted.
+
+The output directory contains:
 
 * A `lock.json`, on which an [fs2 lock](https://docs.rs/fs2) is held while
   cargo-mutants is running, to avoid two tasks trying to write to the same

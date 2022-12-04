@@ -1,8 +1,8 @@
-## Hangs and timeouts
+# Hangs and timeouts
 
 Some mutations to the tree can cause the test suite to hang. For example, in
 this code, cargo-mutants might try changing `should_stop` to always return
-`false`:
+`false`, but this will cause the program to hang:
 
 ```rust
     while !should_stop() {
@@ -10,15 +10,27 @@ this code, cargo-mutants might try changing `should_stop` to always return
     }
 ```
 
-`cargo mutants` automatically sets a timeout when running tests with mutations
-applied, and reports mutations that hit a timeout. The automatic timeout is the greater of
-20 seconds, or 5x the time to run tests with no mutations.
+In general you will want to skip functions which cause a hang when mutated,
+either by [marking them with an attribute](skip.md) or in the [configuration
+file](filter_mutants.md).
 
-The `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in seconds, overrides the minimum time.
+## Timeouts
 
-You can also set an explicit timeout with the `--timeout` option, also measure in seconds. In this case
-the timeout is also applied to tests run with no mutation.
+To avoid hangs, cargo-mutants will kill the test suite after a timeout.
+
+cargo-mutants measures the time to run the test suite in the unmodified tree.
+
+`cargo-mutants` then automatically sets a timeout when running tests with
+mutations applied, and reports mutations that hit a timeout. The automatic
+timeout is the greater of 20 seconds, or 5x the time to run tests with no
+mutations.
+
+The `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in
+seconds, sets a minimum timeout, but allows it to be larger if the unmodified
+test suite takes a long time to run.
+
+You can also set an explicit timeout with the `--timeout` option, also measured
+in seconds. If this option is specified then the timeout is also applied to the
+unmutated tests.
 
 The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.
-
-To make future runs faster, you can [skip mutations that hit a timeout](skip.md).

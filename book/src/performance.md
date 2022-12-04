@@ -9,12 +9,22 @@ will also make normal development more pleasant.
 
 <https://matklad.github.io/2021/09/04/fast-rust-builds.html> has good general advice on making Rust builds and tests faster.
 
+## Avoid doctests
+
 Rust doctests are pretty slow, because every doctest example becomes a separate
 test binary. If you're using doctests only as testable documentation and not to
 assert correctness of the code, you can skip them with `cargo mutants --
 --all-targets`.
 
-On _some but not all_ projects, cargo-mutants can be faster if you use `-C --release`, which will make the build slower but may make the tests faster. Typically this will help on projects with very long CPU-intensive test suites. Cargo-mutants now shows the breakdown of build versus test time which may help you work out if this will help. (On projects like this you might also choose just to turn up optimization for all debug builds in [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html).
+## Optimized builds
+
+On _some but not all_ projects, cargo-mutants can be faster if you use `-C --release`, which will make the build slower but may make the tests faster. Typically this will help on projects with very long CPU-intensive test suites.
+
+cargo-mutants now shows the breakdown of build versus test time which may help you work out if this will help: if the tests are much slower than the build it's worth trying more more compiler optimizations.
+
+On projects like this you might also choose just to turn up optimization for all debug builds in [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html).
+
+## Ramdisks
 
 cargo-mutants causes the Rust toolchain (and, often, the program under test) to read and write _many_ temporary files. Setting the temporary directory onto a ramdisk can improve performance significantly. This is particularly important with parallel builds, which might otherwise hit disk bandwidth limits. For example on Linux:
 

@@ -2,19 +2,6 @@
 
 The basic approach is:
 
-- Make a copy of the source tree into a scratch directory, excluding
-  version-control directories like `.git` and the `/target` directory. The same directory is reused across all the mutations to benefit from incremental builds.
-
-  - After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
-    `.cargo/config.toml` for relative dependencies. If there are any, the paths are
-    rewritten to be absolute, so that they still work when cargo is run in the
-    scratch directory.
-
-  - Before applying any mutations, check that `cargo test` succeeds in the
-    scratch directory: perhaps a test is already broken, or perhaps the tree
-    doesn't build when copied because it relies on relative paths to find
-    dependencies, etc.
-
 - Build a list of mutations:
   - Run `cargo metadata` to find directories containing Rust source files.
   - Walk all source files and parse each one looking for functions.
@@ -23,6 +10,19 @@ The basic approach is:
     etc.
   - For each function, depending on its return type, generate every mutation
     pattern that produces a result of that type.
+
+- Make a copy of the source tree into a scratch directory, excluding
+  version-control directories like `.git` and the `/target` directory. The same directory is reused across all the mutations to benefit from incremental builds.
+  - After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
+    `.cargo/config.toml` for relative dependencies. If there are any, the paths are
+    rewritten to be absolute, so that they still work when cargo is run in the
+    scratch directory.
+  - Before applying any mutations, check that `cargo test` succeeds in the
+    scratch directory: perhaps a test is already broken, or perhaps the tree
+    doesn't build when copied because it relies on relative paths to find
+    dependencies, etc.
+  - If running more than one parallel job, make the appropriate number of
+    additional scratch directories.
 
 - For each mutation:
   - Apply the mutation to the scratch tree by patching the affected file.

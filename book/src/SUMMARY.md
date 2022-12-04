@@ -1,11 +1,10 @@
 # Summary
 
-[Welcome](welcome.md)
-
+- [Welcome](welcome.md)
 - [Installation](installation.md)
 - [Getting started](getting-started.md)
 - [Using the results](using-results.md)
-  - [Dealing with timeouts](timeouts.md)
+  - [Hangs and timeouts](timeouts.md)
   - [Exit codes](exit-codes.md)
   - [The `mutants.out` directory](mutants-out.md)
 - [Skipping untestable code](skip.md)
