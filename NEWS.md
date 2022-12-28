@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## UNRELEASED
+
+- Converted most of the docs to a book available at <https://mutants.rs/>.
+
 ## 1.2.0
 
 *Thankful mutants!*
