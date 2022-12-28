@@ -125,7 +125,7 @@ fn build_glob_set<S: AsRef<str>, I: IntoIterator<Item = S>>(
         if glob_str.contains('/') || glob_str.contains(std::path::MAIN_SEPARATOR) {
             builder.add(Glob::new(glob_str)?);
         } else {
-            builder.add(Glob::new(&format!("**/{}", glob_str))?);
+            builder.add(Glob::new(&format!("**/{glob_str}"))?);
         }
     }
     Ok(Some(builder.build()?))

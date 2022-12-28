@@ -592,9 +592,9 @@ pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
 
 pub fn plural(n: usize, noun: &str) -> String {
     if n == 1 {
-        format!("{} {}", n, noun)
+        format!("{n} {noun}")
     } else {
-        format!("{} {}s", n, noun)
+        format!("{n} {noun}s")
     }
 }
 

@@ -173,7 +173,7 @@ fn list_mutants_in_all_trees_as_json() {
             .assert()
             .success();
         let json_str = String::from_utf8_lossy(&cmd_assert.get_output().stdout);
-        writeln!(buf, "```json\n{}\n```\n", json_str).unwrap();
+        writeln!(buf, "```json\n{json_str}\n```\n").unwrap();
     }
     insta::assert_snapshot!(buf);
 }
@@ -462,7 +462,7 @@ fn workspace_tree_is_well_tested() {
     // The outcomes.json has some summary data
     let json_str =
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
-    println!("outcomes.json:\n{}", json_str);
+    println!("outcomes.json:\n{json_str}");
     let json: serde_json::Value = json_str.parse().unwrap();
     assert_eq!(json["total_mutants"].as_u64().unwrap(), 3);
     assert_eq!(json["caught"].as_u64().unwrap(), 3);
@@ -558,7 +558,7 @@ fn small_well_tested_tree_is_clean() {
     )
     .unwrap()
     .replace('\r', "");
-    println!("log content:\n{}", log_content);
+    println!("log content:\n{log_content}");
     assert!(log_content.contains("*** mutation diff"));
     assert!(log_content.contains(
         "\
@@ -617,7 +617,7 @@ fn well_tested_tree_quiet() {
         }));
     let outcomes_json =
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
-    println!("outcomes.json:\n{}", outcomes_json);
+    println!("outcomes.json:\n{outcomes_json}");
     let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
     assert_eq!(outcomes["total_mutants"], 15);
     assert_eq!(outcomes["caught"], 15);
@@ -838,7 +838,7 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     let baseline_log_path = &tmp_src_dir.path().join("mutants.out/log/baseline.log");
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
-    println!("{}", log_content);
+    println!("{log_content}");
     regex::Regex::new(r"cargo.* build --tests --workspace --release")
         .unwrap()
         .captures(&log_content)
@@ -1103,7 +1103,7 @@ fn interrupt_caught_and_kills_children() {
 
     println!("Wait for cargo-mutants to exit...");
     match child.wait_timeout(Duration::from_secs(4)) {
-        Err(e) => panic!("failed to wait for child: {}", e),
+        Err(e) => panic!("failed to wait for child: {e}"),
         Ok(None) => {
             println!("child did not exit after interrupt");
             child.kill().expect("kill child");
@@ -1194,10 +1194,10 @@ fn log_file_names_are_short_and_dont_collide() {
         String::from_utf8_lossy(&cmd_assert.get_output().stdout)
     );
     let log_dir = tmp_src_dir.path().join("mutants.out").join("log");
-    let all_log_names = read_dir(&log_dir)
+    let all_log_names = read_dir(log_dir)
         .unwrap()
         .map(|e| e.unwrap().file_name().to_str().unwrap().to_string())
-        .inspect(|filename| println!("{}", filename))
+        .inspect(|filename| println!("{filename}"))
         .collect::<Vec<_>>();
     assert!(all_log_names.len() > 10);
     assert!(
@@ -1295,7 +1295,7 @@ fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
     // uncaught mutant is not the first file tested.
     let tmp_src_dir = copy_of_testdata("unapply");
     run_assert_cmd()
-        .args(&["mutants", "--no-times", "--no-shuffle"])
+        .args(["mutants", "--no-times", "--no-shuffle"])
         .arg("-d")
         .arg(tmp_src_dir.path())
         .assert()
@@ -1351,7 +1351,7 @@ fn insta_test_failures_are_detected() {
 fn check_text_list_output(dir: &Path, test_name: &str) {
     // There is a `missed.txt` file with the right content, etc.
     for name in ["missed", "caught", "timeout", "unviable"] {
-        let path = dir.join(format!("mutants.out/{}.txt", name));
+        let path = dir.join(format!("mutants.out/{name}.txt"));
         let content = fs::read_to_string(&path).unwrap();
         insta::assert_snapshot!(format!("{test_name}__{name}.txt"), content);
     }

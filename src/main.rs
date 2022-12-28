@@ -179,7 +179,7 @@ fn main() -> Result<()> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             exit(exit_code::USAGE);
         }
     };
@@ -188,7 +188,7 @@ fn main() -> Result<()> {
     interrupt::install_handler();
 
     if args.version {
-        println!("{} {}", NAME, VERSION);
+        println!("{NAME} {VERSION}");
         return Ok(());
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());

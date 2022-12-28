@@ -186,9 +186,9 @@ impl Mutant {
             .tree_relative_path()
             .within(build_dir.path());
         // for safety, don't follow symlinks
-        assert!(path.is_file(), "{:?} is not a file", path);
+        assert!(path.is_file(), "{path:?} is not a file");
         fs::write(&path, code.as_bytes())
-            .with_context(|| format!("failed to write mutated code to {:?}", path))
+            .with_context(|| format!("failed to write mutated code to {path:?}"))
     }
 
     pub fn log_file_name_base(&self) -> String {
@@ -259,7 +259,7 @@ mod test {
     #[test]
     fn discover_factorial_mutants() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let source_tree = CargoSourceTree::open(&tree_path).unwrap();
+        let source_tree = CargoSourceTree::open(tree_path).unwrap();
         let options = Options::default();
         let mutants = discover_mutants(&source_tree, &options).unwrap();
         assert_eq!(mutants.len(), 2);
@@ -284,7 +284,7 @@ mod test {
     #[test]
     fn filter_by_attributes() {
         let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
-        let source_tree = CargoSourceTree::open(&tree_path).unwrap();
+        let source_tree = CargoSourceTree::open(tree_path).unwrap();
         let mutants = discover_mutants(&source_tree, &Options::default()).unwrap();
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
@@ -296,7 +296,7 @@ mod test {
     #[test]
     fn mutate_factorial() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let source_tree = CargoSourceTree::open(&tree_path).unwrap();
+        let source_tree = CargoSourceTree::open(tree_path).unwrap();
         let mutants = discover_mutants(&source_tree, &Options::default()).unwrap();
         assert_eq!(mutants.len(), 2);
 

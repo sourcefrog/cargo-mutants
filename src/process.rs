@@ -137,7 +137,7 @@ fn terminate_child_impl(child: &mut Popen) -> Result<()> {
     if let Err(errno) = killpg(pid, Signal::SIGTERM) {
         // It might have already exited, in which case we can proceed to wait for it.
         if errno != Errno::ESRCH {
-            let message = format!("failed to terminate child: {}", errno);
+            let message = format!("failed to terminate child: {errno}");
             warn!("{}", message);
             return Err(anyhow!(message));
         }

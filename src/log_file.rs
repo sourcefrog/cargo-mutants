@@ -26,9 +26,9 @@ impl LogFile {
         let basename = clean_filename(scenario_name);
         for i in 0..1000 {
             let t = if i == 0 {
-                format!("{}.log", basename)
+                format!("{basename}.log")
             } else {
-                format!("{}_{:03}.log", basename, i)
+                format!("{basename}_{i:03}.log")
             };
             let path = log_dir.join(t);
             match OpenOptions::new()
@@ -59,7 +59,7 @@ impl LogFile {
 
     /// Write a message, with a marker. Ignore errors.
     pub fn message(&mut self, message: &str) {
-        write!(self.write_to, "\n{} {}\n", LOG_MARKER, message).expect("write message to log");
+        write!(self.write_to, "\n{LOG_MARKER} {message}\n").expect("write message to log");
     }
 
     pub fn path(&self) -> &Utf8Path {

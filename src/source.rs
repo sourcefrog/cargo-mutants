@@ -42,7 +42,7 @@ impl SourceFile {
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
-            .with_context(|| format!("failed to read source of {:?}", full_path))?
+            .with_context(|| format!("failed to read source of {full_path:?}"))?
             .replace("\r\n", "\n");
         Ok(SourceFile {
             tree_relative_path,
