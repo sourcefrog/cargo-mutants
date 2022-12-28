@@ -95,6 +95,7 @@ impl TreeRelativePathBuf {
         tree_path.join(&self.0)
     }
 
+    #[allow(dead_code)]
     pub fn join(&self, p: impl AsRef<Utf8Path>) -> Self {
         TreeRelativePathBuf(self.0.join(p))
     }
