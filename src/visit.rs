@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use quote::ToTokens;
+use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{Attribute, ItemFn};
 use tracing::{debug, debug_span, trace, trace_span, warn};
@@ -223,7 +224,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
 
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
-        let mod_name = node.ident.to_string();
+        let mod_name = &node.ident.unraw().to_string();
         let _span = trace_span!(
             "mod",
             line = node.mod_token.span.start().line,
@@ -262,8 +263,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             let mut found = false;
             let mut tried_paths = Vec::new();
             for &ext in &[".rs", "/mod.rs"] {
-                let relative_path =
-                    TreeRelativePathBuf::new(dir.join(format!("{}{}", mod_name, ext)));
+                let relative_path = TreeRelativePathBuf::new(dir.join(format!("{mod_name}{ext}")));
                 let full_path = relative_path.within(&self.tree_path);
                 if full_path.is_file() {
                     trace!("found submodule in {full_path}");
@@ -282,9 +282,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
                 );
             }
         }
-        self.in_namespace(&node.ident.to_string(), |v| {
-            syn::visit::visit_item_mod(v, node)
-        });
+        self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
 }
 
@@ -343,6 +341,8 @@ fn remove_excess_spaces(s: &str) -> String {
     //
     // This is a bit hacky but seems to give reasonably legible results on
     // typical trees...
+    //
+    // We could instead perhaps do this on the type enum.
     let mut r = String::with_capacity(s.len());
     for c in s.chars() {
         match c {

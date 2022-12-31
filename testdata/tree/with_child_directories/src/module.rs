@@ -1,2 +1,3 @@
 mod module_methods;
-mod utils;
+// Also an example of handling raw symbols:
+mod r#utils;
