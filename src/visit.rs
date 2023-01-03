@@ -9,9 +9,10 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use quote::ToTokens;
+use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{Attribute, ItemFn};
-use tracing::{debug, debug_span, span, trace, warn, Level};
+use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::path::TreeRelativePathBuf;
 use crate::source::{SourceFile, SourceTree};
@@ -160,7 +161,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
         // TODO: Filter out more inapplicable fns.
         let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
-        let _span = span!(Level::TRACE, "item_fn", function_name).entered();
+        let _span = trace_span!(
+            "fn",
+            line = i.sig.fn_token.span.start().line,
+            name = function_name
+        )
+        .entered();
         if attrs_excluded(&i.attrs) {
             trace!("excluded by attrs");
             return; // don't look inside it either
@@ -218,38 +224,65 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
 
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
+        let mod_name = &node.ident.unraw().to_string();
+        let _span = trace_span!(
+            "mod",
+            line = node.mod_token.span.start().line,
+            name = mod_name
+        )
+        .entered();
         if attrs_excluded(&node.attrs) {
-            trace!("mod {:?} excluded by attrs", node.ident);
+            trace!("mod {:?} excluded by attrs", node.ident,);
             return;
         }
-        trace!("visit mod {:?}", node.ident);
-        // If there's no content in braces, we should look for this file. It
-        // could be 'foo.rs' or 'foo/mod.rs', within the same directory as
-        // the current file.
+        // If there's no content in braces, then this is a `mod foo;`
+        // statement referring to an external file. We find the file name
+        // then remember to visit it later.
+        //
+        // Both the current module and the included sub-module can be in
+        // either style: `.../foo.rs` or `.../foo/mod.rs`.
+        //
+        // If the current file ends with `/mod.rs`, then sub-modules
+        // will be in the same directory as this file. Otherwise, this is
+        // `/foo.rs` and sub-modules will be in `foo/`.
+        //
+        // Having determined the directory then we can look for either
+        // `foo.rs` or `foo/mod.rs`.
         if node.content.is_none() {
-            let dir = self.source_file.tree_relative_path.parent();
+            let my_path: &Utf8Path = self.source_file.tree_relative_path().as_ref();
+            // Maybe matching on the name here is no the right approach and
+            // we should instead remember how this file was found?
+            let dir = if my_path.ends_with("mod.rs")
+                || my_path.ends_with("lib.rs")
+                || my_path.ends_with("main.rs")
+            {
+                my_path.parent().expect("mod path has no parent").to_owned()
+            } else {
+                my_path.with_extension("")
+            };
             let mut found = false;
+            let mut tried_paths = Vec::new();
             for &ext in &[".rs", "/mod.rs"] {
-                let path = dir.join(format!("{}{}", node.ident, ext));
-                let full_path = path.within(&self.tree_path);
-                trace!("look in {}", full_path);
+                let relative_path = TreeRelativePathBuf::new(dir.join(format!("{mod_name}{ext}")));
+                let full_path = relative_path.within(&self.tree_path);
                 if full_path.is_file() {
-                    self.more_files.push(path);
+                    trace!("found submodule in {full_path}");
+                    self.more_files.push(relative_path);
                     found = true;
+                    break;
+                } else {
+                    tried_paths.push(full_path);
                 }
             }
             if !found {
                 warn!(
-                    "{}:{}: mod {:?} not found",
-                    self.source_file.tree_relative_path,
-                    node.mod_token.span.start().line,
-                    node.ident
+                    "{path}:{line}: referent of mod {mod_name:#?} not found: tried {tried_paths:?}",
+                    path = self.source_file.tree_relative_path,
+                    line = node.mod_token.span.start().line,
                 );
             }
         }
-        self.in_namespace(&node.ident.to_string(), |v| {
-            syn::visit::visit_item_mod(v, node)
-        });
+        self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
 }
 
@@ -308,6 +341,8 @@ fn remove_excess_spaces(s: &str) -> String {
     //
     // This is a bit hacky but seems to give reasonably legible results on
     // typical trees...
+    //
+    // We could instead perhaps do this on the type enum.
     let mut r = String::with_capacity(s.len());
     for c in s.chars() {
         match c {
