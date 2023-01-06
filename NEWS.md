@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## UNRELEASED
+## 1.2.1
+
+Released 2023-01-05
 
 - Converted most of the docs to a book available at <https://mutants.rs/>.
 
