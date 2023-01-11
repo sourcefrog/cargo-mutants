@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "1.2.1-pre"
+version = "1.2.2-pre"
 dependencies = [
  "anyhow",
  "assert_cmd",
