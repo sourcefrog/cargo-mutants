@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+## 1.2.1
+
+Released 2023-01-05
+
 - Converted most of the docs to a book available at <https://mutants.rs/>.
 
 - Fixed: Correctly find submodules that don't use `mod.rs` naming, e.g. when descending from `src/foo.rs` to `src/foo/bar.rs`. Also handle module names that are raw identifiers using `r#`. (Thanks to @kpreid for the report.) 
