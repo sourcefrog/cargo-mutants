@@ -34,17 +34,7 @@ jobs:
         run: |
           cargo --version
           rustc --version
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-      # Don't enforce Clippy, because it can too easily flake when new lints are added.
-      # - name: Clippy
-      #   run: cargo clippy -- -D clippy::all
+      - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: Build
