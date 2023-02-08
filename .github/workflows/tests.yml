@@ -5,6 +5,8 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
@@ -27,22 +29,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Show Cargo and rustc version
         run: |
           cargo --version
           rustc --version
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-      # Don't enforce Clippy, because it can too easily flake when new lints are added.
-      # - name: Clippy
-      #   run: cargo clippy -- -D clippy::all
+      - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: Build

@@ -3,6 +3,8 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/install.yml"
   schedule:
@@ -12,6 +14,7 @@ jobs:
   cargo-install:
     runs-on: ubuntu-latest
     steps:
+      - uses: Swatinem/rust-cache@v2
       - name: cargo-install
         run: |
           cargo install cargo-mutants

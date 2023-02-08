@@ -5,8 +5,9 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
   pull_request:
-    branch: main
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
 env:
@@ -27,7 +28,8 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/toolchain@v1
         name: Install older toolchain
         with:
@@ -37,13 +39,5 @@ jobs:
         run: |
           cargo --version
           rustc --version
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ matrix.toolchain }}-${{ hashFiles('Cargo.lock') }}
       - name: Test
         run: cargo test --workspace
