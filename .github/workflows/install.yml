@@ -3,6 +3,8 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
     paths:
       - ".github/workflows/install.yml"
   schedule:

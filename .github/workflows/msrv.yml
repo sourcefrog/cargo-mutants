@@ -5,8 +5,9 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
   pull_request:
-    branch: main
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
 env:
