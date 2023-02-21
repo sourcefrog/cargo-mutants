@@ -13,3 +13,6 @@ To get started:
 
 1. [Install cargo-mutants](install.md).
 2. [Run `cargo mutants](getting-started.md) in your Rust source tree.
+
+For more resources see the repository at
+<https://github.com/sourcefrog/cargo-mutants>.
