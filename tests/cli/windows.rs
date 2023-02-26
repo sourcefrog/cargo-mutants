@@ -2,6 +2,8 @@
 
 //! Windows-only CLI tests.
 
+use super::{run, CommandInstaExt};
+
 #[test]
 fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
     run()
