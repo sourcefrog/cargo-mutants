@@ -8,7 +8,7 @@ description = "Find inadequately-tested code that can be removed without any tes
 repository = "https://github.com/sourcefrog/cargo-mutants"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
-rust-version = "1.63"
+rust-version = "1.64"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -33,11 +33,12 @@ similar = "2.0"
 subprocess = "0.2.8"
 tempfile = "3.2"
 time = "0.3"
-toml = "0.5"
+toml = "0.7"
 tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = "0.3"
 whoami = "1.2"
+indoc = "2.0.0"
 
 [dependencies.regex]
 version = "1.5"

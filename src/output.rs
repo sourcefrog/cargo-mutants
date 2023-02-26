@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! A `mutants.out` directory holding logs and other output.
 
@@ -233,6 +233,7 @@ impl OutputDir {
 mod test {
     use std::convert::TryInto;
 
+    use indoc::indoc;
     use itertools::Itertools;
     use path_slash::PathExt;
     use pretty_assertions::assert_eq;
@@ -246,11 +247,13 @@ mod test {
         let path = tmp.path();
         fs::write(
             path.join("Cargo.toml"),
-            br#"# enough for a test
-[package]
-name = "cargo-mutants-minimal-test-tree"
-version = "0.0.0"
-"#,
+            indoc! { br#"
+                # enough for a test
+                [package]
+                name = "cargo-mutants-minimal-test-tree"
+                version = "0.0.0"
+                "#
+            },
         )
         .unwrap();
         fs::create_dir(path.join("src")).unwrap();

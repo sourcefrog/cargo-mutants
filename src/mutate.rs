@@ -251,6 +251,7 @@ impl Serialize for Mutant {
 #[cfg(test)]
 mod test {
     use camino::Utf8Path;
+    use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
@@ -305,24 +306,26 @@ mod test {
         mutated_code.retain(|c| c != '\r');
         assert_eq!(
             mutated_code,
-            r#"fn main() {
-() /* ~ changed by cargo-mutants ~ */
-}
+            indoc! { r#"
+                fn main() {
+                () /* ~ changed by cargo-mutants ~ */
+                }
 
-fn factorial(n: u32) -> u32 {
-    let mut a = 1;
-    for i in 2..=n {
-        a *= i;
-    }
-    a
-}
+                fn factorial(n: u32) -> u32 {
+                    let mut a = 1;
+                    for i in 2..=n {
+                        a *= i;
+                    }
+                    a
+                }
 
-#[test]
-fn test_factorial() {
-    println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
-    assert_eq!(factorial(6), 720);
-}
-"#
+                #[test]
+                fn test_factorial() {
+                    println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
+                    assert_eq!(factorial(6), 720);
+                }
+                "#
+            }
         );
 
         let mut mutated_code = mutants[1].mutated_code();
@@ -330,22 +333,24 @@ fn test_factorial() {
         mutated_code.retain(|c| c != '\r');
         assert_eq!(
             mutated_code,
-            r#"fn main() {
-    for i in 1..=6 {
-        println!("{}! = {}", i, factorial(i));
-    }
-}
+            indoc! { r#"
+                fn main() {
+                    for i in 1..=6 {
+                        println!("{}! = {}", i, factorial(i));
+                    }
+                }
 
-fn factorial(n: u32) -> u32 {
-Default::default() /* ~ changed by cargo-mutants ~ */
-}
+                fn factorial(n: u32) -> u32 {
+                Default::default() /* ~ changed by cargo-mutants ~ */
+                }
 
-#[test]
-fn test_factorial() {
-    println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
-    assert_eq!(factorial(6), 720);
-}
-"#
+                #[test]
+                fn test_factorial() {
+                    println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
+                    assert_eq!(factorial(6), 720);
+                }
+                "#
+            }
         );
     }
 }

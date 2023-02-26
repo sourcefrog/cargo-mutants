@@ -6,6 +6,8 @@
 
 - Don't mutate functions that never return (i.e. `-> !`).
 
+- Minimum supported Rust version increased to 1.64 due to changes in dependencies.
+
 ## 1.2.1
 
 Released 2023-01-05
