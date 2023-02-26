@@ -21,7 +21,9 @@ use crate::Result;
 pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> Result<()> {
     let toml_str = fs::read_to_string(manifest_scratch_path).context("read manifest")?;
     if let Some(changed_toml) = fix_manifest_toml(&toml_str, source_dir)? {
-        fs::write(manifest_scratch_path, changed_toml.as_bytes()).context("write manifest")?;
+        let toml_str =
+            toml::to_string_pretty(&changed_toml).context("serialize changed manifest")?;
+        fs::write(manifest_scratch_path, toml_str.as_bytes()).context("write manifest")?;
     }
     Ok(())
 }
@@ -32,7 +34,7 @@ pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> 
 fn fix_manifest_toml(
     manifest_toml: &str,
     manifest_source_dir: &Utf8Path,
-) -> Result<Option<String>> {
+) -> Result<Option<toml::Value>> {
     let mut value: toml::Value = manifest_toml.parse().context("parse manifest")?;
     let orig_value = value.clone();
     if let Some(top_table) = value.as_table_mut() {
@@ -58,7 +60,7 @@ fn fix_manifest_toml(
     if value == orig_value {
         Ok(None)
     } else {
-        Ok(Some(toml::to_string_pretty(&value)?))
+        Ok(Some(value))
     }
 }
 
@@ -216,7 +218,7 @@ mod test {
             [dependencies.wibble]
             path = "/home/user/src/foo\\../wibble"
         "# };
-        assert_eq!(fixed_toml, expected);
+        assert_eq!(fixed_toml, expected.parse().unwrap());
     }
 
     #[test]
@@ -228,20 +230,15 @@ mod test {
             "wibble:1.2.3" = { path = "../wibble" } # Use the relative path to the dependency.
         "# };
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
+        let fixed = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
-        // A crude adaption for Windows.
-        let fixed_toml = fixed_toml.replace('\\', "/");
-        // Round-tripping toml produces some insignificant stylistic changes.
-        let expected = indoc! { r#"
-            [dependencies]
-            wibble = "1.2.3"
-
-            [replace."wibble:1.2.3"]
-            path = "/home/user/src/foo/../wibble"
-        "# };
-        assert_eq!(fixed_toml, expected);
+        println!("fixed toml:\n{}", toml::to_string_pretty(&fixed).unwrap());
+        assert_eq!(fixed["dependencies"]["wibble"].as_str().unwrap(), "1.2.3");
+        assert_eq!(
+            fixed["replace"]["wibble:1.2.3"]["path"].as_str().unwrap(),
+            orig_path.join("../wibble")
+        );
     }
 
     #[test]
@@ -289,19 +286,17 @@ mod test {
             wibble = { path = "../wibble" } # Use the relative path to the dependency.
         "# };
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
+        let fixed = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
-        // A crude adaption for Windows.
-        let fixed_toml = fixed_toml.replace('\\', "/");
-        // Round-tripping toml produces some insignificant stylistic changes.
-        let expected = indoc! { r#"[dependencies]
-            wibble = "1.2.3"
-
-            [patch.crates-io.wibble]
-            path = "/home/user/src/foo/../wibble"
-        "# };
-        assert_eq!(fixed_toml, expected);
+        println!("{fixed:#?}");
+        assert_eq!(fixed["dependencies"]["wibble"].as_str(), Some("1.2.3"));
+        assert_eq!(
+            fixed["patch"]["crates-io"]["wibble"]["path"]
+                .as_str()
+                .unwrap(),
+            orig_path.join("../wibble")
+        );
     }
 
     #[test]
