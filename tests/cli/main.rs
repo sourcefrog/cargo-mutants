@@ -23,6 +23,8 @@ use tempfile::{tempdir, TempDir};
 
 mod config;
 mod jobs;
+#[cfg(windows)]
+mod windows;
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
 /// long enough that even commands that do a lot of work can pass even on slow
@@ -303,16 +305,6 @@ fn list_mutants_well_tested_exclude_folder_filter() {
     run()
         .arg("mutants")
         .args(["--list", "--exclude", "*/module/*"])
-        .current_dir("testdata/tree/with_child_directories")
-        .assert_insta("list_mutants_well_tested_exclude_folder_filter");
-}
-
-#[test]
-#[cfg(target_os = "windows")]
-fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
-    run()
-        .arg("mutants")
-        .args(["--list", "--exclude", "*\\module\\*"])
         .current_dir("testdata/tree/with_child_directories")
         .assert_insta("list_mutants_well_tested_exclude_folder_filter");
 }
