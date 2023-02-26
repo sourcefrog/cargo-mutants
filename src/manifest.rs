@@ -1,4 +1,4 @@
-// Copyright 2022 Martin Pool.
+// Copyright 2022-2023 Martin Pool.
 
 //! Manipulate Cargo manifest and config files.
 //!
@@ -157,6 +157,7 @@ mod test {
     use camino::{Utf8Path, Utf8PathBuf};
     use indoc::indoc;
     use pretty_assertions::assert_eq;
+    use toml::Table;
 
     use super::fix_manifest_toml;
 
@@ -304,7 +305,12 @@ mod test {
     }
 
     #[test]
-    fn fix_cargo_config_toml() {
+    fn cargo_config_toml_paths_outside_tree_are_made_absolute() {
+        // To avoid test flakiness due to TOML stylistic changes, we compare the
+        // TOML values.
+        //
+        // And, to avoid headaches about forward and backslashes on Windows,
+        // compare path objects.
         let cargo_config_toml = indoc! { r#"
             paths = [
                 "sub_dependency",
@@ -317,18 +323,24 @@ mod test {
         let fixed_toml = super::fix_cargo_config_toml(cargo_config_toml, source_dir)
             .unwrap()
             .expect("toml was modified");
-        // a crude adaption for windows.
-        let fixed_toml = fixed_toml.replace('\\', "/");
-        // Round-tripping toml produces some insignificant stylistic changes.
-        let expected = indoc! { r#"
-            paths = [
-                "sub_dependency",
-                "/Users/jane/src/foo/../sibling_dependency",
-                "/Users/jane/src/foo/../../parent_dependency",
-                "/Users/jane/src/absolute_dependency",
-                "/src/other",
+        println!("fixed toml:\n{fixed_toml}");
+        // TODO: Maybe fix_cargo_config_toml should return the Value.
+        let fixed_table: Table = fixed_toml.parse::<Table>().unwrap();
+        let fixed_paths = fixed_table["paths"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|val| val.as_str().unwrap().into())
+            .collect::<Vec<&Utf8Path>>();
+        assert_eq!(
+            fixed_paths,
+            [
+                Utf8Path::new("sub_dependency"),
+                &source_dir.join("../sibling_dependency"),
+                &source_dir.join("../../parent_dependency"),
+                &source_dir.parent().unwrap().join("absolute_dependency"),
+                Utf8Path::new("/src/other"),
             ]
-        "# };
-        assert_eq!(fixed_toml, expected);
+        );
     }
 }
