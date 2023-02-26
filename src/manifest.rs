@@ -200,25 +200,15 @@ mod test {
             wibble = { path = "../wibble" } # Use the relative path to the dependency.
         "# };
         let orig_path = Utf8Path::new("/home/user/src/foo");
-        let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
+        let fixed = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
-        // Round-tripping toml produces some insignificant stylistic changes.
-        #[cfg(unix)]
-        let expected = indoc! { r#"
-            author = "A Smithee"
-
-            [dependencies.wibble]
-            path = "/home/user/src/foo/../wibble"
-        "# };
-        #[cfg(windows)]
-        let expected = indoc! { r#"
-            author = "A Smithee"
-
-            [dependencies.wibble]
-            path = "/home/user/src/foo\\../wibble"
-        "# };
-        assert_eq!(fixed_toml, expected.parse().unwrap());
+        println!("{fixed:#?}");
+        assert_eq!(fixed["author"].as_str().unwrap(), "A Smithee");
+        assert_eq!(
+            fixed["dependencies"]["wibble"]["path"].as_str().unwrap(),
+            Utf8Path::new("/home/user/src/foo/../wibble")
+        );
     }
 
     #[test]
