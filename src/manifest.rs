@@ -155,6 +155,7 @@ fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
 #[cfg(test)]
 mod test {
     use camino::{Utf8Path, Utf8PathBuf};
+    use indoc::indoc;
     use pretty_assertions::assert_eq;
 
     use super::fix_manifest_toml;
@@ -189,40 +190,42 @@ mod test {
 
     #[test]
     fn fix_relative_path_in_manifest() {
-        let manifest_toml = r#"
-# A comment, which will be dropped.
-author = "A Smithee"
-[dependencies]
-wibble = { path = "../wibble" } # Use the relative path to the dependency.
-"#;
+        let manifest_toml = indoc! { r#"
+            # A comment, which will be dropped.
+            author = "A Smithee"
+            [dependencies]
+            wibble = { path = "../wibble" } # Use the relative path to the dependency.
+        "# };
         let orig_path = Utf8Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
         // Round-tripping toml produces some insignificant stylistic changes.
         #[cfg(unix)]
-        let expected = r#"author = "A Smithee"
+        let expected = indoc! { r#"
+            author = "A Smithee"
 
-[dependencies.wibble]
-path = "/home/user/src/foo/../wibble"
-"#;
+            [dependencies.wibble]
+            path = "/home/user/src/foo/../wibble"
+        "# };
         #[cfg(windows)]
-        let expected = r#"author = "A Smithee"
+        let expected = indoc! { r#"
+            author = "A Smithee"
 
-[dependencies.wibble]
-path = "/home/user/src/foo\\../wibble"
-"#;
+            [dependencies.wibble]
+            path = "/home/user/src/foo\\../wibble"
+        "# };
         assert_eq!(fixed_toml, expected);
     }
 
     #[test]
     fn fix_replace_section() {
-        let manifest_toml = r#"
-[dependencies]
-wibble = "1.2.3"
-[replace]
-"wibble:1.2.3" = { path = "../wibble" } # Use the relative path to the dependency.
-"#;
+        let manifest_toml = indoc! { r#"
+            [dependencies]
+            wibble = "1.2.3"
+            [replace]
+            "wibble:1.2.3" = { path = "../wibble" } # Use the relative path to the dependency.
+        "# };
         let orig_path = Utf8Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
@@ -230,27 +233,28 @@ wibble = "1.2.3"
         // A crude adaption for Windows.
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
-        let expected = r#"[dependencies]
-wibble = "1.2.3"
+        let expected = indoc! { r#"
+            [dependencies]
+            wibble = "1.2.3"
 
-[replace."wibble:1.2.3"]
-path = "/home/user/src/foo/../wibble"
-"#;
+            [replace."wibble:1.2.3"]
+            path = "/home/user/src/foo/../wibble"
+        "# };
         assert_eq!(fixed_toml, expected);
     }
 
     #[test]
     fn absolute_path_in_manifest_is_unchanged() {
         #[cfg(unix)]
-        let manifest_toml = r#"
-[dependencies]
-wibble = { path = "/home/asmithee/src/wibble" }
-"#;
+        let manifest_toml = indoc! { r#"
+            [dependencies]
+            wibble = { path = "/home/asmithee/src/wibble" }
+        "# };
         #[cfg(windows)]
-        let manifest_toml = r#"
-[dependencies]
-wibble = { path = "c:/home/asmithee/src/wibble" }
-"#;
+        let manifest_toml = indoc! { r#"
+            [dependencies]
+            wibble = { path = "c:/home/asmithee/src/wibble" }
+        "# };
 
         let orig_path = Utf8Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path).unwrap();
@@ -262,10 +266,10 @@ wibble = { path = "c:/home/asmithee/src/wibble" }
 
     #[test]
     fn subdir_path_in_manifest_is_unchanged() {
-        let manifest_toml = r#"
-[dependencies]
-wibble = { path = "wibble" }
-"#;
+        let manifest_toml = indoc! { r#"
+            [dependencies]
+            wibble = { path = "wibble" }
+        "# };
 
         let orig_path = Utf8Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path).unwrap();
@@ -277,12 +281,12 @@ wibble = { path = "wibble" }
 
     #[test]
     fn fix_patch_section() {
-        let manifest_toml = r#"
-[dependencies]
-wibble = "1.2.3"
-[patch.crates-io]
-wibble = { path = "../wibble" } # Use the relative path to the dependency.
-"#;
+        let manifest_toml = indoc! { r#"
+            [dependencies]
+            wibble = "1.2.3"
+            [patch.crates-io]
+            wibble = { path = "../wibble" } # Use the relative path to the dependency.
+        "# };
         let orig_path = Utf8Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
@@ -290,25 +294,25 @@ wibble = { path = "../wibble" } # Use the relative path to the dependency.
         // A crude adaption for Windows.
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
-        let expected = r#"[dependencies]
-wibble = "1.2.3"
+        let expected = indoc! { r#"[dependencies]
+            wibble = "1.2.3"
 
-[patch.crates-io.wibble]
-path = "/home/user/src/foo/../wibble"
-"#;
+            [patch.crates-io.wibble]
+            path = "/home/user/src/foo/../wibble"
+        "# };
         assert_eq!(fixed_toml, expected);
     }
 
     #[test]
     fn fix_cargo_config_toml() {
-        let cargo_config_toml = r#"
-paths = [
-    "sub_dependency",
-    "../sibling_dependency",
-    "../../parent_dependency",
-    "/Users/jane/src/absolute_dependency",
-    "/src/other",
-    ]"#;
+        let cargo_config_toml = indoc! { r#"
+            paths = [
+                "sub_dependency",
+                "../sibling_dependency",
+                "../../parent_dependency",
+                "/Users/jane/src/absolute_dependency",
+                "/src/other",
+            ]"# };
         let source_dir = Utf8Path::new("/Users/jane/src/foo");
         let fixed_toml = super::fix_cargo_config_toml(cargo_config_toml, source_dir)
             .unwrap()
@@ -316,14 +320,15 @@ paths = [
         // a crude adaption for windows.
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
-        let expected = r#"paths = [
-    "sub_dependency",
-    "/Users/jane/src/foo/../sibling_dependency",
-    "/Users/jane/src/foo/../../parent_dependency",
-    "/Users/jane/src/absolute_dependency",
-    "/src/other",
-]
-"#;
+        let expected = indoc! { r#"
+            paths = [
+                "sub_dependency",
+                "/Users/jane/src/foo/../sibling_dependency",
+                "/Users/jane/src/foo/../../parent_dependency",
+                "/Users/jane/src/absolute_dependency",
+                "/src/other",
+            ]
+        "# };
         assert_eq!(fixed_toml, expected);
     }
 }
