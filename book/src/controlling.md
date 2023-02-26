@@ -19,3 +19,11 @@ the source.
 `-V`, `--unviable`: Also print mutants that failed `cargo build`.
 
 `--no-times`: Don't print elapsed times.
+
+## Environment variables
+
+A few options that may be useful to set globally can be configured through environment 
+variables:
+
+* `CARGO_MUTANTS_JOBS`
+* `CARGO_MUTANTS_TRACE_LEVEL`

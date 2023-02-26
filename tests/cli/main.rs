@@ -23,6 +23,7 @@ use tempfile::{tempdir, TempDir};
 
 mod config;
 mod jobs;
+mod trace;
 #[cfg(windows)]
 mod windows;
 
@@ -39,7 +40,25 @@ lazy_static! {
 }
 
 fn run() -> assert_cmd::Command {
-    assert_cmd::Command::new(MAIN_BINARY.as_os_str())
+    let mut cmd = assert_cmd::Command::new(MAIN_BINARY.as_os_str());
+    // Strip any options configured in the environment running these tests,
+    // so that they don't cause unexpected behavior in the code under test.
+    //
+    // For example, without this,
+    // `env CARGO_MUTANTS_JOBS=4 cargo mutants`
+    //
+    // would end up with tests running 4 jobs by default, which would cause
+    // the tests to fail.
+    //
+    // Even more generally than that example, we want the tests to be as hermetic
+    // as reasonably possible.
+    env::vars()
+        .map(|(k, _v)| k)
+        .filter(|k| k.starts_with("CARGO_MUTANTS_"))
+        .for_each(|k| {
+            cmd.env_remove(k);
+        });
+    cmd
 }
 
 trait CommandInstaExt {

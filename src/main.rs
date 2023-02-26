@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
 
@@ -113,7 +113,7 @@ struct Args {
     file: Vec<String>,
 
     /// run this many cargo build/test jobs in parallel.
-    #[arg(long, short = 'j')]
+    #[arg(long, short = 'j', env = "CARGO_MUTANTS_JOBS")]
     jobs: Option<usize>,
 
     /// output json (only for --list).
@@ -121,7 +121,12 @@ struct Args {
     json: bool,
 
     /// log level for stdout (trace, debug, info, warn, error).
-    #[arg(long, short = 'L', default_value = "info")]
+    #[arg(
+        long,
+        short = 'L',
+        default_value = "info",
+        env = "CARGO_MUTANTS_TRACE_LEVEL"
+    )]
     level: tracing::Level,
 
     /// just list possible mutants, don't run them.

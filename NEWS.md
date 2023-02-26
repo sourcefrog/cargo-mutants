@@ -8,6 +8,9 @@
 
 - Minimum supported Rust version increased to 1.64 due to changes in dependencies.
 
+- Some command-line options can now also be configured through environment variables:
+  `CARGO_MUTANTS_JOBS`, `CARGO_MUTANTS_TRACE_LEVEL`.
+
 ## 1.2.1
 
 Released 2023-01-05
