@@ -331,7 +331,10 @@ fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
                     ops.push(MutationOp::Default)
                 }
             }
-            _ => ops.push(MutationOp::Default),
+            _ => {
+                trace!(?box_typ, "Return type is not recognized, trying Default");
+                ops.push(MutationOp::Default)
+            }
         },
     }
     ops
