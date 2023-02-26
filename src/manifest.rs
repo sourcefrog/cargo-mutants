@@ -201,15 +201,17 @@ wibble = { path = "../wibble" } # Use the relative path to the dependency.
             .expect("toml was modified");
         // Round-tripping toml produces some insignificant stylistic changes.
         #[cfg(unix)]
-        let expected = "author = 'A Smithee'
+        let expected = r#"author = "A Smithee"
+
 [dependencies.wibble]
-path = '/home/user/src/foo/../wibble'
-";
+path = "/home/user/src/foo/../wibble"
+"#;
         #[cfg(windows)]
-        let expected = "author = 'A Smithee'
+        let expected = r#"author = "A Smithee"
+
 [dependencies.wibble]
-path = '/home/user/src/foo\\../wibble'
-";
+path = "/home/user/src/foo\\../wibble"
+"#;
         assert_eq!(fixed_toml, expected);
     }
 
@@ -229,9 +231,10 @@ wibble = "1.2.3"
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
         let expected = r#"[dependencies]
-wibble = '1.2.3'
+wibble = "1.2.3"
+
 [replace."wibble:1.2.3"]
-path = '/home/user/src/foo/../wibble'
+path = "/home/user/src/foo/../wibble"
 "#;
         assert_eq!(fixed_toml, expected);
     }
@@ -288,9 +291,10 @@ wibble = { path = "../wibble" } # Use the relative path to the dependency.
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
         let expected = r#"[dependencies]
-wibble = '1.2.3'
+wibble = "1.2.3"
+
 [patch.crates-io.wibble]
-path = '/home/user/src/foo/../wibble'
+path = "/home/user/src/foo/../wibble"
 "#;
         assert_eq!(fixed_toml, expected);
     }
@@ -313,11 +317,11 @@ paths = [
         let fixed_toml = fixed_toml.replace('\\', "/");
         // Round-tripping toml produces some insignificant stylistic changes.
         let expected = r#"paths = [
-    'sub_dependency',
-    '/Users/jane/src/foo/../sibling_dependency',
-    '/Users/jane/src/foo/../../parent_dependency',
-    '/Users/jane/src/absolute_dependency',
-    '/src/other',
+    "sub_dependency",
+    "/Users/jane/src/foo/../sibling_dependency",
+    "/Users/jane/src/foo/../../parent_dependency",
+    "/Users/jane/src/absolute_dependency",
+    "/src/other",
 ]
 "#;
         assert_eq!(fixed_toml, expected);
