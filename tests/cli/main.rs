@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Tests for cargo-mutants CLI layer.
 
@@ -10,10 +10,9 @@ use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 
-use assert_cmd::prelude::OutputAssertExt;
+use assert_cmd::prelude::*;
+use indoc::indoc;
 use itertools::Itertools;
-// use assert_cmd::prelude::*;
-// use assert_cmd::Command;
 use lazy_static::lazy_static;
 use path_slash::PathBufExt;
 use predicate::str::{contains, is_match};
@@ -560,25 +559,22 @@ fn small_well_tested_tree_is_clean() {
     .replace('\r', "");
     println!("log content:\n{log_content}");
     assert!(log_content.contains("*** mutation diff"));
-    assert!(log_content.contains(
-        "\
-*** mutation diff:
---- src/lib.rs
-+++ replace factorial -> u32 with Default::default()
-@@ -1,17 +1,13 @@"
-    ));
-    assert!(log_content.contains(
-        "\
- pub fn factorial(n: u32) -> u32 {
--    let mut a = 1;
--    for i in 2..=n {
--        a *= i;
--    }
--    a
-+Default::default() /* ~ changed by cargo-mutants ~ */
- }
-"
-    ));
+    assert!(log_content.contains(indoc! { r#"
+            *** mutation diff:
+            --- src/lib.rs
+            +++ replace factorial -> u32 with Default::default()
+            @@ -1,17 +1,13 @@
+        "# }));
+    assert!(log_content.contains(indoc! { r#"
+             pub fn factorial(n: u32) -> u32 {
+            -    let mut a = 1;
+            -    for i in 2..=n {
+            -        a *= i;
+            -    }
+            -    a
+            +Default::default() /* ~ changed by cargo-mutants ~ */
+             }
+            "# }));
     // Also, it should contain output from the failed tests with mutations applied.
     assert!(log_content.contains("test test::test_factorial ... FAILED"));
 

@@ -90,6 +90,7 @@ pub(crate) fn replace_region(
 
 #[cfg(test)]
 mod test {
+    use indoc::indoc;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -113,54 +114,59 @@ mod test {
 
     #[test]
     fn test_replace_region() {
-        let source = "
-fn foo() {
-    some();
-    stuff();
-}
+        let source = indoc! { r#"
 
-const BAR: u32 = 32;
-";
+            fn foo() {
+                some();
+                stuff();
+            }
+
+            const BAR: u32 = 32;
+        "# };
         // typical multi-line case
+        let replaced = replace_region(
+            source,
+            &LineColumn {
+                line: 2,
+                column: 10,
+            },
+            &LineColumn { line: 5, column: 1 },
+            "{ /* body deleted */ }",
+        );
         assert_eq!(
-            replace_region(
-                source,
-                &LineColumn {
-                    line: 2,
-                    column: 10
-                },
-                &LineColumn { line: 5, column: 1 },
-                "{ /* body deleted */ }"
-            ),
-            "
-fn foo() { /* body deleted */ }
+            replaced,
+            indoc! { r#"
 
-const BAR: u32 = 32;
-"
+                fn foo() { /* body deleted */ }
+
+                const BAR: u32 = 32;
+            "# }
         );
 
         // single-line case
+        let replaced = replace_region(
+            source,
+            &LineColumn {
+                line: 7,
+                column: 18,
+            },
+            &LineColumn {
+                line: 7,
+                column: 19,
+            },
+            "69",
+        );
         assert_eq!(
-            replace_region(
-                source,
-                &LineColumn {
-                    line: 7,
-                    column: 18
-                },
-                &LineColumn {
-                    line: 7,
-                    column: 19
-                },
-                "69"
-            ),
-            "
-fn foo() {
-    some();
-    stuff();
-}
+            replaced,
+            indoc! { r#"
 
-const BAR: u32 = 69;
-"
+                fn foo() {
+                    some();
+                    stuff();
+                }
+
+                const BAR: u32 = 69;
+            "# }
         );
     }
 }
