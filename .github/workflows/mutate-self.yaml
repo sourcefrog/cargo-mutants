@@ -10,6 +10,11 @@ on:
       - main
       - ci-mutants
 
+env:
+  # Some runners, especially on Windows, have uneven performance; allow lots
+  # of time before concluding something hung.
+  CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT: 240
+
 jobs:
   cargo-mutants:
     runs-on: ubuntu-latest
