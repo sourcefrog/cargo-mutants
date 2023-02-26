@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
@@ -8,7 +8,6 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
-use rand::prelude::*;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
@@ -40,7 +39,7 @@ pub fn test_unmutated_then_all_mutants(
     let rustflags = rustflags();
     let mut mutants = discover_mutants(source_tree, &options)?;
     if options.shuffle {
-        mutants.shuffle(&mut rand::thread_rng());
+        fastrand::shuffle(&mut mutants);
     }
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
