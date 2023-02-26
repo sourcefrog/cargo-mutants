@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+- Don't mutate `unsafe` fns.
+
+- Don't mutate functions that never return (i.e. `-> !`).
+
 ## 1.2.1
 
 Released 2023-01-05

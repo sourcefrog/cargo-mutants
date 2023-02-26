@@ -180,12 +180,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             name = function_name
         )
         .entered();
-        if attrs_excluded(&i.attrs) {
-            trace!("excluded by attrs");
-            return; // don't look inside it either
-        }
-        if block_is_empty(&i.block) {
-            trace!("function body is empty");
+        if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
         self.in_namespace(&function_name, |self_| {
@@ -198,10 +193,20 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
         // Don't look inside constructors (called "new") because there's often no good
         // alternative.
-        if attrs_excluded(&i.attrs) || i.sig.ident == "new" || block_is_empty(&i.block) {
+        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        let _span = trace_span!(
+            "fn",
+            line = i.sig.fn_token.span.start().line,
+            name = function_name
+        )
+        .entered();
+        if fn_sig_excluded(&i.sig)
+            || attrs_excluded(&i.attrs)
+            || i.sig.ident == "new"
+            || block_is_empty(&i.block)
+        {
             return;
         }
-        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
         self.in_namespace(&function_name, |self_| {
             self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span);
             syn::visit::visit_impl_item_method(self_, i)
@@ -390,6 +395,16 @@ fn path_is_result(path: &syn::Path) -> bool {
         .last()
         .map(|segment| segment.ident == "Result")
         .unwrap_or_default()
+}
+
+/// True if the signature of a function is such that it should be excluded.
+fn fn_sig_excluded(sig: &syn::Signature) -> bool {
+    if sig.unsafety.is_some() {
+        trace!("Skip unsafe fn");
+        true
+    } else {
+        false
+    }
 }
 
 /// True if any of the attrs indicate that we should skip this node and everything inside it.

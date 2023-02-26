@@ -159,6 +159,11 @@ src/b.rs:1: replace one_untested -> i32 with Default::default()
 src/c.rs:1: replace one -> i32 with Default::default()
 ```
 
+## testdata/tree/unsafe
+
+```
+```
+
 ## testdata/tree/well_tested
 
 ```

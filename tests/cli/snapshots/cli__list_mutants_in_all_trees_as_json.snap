@@ -430,6 +430,12 @@ expression: buf
 ]
 ```
 
+## testdata/tree/unsafe
+
+```json
+[]
+```
+
 ## testdata/tree/well_tested
 
 ```json
