@@ -25,7 +25,6 @@ mod visit;
 use std::env;
 use std::io::{self, Write};
 use std::process::exit;
-use std::time::Duration;
 
 use anyhow::Result;
 use camino::Utf8Path;
@@ -54,8 +53,6 @@ use crate::visit::{discover_files, discover_mutants};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
-const DEFAULT_MINIMUM_TEST_TIMEOUT: Duration = Duration::from_secs(20);
-const MINIMUM_TEST_TIMEOUT_ENV_VAR: &str = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT";
 
 #[derive(Parser)]
 #[command(name = "cargo", bin_name = "cargo")]
@@ -160,6 +157,10 @@ struct Args {
     /// maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't')]
     timeout: Option<f64>,
+
+    /// minimum timeout for tests, in seconds, as a lower bound on the auto-set time.
+    #[arg(long, env = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT")]
+    minimum_test_timeout: Option<f64>,
 
     /// print mutations that failed to check or build.
     #[arg(long, short = 'V')]

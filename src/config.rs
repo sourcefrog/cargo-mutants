@@ -1,4 +1,4 @@
-// Copyright 2022 Martin Pool.
+// Copyright 2022-2023 Martin Pool.
 
 //! `.cargo/mutants.toml` configuration file.
 //!
@@ -22,7 +22,7 @@ use crate::Result;
 ///
 /// This is similar to [Options], and eventually merged into it, but separate because it
 /// can be deserialized.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
     /// Generate mutants from source files matching these globs.
@@ -37,6 +37,8 @@ pub struct Config {
     pub additional_cargo_args: Vec<String>,
     /// Pass extra args to cargo test.
     pub additional_cargo_test_args: Vec<String>,
+    /// Minimum test timeout, in seconds, as a floor on the autoset value.
+    pub minimum_test_timeout: Option<f64>,
 }
 
 impl Config {

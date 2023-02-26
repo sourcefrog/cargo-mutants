@@ -1,8 +1,9 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Global in-process options for experimenting on mutants.
 //!
 //! The [Options] structure is built from command-line options and then widely passed around.
+//! Options are also merged from the [config] after reading the command line arguments.
 
 use std::time::Duration;
 
@@ -26,6 +27,9 @@ pub struct Options {
     /// on the baseline test, and then the mutated tests get a multiple of the time
     /// taken by the baseline test.
     pub test_timeout: Option<Duration>,
+
+    /// The minimum test timeout, as a floor on the autoset value.
+    pub minimum_test_timeout: Duration,
 
     pub print_caught: bool,
     pub print_unviable: bool,
@@ -73,6 +77,16 @@ impl Options {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
         }
 
+        // If there's a
+        let minimum_test_timeout =
+            Duration::from_secs_f64(if let Some(t) = args.minimum_test_timeout {
+                t
+            } else if let Some(t) = config.minimum_test_timeout {
+                t
+            } else {
+                20f64
+            });
+
         Ok(Options {
             additional_cargo_args: args
                 .cargo_arg
@@ -107,6 +121,7 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
+            minimum_test_timeout,
         })
     }
 }
