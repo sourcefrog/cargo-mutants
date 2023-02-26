@@ -78,14 +78,11 @@ impl Options {
         }
 
         // If there's a
-        let minimum_test_timeout =
-            Duration::from_secs_f64(if let Some(t) = args.minimum_test_timeout {
-                t
-            } else if let Some(t) = config.minimum_test_timeout {
-                t
-            } else {
-                20f64
-            });
+        let minimum_test_timeout = Duration::from_secs_f64(
+            args.minimum_test_timeout
+                .or(config.minimum_test_timeout)
+                .unwrap_or(20f64),
+        );
 
         Ok(Options {
             additional_cargo_args: args
