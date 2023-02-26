@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Visit the abstract syntax tree and discover things to mutate.
 //!
@@ -8,6 +8,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 
 use anyhow::Context;
+use itertools::Itertools;
 use quote::ToTokens;
 use syn::ext::IdentExt;
 use syn::visit::Visit;
@@ -130,14 +131,26 @@ impl DiscoveryVisitor {
     fn collect_fn_mutants(&mut self, return_type: &syn::ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
-        for op in ops_for_return_type(return_type) {
-            self.mutants.push(Mutant::new(
-                &self.source_file,
-                op,
-                &full_function_name,
-                &return_type_str,
-                span.into(),
-            ))
+        let mut new_mutants = ops_for_return_type(return_type)
+            .into_iter()
+            .map(|op| {
+                Mutant::new(
+                    &self.source_file,
+                    op,
+                    &full_function_name,
+                    &return_type_str,
+                    span.into(),
+                )
+            })
+            .collect_vec();
+        if new_mutants.is_empty() {
+            debug!(
+                ?full_function_name,
+                ?return_type_str,
+                "No mutants generated for this return type"
+            );
+        } else {
+            self.mutants.append(&mut new_mutants);
         }
     }
 
@@ -291,6 +304,11 @@ fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
     match return_type {
         syn::ReturnType::Default => ops.push(MutationOp::Unit),
         syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
+            syn::Type::Never(_) => {
+                // In theory we could mutate this to a function that just
+                // loops or sleeps, but it seems unlikely to be useful,
+                // so generate nothing.
+            }
             syn::Type::Path(syn::TypePath { path, .. }) => {
                 // dbg!(&path);
                 if path.is_ident("bool") {

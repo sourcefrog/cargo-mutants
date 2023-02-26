@@ -226,6 +226,12 @@ expression: buf
 ]
 ```
 
+## testdata/tree/never_type
+
+```json
+[]
+```
+
 ## testdata/tree/nightly_only
 
 ```json
