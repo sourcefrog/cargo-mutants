@@ -2,15 +2,14 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::env;
 use std::fmt::Write;
 use std::fs::{self, read_dir};
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 
-use assert_cmd::prelude::*;
 use indoc::indoc;
 use itertools::Itertools;
 use lazy_static::lazy_static;
@@ -37,19 +36,15 @@ lazy_static! {
     static ref SIZE_RE: Regex = Regex::new(r"\d+ MB").unwrap();
 }
 
-fn run_assert_cmd() -> assert_cmd::Command {
+fn run() -> assert_cmd::Command {
     assert_cmd::Command::new(MAIN_BINARY.as_os_str())
-}
-
-fn run() -> std::process::Command {
-    Command::new(MAIN_BINARY.as_os_str())
 }
 
 trait CommandInstaExt {
     fn assert_insta(&mut self, snapshot_name: &str);
 }
 
-impl CommandInstaExt for std::process::Command {
+impl CommandInstaExt for assert_cmd::Command {
     fn assert_insta(&mut self, snapshot_name: &str) {
         let output = self.output().expect("command completes");
         assert!(output.status.success());
@@ -82,24 +77,24 @@ fn redact_timestamps_sizes(s: &str) -> String {
 #[test]
 fn incorrect_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
-    run_assert_cmd().arg("wibble").assert().code(1);
+    run().arg("wibble").assert().code(1);
 }
 
 #[test]
 fn missing_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
-    run_assert_cmd().assert().code(1);
+    run().assert().code(1);
 }
 
 #[test]
 fn option_in_place_of_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
-    run_assert_cmd().args(["--list"]).assert().code(1);
+    run().args(["--list"]).assert().code(1);
 }
 
 #[test]
 fn show_version() {
-    run_assert_cmd()
+    run()
         .args(["mutants", "--version"])
         .assert()
         .success()
@@ -110,7 +105,7 @@ fn show_version() {
 fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     let bogus_cargo = "NOTHING_NONEXISTENT_VOID";
-    run_assert_cmd()
+    run()
         .env("CARGO", bogus_cargo)
         .args(["mutants", "-d"])
         .arg(tmp_src_dir.path())
@@ -131,7 +126,7 @@ fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
 
 #[test]
 fn list_diff_json_not_yet_supported() {
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list", "--json", "--diff"])
         .assert()
         .code(1)
@@ -163,7 +158,7 @@ fn list_mutants_in_all_trees_as_json() {
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
         writeln!(buf, "## {}\n", dir_path.to_slash_lossy()).unwrap();
-        let cmd_assert = run_assert_cmd()
+        let cmd_assert = run()
             .arg("mutants")
             .arg("--list")
             .arg("--json")
@@ -182,7 +177,7 @@ fn list_mutants_in_all_trees_as_text() {
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
         writeln!(buf, "## {}\n\n```", dir_path.to_slash_lossy()).unwrap();
-        let cmd_assert = run_assert_cmd()
+        let cmd_assert = run()
             .arg("mutants")
             .arg("--list")
             .current_dir(&dir_path)
@@ -539,7 +534,7 @@ fn copy_testdata_doesnt_include_build_artifacts() {
 #[test]
 fn small_well_tested_tree_is_clean() {
     let tmp_src_dir = copy_of_testdata("small_well_tested");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--no-times", "--no-shuffle", "-v", "-V"])
         .current_dir(tmp_src_dir.path())
@@ -585,7 +580,7 @@ fn small_well_tested_tree_is_clean() {
 #[test]
 fn cdylib_tree_is_well_tested() {
     let tmp_src_dir = copy_of_testdata("cdylib");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--no-times", "--no-shuffle", "-v", "-V"])
         .current_dir(tmp_src_dir.path())
@@ -600,7 +595,7 @@ fn cdylib_tree_is_well_tested() {
 #[test]
 fn well_tested_tree_quiet() {
     let tmp_src_dir = copy_of_testdata("well_tested");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
@@ -624,7 +619,7 @@ fn well_tested_tree_quiet() {
 #[test]
 fn well_tested_tree_finds_no_problems() {
     let tmp_src_dir = copy_of_testdata("well_tested");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--caught")
@@ -646,7 +641,7 @@ fn well_tested_tree_finds_no_problems() {
 #[test]
 fn well_tested_tree_check_only() {
     let tmp_src_dir = copy_of_testdata("well_tested");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--check", "--no-shuffle", "--no-times"])
         .current_dir(tmp_src_dir.path())
         .assert()
@@ -660,7 +655,7 @@ fn well_tested_tree_check_only() {
 #[test]
 fn well_tested_tree_check_only_shuffled() {
     let tmp_src_dir = copy_of_testdata("well_tested");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--check", "--no-times", "--shuffle"])
         .current_dir(tmp_src_dir.path())
         .assert()
@@ -671,7 +666,7 @@ fn well_tested_tree_check_only_shuffled() {
 #[test]
 fn unviable_mutation_of_struct_with_no_default() {
     let tmp_src_dir = copy_of_testdata("struct_with_no_default");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--no-times", "--no-shuffle", "-v", "-V"])
         .arg("-d")
         .arg(tmp_src_dir.path())
@@ -692,13 +687,13 @@ fn unviable_mutation_of_struct_with_no_default() {
 #[test]
 fn integration_test_source_is_not_mutated() {
     let tmp_src_dir = copy_of_testdata("integration_tests");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--no-times", "--no-shuffle", "--list-files"])
         .current_dir(tmp_src_dir.path())
         .assert()
         .success()
         .stdout("src/lib.rs\n");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
         .assert()
@@ -708,7 +703,7 @@ fn integration_test_source_is_not_mutated() {
 #[test]
 fn error_when_no_mutants_found() {
     let tmp_src_dir = copy_of_testdata("everything_skipped");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
         .assert()
@@ -721,7 +716,7 @@ fn error_when_no_mutants_found() {
 fn uncaught_mutant_in_factorial() {
     let tmp_src_dir = copy_of_testdata("factorial");
 
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-shuffle")
         .arg("-d")
@@ -760,7 +755,7 @@ fn factorial_mutants_with_all_logs() {
     // The log contains a lot of build output, which is hard to deal with, but let's check that
     // some key lines are there.
     let tmp_src_dir = copy_of_testdata("factorial");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--all-logs")
         .arg("-v")
@@ -784,7 +779,7 @@ r"src/bin/factorial\.rs:7: replace factorial -> u32 with Default::default\(\) \.
 #[test]
 fn factorial_mutants_with_all_logs_and_nocapture() {
     let tmp_src_dir = copy_of_testdata("factorial");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--all-logs", "-v", "-V"])
         .arg("-d")
@@ -801,7 +796,7 @@ fn factorial_mutants_with_all_logs_and_nocapture() {
 #[test]
 fn factorial_mutants_no_copy_target() {
     let tmp_src_dir = copy_of_testdata("factorial");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--no-times"])
         .arg("-d")
@@ -818,7 +813,7 @@ fn factorial_mutants_no_copy_target() {
 #[test]
 fn small_well_tested_mutants_with_cargo_arg_release() {
     let tmp_src_dir = copy_of_testdata("small_well_tested");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--no-times", "--cargo-arg", "--release"])
         .arg("-d")
@@ -857,7 +852,7 @@ fn output_option() {
         !tmp_src_dir.path().join("mutants.out").exists(),
         "mutants.out should not be in a clean copy of the test data"
     );
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--output")
         .arg(&output_parent)
@@ -889,7 +884,7 @@ fn output_option() {
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--check")
         .arg("--no-times")
@@ -906,7 +901,7 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
 #[test]
 fn check_tree_with_mutants_skip() {
     let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--check")
         .arg("--no-times")
@@ -923,7 +918,7 @@ fn check_tree_with_mutants_skip() {
 #[test]
 fn already_failing_tests_are_detected_before_running_mutants() {
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
@@ -950,7 +945,7 @@ fn already_failing_tests_are_detected_before_running_mutants() {
 #[test]
 fn already_failing_doctests_are_detected() {
     let tmp_src_dir = copy_of_testdata("already_failing_doctests");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
@@ -968,7 +963,7 @@ fn already_failing_doctests_are_detected() {
 #[test]
 fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
     let tmp_src_dir = copy_of_testdata("already_failing_doctests");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--", "--all-targets"])
         .current_dir(tmp_src_dir.path())
@@ -981,7 +976,7 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
 #[test]
 fn source_tree_parse_fails() {
     let tmp_src_dir = copy_of_testdata("parse_fails");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
@@ -993,7 +988,7 @@ fn source_tree_parse_fails() {
 #[test]
 fn source_tree_typecheck_fails() {
     let tmp_src_dir = copy_of_testdata("typecheck_fails");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
@@ -1017,7 +1012,7 @@ fn source_tree_typecheck_fails() {
 #[test]
 fn minimum_test_timeout_from_env() {
     let tmp_src_dir = copy_of_testdata("small_well_tested");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .env("CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT", "1234")
         .current_dir(tmp_src_dir.path())
@@ -1038,7 +1033,7 @@ fn minimum_test_timeout_from_env() {
 #[test]
 fn timeout_when_unmutated_tree_test_hangs() {
     let tmp_src_dir = copy_of_testdata("already_hangs");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["--timeout", "2.9"])
         .current_dir(tmp_src_dir.path())
@@ -1156,7 +1151,7 @@ fn interrupt_caught_and_kills_children() {
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .args(["-t", "8.1", "-v", "--", "--", "--nocapture"])
         .current_dir(tmp_src_dir.path())
@@ -1178,7 +1173,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
 fn log_file_names_are_short_and_dont_collide() {
     // The "well_tested" tree can generate multiple mutants from single lines. They get distinct file names.
     let tmp_src_dir = copy_of_testdata("well_tested");
-    let cmd_assert = run_assert_cmd()
+    let cmd_assert = run()
         .arg("mutants")
         .args(["--check", "-v", "-V"])
         .current_dir(tmp_src_dir.path())
@@ -1212,7 +1207,7 @@ fn log_file_names_are_short_and_dont_collide() {
 fn cargo_mutants_in_override_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
@@ -1230,7 +1225,7 @@ fn cargo_mutants_in_override_dependency_tree_passes() {
 fn cargo_mutants_in_relative_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
@@ -1248,7 +1243,7 @@ fn cargo_mutants_in_relative_dependency_tree_passes() {
 fn cargo_mutants_in_replace_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
@@ -1266,7 +1261,7 @@ fn cargo_mutants_in_replace_dependency_tree_passes() {
 fn cargo_mutants_in_patch_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
@@ -1290,7 +1285,7 @@ fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
     // This needs --no-shuffle because failure to unapply will show up when the
     // uncaught mutant is not the first file tested.
     let tmp_src_dir = copy_of_testdata("unapply");
-    run_assert_cmd()
+    run()
         .args(["mutants", "--no-times", "--no-shuffle"])
         .arg("-d")
         .arg(tmp_src_dir.path())
@@ -1305,7 +1300,7 @@ fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
 #[test]
 fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
     let tmp_src_dir = copy_of_testdata("strict_warnings");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--check")
         .arg("--no-times")
@@ -1315,7 +1310,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .success()
         .stdout(contains("1 mutant tested: 1 succeeded"));
 
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("--no-times")
         .current_dir(tmp_src_dir.path())
@@ -1334,7 +1329,7 @@ fn insta_test_failures_are_detected() {
     for insta_update in ["auto", "always"] {
         println!("INSTA_UPDATE={insta_update}");
         let tmp_src_dir = copy_of_testdata("insta");
-        run_assert_cmd()
+        run()
             .arg("mutants")
             .args(["--no-times", "--no-shuffle", "--caught"])
             .env("INSTA_UPDATE", insta_update)
@@ -1362,7 +1357,7 @@ fn check_text_list_output(dir: &Path, test_name: &str) {
 fn completions_option_generates_something() {
     for shell in ["bash", "fish", "zsh", "powershell"] {
         println!("completions for {shell}");
-        run_assert_cmd()
+        run()
             .arg("mutants")
             .arg("--completions")
             .arg(shell)
