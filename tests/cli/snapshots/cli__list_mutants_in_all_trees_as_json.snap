@@ -226,6 +226,12 @@ expression: buf
 ]
 ```
 
+## testdata/tree/mut_ref
+
+```json
+[]
+```
+
 ## testdata/tree/never_type
 
 ```json

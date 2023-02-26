@@ -88,6 +88,11 @@ src/lib.rs:1: replace say_hello -> String with "xyzzy".into()
 src/lib.rs:1: replace double -> u32 with Default::default()
 ```
 
+## testdata/tree/mut_ref
+
+```
+```
+
 ## testdata/tree/never_type
 
 ```

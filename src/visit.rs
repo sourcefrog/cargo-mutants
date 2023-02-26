@@ -331,6 +331,13 @@ fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
                     ops.push(MutationOp::Default)
                 }
             }
+            syn::Type::Reference(syn::TypeReference {
+                mutability: Some(_),
+                ..
+            }) => {
+                // TODO: Return a Box::leak of the inner type?
+                trace!(?box_typ, "Skip function returning &mut");
+            }
             _ => {
                 trace!(?box_typ, "Return type is not recognized, trying Default");
                 ops.push(MutationOp::Default)
