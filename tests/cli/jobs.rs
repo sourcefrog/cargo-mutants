@@ -2,14 +2,14 @@
 
 //! Test handling of `-j` option.
 
-use super::{copy_of_testdata, run_assert_cmd};
+use super::{copy_of_testdata, run};
 
 /// It's a bit hard to assess that multiple jobs really ran in parallel,
 /// but we can at least check that the option is accepted.
 #[test]
 fn jobs_option_accepted() {
     let testdata = copy_of_testdata("well_tested");
-    run_assert_cmd()
+    run()
         .arg("mutants")
         .arg("-d")
         .arg(testdata.path())

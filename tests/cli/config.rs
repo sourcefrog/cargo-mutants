@@ -7,7 +7,7 @@ use std::fs::{create_dir, write};
 use predicates::prelude::*;
 use tempfile::TempDir;
 
-use super::{copy_of_testdata, run_assert_cmd};
+use super::{copy_of_testdata, run};
 
 fn write_config_file(tempdir: &TempDir, config: &str) {
     let path = tempdir.path();
@@ -25,7 +25,7 @@ fn invalid_toml_rejected() {
         r#"what even is this?
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list-files", "-d"])
         .arg(testdata.path())
         .assert()
@@ -41,7 +41,7 @@ fn invalid_field_rejected() {
         r#"wobble = false
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list-files", "-d"])
         .arg(testdata.path())
         .assert()
@@ -60,13 +60,13 @@ fn list_with_config_file_exclusion() {
         r#"exclude_globs = ["src/*_mod.rs"]
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list-files", "-d"])
         .arg(testdata.path())
         .assert()
         .success()
         .stdout(predicates::str::contains("_mod.rs").not());
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list", "-d"])
         .arg(testdata.path())
         .assert()
@@ -82,7 +82,7 @@ fn list_with_config_file_inclusion() {
         r#"examine_globs = ["src/*_mod.rs"]
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list-files", "-d"])
         .arg(testdata.path())
         .assert()
@@ -91,7 +91,7 @@ fn list_with_config_file_inclusion() {
             "src/inside_mod.rs
 src/item_mod.rs\n",
         ));
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list", "-d"])
         .arg(testdata.path())
         .assert()
@@ -110,7 +110,7 @@ fn list_with_config_file_regexps() {
         exclude_re = ["-> bool with true"]
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "--list", "-d"])
         .arg(testdata.path())
         .assert()
@@ -125,7 +125,7 @@ fn tree_fails_without_needed_feature() {
     // The point of this tree is to check that Cargo features can be turned on,
     // but let's make sure it does fail as intended if they're not.
     let testdata = copy_of_testdata("fails_without_feature");
-    run_assert_cmd()
+    run()
         .args(["mutants", "-d"])
         .arg(testdata.path())
         .assert()
@@ -146,7 +146,7 @@ fn additional_cargo_args() {
         additional_cargo_args = ["--features", "needed"]
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "-d"])
         .arg(testdata.path())
         .assert()
@@ -165,7 +165,7 @@ fn additional_cargo_test_args() {
         additional_cargo_test_args = ["--all-features", ]
         "#,
     );
-    run_assert_cmd()
+    run()
         .args(["mutants", "-d"])
         .arg(testdata.path())
         .assert()

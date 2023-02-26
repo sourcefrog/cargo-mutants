@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
 
@@ -25,7 +25,6 @@ mod visit;
 use std::env;
 use std::io::{self, Write};
 use std::process::exit;
-use std::time::Duration;
 
 use anyhow::Result;
 use camino::Utf8Path;
@@ -54,8 +53,6 @@ use crate::visit::{discover_files, discover_mutants};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
-const DEFAULT_MINIMUM_TEST_TIMEOUT: Duration = Duration::from_secs(20);
-const MINIMUM_TEST_TIMEOUT_ENV_VAR: &str = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT";
 
 #[derive(Parser)]
 #[command(name = "cargo", bin_name = "cargo")]
@@ -113,7 +110,7 @@ struct Args {
     file: Vec<String>,
 
     /// run this many cargo build/test jobs in parallel.
-    #[arg(long, short = 'j')]
+    #[arg(long, short = 'j', env = "CARGO_MUTANTS_JOBS")]
     jobs: Option<usize>,
 
     /// output json (only for --list).
@@ -121,7 +118,12 @@ struct Args {
     json: bool,
 
     /// log level for stdout (trace, debug, info, warn, error).
-    #[arg(long, short = 'L', default_value = "info")]
+    #[arg(
+        long,
+        short = 'L',
+        default_value = "info",
+        env = "CARGO_MUTANTS_TRACE_LEVEL"
+    )]
     level: tracing::Level,
 
     /// just list possible mutants, don't run them.
@@ -155,6 +157,10 @@ struct Args {
     /// maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't')]
     timeout: Option<f64>,
+
+    /// minimum timeout for tests, in seconds, as a lower bound on the auto-set time.
+    #[arg(long, env = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT")]
+    minimum_test_timeout: Option<f64>,
 
     /// print mutations that failed to check or build.
     #[arg(long, short = 'V')]

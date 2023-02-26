@@ -79,7 +79,10 @@ pub fn test_unmutated_then_all_mutants(
         timeout
     } else if let Some(baseline_test_duration) = baseline_outcome.test_duration() {
         // If we didn't run tests in the baseline, e.g. for `--check`, there might be no duration.
-        let auto_timeout = max(minimum_test_timeout()?, baseline_test_duration.mul_f32(5.0));
+        let auto_timeout = max(
+            options.minimum_test_timeout,
+            baseline_test_duration.mul_f32(5.0),
+        );
         if options.show_times {
             console.autoset_timeout(auto_timeout);
         }
@@ -209,19 +212,4 @@ fn test_scenario(
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
-}
-
-/// Return the minimum timeout for cargo tests (used if the baseline tests are fast),
-/// from either the environment or a built-in default.
-fn minimum_test_timeout() -> Result<Duration> {
-    let var_name = crate::MINIMUM_TEST_TIMEOUT_ENV_VAR;
-    if let Some(env_timeout) = env::var_os(var_name) {
-        let env_timeout = env_timeout
-            .to_string_lossy()
-            .parse()
-            .with_context(|| format!("invalid {var_name}"))?;
-        Ok(Duration::from_secs(env_timeout))
-    } else {
-        Ok(DEFAULT_MINIMUM_TEST_TIMEOUT)
-    }
 }

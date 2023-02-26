@@ -8,13 +8,22 @@
 
 - Minimum supported Rust version increased to 1.64 due to changes in dependencies.
 
+- Some command-line options can now also be configured through environment variables:
+  `CARGO_MUTANTS_JOBS`, `CARGO_MUTANTS_TRACE_LEVEL`.
+
+- New command line option `--minimum-test-timeout` and config file variable `minimum_test_timeout`
+  join existing environment variable `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT`, to allow
+  boosting the minimum, especially for test environments with poor or uneven throughput.
+
 ## 1.2.1
 
 Released 2023-01-05
 
 - Converted most of the docs to a book available at <https://mutants.rs/>.
 
-- Fixed: Correctly find submodules that don't use `mod.rs` naming, e.g. when descending from `src/foo.rs` to `src/foo/bar.rs`. Also handle module names that are raw identifiers using `r#`. (Thanks to @kpreid for the report.) 
+- Fixed: Correctly find submodules that don't use mmod.rs` naming, e.g. when
+descending from `src/foo.rs` to `src/foo/bar.rs`. Also handle module names that
+are raw identifiers using `r#`. (Thanks to @kpreid for the report.)
 
 ## 1.2.0
 
