@@ -119,6 +119,10 @@ struct Args {
     #[arg(long)]
     json: bool,
 
+    /// don't delete the scratch directories, for debugging.
+    #[arg(long)]
+    leak_dirs: bool,
+
     /// log level for stdout (trace, debug, info, warn, error).
     #[arg(
         long,

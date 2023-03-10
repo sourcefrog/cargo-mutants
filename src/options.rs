@@ -21,6 +21,9 @@ pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
+    /// Don't delete scratch directories.
+    pub leak_dirs: bool,
+
     /// The time limit for test tasks, if set.
     ///
     /// If this is not set by the user it's None, in which case there is no time limit
@@ -111,6 +114,7 @@ impl Options {
                 args.exclude.iter().chain(config.exclude_globs.iter()),
             )?,
             jobs: args.jobs,
+            leak_dirs: args.leak_dirs,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,

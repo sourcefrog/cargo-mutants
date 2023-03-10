@@ -47,7 +47,7 @@ pub fn test_unmutated_then_all_mutants(
     }
 
     let output_mutex = Mutex::new(output_dir);
-    let mut build_dirs = vec![BuildDir::new(source_tree, console)?];
+    let mut build_dirs = vec![BuildDir::new(source_tree, &options, console)?];
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(

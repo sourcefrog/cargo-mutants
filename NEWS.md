@@ -1,5 +1,7 @@
 # cargo-mutants changelog
 
+- New `--leak-dirs` option, for debugging cargo-mutants.
+
 ## 1.2.2
 
 Released 2023-04-01

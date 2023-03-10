@@ -8,7 +8,7 @@ use std::fmt;
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
 
 use crate::manifest::fix_cargo_config;
 use crate::*;
@@ -35,14 +35,19 @@ pub struct BuildDir {
     /// Holds a reference to the temporary directory, so that it will be deleted when this
     /// object is dropped.
     #[allow(dead_code)]
-    temp_dir: TempDir,
+    strategy: TempDirStrategy,
+}
+
+enum TempDirStrategy {
+    Collect(TempDir),
+    Leak,
 }
 
 impl BuildDir {
     /// Make a new build dir, copying from a source directory.
     ///
     /// [SOURCE_EXCLUDE] is excluded.
-    pub fn new(source: &Utf8Path, console: &Console) -> Result<BuildDir> {
+    pub fn new(source: &Utf8Path, options: &Options, console: &Console) -> Result<BuildDir> {
         let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or(""));
         let source_abs = source
             .canonicalize_utf8()
@@ -51,8 +56,15 @@ impl BuildDir {
         let path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
+        let strategy = if options.leak_dirs {
+            let _ = temp_dir.into_path();
+            info!(?path, "Build directory will be leaked for inspection");
+            TempDirStrategy::Leak
+        } else {
+            TempDirStrategy::Collect(temp_dir)
+        };
         let build_dir = BuildDir {
-            temp_dir,
+            strategy,
             name_base,
             path,
         };
@@ -64,12 +76,12 @@ impl BuildDir {
     }
 
     /// Make a copy of this build dir, including its target directory.
-    #[allow(dead_code)]
     pub fn copy(&self, console: &Console) -> Result<BuildDir> {
         let temp_dir = copy_tree(&self.path, &self.name_base, &[], console)?;
+
         Ok(BuildDir {
             path: temp_dir.path().to_owned().try_into().unwrap(),
-            temp_dir,
+            strategy: TempDirStrategy::Collect(temp_dir),
             name_base: self.name_base.clone(),
         })
     }
@@ -138,10 +150,11 @@ mod test {
 
     #[test]
     fn build_dir_debug_form() {
+        let options = Options::default();
         let root = CargoTool::new()
             .find_root("testdata/tree/factorial".into())
             .unwrap();
-        let build_dir = BuildDir::new(&root, &Console::new()).unwrap();
+        let build_dir = BuildDir::new(&root, &options, &Console::new()).unwrap();
         let debug_form = format!("{build_dir:?}");
         assert!(
             Regex::new(r#"^BuildDir \{ path: "[^"]*[/\\]cargo-mutants-factorial[^"]*" \}$"#)
