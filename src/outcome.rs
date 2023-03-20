@@ -56,14 +56,14 @@ impl fmt::Display for Phase {
 #[derive(Debug, Default, Serialize)]
 pub struct LabOutcome {
     /// All the scenario outcomes, including baseline builds.
-    outcomes: Vec<ScenarioOutcome>,
-    total_mutants: usize,
-    missed: usize,
-    caught: usize,
-    timeout: usize,
-    unviable: usize,
-    success: usize,
-    failure: usize,
+    pub outcomes: Vec<ScenarioOutcome>,
+    pub total_mutants: usize,
+    pub missed: usize,
+    pub caught: usize,
+    pub timeout: usize,
+    pub unviable: usize,
+    pub success: usize,
+    pub failure: usize,
 }
 
 impl LabOutcome {

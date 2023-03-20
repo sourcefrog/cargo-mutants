@@ -17,6 +17,8 @@
 
 - Changed: Renamed fields in `outcomes.json` from `cargo_result` to `process_status` and from `command` to `argv`.
 
+- Warn if no mutants were generated or if all mutants were unviable.
+
 ## 1.2.1
 
 Released 2023-01-05

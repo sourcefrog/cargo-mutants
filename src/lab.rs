@@ -8,6 +8,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
+use tracing::warn;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
@@ -144,7 +145,15 @@ pub fn test_unmutated_then_all_mutants(
         .into_inner()
         .expect("final unlock mutants queue");
     console.lab_finished(&output_dir.lab_outcome, start_time, &options);
-    Ok(output_dir.take_lab_outcome())
+    let lab_outcome = output_dir.take_lab_outcome();
+    if lab_outcome.total_mutants == 0 {
+        // This should be unreachable as we also bail out before copying
+        // the tree if no mutants are generated.
+        warn!("No mutants were generated");
+    } else if lab_outcome.unviable == lab_outcome.total_mutants {
+        warn!("No mutants were viable; perhaps there is a problem with building in a scratch directory");
+    }
+    Ok(lab_outcome)
 }
 
 /// Test various phases of one scenario in a build dir.
