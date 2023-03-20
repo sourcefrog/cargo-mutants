@@ -63,7 +63,8 @@ pub fn test_unmutated_then_all_mutants(
     };
     if !baseline_outcome.success() {
         error!(
-            "cargo {} failed in an unmutated tree, so no mutants were tested",
+            "{} {} failed in an unmutated tree, so no mutants were tested",
+            tool.name(),
             baseline_outcome.last_phase(),
         );
         // TODO: Maybe should be Err, but it would need to be an error that can map to the right

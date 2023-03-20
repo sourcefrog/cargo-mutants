@@ -37,6 +37,10 @@ impl CargoTool {
 }
 
 impl Tool for CargoTool {
+    fn name(&self) -> &str {
+        "cargo"
+    }
+
     fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf> {
         let cargo_toml_path = locate_cargo_toml(path)?;
         let root = cargo_toml_path

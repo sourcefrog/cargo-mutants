@@ -21,6 +21,8 @@ use crate::Result;
 use crate::SourceFile;
 
 pub trait Tool: Debug + Send + Sync {
+    fn name(&self) -> &str;
+
     /// Find the root of the package enclosing a given path.
     ///
     /// The root is the enclosing directory that needs to be copied to make a self-contained
