@@ -53,24 +53,37 @@ impl Tool for CargoTool {
 
     fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
-        debug!("cargo_toml_path = {}", cargo_toml_path);
+        debug!(?cargo_toml_path);
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
             .exec()
             .context("run cargo metadata")?;
         check_interrupted()?;
+        let root_path = Arc::new(source_root_path.to_owned());
 
         let mut r = Vec::new();
         for package_metadata in &metadata.workspace_packages() {
-            debug!("walk package {:?}", package_metadata.manifest_path);
+            debug!(
+                name = ?package_metadata.name,
+                manifest_path = ?package_metadata.manifest_path,
+                "Walk package"
+            );
             let package_name = Arc::new(package_metadata.name.to_string());
+            let package_path = Arc::new(
+                package_metadata
+                    .manifest_path
+                    .parent()
+                    .expect("package manifest path should have a parent")
+                    .to_owned(),
+            );
             for source_path in direct_package_sources(source_root_path, package_metadata)? {
                 check_interrupted()?;
                 r.push(Arc::new(SourceFile::new(
-                    source_root_path,
+                    Arc::clone(&root_path),
                     source_path,
                     package_name.clone(),
+                    Arc::clone(&package_path),
                 )?));
             }
         }
