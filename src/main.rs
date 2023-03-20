@@ -51,7 +51,7 @@ use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
 use crate::source::SourceFile;
 use crate::tool::Tool;
-use crate::visit::{discover_files, discover_mutants};
+use crate::visit::walk_tree;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -217,15 +217,15 @@ fn main() -> Result<()> {
     if args.list_files {
         list_files(&tool, &source_tree_root, &options, args.json)?;
     } else if args.list {
-        let mutants = discover_mutants(&tool, &source_tree_root, &options)?;
+        let discovered = walk_tree(&tool, &source_tree_root, &options)?;
         if args.json {
             if args.diff {
                 eprintln!("--list --diff --json is not (yet) supported");
                 exit(exit_code::USAGE);
             }
-            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &mutants)?;
+            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &discovered.mutants)?;
         } else {
-            console::list_mutants(&mutants, args.diff);
+            console::list_mutants(&discovered.mutants, args.diff);
         }
     } else {
         let lab_outcome =
@@ -236,11 +236,12 @@ fn main() -> Result<()> {
 }
 
 fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool) -> Result<()> {
-    let files = discover_files(tool, source, options)?;
+    let discovered = walk_tree(tool, source, options)?;
     let mut out = io::BufWriter::new(io::stdout());
     if json {
         let json_list = Value::Array(
-            files
+            discovered
+                .files
                 .iter()
                 .map(|source_file| {
                     json!({
@@ -253,7 +254,7 @@ fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool)
         );
         serde_json::to_writer_pretty(out, &json_list)?;
     } else {
-        for file in files {
+        for file in discovered.files {
             writeln!(out, "{}", file.tree_relative_path)?;
         }
     }

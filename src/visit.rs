@@ -23,32 +23,21 @@ use crate::path::TreeRelativePathBuf;
 use crate::source::SourceFile;
 use crate::*;
 
-pub fn discover_mutants(
-    tool: &dyn Tool,
-    root: &Utf8Path,
-    options: &Options,
-) -> Result<Vec<Mutant>> {
-    walk_tree(tool, root, options).map(|x| x.0)
-}
-
-pub fn discover_files(
-    tool: &dyn Tool,
-    root: &Utf8Path,
-    options: &Options,
-) -> Result<Vec<Arc<SourceFile>>> {
-    walk_tree(tool, root, options).map(|x| x.1)
+/// Mutants and files discovered in a source tree.
+///
+/// Files are listed separately so that we can represent files that
+/// were visited but that produced no mutants.
+pub struct Discovered {
+    pub mutants: Vec<Mutant>,
+    pub files: Vec<Arc<SourceFile>>,
 }
 
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
-fn walk_tree(
-    tool: &dyn Tool,
-    root: &Utf8Path,
-    options: &Options,
-) -> Result<(Vec<Mutant>, Vec<Arc<SourceFile>>)> {
+pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<Discovered> {
     let mut mutants = Vec::new();
-    let mut seen_files: Vec<Arc<SourceFile>> = Vec::new();
+    let mut files: Vec<Arc<SourceFile>> = Vec::new();
 
     let mut file_queue: VecDeque<Arc<SourceFile>> = tool.root_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
@@ -86,9 +75,9 @@ fn walk_tree(
             }
         }
         mutants.append(&mut file_mutants);
-        seen_files.push(Arc::clone(&source_file));
+        files.push(Arc::clone(&source_file));
     }
-    Ok((mutants, seen_files))
+    Ok(Discovered { mutants, files })
 }
 
 /// Find all possible mutants in a source file.
