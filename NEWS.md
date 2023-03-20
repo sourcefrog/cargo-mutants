@@ -15,6 +15,8 @@
   join existing environment variable `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT`, to allow
   boosting the minimum, especially for test environments with poor or uneven throughput.
 
+- Changed: Renamed fields in `outcomes.json` from `cargo_result` to `process_status` and from `command` to `argv`.
+
 ## 1.2.1
 
 Released 2023-01-05
@@ -71,7 +73,7 @@ Released 2022-09-24
 
 - New: `cargo mutants --completions SHELL` to generate shell completions using `clap_complete`.
 
-- Changed: `carg-mutants` no longer builds in the source directory, and no longer copies the `target/` directory to the scratch directory. Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
+- Changed: `cargo-mutants` no longer builds in the source directory, and no longer copies the `target/` directory to the scratch directory. Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
 
 - Changed: `cargo-mutants` finds all possible mutations before doing the baseline test, so that you can see earlier how many there will be.
 

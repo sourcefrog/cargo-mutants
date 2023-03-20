@@ -481,14 +481,14 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline["summary"], "Success");
         let baseline_phases = baseline["phase_results"].as_array().unwrap();
         assert_eq!(baseline_phases.len(), 2);
-        assert_eq!(baseline_phases[0]["cargo_result"], "Success");
+        assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["command"].as_array().unwrap()[1..],
+            baseline_phases[0]["argv"].as_array().unwrap()[1..],
             ["build", "--tests", "--workspace"]
         );
-        assert_eq!(baseline_phases[1]["cargo_result"], "Success");
+        assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["command"].as_array().unwrap()[1..],
+            baseline_phases[1]["argv"].as_array().unwrap()[1..],
             ["test", "--workspace"]
         );
     }
@@ -501,14 +501,14 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(outcome["summary"], "CaughtMutant");
         let mutant_phases = outcome["phase_results"].as_array().unwrap();
         assert_eq!(mutant_phases.len(), 2);
-        assert_eq!(mutant_phases[0]["cargo_result"], "Success");
+        assert_eq!(mutant_phases[0]["process_status"], "Success");
         assert_eq!(
-            mutant_phases[0]["command"].as_array().unwrap()[1..],
+            mutant_phases[0]["argv"].as_array().unwrap()[1..],
             ["build", "--tests", "--package", package_name]
         );
-        assert_eq!(mutant_phases[1]["cargo_result"], "Failure");
+        assert_eq!(mutant_phases[1]["process_status"], "Failure");
         assert_eq!(
-            mutant_phases[1]["command"].as_array().unwrap()[1..],
+            mutant_phases[1]["argv"].as_array().unwrap()[1..],
             ["test", "--package", package_name],
         );
     }
@@ -518,14 +518,14 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline["summary"], "Success");
         let baseline_phases = baseline["phase_results"].as_array().unwrap();
         assert_eq!(baseline_phases.len(), 2);
-        assert_eq!(baseline_phases[0]["cargo_result"], "Success");
+        assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["command"].as_array().unwrap()[1..],
+            baseline_phases[0]["argv"].as_array().unwrap()[1..],
             ["build", "--tests", "--workspace"]
         );
-        assert_eq!(baseline_phases[1]["cargo_result"], "Success");
+        assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["command"].as_array().unwrap()[1..],
+            baseline_phases[1]["argv"].as_array().unwrap()[1..],
             ["test", "--workspace"]
         );
     }
@@ -1013,7 +1013,7 @@ fn source_tree_typecheck_fails() {
         .stdout(contains("*** baseline"))
         .stdout(contains("build --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:6"))
-        .stdout(contains("*** cargo result: "))
+        .stdout(contains("*** result: "))
         .stdout(contains(
             "build failed in an unmutated tree, so no mutants were tested",
         ));

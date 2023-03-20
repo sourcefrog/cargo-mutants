@@ -3,6 +3,10 @@
 //! Visit the abstract syntax tree and discover things to mutate.
 //!
 //! Knowledge of the `syn` API is localized here.
+//!
+//! Walking the tree starts with some root files known to the build tool:
+//! e.g. for cargo they are identified from the targets. The tree walker then
+//! follows `mod` statements to recursively visit other referenced files.
 
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -16,46 +20,47 @@ use syn::{Attribute, ItemFn};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::path::TreeRelativePathBuf;
-use crate::source::{SourceFile, SourceTree};
+use crate::source::SourceFile;
 use crate::*;
 
-pub fn discover_mutants(source_tree: &dyn SourceTree, options: &Options) -> Result<Vec<Mutant>> {
-    walk_tree(source_tree, options).map(|x| x.0)
+pub fn discover_mutants(
+    tool: &dyn Tool,
+    root: &Utf8Path,
+    options: &Options,
+) -> Result<Vec<Mutant>> {
+    walk_tree(tool, root, options).map(|x| x.0)
 }
 
 pub fn discover_files(
-    source_tree: &dyn SourceTree,
+    tool: &dyn Tool,
+    root: &Utf8Path,
     options: &Options,
 ) -> Result<Vec<Arc<SourceFile>>> {
-    walk_tree(source_tree, options).map(|x| x.1)
+    walk_tree(tool, root, options).map(|x| x.1)
 }
 
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
 fn walk_tree(
-    source_tree: &dyn SourceTree,
+    tool: &dyn Tool,
+    root: &Utf8Path,
     options: &Options,
 ) -> Result<(Vec<Mutant>, Vec<Arc<SourceFile>>)> {
     let mut mutants = Vec::new();
     let mut seen_files: Vec<Arc<SourceFile>> = Vec::new();
-    let tree_path = source_tree.path();
 
-    let mut file_queue: VecDeque<Arc<SourceFile>> = source_tree.root_files(options)?.into();
+    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.root_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
         let package_name = source_file.package_name.clone();
-        let (mut file_mutants, more_files) = walk_file(tree_path, Arc::clone(&source_file))?;
+        let (mut file_mutants, more_files) = walk_file(root, Arc::clone(&source_file))?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
         for path in more_files {
-            file_queue.push_back(Arc::new(SourceFile::new(
-                tree_path,
-                path,
-                package_name.clone(),
-            )?));
+            file_queue.push_back(Arc::new(SourceFile::new(root, path, package_name.clone())?));
         }
         let path = &source_file.tree_relative_path;
         if let Some(examine_globset) = &options.examine_globset {
@@ -90,7 +95,7 @@ fn walk_tree(
 ///
 /// Returns the mutants found, and more files discovered by `mod` statements to visit.
 fn walk_file(
-    tree_path: &Utf8Path,
+    root: &Utf8Path,
     source_file: Arc<SourceFile>,
 ) -> Result<(Vec<Mutant>, Vec<TreeRelativePathBuf>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
@@ -98,7 +103,7 @@ fn walk_file(
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
-        tree_path: tree_path.to_owned(),
+        root: root.to_owned(),
         source_file,
         more_files: Vec::new(),
         mutants: Vec::new(),
@@ -118,7 +123,7 @@ struct DiscoveryVisitor {
     source_file: Arc<SourceFile>,
 
     /// The root of the source tree.
-    tree_path: Utf8PathBuf,
+    root: Utf8PathBuf,
 
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
@@ -282,7 +287,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             let mut tried_paths = Vec::new();
             for &ext in &[".rs", "/mod.rs"] {
                 let relative_path = TreeRelativePathBuf::new(dir.join(format!("{mod_name}{ext}")));
-                let full_path = relative_path.within(&self.tree_path);
+                let full_path = relative_path.within(&self.root);
                 if full_path.is_file() {
                     trace!("found submodule in {full_path}");
                     self.more_files.push(relative_path);

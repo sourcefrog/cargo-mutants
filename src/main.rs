@@ -20,6 +20,7 @@ mod process;
 mod scenario;
 mod source;
 mod textedit;
+mod tool;
 mod visit;
 
 use std::env;
@@ -38,7 +39,7 @@ use tracing::debug;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
-use crate::cargo::CargoSourceTree;
+use crate::cargo::CargoTool;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::log_file::{last_line, LogFile};
@@ -48,7 +49,8 @@ use crate::options::Options;
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
-use crate::source::{SourceFile, SourceTree};
+use crate::source::SourceFile;
+use crate::tool::Tool;
 use crate::visit::{discover_files, discover_mutants};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -206,15 +208,16 @@ fn main() -> Result<()> {
     } else {
         Utf8Path::new(".")
     };
-    let source_tree = CargoSourceTree::open(source_path)?;
-    let config = config::Config::read_tree_config(&source_tree)?;
+    let tool = CargoTool::new();
+    let source_tree_root = tool.find_root(source_path)?;
+    let config = config::Config::read_tree_config(&source_tree_root)?;
     debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
     if args.list_files {
-        list_files(&source_tree, &options, args.json)?;
+        list_files(&tool, &source_tree_root, &options, args.json)?;
     } else if args.list {
-        let mutants = discover_mutants(&source_tree, &options)?;
+        let mutants = discover_mutants(&tool, &source_tree_root, &options)?;
         if args.json {
             if args.diff {
                 eprintln!("--list --diff --json is not (yet) supported");
@@ -225,14 +228,15 @@ fn main() -> Result<()> {
             console::list_mutants(&mutants, args.diff);
         }
     } else {
-        let lab_outcome = lab::test_unmutated_then_all_mutants(&source_tree, options, &console)?;
+        let lab_outcome =
+            lab::test_unmutated_then_all_mutants(&tool, &source_tree_root, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())
 }
 
-fn list_files(source_tree: &CargoSourceTree, options: &Options, json: bool) -> Result<()> {
-    let files = discover_files(source_tree, options)?;
+fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool) -> Result<()> {
+    let files = discover_files(tool, source, options)?;
     let mut out = io::BufWriter::new(io::stdout());
     if json {
         let json_list = Value::Array(

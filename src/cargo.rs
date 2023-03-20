@@ -1,11 +1,9 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
 use std::env;
 use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, Instant};
 
 #[allow(unused_imports)]
 use anyhow::{anyhow, bail, Context, Result};
@@ -14,56 +12,84 @@ use serde_json::Value;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
 
-use crate::console::Console;
-use crate::log_file::LogFile;
 use crate::path::TreeRelativePathBuf;
-use crate::process::{get_command_output, Process, ProcessStatus};
+use crate::process::get_command_output;
+use crate::tool::Tool;
 use crate::*;
 
-/// How frequently to check if cargo finished.
-const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
+#[derive(Debug)]
+pub struct CargoTool {
+    // environment is currently constant across all invocations.
+    env: Vec<(String, String)>,
+}
 
-/// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
-pub fn run_cargo(
-    build_dir: &BuildDir,
-    argv: &[String],
-    log_file: &mut LogFile,
-    timeout: Duration,
-    console: &Console,
-    rustflags: &str,
-) -> Result<ProcessStatus> {
-    let start = Instant::now();
+impl CargoTool {
+    pub fn new() -> CargoTool {
+        let env = vec![
+            ("CARGO_ENCODED_RUSTFLAGS".to_owned(), rustflags()),
+            // The tests might use Insta <https://insta.rs>, and we don't want it to write
+            // updates to the source tree, and we *certainly* don't want it to write
+            // updates and then let the test pass.
+            ("INSTA_UPDATE".to_owned(), "no".to_owned()),
+        ];
+        CargoTool { env }
+    }
+}
 
-    // The tests might use Insta <https://insta.rs>, and we don't want it to write
-    // updates to the source tree, and we *certainly* don't want it to write
-    // updates and then let the test pass.
+impl Tool for CargoTool {
+    fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf> {
+        let cargo_toml_path = locate_cargo_toml(path)?;
+        let root = cargo_toml_path
+            .parent()
+            .expect("cargo_toml_path has a parent")
+            .to_owned();
+        assert!(root.is_dir());
+        Ok(root)
+    }
 
-    let env = [
-        ("CARGO_ENCODED_RUSTFLAGS", rustflags),
-        ("INSTA_UPDATE", "no"),
-    ];
-    debug!(?env);
+    fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
+        let cargo_toml_path = source_root_path.join("Cargo.toml");
+        debug!("cargo_toml_path = {}", cargo_toml_path);
+        check_interrupted()?;
+        let metadata = cargo_metadata::MetadataCommand::new()
+            .manifest_path(&cargo_toml_path)
+            .exec()
+            .context("run cargo metadata")?;
+        check_interrupted()?;
 
-    let mut child = Process::start(argv, &env, build_dir.path(), timeout, log_file)?;
-
-    let process_status = loop {
-        if let Some(exit_status) = child.poll()? {
-            break exit_status;
-        } else {
-            console.tick();
-            sleep(WAIT_POLL_INTERVAL);
+        let mut r = Vec::new();
+        for package_metadata in &metadata.workspace_packages() {
+            debug!("walk package {:?}", package_metadata.manifest_path);
+            let package_name = Arc::new(package_metadata.name.to_string());
+            for source_path in direct_package_sources(source_root_path, package_metadata)? {
+                check_interrupted()?;
+                r.push(Arc::new(SourceFile::new(
+                    source_root_path,
+                    source_path,
+                    package_name.clone(),
+                )?));
+            }
         }
-    };
+        Ok(r)
+    }
 
-    let message = format!(
-        "cargo result: {:?} in {:.3}s",
-        process_status,
-        start.elapsed().as_secs_f64()
-    );
-    log_file.message(&message);
-    debug!(cargo_result = ?process_status, elapsed = ?start.elapsed());
-    check_interrupted()?;
-    Ok(process_status)
+    fn compose_argv(
+        &self,
+        scenario: &Scenario,
+        phase: Phase,
+        options: &Options,
+    ) -> Result<Vec<String>> {
+        Ok(cargo_argv(scenario.package_name(), phase, options))
+    }
+
+    fn compose_env(
+        &self,
+        _scenario: &Scenario,
+        _phase: Phase,
+        _options: &Options,
+    ) -> Result<Vec<(String, String)>> {
+        Ok(self.env.clone())
+    }
 }
 
 /// Return the name of the cargo binary.
@@ -76,7 +102,7 @@ fn cargo_bin() -> String {
 
 /// Make up the argv for a cargo check/build/test invocation, including argv[0] as the
 /// cargo binary itself.
-pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -> Vec<String> {
+fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -> Vec<String> {
     let mut cargo_args = vec![cargo_bin(), phase.name().to_string()];
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
@@ -94,39 +120,13 @@ pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -
     cargo_args
 }
 
-/// A source tree where we can run cargo commands.
-#[derive(Debug)]
-pub struct CargoSourceTree {
-    pub root: Utf8PathBuf,
-    cargo_toml_path: Utf8PathBuf,
-}
-
-impl CargoSourceTree {
-    /// Open the source tree enclosing the given path.
-    ///
-    /// Returns an error if it's not found.
-    pub fn open(path: &Utf8Path) -> Result<CargoSourceTree> {
-        let cargo_toml_path = locate_cargo_toml(path)?;
-        let root = cargo_toml_path
-            .parent()
-            .expect("cargo_toml_path has a parent")
-            .to_owned();
-        assert!(root.is_dir());
-
-        Ok(CargoSourceTree {
-            root,
-            cargo_toml_path,
-        })
-    }
-}
-
 /// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
 ///
 /// This does not currently read config files; it's too complicated.
 ///
 /// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
 /// <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
-pub fn rustflags() -> String {
+fn rustflags() -> String {
     let mut rustflags: Vec<String> = if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS")
     {
         rustflags
@@ -150,7 +150,7 @@ pub fn rustflags() -> String {
         Vec::new()
     };
     rustflags.push("--cap-lints=allow".to_owned());
-    debug!("adjusted rustflags: {:?}", rustflags);
+    // debug!("adjusted rustflags: {:?}", rustflags);
     rustflags.join("\x1f")
 }
 
@@ -171,37 +171,6 @@ fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
         .into();
     assert!(cargo_toml_path.is_file());
     Ok(cargo_toml_path)
-}
-
-impl SourceTree for CargoSourceTree {
-    fn path(&self) -> &Utf8Path {
-        &self.root
-    }
-
-    fn root_files(&self, _options: &Options) -> Result<Vec<Arc<SourceFile>>> {
-        debug!("cargo_toml_path = {}", self.cargo_toml_path);
-        check_interrupted()?;
-        let metadata = cargo_metadata::MetadataCommand::new()
-            .manifest_path(&self.cargo_toml_path)
-            .exec()
-            .context("run cargo metadata")?;
-        check_interrupted()?;
-
-        let mut r = Vec::new();
-        for package_metadata in &metadata.workspace_packages() {
-            debug!("walk package {:?}", package_metadata.manifest_path);
-            let package_name = Arc::new(package_metadata.name.to_string());
-            for source_path in direct_package_sources(&self.root, package_metadata)? {
-                check_interrupted()?;
-                r.push(Arc::new(SourceFile::new(
-                    &self.root,
-                    source_path,
-                    package_name.clone(),
-                )?));
-            }
-        }
-        Ok(r)
-    }
 }
 
 /// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
@@ -320,17 +289,17 @@ mod test {
 
     #[test]
     fn error_opening_outside_of_crate() {
-        CargoSourceTree::open(Utf8Path::new("/")).unwrap_err();
+        CargoTool::new().find_root(Utf8Path::new("/")).unwrap_err();
     }
 
     #[test]
     fn open_subdirectory_of_crate_opens_the_crate() {
-        let source_tree = CargoSourceTree::open(Utf8Path::new("testdata/tree/factorial/src"))
+        let root = CargoTool::new()
+            .find_root(Utf8Path::new("testdata/tree/factorial/src"))
             .expect("open source tree from subdirectory");
-        let path = source_tree.path();
-        assert!(path.is_dir());
-        assert!(path.join("Cargo.toml").is_file());
-        assert!(path.join("src/bin/factorial.rs").is_file());
-        assert_eq!(path.file_name().unwrap(), OsStr::new("factorial"));
+        assert!(root.is_dir());
+        assert!(root.join("Cargo.toml").is_file());
+        assert!(root.join("src/bin/factorial.rs").is_file());
+        assert_eq!(root.file_name().unwrap(), OsStr::new("factorial"));
     }
 }

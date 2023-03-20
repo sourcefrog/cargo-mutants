@@ -1,4 +1,4 @@
-// Copyright 2022 Martin Pool
+// Copyright 2022-2023 Martin Pool
 
 //! The outcome of running a single mutation scenario, or a whole lab.
 
@@ -174,19 +174,8 @@ impl ScenarioOutcome {
         }
     }
 
-    pub fn add_phase_result(
-        &mut self,
-        phase: Phase,
-        duration: Duration,
-        cargo_result: ProcessStatus,
-        command: &[String],
-    ) {
-        self.phase_results.push(PhaseResult {
-            phase,
-            duration,
-            cargo_result,
-            command: command.to_owned(),
-        });
+    pub fn add_phase_result(&mut self, phase_result: PhaseResult) {
+        self.phase_results.push(phase_result);
     }
 
     pub fn get_log_content(&self) -> Result<String> {
@@ -198,7 +187,7 @@ impl ScenarioOutcome {
     }
 
     pub fn last_phase_result(&self) -> ProcessStatus {
-        self.phase_results.last().unwrap().cargo_result
+        self.phase_results.last().unwrap().process_status
     }
 
     pub fn phase_results(&self) -> &[PhaseResult] {
@@ -218,13 +207,13 @@ impl ScenarioOutcome {
     pub fn has_timeout(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.cargo_result.timeout())
+            .any(|pr| pr.process_status.timeout())
     }
 
     pub fn check_or_build_failed(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.phase != Phase::Test && pr.cargo_result == ProcessStatus::Failure)
+            .any(|pr| pr.phase != Phase::Test && pr.process_status == ProcessStatus::Failure)
     }
 
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
@@ -289,9 +278,9 @@ pub struct PhaseResult {
     /// How long did it take?
     pub duration: Duration,
     /// Did it succeed?
-    pub cargo_result: ProcessStatus,
+    pub process_status: ProcessStatus,
     /// What command was run, as an argv list.
-    pub command: Vec<String>,
+    pub argv: Vec<String>,
 }
 
 impl Serialize for PhaseResult {
@@ -299,12 +288,11 @@ impl Serialize for PhaseResult {
     where
         S: Serializer,
     {
-        // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("PhaseResult", 4)?;
         ss.serialize_field("phase", &self.phase)?;
         ss.serialize_field("duration", &self.duration.as_secs_f64())?;
-        ss.serialize_field("cargo_result", &self.cargo_result)?;
-        ss.serialize_field("command", &self.command)?;
+        ss.serialize_field("process_status", &self.process_status)?;
+        ss.serialize_field("argv", &self.argv)?;
         ss.end()
     }
 }

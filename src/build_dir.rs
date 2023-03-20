@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! A temporary directory containing mutated source to run cargo builds and tests.
 
@@ -42,13 +42,12 @@ impl BuildDir {
     /// Make a new build dir, copying from a source directory.
     ///
     /// [SOURCE_EXCLUDE] is excluded.
-    pub fn new(source: &dyn SourceTree, console: &Console) -> Result<BuildDir> {
-        let name_base = format!("cargo-mutants-{}-", source.path().file_name().unwrap_or(""));
+    pub fn new(source: &Utf8Path, console: &Console) -> Result<BuildDir> {
+        let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or(""));
         let source_abs = source
-            .path()
             .canonicalize_utf8()
             .expect("canonicalize source path");
-        let temp_dir = copy_tree(source.path(), &name_base, SOURCE_EXCLUDE, console)?;
+        let temp_dir = copy_tree(source, &name_base, SOURCE_EXCLUDE, console)?;
         let path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
@@ -139,8 +138,10 @@ mod test {
 
     #[test]
     fn build_dir_debug_form() {
-        let source_tree = CargoSourceTree::open("testdata/tree/factorial".into()).unwrap();
-        let build_dir = BuildDir::new(&source_tree, &Console::new()).unwrap();
+        let root = CargoTool::new()
+            .find_root("testdata/tree/factorial".into())
+            .unwrap();
+        let build_dir = BuildDir::new(&root, &Console::new()).unwrap();
         let debug_form = format!("{build_dir:?}");
         assert!(
             Regex::new(r#"^BuildDir \{ path: "[^"]*[/\\]cargo-mutants-factorial[^"]*" \}$"#)

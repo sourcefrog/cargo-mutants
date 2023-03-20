@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Manage a subprocess, with polling, timeouts, termination, and so on.
 //!
@@ -10,6 +10,7 @@
 
 use std::ffi::OsString;
 use std::io::Read;
+use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context};
@@ -19,12 +20,16 @@ use subprocess::{Popen, PopenConfig, Redirection};
 #[allow(unused_imports)]
 use tracing::{debug, debug_span, error, info, span, trace, warn, Level};
 
+use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::log_file::LogFile;
 use crate::Result;
 
 /// How long to wait for metadata-only Cargo commands.
 const METADATA_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// How frequently to check if a subprocess finished.
+const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 pub struct Process {
     child: Popen,
@@ -33,9 +38,33 @@ pub struct Process {
 }
 
 impl Process {
+    /// Run a subprocess to completion, watching for interupts, with a timeout, while
+    /// ticking the progress bar.
+    pub fn run(
+        argv: &[String],
+        env: &[(String, String)],
+        cwd: &Utf8Path,
+        timeout: Duration,
+        log_file: &mut LogFile,
+        console: &Console,
+    ) -> Result<ProcessStatus> {
+        let mut child = Process::start(argv, env, cwd, timeout, log_file)?;
+        let process_status = loop {
+            if let Some(exit_status) = child.poll()? {
+                break exit_status;
+            } else {
+                console.tick();
+                sleep(WAIT_POLL_INTERVAL);
+            }
+        };
+        log_file.message(&format!("result: {process_status:?}"));
+        Ok(process_status)
+    }
+
+    /// Launch a process, and return an object representing the child.
     pub fn start(
         argv: &[String],
-        env: &[(&str, &str)],
+        env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Duration,
         log_file: &mut LogFile,
@@ -46,7 +75,7 @@ impl Process {
         let mut os_env = PopenConfig::current_env();
         os_env.extend(
             env.iter()
-                .map(|&(k, v)| (OsString::from(k), OsString::from(v))),
+                .map(|(k, v)| (OsString::from(k), OsString::from(v))),
         );
         let child = Popen::create(
             argv,

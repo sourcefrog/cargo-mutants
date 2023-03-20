@@ -11,10 +11,10 @@ use anyhow::{anyhow, Context, Result};
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
-use crate::cargo::{cargo_argv, run_cargo, rustflags, CargoSourceTree};
 use crate::console::Console;
-use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
+use crate::outcome::{LabOutcome, Phase, PhaseResult, ScenarioOutcome};
 use crate::output::OutputDir;
+use crate::process::Process;
 use crate::visit::discover_mutants;
 use crate::*;
 
@@ -23,21 +23,20 @@ use crate::*;
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
-    source_tree: &CargoSourceTree,
+    tool: &dyn Tool,
+    source_tree: &Utf8Path,
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let output_in_dir = if let Some(o) = &options.output_in_dir {
-        o.as_path()
-    } else {
-        source_tree.path()
-    };
+    let output_in_dir: &Utf8Path = options
+        .output_in_dir
+        .as_ref()
+        .map_or(source_tree, |p| p.as_path());
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
 
-    let rustflags = rustflags();
-    let mut mutants = discover_mutants(source_tree, &options)?;
+    let mut mutants = discover_mutants(tool, source_tree, &options)?;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
@@ -52,13 +51,13 @@ pub fn test_unmutated_then_all_mutants(
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(
+            tool,
             &mut build_dirs[0],
             &output_mutex,
             &options,
             &Scenario::Baseline,
             options.test_timeout.unwrap_or(Duration::MAX),
             console,
-            &rustflags,
         )?
     };
     if !baseline_outcome.success() {
@@ -120,13 +119,13 @@ pub fn test_unmutated_then_all_mutants(
                         debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
                         // We don't care about the outcome; it's been collected into the output_dir.
                         let _outcome = test_scenario(
+                            tool,
                             &mut build_dir,
                             &output_mutex,
                             &options,
                             &Scenario::Mutant(mutant),
                             mutated_test_timeout,
                             console,
-                            &rustflags,
                         )
                         .expect("scenario test");
                     } else {
@@ -153,13 +152,13 @@ pub fn test_unmutated_then_all_mutants(
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
 fn test_scenario(
+    tool: &dyn Tool,
     build_dir: &mut BuildDir,
     output_mutex: &Mutex<OutputDir>,
     options: &Options,
     scenario: &Scenario,
     test_timeout: Duration,
     console: &Console,
-    rustflags: &str,
 ) -> Result<ScenarioOutcome> {
     let mut log_file = output_mutex
         .lock()
@@ -179,24 +178,34 @@ fn test_scenario(
         &[Phase::Build, Phase::Test]
     };
     for &phase in phases {
-        let phase_start = Instant::now();
+        let _span = debug_span!("run", ?phase).entered();
+        let start = Instant::now();
         console.scenario_phase_started(scenario, phase);
-        let cargo_argv = cargo_argv(scenario.package_name(), phase, options);
         let timeout = match phase {
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let cargo_result = run_cargo(
-            build_dir,
-            &cargo_argv,
-            &mut log_file,
+        let argv = tool.compose_argv(scenario, phase, options)?;
+        let env = tool.compose_env(scenario, phase, options)?;
+        let process_status = Process::run(
+            &argv,
+            &env,
+            build_dir.path(),
             timeout,
+            &mut log_file,
             console,
-            rustflags,
         )?;
-        outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result, &cargo_argv);
+        check_interrupted()?;
+        debug!(?process_status, elapsed = ?start.elapsed());
+        let phase_result = PhaseResult {
+            phase,
+            duration: start.elapsed(),
+            process_status,
+            argv,
+        };
+        outcome.add_phase_result(phase_result);
         console.scenario_phase_finished(scenario, phase);
-        if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
+        if (phase == Phase::Check && options.check_only) || !process_status.success() {
             break;
         }
     }
