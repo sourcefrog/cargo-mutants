@@ -239,6 +239,8 @@ impl Serialize for Mutant {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutation", 6)?;
         ss.serialize_field("package", &self.package_name())?;
+        // Package path is not currently emitted because it's absolute and harder
+        // to test.
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;

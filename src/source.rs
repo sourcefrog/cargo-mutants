@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use camino::Utf8Path;
+use camino::Utf8PathBuf;
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
@@ -23,6 +23,11 @@ pub struct SourceFile {
     /// Package within the workspace.
     pub package_name: Arc<String>,
 
+    pub package_path: Arc<Utf8PathBuf>,
+
+    /// Path to the root of the tree.
+    pub tree_path: Arc<Utf8PathBuf>,
+
     /// Path relative to the root of the tree.
     pub tree_relative_path: TreeRelativePathBuf,
 
@@ -35,21 +40,32 @@ impl SourceFile {
     ///
     /// This eagerly loads the text of the file.
     pub fn new(
-        tree_path: &Utf8Path,
+        tree_path: Arc<Utf8PathBuf>,
         tree_relative_path: TreeRelativePathBuf,
         package_name: Arc<String>,
+        package_path: Arc<Utf8PathBuf>,
     ) -> Result<SourceFile> {
-        let full_path = tree_relative_path.within(tree_path);
+        let full_path = tree_relative_path.within(&tree_path);
         let code = std::fs::read_to_string(&full_path)
             .with_context(|| format!("failed to read source of {full_path:?}"))?
             .replace("\r\n", "\n");
         Ok(SourceFile {
+            tree_path: Arc::clone(&tree_path),
             tree_relative_path,
             code: Arc::new(code),
             package_name,
+            package_path,
         })
     }
 
+    pub fn child_mod(&self, tree_relative_path: TreeRelativePathBuf) -> Result<SourceFile> {
+        SourceFile::new(
+            Arc::clone(&self.tree_path),
+            tree_relative_path,
+            Arc::clone(&self.package_name),
+            Arc::clone(&self.package_path),
+        )
+    }
     /// Return the path of this file relative to the tree root, with forward slashes.
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative_path.to_string()
@@ -66,6 +82,7 @@ mod test {
     use std::fs::File;
     use std::io::Write;
 
+    use camino::Utf8Path;
     use pretty_assertions::assert_eq;
 
     use super::*;
@@ -81,9 +98,10 @@ mod test {
             .unwrap();
 
         let source_file = SourceFile::new(
-            temp_dir_path,
+            Arc::new(temp_dir_path.to_owned()),
             file_name.parse().unwrap(),
             Arc::new("imaginary-package".to_owned()),
+            Arc::new(temp_dir_path.to_owned()),
         )
         .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
