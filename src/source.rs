@@ -20,10 +20,7 @@ use crate::path::TreeRelativePathBuf;
 /// files are written with Unix line endings.
 #[derive(Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct SourceFile {
-    /// Package within the workspace.
-    pub package_name: Arc<String>,
-
-    pub package_path: Arc<Utf8PathBuf>,
+    pub package: Package,
 
     /// Path to the root of the tree.
     pub tree_path: Arc<Utf8PathBuf>,
@@ -35,6 +32,13 @@ pub struct SourceFile {
     pub code: Arc<String>,
 }
 
+#[derive(Clone, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Package {
+    pub name: String,
+    pub relative_manifest_path: Utf8PathBuf,
+    pub version: String,
+}
+
 impl SourceFile {
     /// Construct a SourceFile representing a file within a tree.
     ///
@@ -42,8 +46,7 @@ impl SourceFile {
     pub fn new(
         tree_path: Arc<Utf8PathBuf>,
         tree_relative_path: TreeRelativePathBuf,
-        package_name: Arc<String>,
-        package_path: Arc<Utf8PathBuf>,
+        package: Package,
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(&tree_path);
         let code = std::fs::read_to_string(&full_path)
@@ -53,8 +56,7 @@ impl SourceFile {
             tree_path: Arc::clone(&tree_path),
             tree_relative_path,
             code: Arc::new(code),
-            package_name,
-            package_path,
+            package,
         })
     }
 
@@ -62,8 +64,7 @@ impl SourceFile {
         SourceFile::new(
             Arc::clone(&self.tree_path),
             tree_relative_path,
-            Arc::clone(&self.package_name),
-            Arc::clone(&self.package_path),
+            self.package.clone(),
         )
     }
     /// Return the path of this file relative to the tree root, with forward slashes.
@@ -96,12 +97,16 @@ mod test {
             .unwrap()
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
+        let package = Package {
+            name: "foo".into(),
+            relative_manifest_path: "Cargo.toml".into(),
+            version: "0.0.0".into(),
+        };
 
         let source_file = SourceFile::new(
             Arc::new(temp_dir_path.to_owned()),
             file_name.parse().unwrap(),
-            Arc::new("imaginary-package".to_owned()),
-            Arc::new(temp_dir_path.to_owned()),
+            package,
         )
         .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");

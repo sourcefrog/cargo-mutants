@@ -247,7 +247,8 @@ fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool)
                     json!({
                         // to_string so that we get it with slashes.
                         "path": source_file.tree_relative_path.to_string(),
-                        "package": source_file.package_name.as_ref(),
+                        "package": source_file.package.name,
+                        "relative_manifest_path": source_file.package.relative_manifest_path.to_slash_path(),
                     })
                 })
                 .collect(),

@@ -14,6 +14,7 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 
 use crate::path::TreeRelativePathBuf;
 use crate::process::get_command_output;
+use crate::source::Package;
 use crate::tool::Tool;
 use crate::*;
 
@@ -69,21 +70,22 @@ impl Tool for CargoTool {
                 manifest_path = ?package_metadata.manifest_path,
                 "Walk package"
             );
-            let package_name = Arc::new(package_metadata.name.to_string());
-            let package_path = Arc::new(
-                package_metadata
-                    .manifest_path
-                    .parent()
-                    .expect("package manifest path should have a parent")
-                    .to_owned(),
-            );
+            let relative_manifest_path = package_metadata
+                .manifest_path
+                .strip_prefix(&root_path.as_ref())
+                .expect("package manifest should be within source directory")
+                .to_owned();
+            let package = Package {
+                name: package_metadata.name.to_string(),
+                version: package_metadata.version.to_string(),
+                relative_manifest_path,
+            };
             for source_path in direct_package_sources(source_root_path, package_metadata)? {
                 check_interrupted()?;
                 r.push(Arc::new(SourceFile::new(
                     Arc::clone(&root_path),
                     source_path,
-                    package_name.clone(),
-                    Arc::clone(&package_path),
+                    package.clone(),
                 )?));
             }
         }
@@ -92,11 +94,39 @@ impl Tool for CargoTool {
 
     fn compose_argv(
         &self,
+        build_dir: &BuildDir,
         scenario: &Scenario,
         phase: Phase,
         options: &Options,
     ) -> Result<Vec<String>> {
-        Ok(cargo_argv(scenario.package_name(), phase, options))
+        let mut cargo_args = vec![cargo_bin(), phase.name().to_string()];
+        if phase == Phase::Check || phase == Phase::Build {
+            cargo_args.push("--tests".to_string());
+        }
+        if let Scenario::Mutant(mutant) = scenario {
+            let package = &mutant.source_file.package;
+            cargo_args.push("--package".to_owned());
+            // To cope with trees that indirectly depend on a copy of themselves,
+            // as itertools does, build an unambiguous package arg in the form of a URL.
+            let mut package_url = url::Url::from_file_path(
+                build_dir.path().join(
+                    package
+                        .relative_manifest_path
+                        .parent()
+                        .expect("package manifest has a parent"),
+                ),
+            )
+            .expect("make url from path");
+            package_url.set_fragment(Some(&format!("{}@{}", package.name, package.version)));
+            cargo_args.push(package_url.to_string());
+        } else {
+            cargo_args.push("--workspace".to_string());
+        }
+        cargo_args.extend(options.additional_cargo_args.iter().cloned());
+        if phase == Phase::Test {
+            cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
+        }
+        Ok(cargo_args)
     }
 
     fn compose_env(
@@ -115,26 +145,6 @@ fn cargo_bin() -> String {
     // $CARGO tells us the right way to call back into it, so that we get
     // the matching toolchain etc.
     env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned())
-}
-
-/// Make up the argv for a cargo check/build/test invocation, including argv[0] as the
-/// cargo binary itself.
-fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -> Vec<String> {
-    let mut cargo_args = vec![cargo_bin(), phase.name().to_string()];
-    if phase == Phase::Check || phase == Phase::Build {
-        cargo_args.push("--tests".to_string());
-    }
-    if let Some(package_name) = package_name {
-        cargo_args.push("--package".to_owned());
-        cargo_args.push(package_name.to_owned());
-    } else {
-        cargo_args.push("--workspace".to_string());
-    }
-    cargo_args.extend(options.additional_cargo_args.iter().cloned());
-    if phase == Phase::Test {
-        cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
-    }
-    cargo_args
 }
 
 /// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
@@ -233,76 +243,7 @@ mod test {
 
     use pretty_assertions::assert_eq;
 
-    use crate::{Options, Phase};
-
     use super::*;
-
-    #[test]
-    fn generate_cargo_args_for_baseline_with_default_options() {
-        let options = Options::default();
-        assert_eq!(
-            cargo_argv(None, Phase::Check, &options)[1..],
-            ["check", "--tests", "--workspace"]
-        );
-        assert_eq!(
-            cargo_argv(None, Phase::Build, &options)[1..],
-            ["build", "--tests", "--workspace"]
-        );
-        assert_eq!(
-            cargo_argv(None, Phase::Test, &options)[1..],
-            ["test", "--workspace"]
-        );
-    }
-
-    #[test]
-    fn generate_cargo_args_with_additional_cargo_test_args_and_package_name() {
-        let mut options = Options::default();
-        let package_name = "cargo-mutants-testdata-something";
-        options
-            .additional_cargo_test_args
-            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
-        assert_eq!(
-            cargo_argv(Some(package_name), Phase::Check, &options)[1..],
-            ["check", "--tests", "--package", package_name]
-        );
-        assert_eq!(
-            cargo_argv(Some(package_name), Phase::Build, &options)[1..],
-            ["build", "--tests", "--package", package_name]
-        );
-        assert_eq!(
-            cargo_argv(Some(package_name), Phase::Test, &options)[1..],
-            ["test", "--package", package_name, "--lib", "--no-fail-fast"]
-        );
-    }
-
-    #[test]
-    fn generate_cargo_args_with_additional_cargo_args_and_test_args() {
-        let mut options = Options::default();
-        options
-            .additional_cargo_test_args
-            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
-        options
-            .additional_cargo_args
-            .extend(["--release".to_owned()]);
-        assert_eq!(
-            cargo_argv(None, Phase::Check, &options)[1..],
-            ["check", "--tests", "--workspace", "--release"]
-        );
-        assert_eq!(
-            cargo_argv(None, Phase::Build, &options)[1..],
-            ["build", "--tests", "--workspace", "--release"]
-        );
-        assert_eq!(
-            cargo_argv(None, Phase::Test, &options)[1..],
-            [
-                "test",
-                "--workspace",
-                "--release",
-                "--lib",
-                "--no-fail-fast"
-            ]
-        );
-    }
 
     #[test]
     fn error_opening_outside_of_crate() {

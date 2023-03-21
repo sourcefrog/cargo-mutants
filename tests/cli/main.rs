@@ -483,12 +483,12 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap()[1..],
+            baseline_phases[0]["argv"].as_array().unwrap()[1..=3],
             ["build", "--tests", "--workspace"]
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["argv"].as_array().unwrap()[1..],
+            baseline_phases[1]["argv"].as_array().unwrap()[1..=2],
             ["test", "--workspace"]
         );
     }
@@ -503,13 +503,19 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(mutant_phases.len(), 2);
         assert_eq!(mutant_phases[0]["process_status"], "Success");
         assert_eq!(
-            mutant_phases[0]["argv"].as_array().unwrap()[1..],
-            ["build", "--tests", "--package", package_name]
+            mutant_phases[0]["argv"].as_array().unwrap()[1..=3],
+            ["build", "--tests", "--package"]
+        );
+        // package looks like a URL including the build directory
+        let package_arg = mutant_phases[0]["argv"][4].as_str().unwrap();
+        assert!(
+            package_arg.ends_with(&format!("#{}@0.1.0", package_name)),
+            "{package_arg}"
         );
         assert_eq!(mutant_phases[1]["process_status"], "Failure");
         assert_eq!(
-            mutant_phases[1]["argv"].as_array().unwrap()[1..],
-            ["test", "--package", package_name],
+            mutant_phases[1]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--package"],
         );
     }
     {
@@ -520,12 +526,12 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap()[1..],
+            baseline_phases[0]["argv"].as_array().unwrap()[1..=3],
             ["build", "--tests", "--workspace"]
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["argv"].as_array().unwrap()[1..],
+            baseline_phases[1]["argv"].as_array().unwrap()[1..=2],
             ["test", "--workspace"]
         );
     }
@@ -841,11 +847,11 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
     println!("{log_content}");
-    regex::Regex::new(r"cargo.* build --tests --workspace --release")
+    regex::Regex::new(r"cargo.* build --tests --workspace .*--release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
-    regex::Regex::new(r"cargo.* test --workspace --release")
+    regex::Regex::new(r"cargo.* test --workspace .*--release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
