@@ -5,38 +5,47 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/lib.rs"
+    "path": "src/lib.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/empty_fns.rs"
+    "path": "src/empty_fns.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/inside_mod.rs"
+    "path": "src/inside_mod.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/item_mod.rs"
+    "path": "src/item_mod.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/methods.rs"
+    "path": "src/methods.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/nested_function.rs"
+    "path": "src/nested_function.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/result.rs"
+    "path": "src/result.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/simple_fns.rs"
+    "path": "src/simple_fns.rs",
+    "relative_manifest_path": "Cargo.toml"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
-    "path": "src/struct_with_lifetime.rs"
+    "path": "src/struct_with_lifetime.rs",
+    "relative_manifest_path": "Cargo.toml"
   }
 ]

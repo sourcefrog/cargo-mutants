@@ -1,18 +1,21 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
     "package": "cargo_mutants_testdata_workspace_utils",
-    "path": "utils/src/lib.rs"
+    "path": "utils/src/lib.rs",
+    "relative_manifest_path": "utils/Cargo.toml"
   },
   {
     "package": "main",
-    "path": "main/src/main.rs"
+    "path": "main/src/main.rs",
+    "relative_manifest_path": "main/Cargo.toml"
   },
   {
     "package": "main2",
-    "path": "main2/src/main.rs"
+    "path": "main2/src/main.rs",
+    "relative_manifest_path": "main2/Cargo.toml"
   }
 ]

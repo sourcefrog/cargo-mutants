@@ -34,13 +34,4 @@ impl Scenario {
             Scenario::Mutant(mutant) => mutant.log_file_name_base(),
         }
     }
-
-    /// Return the package name that should be tested for this scenario,
-    /// or None to test every package.
-    pub fn package_name(&self) -> Option<&str> {
-        match self {
-            Scenario::Mutant(mutant) => Some(mutant.package_name()),
-            _ => None,
-        }
-    }
 }

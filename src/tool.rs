@@ -14,6 +14,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, debug_span, trace};
 
+use crate::build_dir::BuildDir;
 use crate::options::Options;
 use crate::outcome::Phase;
 use crate::scenario::Scenario;
@@ -38,6 +39,7 @@ pub trait Tool: Debug + Send + Sync {
     /// Compose argv to run one phase in this tool.
     fn compose_argv(
         &self,
+        build_dir: &BuildDir,
         scenario: &Scenario,
         phase: Phase,
         options: &Options,

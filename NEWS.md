@@ -4,6 +4,9 @@
 
 Released 2023-04-01
 
+- Fixed: Correctly handle packages, such as itertools, that have a transitive dependency on themselves,
+  by passing a fully-qualified URL to `cargo --package`.
+
 - Don't mutate `unsafe` fns.
 
 - Don't mutate functions that never return (i.e. `-> !`).
