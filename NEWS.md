@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## UNRELEASED
+## 1.2.2
+
+Released 2023-04-01
 
 - Don't mutate `unsafe` fns.
 
