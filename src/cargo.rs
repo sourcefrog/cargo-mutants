@@ -108,13 +108,21 @@ impl Tool for CargoTool {
             cargo_args.push("--package".to_owned());
             // To cope with trees that indirectly depend on a copy of themselves,
             // as itertools does, build an unambiguous package arg in the form of a URL.
+            // It must be canonicalized because it has to exactly match what cargo
+            // sees as the URL, and that seems to be based on the physical path
+            // with links resolved: in particular if /tmp is a symlink we need
+            // the destination.
             let mut package_url = url::Url::from_file_path(
-                build_dir.path().join(
-                    package
-                        .relative_manifest_path
-                        .parent()
-                        .expect("package manifest has a parent"),
-                ),
+                build_dir
+                    .path()
+                    .canonicalize_utf8()
+                    .expect("canonicalize build dir path")
+                    .join(
+                        package
+                            .relative_manifest_path
+                            .parent()
+                            .expect("package manifest has a parent"),
+                    ),
             )
             .expect("make url from path");
             package_url.set_fragment(Some(&format!("{}@{}", package.name, package.version)));
