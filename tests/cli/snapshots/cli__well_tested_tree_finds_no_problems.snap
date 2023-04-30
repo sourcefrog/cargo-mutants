@@ -1,5 +1,5 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: stdout
 ---
 Found 15 mutants to test
@@ -16,7 +16,7 @@ src/simple_fns.rs:7: replace returns_unit with () ... caught
 src/simple_fns.rs:12: replace returns_42u32 -> u32 with Default::default() ... caught
 src/simple_fns.rs:17: replace divisible_by_three -> bool with true ... caught
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... caught
-src/simple_fns.rs:26: replace double_string -> String with "".into() ... caught
+src/simple_fns.rs:26: replace double_string -> String with String::new() ... caught
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... caught
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default() ... caught
 15 mutants tested: 15 caught

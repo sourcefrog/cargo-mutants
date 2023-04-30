@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Mutate functions returning `String` to `String::new()` rather than `"".into()`: same
+  result but a bit more idiomatic.
+
 - New `--leak-dirs` option, for debugging cargo-mutants.
 
 ## 1.2.2
@@ -29,9 +34,9 @@ Released 2023-01-05
 
 - Converted most of the docs to a book available at <https://mutants.rs/>.
 
-- Fixed: Correctly find submodules that don't use mmod.rs` naming, e.g. when
-descending from `src/foo.rs` to `src/foo/bar.rs`. Also handle module names that
-are raw identifiers using `r#`. (Thanks to @kpreid for the report.)
+- Fixed: Correctly find submodules that don't use mmod.rs`naming, e.g. when
+descending from`src/foo.rs`to`src/foo/bar.rs`. Also handle module names that
+are raw identifiers using`r#`. (Thanks to @kpreid for the report.)
 
 ## 1.2.0
 

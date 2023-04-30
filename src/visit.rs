@@ -314,7 +314,7 @@ fn return_value_replacements(return_type: &syn::ReturnType) -> Vec<Cow<'static, 
                     reps.push("false".into());
                 } else if path.is_ident("String") {
                     // TODO: Detect &str etc.
-                    reps.push(r#""".into()"#.into());
+                    reps.push(r#"String::new()"#.into());
                     reps.push(r#""xyzzy".into()"#.into());
                 } else if path_is_result(path) {
                     // TODO: Try this for any path ending in "Result".

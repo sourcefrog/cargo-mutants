@@ -198,7 +198,7 @@ expression: buf
     "line": 1,
     "function": "say_hello",
     "return_type": "-> String",
-    "replacement": "\"\".into()"
+    "replacement": "String::new()"
   },
   {
     "package": "cargo-mutants-testdata-insta",
@@ -392,7 +392,7 @@ expression: buf
     "line": 5,
     "function": "try_value_coercion",
     "return_type": "-> String",
-    "replacement": "\"\".into()"
+    "replacement": "String::new()"
   },
   {
     "package": "mutants-testdata-typecheck-fails",
@@ -548,7 +548,7 @@ expression: buf
     "line": 26,
     "function": "double_string",
     "return_type": "-> String",
-    "replacement": "\"\".into()"
+    "replacement": "String::new()"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
