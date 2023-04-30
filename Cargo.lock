@@ -173,7 +173,7 @@ dependencies = [
  "serde_json",
  "similar",
  "subprocess",
- "syn 1.0.109",
+ "syn 2.0.15",
  "tempfile",
  "time",
  "toml",
