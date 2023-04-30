@@ -8,6 +8,7 @@
 //! e.g. for cargo they are identified from the targets. The tree walker then
 //! follows `mod` statements to recursively visit other referenced files.
 
+use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -125,16 +126,14 @@ impl DiscoveryVisitor {
     fn collect_fn_mutants(&mut self, return_type: &syn::ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
-        let mut new_mutants = ops_for_return_type(return_type)
+        let mut new_mutants = return_value_replacements(return_type)
             .into_iter()
-            .map(|op| {
-                Mutant::new(
-                    &self.source_file,
-                    op,
-                    &full_function_name,
-                    &return_type_str,
-                    span.into(),
-                )
+            .map(|replacement| Mutant {
+                source_file: Arc::clone(&self.source_file),
+                function_name: Arc::clone(&full_function_name),
+                return_type: Arc::clone(&return_type_str),
+                replacement,
+                span: span.into(),
             })
             .collect_vec();
         if new_mutants.is_empty() {
@@ -298,10 +297,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
     }
 }
 
-fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
-    let mut ops: Vec<MutationOp> = Vec::new();
+fn return_value_replacements(return_type: &syn::ReturnType) -> Vec<Cow<'static, str>> {
+    let mut reps: Vec<Cow<'static, str>> = Vec::new();
     match return_type {
-        syn::ReturnType::Default => ops.push(MutationOp::Unit),
+        syn::ReturnType::Default => reps.push(Cow::Borrowed("()")),
         syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
             syn::Type::Never(_) => {
                 // In theory we could mutate this to a function that just
@@ -311,18 +310,18 @@ fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
             syn::Type::Path(syn::TypePath { path, .. }) => {
                 // dbg!(&path);
                 if path.is_ident("bool") {
-                    ops.push(MutationOp::True);
-                    ops.push(MutationOp::False);
+                    reps.push("true".into());
+                    reps.push("false".into());
                 } else if path.is_ident("String") {
                     // TODO: Detect &str etc.
-                    ops.push(MutationOp::EmptyString);
-                    ops.push(MutationOp::Xyzzy);
+                    reps.push(r#"String::new()"#.into());
+                    reps.push(r#""xyzzy".into()"#.into());
                 } else if path_is_result(path) {
                     // TODO: Try this for any path ending in "Result".
                     // TODO: Recursively generate for types inside the Ok side of the Result.
-                    ops.push(MutationOp::OkDefault);
+                    reps.push("Ok(Default::default())".into());
                 } else {
-                    ops.push(MutationOp::Default)
+                    reps.push("Default::default()".into());
                 }
             }
             syn::Type::Reference(syn::TypeReference {
@@ -334,11 +333,11 @@ fn ops_for_return_type(return_type: &syn::ReturnType) -> Vec<MutationOp> {
             }
             _ => {
                 trace!(?box_typ, "Return type is not recognized, trying Default");
-                ops.push(MutationOp::Default)
+                reps.push("Default::default()".into());
             }
         },
     }
-    ops
+    reps
 }
 
 fn type_name_string(ty: &syn::Type) -> String {
