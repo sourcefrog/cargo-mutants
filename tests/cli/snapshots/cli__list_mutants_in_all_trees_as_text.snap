@@ -101,7 +101,7 @@ src/lib.rs:1: replace double -> u32 with Default::default()
 ## testdata/tree/nightly_only
 
 ```
-src/main.rs:2: replace main with ()
+src/lib.rs:2: replace box_an_int -> Box<i32> with Default::default()
 ```
 
 ## testdata/tree/override_dependency
