@@ -7,6 +7,10 @@
 
 - New `--leak-dirs` option, for debugging cargo-mutants.
 
+- Update to [syn 2.0](https://github.com/dtolnay/syn/releases/tag/2.0.0), adding support for new Rust syntax.
+
+- Minimum supported Rust version increased to 1.65 due to changes in dependencies.
+
 ## 1.2.2
 
 Released 2023-04-01

@@ -24,7 +24,7 @@ jobs:
   test:
     strategy:
       matrix:
-        toolchain: ["1.64"]
+        toolchain: ["1.65"]
 
     runs-on: ubuntu-latest
     steps:

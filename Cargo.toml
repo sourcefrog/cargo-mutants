@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "1.2.2"
+version = "1.2.3-pre"
 edition = "2021"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -8,7 +8,7 @@ description = "Find inadequately-tested code that can be removed without any tes
 repository = "https://github.com/sourcefrog/cargo-mutants"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
-rust-version = "1.64"
+rust-version = "1.65"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,7 +16,12 @@ rust-version = "1.64"
 anyhow = "1.0"
 camino = "1.0"
 cargo_metadata = "0.15"
-clap = { version = "4", features = ["deprecated", "derive", "env", "wrap_help"] }
+clap = { version = "4", features = [
+    "deprecated",
+    "derive",
+    "env",
+    "wrap_help",
+] }
 clap_complete = "4"
 console = "0.15"
 ctrlc = { version = "3.2.1", features = ["termination"] }
@@ -59,14 +64,14 @@ version = "1"
 features = ["derive"]
 
 [dependencies.syn]
-version = "1"
+version = "2"
 features = ["full", "extra-traits", "visit"]
 
 [dev-dependencies]
 assert_cmd = "2.0"
 insta = "1.12"
 lazy_static = "1.4"
-predicates = "2"
+predicates = "3"
 pretty_assertions = "1"
 regex = "1.5"
 walkdir = "2.3"

@@ -177,13 +177,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             return;
         }
         self.in_namespace(&function_name, |self_| {
-            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span);
+            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
             syn::visit::visit_item_fn(self_, i);
         });
     }
 
     /// Visit `fn foo()` within an `impl`.
-    fn visit_impl_item_method(&mut self, i: &'ast syn::ImplItemMethod) {
+    fn visit_impl_item_fn(&mut self, i: &'ast syn::ImplItemFn) {
         // Don't look inside constructors (called "new") because there's often no good
         // alternative.
         let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
@@ -201,8 +201,8 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor {
             return;
         }
         self.in_namespace(&function_name, |self_| {
-            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span);
-            syn::visit::visit_impl_item_method(self_, i)
+            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
+            syn::visit::visit_impl_item_fn(self_, i)
         });
     }
 
@@ -422,59 +422,89 @@ fn block_is_empty(block: &syn::Block) -> bool {
     block.stmts.is_empty()
 }
 
-/// True if the attribute is `#[cfg(test)]`.
+/// True if the attribute looks like `#[cfg(test)]`, or has "test"
+/// anywhere in it.
 fn attr_is_cfg_test(attr: &Attribute) -> bool {
-    if !attr.path.is_ident("cfg") {
+    if !path_is(attr.path(), &["cfg"]) {
         return false;
     }
-    if let syn::Meta::List(meta_list) = attr.parse_meta().unwrap() {
-        // We should have already checked this above, but to make sure:
-        assert!(meta_list.path.is_ident("cfg"));
-        for nested_meta in meta_list.nested {
-            if let syn::NestedMeta::Meta(syn::Meta::Path(cfg_path)) = nested_meta {
-                if cfg_path.is_ident("test") {
-                    return true;
-                }
-            }
+    let mut contains_test = false;
+    if let Err(err) = attr.parse_nested_meta(|meta| {
+        if meta.path.is_ident("test") {
+            contains_test = true;
         }
+        Ok(())
+    }) {
+        debug!(
+            ?err,
+            ?attr,
+            "Attribute is not in conventional form; skipped"
+        );
+        return false;
     }
-    false
+    contains_test
 }
 
 /// True if the attribute is `#[test]`.
 fn attr_is_test(attr: &Attribute) -> bool {
-    attr.path.is_ident("test")
+    attr.path().is_ident("test")
+}
+
+fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
+    path.segments.iter().map(|ps| &ps.ident).eq(idents.iter())
 }
 
 /// True if the attribute contains `mutants::skip`.
 ///
 /// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
-    fn path_is_mutants_skip(path: &syn::Path) -> bool {
-        path.segments
-            .iter()
-            .map(|ps| &ps.ident)
-            .eq(["mutants", "skip"].iter())
-    }
-
-    fn list_is_mutants_skip(meta_list: &syn::MetaList) -> bool {
-        return meta_list.nested.iter().any(|n| match n {
-            syn::NestedMeta::Meta(syn::Meta::Path(path)) => path_is_mutants_skip(path),
-            syn::NestedMeta::Meta(syn::Meta::List(list)) => list_is_mutants_skip(list),
-            _ => false,
-        });
-    }
-
-    if path_is_mutants_skip(&attr.path) {
+    if path_is(attr.path(), &["mutants", "skip"]) {
         return true;
     }
-
-    if let Ok(syn::Meta::List(meta_list)) = attr.parse_meta() {
-        return list_is_mutants_skip(&meta_list);
+    if !path_is(attr.path(), &["cfg_attr"]) {
+        return false;
     }
-
-    false
+    let mut skip = false;
+    if let Err(err) = attr.parse_nested_meta(|meta| {
+        if path_is(&meta.path, &["mutants", "skip"]) {
+            skip = true
+        }
+        Ok(())
+    }) {
+        debug!(
+            ?attr,
+            ?err,
+            "Attribute is not a path with attributes; skipping"
+        );
+        return false;
+    }
+    skip
 }
+//     fn path_is_mutants_skip(path: &syn::Path) -> bool {
+//         path.segments
+//             .iter()
+//             .map(|ps| &ps.ident)
+//             .eq(["mutants", "skip"].iter())
+//     }
+
+//     fn list_is_mutants_skip(meta_list: &syn::MetaList) -> bool {
+//         return meta_list.nested.iter().any(|n| match n {
+//             syn::NestedMeta::Meta(syn::Meta::Path(path)) => path_is_mutants_skip(path),
+//             syn::NestedMeta::Meta(syn::Meta::List(list)) => list_is_mutants_skip(list),
+//             _ => false,
+//         });
+//     }
+
+//     if path_is_mutants_skip(&attr.path) {
+//         return true;
+//     }
+
+//     if let Ok(syn::Meta::List(meta_list)) = attr.parse_meta() {
+//         return list_is_mutants_skip(&meta_list);
+//     }
+
+//     false
+// }
 
 #[cfg(test)]
 mod test {
