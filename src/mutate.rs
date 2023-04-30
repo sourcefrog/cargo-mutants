@@ -64,35 +64,19 @@ pub struct Mutant {
     pub source_file: Arc<SourceFile>,
 
     /// The function that's being mutated.
-    function_name: Arc<String>,
+    pub function_name: Arc<String>,
 
     /// The return type of the function, as a fragment of Rust syntax.
-    return_type: Arc<String>,
+    pub return_type: Arc<String>,
 
     /// The mutated textual region.
-    span: Span,
+    pub span: Span,
 
     /// The type of change to apply.
     pub op: MutationOp,
 }
 
 impl Mutant {
-    pub fn new(
-        source_file: &Arc<SourceFile>,
-        op: MutationOp,
-        function_name: &Arc<String>,
-        return_type: &Arc<String>,
-        span: Span,
-    ) -> Mutant {
-        Mutant {
-            source_file: Arc::clone(source_file),
-            op,
-            function_name: Arc::clone(function_name),
-            return_type: Arc::clone(return_type),
-            span,
-        }
-    }
-
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         replace_region(

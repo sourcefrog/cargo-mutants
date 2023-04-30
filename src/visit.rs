@@ -125,16 +125,14 @@ impl DiscoveryVisitor {
     fn collect_fn_mutants(&mut self, return_type: &syn::ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
-        let mut new_mutants = ops_for_return_type(return_type)
+        let mut new_mutants = ops_for_return_type(&return_type)
             .into_iter()
-            .map(|op| {
-                Mutant::new(
-                    &self.source_file,
-                    op,
-                    &full_function_name,
-                    &return_type_str,
-                    span.into(),
-                )
+            .map(|op| Mutant {
+                source_file: Arc::clone(&self.source_file),
+                op,
+                function_name: Arc::clone(&full_function_name),
+                return_type: Arc::clone(&return_type_str),
+                span: span.into(),
             })
             .collect_vec();
         if new_mutants.is_empty() {
