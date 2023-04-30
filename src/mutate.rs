@@ -2,6 +2,7 @@
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::fs;
 
@@ -20,43 +21,6 @@ use crate::textedit::{replace_region, Span};
 /// A comment marker inserted next to changes, so they can be easily found.
 const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
-/// A type of mutation operation that could be applied to a source file.
-#[derive(Debug, Eq, Clone, PartialEq, Serialize)]
-pub enum MutationOp {
-    /// Return [Default::default].
-    Default,
-    /// Replace the function body with nothing (for functions that return `()`.
-    ///
-    /// We use `()` rather than just nothing because it's clearer in messages about the mutation.
-    Unit,
-    /// Return true.
-    True,
-    /// Return false.
-    False,
-    /// Return empty string.
-    EmptyString,
-    /// Return `"xyzzy"`.
-    Xyzzy,
-    /// Return `Ok(Default::default())`
-    OkDefault,
-}
-
-impl MutationOp {
-    /// Return the text that replaces the body of the mutated span, without the marker comment.
-    fn replacement(&self) -> &'static str {
-        use MutationOp::*;
-        match self {
-            Default => "Default::default()",
-            Unit => "()",
-            True => "true",
-            False => "false",
-            EmptyString => "\"\".into()",
-            Xyzzy => "\"xyzzy\".into()",
-            OkDefault => "Ok(Default::default())",
-        }
-    }
-}
-
 /// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mutant {
@@ -72,8 +36,8 @@ pub struct Mutant {
     /// The mutated textual region.
     pub span: Span,
 
-    /// The type of change to apply.
-    pub op: MutationOp,
+    /// The replacement text.
+    pub replacement: Cow<'static, str>,
 }
 
 impl Mutant {
@@ -83,11 +47,7 @@ impl Mutant {
             &self.source_file.code,
             &self.span.start,
             &self.span.end,
-            &format!(
-                "{{\n{} {}\n}}\n",
-                self.op.replacement(),
-                MUTATION_MARKER_COMMENT
-            ),
+            &format!("{{\n{} {}\n}}\n", self.replacement, MUTATION_MARKER_COMMENT),
         )
     }
 
@@ -122,13 +82,13 @@ impl Mutant {
                 " "
             },
             type = self.return_type(),
-            replacement = self.op.replacement()
+            replacement = self.replacement
         )
     }
 
     /// Return the text inserted for this mutation.
-    pub fn replacement_text(&self) -> &'static str {
-        self.op.replacement()
+    pub fn replacement_text(&self) -> &str {
+        self.replacement.as_ref()
     }
 
     /// Return the name of the function to be mutated.
@@ -187,9 +147,9 @@ impl Mutant {
 impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Mutant")
-            .field("op", &self.op)
             .field("function_name", &self.function_name())
             .field("return_type", &self.return_type)
+            .field("replacement", &self.replacement)
             // more concise display of spans
             .field("start", &(self.span.start.line, self.span.start.column))
             .field("end", &(self.span.end.line, self.span.end.column))
@@ -227,7 +187,7 @@ impl Serialize for Mutant {
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;
         ss.serialize_field("return_type", &self.return_type.as_ref())?;
-        ss.serialize_field("replacement", self.op.replacement())?;
+        ss.serialize_field("replacement", self.replacement.as_ref())?;
         ss.end()
     }
 }
@@ -251,7 +211,7 @@ mod test {
         assert_eq!(mutants.len(), 2);
         assert_eq!(
             format!("{:?}", mutants[0]),
-            r#"Mutant { op: Unit, function_name: "main", return_type: "", start: (1, 11), end: (5, 2), package_name: "cargo-mutants-testdata-factorial" }"#
+            r#"Mutant { function_name: "main", return_type: "", replacement: "()", start: (1, 11), end: (5, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
             mutants[0].to_string(),
@@ -259,7 +219,7 @@ mod test {
         );
         assert_eq!(
             format!("{:?}", mutants[1]),
-            r#"Mutant { op: Default, function_name: "factorial", return_type: "-> u32", start: (7, 29), end: (13, 2), package_name: "cargo-mutants-testdata-factorial" }"#
+            r#"Mutant { function_name: "factorial", return_type: "-> u32", replacement: "Default::default()", start: (7, 29), end: (13, 2), package_name: "cargo-mutants-testdata-factorial" }"#
         );
         assert_eq!(
             mutants[1].to_string(),
