@@ -244,11 +244,11 @@ expression: buf
 [
   {
     "package": "nightly_only",
-    "file": "src/main.rs",
+    "file": "src/lib.rs",
     "line": 2,
-    "function": "main",
-    "return_type": "",
-    "replacement": "()"
+    "function": "box_an_int",
+    "return_type": "-> Box<i32>",
+    "replacement": "Default::default()"
   }
 ]
 ```

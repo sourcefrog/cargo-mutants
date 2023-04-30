@@ -1,3 +1,5 @@
+# `nightly_only` test tree
+
 This tree only builds on nightly Rust, and can be used to check that `cargo
 mutants` uses the corresponding `cargo` and `rustc` when building candidates.
 
