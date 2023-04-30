@@ -133,11 +133,12 @@ impl<'o> DiscoveryVisitor<'o> {
         let mut new_mutants = return_value_replacements(return_type, self.options)
             .into_iter()
             .map(|replacement| Mutant {
-                source_file: Arc::clone(&self.source_file),
                 function_name: Arc::clone(&full_function_name),
-                return_type: Arc::clone(&return_type_str),
                 replacement,
+                return_type: Arc::clone(&return_type_str),
+                source_file: Arc::clone(&self.source_file),
                 span: span.into(),
+                genre: Genre::FnValue,
             })
             .collect_vec();
         if new_mutants.is_empty() {

@@ -44,7 +44,7 @@ use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
-use crate::mutate::Mutant;
+use crate::mutate::{Genre, Mutant};
 use crate::options::Options;
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
