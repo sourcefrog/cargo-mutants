@@ -93,6 +93,11 @@ struct Args {
     #[arg(long, short = 'd')]
     dir: Option<Utf8PathBuf>,
 
+    /// return this error values from functions returning Result:
+    /// for example, `anyhow!("mutated")`.
+    #[arg(long)]
+    error: Vec<String>,
+
     /// regex for mutations to examine, matched against the names shown by `--list`.
     #[arg(long = "re", short = 'F')]
     examine_re: Vec<String>,

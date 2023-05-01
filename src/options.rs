@@ -15,7 +15,8 @@ use tracing::warn;
 
 use crate::{config::Config, *};
 
-/// Options for running experiments.
+/// Options for mutation testing, based on both command-line arguments and the
+/// config file.
 #[derive(Default, Debug, Clone)]
 pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
@@ -71,6 +72,9 @@ pub struct Options {
 
     /// Run this many `cargo build` or `cargo test` tasks in parallel.
     pub jobs: Option<usize>,
+
+    /// Insert these values as errors from functions returning `Result`.
+    pub error_values: Vec<String>,
 }
 
 impl Options {
@@ -101,6 +105,7 @@ impl Options {
                 .chain(config.additional_cargo_test_args.iter().cloned())
                 .collect(),
             check_only: args.check,
+            error_values: args.error.clone(),
             examine_names: Some(
                 RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
                     .context("Compiling examine_re regex")?,
