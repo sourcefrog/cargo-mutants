@@ -109,6 +109,14 @@ expression: buf
     "function": "even_is_ok",
     "return_type": "-> Result<u32, &'static str>",
     "replacement": "Ok(Default::default())"
+  },
+  {
+    "package": "cargo-mutants-testdata-small-well-tested",
+    "file": "src/lib.rs",
+    "line": 3,
+    "function": "even_is_ok",
+    "return_type": "-> Result<u32, &'static str>",
+    "replacement": "Err(\"injected\")"
   }
 ]
 ```
