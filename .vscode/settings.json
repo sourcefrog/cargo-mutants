@@ -1,0 +1,3 @@
+{
+  "rust-analyzer.linkedProjects": ["./testdata/tree/error_handling/Cargo.toml"]
+}
