@@ -1,4 +1,4 @@
-# `error_handling` tree
+# `error_value` tree
 
 This tree contains a function that can return an error.
 The tests ignore the error case, so would fail to detect

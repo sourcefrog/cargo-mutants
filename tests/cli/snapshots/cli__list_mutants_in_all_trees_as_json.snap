@@ -98,12 +98,12 @@ expression: buf
 ]
 ```
 
-## testdata/tree/error_handling
+## testdata/tree/error_value
 
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-small-well-tested",
+    "package": "cargo-mutants-testdata-error-value",
     "file": "src/lib.rs",
     "line": 3,
     "function": "even_is_ok",
@@ -111,7 +111,7 @@ expression: buf
     "replacement": "Ok(Default::default())"
   },
   {
-    "package": "cargo-mutants-testdata-small-well-tested",
+    "package": "cargo-mutants-testdata-error-value",
     "file": "src/lib.rs",
     "line": 3,
     "function": "even_is_ok",

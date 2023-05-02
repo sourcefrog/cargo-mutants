@@ -1,0 +1,10 @@
+---
+source: tests/cli/main.rs
+expression: stdout
+---
+Found 2 mutants to test
+Unmutated baseline ... ok
+src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Ok(Default::default()) ... caught
+src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Err("injected") ... NOT CAUGHT
+2 mutants tested: 1 missed, 1 caught
+
