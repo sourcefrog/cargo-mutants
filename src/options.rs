@@ -77,6 +77,13 @@ pub struct Options {
     pub error_values: Vec<String>,
 }
 
+fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
+    let mut v = Vec::with_capacity(a.len() + b.len());
+    v.extend_from_slice(a);
+    v.extend_from_slice(b);
+    v
+}
+
 impl Options {
     /// Build options by merging command-line args and config file.
     pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
@@ -92,20 +99,13 @@ impl Options {
         );
 
         Ok(Options {
-            additional_cargo_args: args
-                .cargo_arg
-                .iter()
-                .cloned()
-                .chain(config.additional_cargo_args.iter().cloned())
-                .collect(),
-            additional_cargo_test_args: args
-                .cargo_test_args
-                .iter()
-                .cloned()
-                .chain(config.additional_cargo_test_args.iter().cloned())
-                .collect(),
+            additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
+            additional_cargo_test_args: join_slices(
+                &args.cargo_test_args,
+                &config.additional_cargo_test_args,
+            ),
             check_only: args.check,
-            error_values: args.error.clone(),
+            error_values: join_slices(&args.error, &config.error_values),
             examine_names: Some(
                 RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
                     .context("Compiling examine_re regex")?,
