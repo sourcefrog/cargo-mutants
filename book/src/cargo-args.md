@@ -18,16 +18,26 @@ For example
 cargo mutants -- --cargo-arg=--release
 ```
 
+or in `.cargo/mutants.toml`:
+
+```toml
+additional_cargo_args = ["--all-features"]
+```
+
 ## Arguments to `cargo test`
 
 Command-line options following a `--` delimiter are passed through to
 `cargo test`. For example, this can be used to pass `--all-targets` which (unobviously)
 excludes doctests. (If the doctests are numerous and slow, and not relied upon to catch bugs, this can improve performance.)
 
-These options can also be configured statically with the `additional_cargo_test_args` key in `.cargo/mutants.toml`.
-
 ```shell
 cargo mutants -- --all-targets
+```
+
+These options can also be configured statically with the `additional_cargo_test_args` key in `.cargo/mutants.toml`:
+
+```toml
+additional_cargo_test_args = ["--jobs=1"]
 ```
 
 ## Arguments to test binaries

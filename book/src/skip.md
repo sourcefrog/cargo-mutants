@@ -7,63 +7,17 @@ Some functions may be inherently hard to cover with tests, for example if:
 * The function has side effects or performance characteristics that are hard to test.
 * You've decided the function is not important to test.
 
-## Skipping function with an attribute
+There are three ways to skip mutating some code:
 
-To mark functions so they are not mutated:
+1. [Marking the function with an attribute](attrs.md) within the source file.
+2. [Filtering by path](skip_files.md) in the config file or command line.
+3. [Filtering by function and mutant name](filter_mutants.md) in the config file or command line.
 
-1. Add a Cargo dependency on the [mutants](https://crates.io/crates/mutants)
-   crate, version "0.0.3" or later. (This must be a regular `dependency` not a
-   `dev-dependency`, because the annotation will be on non-test code.)
+The results of all these filters can be previewed using the `--list` option.
 
-2. Mark functions with `#[mutants::skip]` or other attributes containing
-   `mutants::skip` (e.g. `#[cfg_attr(test, mutants::skip)]`).
+## Which filtering method to use?
 
-The `mutants` create is tiny and the attribute has no effect on the compiled
-code. It only flags the function for cargo-mutants.
-
-**Note:** Currently, `cargo-mutants` does not (yet) evaluate attributes like
-`cfg_attr`, it only looks for the sequence `mutants::skip` in the attribute.
-
-You may want to also add a comment explaining why the function is skipped.
-
-**TODO**: Explain why `cfg_attr`.
-
-For example:
-
-```rust
-use std::time::{Duration, Instant};
-
-/// If mutated to return false, the program will spin forever.
-#[cfg_attr(test, mutants::skip)] // causes a hang
-fn should_stop() -> bool {
-    true
-}
-
-pub fn controlled_loop() {
-    let start = Instant::now();
-    for i in 0.. {
-        println!("{}", i);
-        if should_stop() {
-            break;
-        }
-        if start.elapsed() > Duration::from_secs(60 * 5) {
-            panic!("timed out");
-        }
-    }
-}
-
-mod test {
-    #[test]
-    fn controlled_loop_terminates() {
-        super::controlled_loop()
-    }
-}
-```
-
-## Skipping files
-
-**Note:** Rust's "inner macro attributes" feature is currently unstable, so
-`#![mutants::skip]` can't be used in module scope or on a `mod` statement.
-
-However, you can use the `exclude_globs` key in
-[`.cargo/mutants.toml`](config.md), or the `--exclude` command-line option, to exclude files.
+* If some particular functions are hard to test with cargo-mutants, use an attribute, so that the skip is visible in the code.
+* If a whole module is untestable, use a filter by path in the config file, so that the filter's stored in the source tree and covers any new code in that module.
+* If you want to permanently ignore a class of functions, such as `Debug` implementations, use a regex filter in the config file.
+* If you want to run cargo-mutants just once, focusing on a subset of files, functions, or mutants, use command line options to filter by name or path.
