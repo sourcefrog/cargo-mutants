@@ -1,20 +1,30 @@
 # Parallelism
 
-The `--jobs` or `-j` option allows to test multiple mutants in parallel, by spawning several Cargo processes. This can give 25-50% performance improvements, depending on the tree under test and the hardware resources available.
+After the initial test of the unmutated tree, cargo-mutants can test multiple
+mutants in parallel. This can give significant performance improvements,
+depending on the tree under test and the hardware resources available.
 
-It's common that for some periods of its execution, a single Cargo build or test job can't use all the available CPU cores. Running multiple jobs in parallel makes use of resources that would otherwise be idle.
+Even though cargo builds, rustc, and Rust's test framework launch multiple
+processes or threads, they typically can't use all available CPU cores all the
+time, and many `cargo test` runs will end up using only one core waiting for the
+last task to complete. Running multiple jobs in parallel makes use of resources
+that would otherwise be idle.
 
-However, running many jobs simultaneously may also put high demands on the
-system's RAM (by running more compile/link/test tasks simultaneously), IO
-bandwidth, and cooling (by fully using all cores).
+By default, only one job is run at a time.
 
-The best setting will depend on many factors including the behavior of your program's test suite, the amount of memory on your system, and your system's behavior under high thermal load.
+To run more, use the `--jobs` or `-j` option, or set the `CARGO_MUTANTS_JOBS`
+environment variable.
 
-The default is currently to run only one job at a time. Setting this higher than the number of CPU cores is unlikely to be helpful.
+Setting this higher than the number of CPU cores is unlikely to be helpful.
 
-`-j 4` may be a good starting point, even if you have many more CPU cores. Start
-there and watch memory and CPU usage, and tune towards a setting where all cores
-are always utilized without memory usage going too high, and without thermal
-issues.
+The best setting will depend on many factors including the behavior of your
+program's test suite, the amount of memory on your system, and your system's
+behavior under high thermal load.
 
-Because tests may be slower with high parallelism, you may see some spurious timeouts, and you may need to set `--timeout` manually to allow enough safety margin.
+`-j 4` may be a good starting point. Start there and watch memory and CPU usage,
+and tune towards a setting where all cores are fully utilized without apparent
+thrashing, memory exhaustion, or thermal issues.
+
+Because tests may be slower with high parallelism, you may see some spurious
+timeouts, and you may need to set `--timeout` manually to allow enough safety
+margin.

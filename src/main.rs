@@ -93,6 +93,11 @@ struct Args {
     #[arg(long, short = 'd')]
     dir: Option<Utf8PathBuf>,
 
+    /// return this error values from functions returning Result:
+    /// for example, `::anyhow::anyhow!("mutated")`.
+    #[arg(long)]
+    error: Vec<String>,
+
     /// regex for mutations to examine, matched against the names shown by `--list`.
     #[arg(long = "re", short = 'F')]
     examine_re: Vec<String>,
@@ -139,6 +144,10 @@ struct Args {
     /// list source files, don't run anything.
     #[arg(long)]
     list_files: bool,
+
+    /// don't read .cargo/mutants.toml.
+    #[arg(long)]
+    no_config: bool,
 
     /// don't copy the /target directory, and don't build the source tree first.
     #[arg(long)]
@@ -214,8 +223,13 @@ fn main() -> Result<()> {
     };
     let tool = CargoTool::new();
     let source_tree_root = tool.find_root(source_path)?;
-    let config = config::Config::read_tree_config(&source_tree_root)?;
-    debug!(?config);
+    let config;
+    if args.no_config {
+        config = config::Config::default();
+    } else {
+        config = config::Config::read_tree_config(&source_tree_root)?;
+        debug!(?config);
+    }
     let options = Options::new(&args, &config)?;
     debug!(?options);
     if args.list_files {

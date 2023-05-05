@@ -89,6 +89,7 @@ exclude = [
     "testdata/tree/cfg_attr_mutants_skip",
     "testdata/tree/cfg_attr_test_skip",
     "testdata/tree/dependency",
+    "testdata/tree/error_value",
     "testdata/tree/everything_skipped",
     "testdata/tree/factorial",
     "testdata/tree/fails_without_feature",

@@ -1,0 +1,3 @@
+# This crate uses just `&'static str` as an error type.
+
+error_values = ['"injected"']

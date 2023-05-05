@@ -22,6 +22,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
 mod config;
+mod error_value;
 mod jobs;
 mod trace;
 #[cfg(windows)]

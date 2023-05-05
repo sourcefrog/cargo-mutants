@@ -15,7 +15,8 @@ use tracing::warn;
 
 use crate::{config::Config, *};
 
-/// Options for running experiments.
+/// Options for mutation testing, based on both command-line arguments and the
+/// config file.
 #[derive(Default, Debug, Clone)]
 pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
@@ -71,6 +72,16 @@ pub struct Options {
 
     /// Run this many `cargo build` or `cargo test` tasks in parallel.
     pub jobs: Option<usize>,
+
+    /// Insert these values as errors from functions returning `Result`.
+    pub error_values: Vec<String>,
+}
+
+fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
+    let mut v = Vec::with_capacity(a.len() + b.len());
+    v.extend_from_slice(a);
+    v.extend_from_slice(b);
+    v
 }
 
 impl Options {
@@ -80,27 +91,20 @@ impl Options {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
         }
 
-        // If there's a
         let minimum_test_timeout = Duration::from_secs_f64(
             args.minimum_test_timeout
                 .or(config.minimum_test_timeout)
                 .unwrap_or(20f64),
         );
 
-        Ok(Options {
-            additional_cargo_args: args
-                .cargo_arg
-                .iter()
-                .cloned()
-                .chain(config.additional_cargo_args.iter().cloned())
-                .collect(),
-            additional_cargo_test_args: args
-                .cargo_test_args
-                .iter()
-                .cloned()
-                .chain(config.additional_cargo_test_args.iter().cloned())
-                .collect(),
+        let options = Options {
+            additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
+            additional_cargo_test_args: join_slices(
+                &args.cargo_test_args,
+                &config.additional_cargo_test_args,
+            ),
             check_only: args.check,
+            error_values: join_slices(&args.error, &config.error_values),
             examine_names: Some(
                 RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
                     .context("Compiling examine_re regex")?,
@@ -123,7 +127,16 @@ impl Options {
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             minimum_test_timeout,
-        })
+        };
+        options.error_values.iter().for_each(|e| {
+            if e.starts_with("Err(") {
+                warn!(
+                    "error_value option gives the value of the error, and probably should not start with Err(: got {}",
+                    e
+                );
+            }
+        });
+        Ok(options)
     }
 }
 

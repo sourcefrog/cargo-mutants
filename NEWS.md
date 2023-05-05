@@ -11,6 +11,11 @@
 
 - Minimum supported Rust version increased to 1.65 due to changes in dependencies.
 
+- New `--error` option, to cause functions returning `Result` to be mutated to return the
+  specified error.
+
+- New `--no-config` option, to disable reading `.cargo/mutants.toml`.
+
 ## 1.2.2
 
 Released 2023-04-01
