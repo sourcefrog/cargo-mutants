@@ -22,6 +22,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
 mod config;
+mod error_value;
 mod jobs;
 mod trace;
 #[cfg(windows)]
@@ -849,26 +850,6 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
         .unwrap()
         .captures(&log_content)
         .unwrap();
-}
-
-#[test]
-fn error_value_catches_untested_ok_case() {
-    // By default this tree should fail because it's configured to
-    // generate an error value, and the tests forgot to check that
-    // the code under test does return Ok.
-    let tmp_src_dir = copy_of_testdata("error_value");
-    run()
-        .arg("mutants")
-        .args(["-v", "-V", "--no-times", "--no-shuffle"])
-        .arg("-d")
-        .arg(tmp_src_dir.path())
-        .assert()
-        .code(2)
-        .stderr("")
-        .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
 }
 
 #[test]

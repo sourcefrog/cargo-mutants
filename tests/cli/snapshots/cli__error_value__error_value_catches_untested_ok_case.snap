@@ -1,5 +1,6 @@
 ---
-source: tests/cli/main.rs
+source: tests/cli/error_value.rs
+assertion_line: 26
 expression: stdout
 ---
 Found 2 mutants to test
