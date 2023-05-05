@@ -94,7 +94,7 @@ struct Args {
     dir: Option<Utf8PathBuf>,
 
     /// return this error values from functions returning Result:
-    /// for example, `anyhow!("mutated")`.
+    /// for example, `::anyhow::anyhow!("mutated")`.
     #[arg(long)]
     error: Vec<String>,
 
