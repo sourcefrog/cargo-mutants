@@ -145,6 +145,10 @@ struct Args {
     #[arg(long)]
     list_files: bool,
 
+    /// don't read .cargo/mutants.toml.
+    #[arg(long)]
+    no_config: bool,
+
     /// don't copy the /target directory, and don't build the source tree first.
     #[arg(long)]
     no_copy_target: bool,
@@ -219,8 +223,13 @@ fn main() -> Result<()> {
     };
     let tool = CargoTool::new();
     let source_tree_root = tool.find_root(source_path)?;
-    let config = config::Config::read_tree_config(&source_tree_root)?;
-    debug!(?config);
+    let config;
+    if args.no_config {
+        config = config::Config::default();
+    } else {
+        config = config::Config::read_tree_config(&source_tree_root)?;
+        debug!(?config);
+    }
     let options = Options::new(&args, &config)?;
     debug!(?options);
     if args.list_files {
