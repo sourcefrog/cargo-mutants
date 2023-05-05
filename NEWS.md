@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 1.2.3
+
+Released 2023-05-05
 
 - Mutate functions returning `String` to `String::new()` rather than `"".into()`: same
   result but a bit more idiomatic.
