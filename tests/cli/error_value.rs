@@ -72,3 +72,28 @@ fn list_mutants_with_error_value_from_command_line_list() {
             true
         }));
 }
+
+#[test]
+fn warn_if_error_value_starts_with_err() {
+    // Users might misunderstand what should be passed to --error,
+    // so give a warning.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=Err(anyhow!(\"mutant\"))",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr(predicate::str::is_empty())
+        .stdout(predicate::str::contains(
+            "error_value option gives the value of the error, and probably should not start with Err(: got Err(anyhow!(\"mutant\"))"
+        ));
+    // don't care about stdout here
+}

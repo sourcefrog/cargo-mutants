@@ -91,14 +91,13 @@ impl Options {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
         }
 
-        // If there's a
         let minimum_test_timeout = Duration::from_secs_f64(
             args.minimum_test_timeout
                 .or(config.minimum_test_timeout)
                 .unwrap_or(20f64),
         );
 
-        Ok(Options {
+        let options = Options {
             additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
             additional_cargo_test_args: join_slices(
                 &args.cargo_test_args,
@@ -128,7 +127,16 @@ impl Options {
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             minimum_test_timeout,
-        })
+        };
+        options.error_values.iter().for_each(|e| {
+            if e.starts_with("Err(") {
+                warn!(
+                    "error_value option gives the value of the error, and probably should not start with Err(: got {}",
+                    e
+                );
+            }
+        });
+        Ok(options)
     }
 }
 
