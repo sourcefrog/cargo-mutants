@@ -1,3 +1,4 @@
 # cargo-mutants configuration
 
-exclude_globs = [ "src/console.rs" ]
+error_values = ["::anyhow::anyhow!(\"mutated\")"]
+exclude_globs = ["src/console.rs"]
