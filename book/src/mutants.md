@@ -18,6 +18,7 @@ More mutation rules will be added in future releases.
 | `()`        | `()` (return unit, with no side effects) |
 | `bool`      | `true`, `false` |
 | `String`    | `String::new()`, `"xyzzy".into()` |
+| `&'_ str` . | `""`, `"xyzzy"` |
 | `Result`    | `Ok(Default::default())`, [and an error if configured](error-values.md) |
 | (any other) | `Default::default()` (and hope the type implements `Default`) |
 

@@ -475,7 +475,15 @@ expression: buf
     "line": 3,
     "function": "outer::inner::name",
     "return_type": "-> &'static str",
-    "replacement": "Default::default()"
+    "replacement": "\"\""
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/inside_mod.rs",
+    "line": 3,
+    "function": "outer::inner::name",
+    "return_type": "-> &'static str",
+    "replacement": "\"xyzzy\""
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -618,7 +626,15 @@ expression: buf
     "line": 3,
     "function": "outer::inner::name",
     "return_type": "-> &'static str",
-    "replacement": "Default::default()"
+    "replacement": "\"\""
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/module/utils/inside_mod.rs",
+    "line": 3,
+    "function": "outer::inner::name",
+    "return_type": "-> &'static str",
+    "replacement": "\"xyzzy\""
   },
   {
     "package": "cargo-mutants-testdata-with-child-directories",

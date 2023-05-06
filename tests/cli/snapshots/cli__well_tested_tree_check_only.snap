@@ -2,9 +2,10 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 15 mutants to test
+Found 16 mutants to test
 Unmutated baseline ... ok
-src/inside_mod.rs:3: replace outer::inner::name -> &'static str with Default::default() ... ok
+src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "" ... ok
+src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy" ... ok
 src/methods.rs:16: replace Foo::double with () ... ok
 src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
 src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
@@ -19,5 +20,5 @@ src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... ok
 src/simple_fns.rs:26: replace double_string -> String with String::new() ... ok
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... ok
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default() ... ok
-15 mutants tested: 15 succeeded
+16 mutants tested: 16 succeeded
 
