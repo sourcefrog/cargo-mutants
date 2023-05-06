@@ -340,6 +340,21 @@ fn return_value_replacements(
                 }
             }
             syn::Type::Reference(syn::TypeReference {
+                mutability: None,
+                elem,
+                ..
+            }) => match &**elem {
+                // needs a separate `match` because of the box.
+                syn::Type::Path(path) if path.path.is_ident("str") => {
+                    reps.push("\"\"".into());
+                    reps.push("\"xyzzy\"".into());
+                }
+                _ => {
+                    trace!(?box_typ, "Return type is not recognized, trying Default");
+                    reps.push("Default::default()".into());
+                }
+            },
+            syn::Type::Reference(syn::TypeReference {
                 mutability: Some(_),
                 ..
             }) => {

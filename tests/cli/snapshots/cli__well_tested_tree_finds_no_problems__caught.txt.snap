@@ -2,7 +2,8 @@
 source: tests/cli/main.rs
 expression: content
 ---
-src/inside_mod.rs:3: replace outer::inner::name -> &'static str with Default::default()
+src/inside_mod.rs:3: replace outer::inner::name -> &'static str with ""
+src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy"
 src/methods.rs:16: replace Foo::double with ()
 src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
 src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())

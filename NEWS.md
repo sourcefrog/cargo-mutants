@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Mutate functions returning `&'_ str` (whether a lifetime is named or not) to
+  return `"xyzzy"` and `""`.
+
 ## 1.2.3
 
 Released 2023-05-05
