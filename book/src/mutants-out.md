@@ -28,3 +28,5 @@ The output directory contains:
 The contents of the directory and the format of these files is subject to change in future versions.
 
 These files are incrementally updated while cargo-mutants runs, so other programs can read them to follow progress.
+
+There is generally no reason to include this directory in version control, so it is recommended that you add `/mutants.out*` to your `.gitignore` file. This will exclude both `mutants.out` and `mutants.out.old`.
