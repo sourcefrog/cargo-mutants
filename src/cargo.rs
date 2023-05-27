@@ -9,11 +9,13 @@ use std::sync::Arc;
 use anyhow::{anyhow, bail, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use serde_json::Value;
+use tracing::debug_span;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use crate::path::TreeRelativePathBuf;
 use crate::process::get_command_output;
+use crate::source::Package;
 use crate::tool::Tool;
 use crate::*;
 
@@ -59,18 +61,22 @@ impl Tool for CargoTool {
             .manifest_path(&cargo_toml_path)
             .exec()
             .context("run cargo metadata")?;
-        check_interrupted()?;
 
         let mut r = Vec::new();
         for package_metadata in &metadata.workspace_packages() {
-            debug!("walk package {:?}", package_metadata.manifest_path);
-            let package_name = Arc::new(package_metadata.name.to_string());
+            check_interrupted()?;
+            let _span = debug_span!("package", name = %package_metadata.name).entered();
+            debug!(manifest_path = %package_metadata.manifest_path, "walk package", );
+            let package = Arc::new(Package {
+                name: package_metadata.name.clone(),
+                manifest_path: package_metadata.manifest_path.clone(),
+            });
             for source_path in direct_package_sources(source_root_path, package_metadata)? {
                 check_interrupted()?;
                 r.push(Arc::new(SourceFile::new(
                     source_root_path,
                     source_path,
-                    package_name.clone(),
+                    &package,
                 )?));
             }
         }

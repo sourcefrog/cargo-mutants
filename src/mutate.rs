@@ -101,7 +101,7 @@ impl Mutant {
 
     /// Return the cargo package name.
     pub fn package_name(&self) -> &str {
-        &self.source_file.package_name
+        &self.source_file.package.name
     }
 
     /// Return a unified diff for the mutant.

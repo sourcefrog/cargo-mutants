@@ -43,14 +43,13 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
     let mut file_queue: VecDeque<Arc<SourceFile>> = tool.root_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
-        let package_name = source_file.package_name.clone();
         let (mut file_mutants, more_files) = walk_file(root, Arc::clone(&source_file), options)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
         for path in more_files {
-            file_queue.push_back(Arc::new(SourceFile::new(root, path, package_name.clone())?));
+            file_queue.push_back(Arc::new(SourceFile::new(root, path, &source_file.package)?));
         }
         let path = &source_file.tree_relative_path;
         if let Some(examine_globset) = &options.examine_globset {

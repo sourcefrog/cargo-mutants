@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
@@ -18,10 +18,10 @@ use crate::path::TreeRelativePathBuf;
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct SourceFile {
     /// Package within the workspace.
-    pub package_name: Arc<String>,
+    pub package: Arc<Package>,
 
     /// Path relative to the root of the tree.
     pub tree_relative_path: TreeRelativePathBuf,
@@ -37,7 +37,7 @@ impl SourceFile {
     pub fn new(
         tree_path: &Utf8Path,
         tree_relative_path: TreeRelativePathBuf,
-        package_name: Arc<String>,
+        package: &Arc<Package>,
     ) -> Result<SourceFile> {
         let full_path = tree_relative_path.within(tree_path);
         let code = std::fs::read_to_string(&full_path)
@@ -46,7 +46,7 @@ impl SourceFile {
         Ok(SourceFile {
             tree_relative_path,
             code: Arc::new(code),
-            package_name,
+            package: Arc::clone(package),
         })
     }
 
@@ -59,6 +59,15 @@ impl SourceFile {
     pub fn tree_relative_path(&self) -> &TreeRelativePathBuf {
         &self.tree_relative_path
     }
+}
+
+/// A package built and tested as a unit.
+#[derive(Debug, Eq, PartialEq)] // no clone, use Arc
+pub struct Package {
+    /// The short name of the package, like "mutants".
+    pub name: String,
+    /// For Cargo, the path of the `Cargo.toml` manifest file.
+    pub manifest_path: Utf8PathBuf,
 }
 
 #[cfg(test)]
@@ -83,7 +92,10 @@ mod test {
         let source_file = SourceFile::new(
             temp_dir_path,
             file_name.parse().unwrap(),
-            Arc::new("imaginary-package".to_owned()),
+            &Arc::new(Package {
+                name: "imaginary-package".to_owned(),
+                manifest_path: "/whatever".into(),
+            }),
         )
         .unwrap();
         assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
