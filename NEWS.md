@@ -1,14 +1,20 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.5.0
 
-- `cargo mutants` can now successfully test packages that transitively depend on a
-  different version of themselves, such as `itertools`. Previously, cargo-mutants
-  used the cargo `--package` option, which is ambiguous in this case, and now
-  it uses `--manifest-path` instead.
+_"Pickled crab"_
+
+Released 2023-05-27
+
+- `cargo mutants` can now successfully test packages that transitively depend on
+  a different version of themselves, such as `itertools`. Previously,
+  cargo-mutants used the cargo `--package` option, which is ambiguous in this
+  case, and now it uses `--manifest-path` instead.
 
 - Mutate functions returning `&'_ str` (whether a lifetime is named or not) to
   return `"xyzzy"` and `""`.
+
+- Switch to CalVer numbering.
 
 ## 1.2.3
 
@@ -61,7 +67,7 @@ are raw identifiers using`r#`. (Thanks to @kpreid for the report.)
 
 ## 1.2.0
 
-*Thankful mutants!*
+_Thankful mutants!_
 
 - Fixed: Files that are excluded by filters are also excluded from `--list-files`.
 
@@ -75,7 +81,7 @@ are raw identifiers using`r#`. (Thanks to @kpreid for the report.)
 
 Released 2022-10-31
 
-*Spooky mutants!*
+_Spooky mutants!_
 
 - Fixed support for the Mold linker, or for other options passed via `RUSTFLAGS` or `CARGO_ENCODED_RUSTFLAGS`. (See the instructions in README.md).
 
@@ -85,7 +91,7 @@ Released 2022-10-31
 
 Released 2022-10-30
 
-*Fearless concurrency!*
+_Fearless concurrency!_
 
 - cargo-mutants can now run multiple cargo build and test tasks in parallel, to make better use of machine resources and find mutants faster, controlled by `--jobs`.
 
