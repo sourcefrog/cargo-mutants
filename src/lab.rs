@@ -194,7 +194,7 @@ fn test_scenario(
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let argv = tool.compose_argv(scenario, phase, options)?;
+        let argv = tool.compose_argv(build_dir, scenario, phase, options)?;
         let env = tool.compose_env(scenario, phase, options)?;
         let process_status = Process::run(
             &argv,

@@ -66,8 +66,8 @@ impl SourceFile {
 pub struct Package {
     /// The short name of the package, like "mutants".
     pub name: String,
-    /// For Cargo, the path of the `Cargo.toml` manifest file.
-    pub manifest_path: Utf8PathBuf,
+    /// For Cargo, the path of the `Cargo.toml` manifest file, relative to the top of the tree.
+    pub relative_manifest_path: Utf8PathBuf,
 }
 
 #[cfg(test)]
@@ -94,7 +94,7 @@ mod test {
             file_name.parse().unwrap(),
             &Arc::new(Package {
                 name: "imaginary-package".to_owned(),
-                manifest_path: "/whatever".into(),
+                relative_manifest_path: "whatever/Cargo.toml".into(),
             }),
         )
         .unwrap();

@@ -17,8 +17,8 @@ use tracing::{debug, debug_span, trace};
 use crate::options::Options;
 use crate::outcome::Phase;
 use crate::scenario::Scenario;
-use crate::Result;
 use crate::SourceFile;
+use crate::{build_dir, Result};
 
 pub trait Tool: Debug + Send + Sync {
     fn name(&self) -> &str;
@@ -38,6 +38,7 @@ pub trait Tool: Debug + Send + Sync {
     /// Compose argv to run one phase in this tool.
     fn compose_argv(
         &self,
+        build_dir: &build_dir::BuildDir,
         scenario: &Scenario,
         phase: Phase,
         options: &Options,

@@ -67,7 +67,7 @@ impl Tool for CargoTool {
     /// all source files.
     fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
-        debug!("cargo_toml_path = {}", cargo_toml_path);
+        debug!(?cargo_toml_path, ?source_root_path, "find root files");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
@@ -78,10 +78,15 @@ impl Tool for CargoTool {
         for package_metadata in &metadata.workspace_packages() {
             check_interrupted()?;
             let _span = debug_span!("package", name = %package_metadata.name).entered();
-            debug!(manifest_path = %package_metadata.manifest_path, "walk package", );
+            debug!(manifest_path = %package_metadata.manifest_path, "walk package");
+            let relative_manifest_path = package_metadata
+                .manifest_path
+                .strip_prefix(source_root_path)
+                .expect("manifest_path is within source_root_path")
+                .to_owned();
             let package = Arc::new(Package {
                 name: package_metadata.name.clone(),
-                manifest_path: package_metadata.manifest_path.clone(),
+                relative_manifest_path,
             });
             for source_path in direct_package_sources(source_root_path, package_metadata)? {
                 check_interrupted()?;
@@ -97,11 +102,17 @@ impl Tool for CargoTool {
 
     fn compose_argv(
         &self,
+        build_dir: &BuildDir,
         scenario: &Scenario,
         phase: Phase,
         options: &Options,
     ) -> Result<Vec<String>> {
-        Ok(cargo_argv(scenario.package_name(), phase, options))
+        Ok(cargo_argv(
+            build_dir.path(),
+            scenario.package(),
+            phase,
+            options,
+        ))
     }
 
     fn compose_env(
@@ -124,14 +135,19 @@ fn cargo_bin() -> String {
 
 /// Make up the argv for a cargo check/build/test invocation, including argv[0] as the
 /// cargo binary itself.
-fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -> Vec<String> {
+fn cargo_argv(
+    build_dir: &Utf8Path,
+    package: Option<&Package>,
+    phase: Phase,
+    options: &Options,
+) -> Vec<String> {
     let mut cargo_args = vec![cargo_bin(), phase.name().to_string()];
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
     }
-    if let Some(package_name) = package_name {
-        cargo_args.push("--package".to_owned());
-        cargo_args.push(package_name.to_owned());
+    if let Some(package) = package {
+        cargo_args.push("--manifest-path".to_owned());
+        cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
     } else {
         cargo_args.push("--workspace".to_string());
     }
@@ -245,44 +261,69 @@ mod test {
     #[test]
     fn generate_cargo_args_for_baseline_with_default_options() {
         let options = Options::default();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
             ["check", "--tests", "--workspace"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Build, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
             ["build", "--tests", "--workspace"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Test, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Test, &options)[1..],
             ["test", "--workspace"]
         );
     }
 
     #[test]
-    fn generate_cargo_args_with_additional_cargo_test_args_and_package_name() {
+    fn generate_cargo_args_with_additional_cargo_test_args_and_package() {
         let mut options = Options::default();
         let package_name = "cargo-mutants-testdata-something";
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+        let package = Arc::new(Package {
+            name: package_name.to_owned(),
+            relative_manifest_path: relative_manifest_path.clone(),
+        });
+        let build_manifest_path = build_dir.join(relative_manifest_path);
         assert_eq!(
-            cargo_argv(Some(package_name), Phase::Check, &options)[1..],
-            ["check", "--tests", "--package", package_name]
+            cargo_argv(build_dir, Some(&package), Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--manifest-path",
+                build_manifest_path.as_str(),
+            ]
         );
         assert_eq!(
-            cargo_argv(Some(package_name), Phase::Build, &options)[1..],
-            ["build", "--tests", "--package", package_name]
+            cargo_argv(build_dir, Some(&package), Phase::Build, &options)[1..],
+            [
+                "build",
+                "--tests",
+                "--manifest-path",
+                build_manifest_path.as_str(),
+            ]
         );
         assert_eq!(
-            cargo_argv(Some(package_name), Phase::Test, &options)[1..],
-            ["test", "--package", package_name, "--lib", "--no-fail-fast"]
+            cargo_argv(build_dir, Some(&package), Phase::Test, &options)[1..],
+            [
+                "test",
+                "--manifest-path",
+                build_manifest_path.as_str(),
+                "--lib",
+                "--no-fail-fast"
+            ]
         );
     }
 
     #[test]
     fn generate_cargo_args_with_additional_cargo_args_and_test_args() {
         let mut options = Options::default();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
@@ -290,15 +331,15 @@ mod test {
             .additional_cargo_args
             .extend(["--release".to_owned()]);
         assert_eq!(
-            cargo_argv(None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
             ["check", "--tests", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Build, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
             ["build", "--tests", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Test, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Test, &options)[1..],
             [
                 "test",
                 "--workspace",

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `cargo mutants` can now successfully test packages that transitively depend on a
+  different version of themselves, such as `itertools`. Previously, cargo-mutants
+  used the cargo `--package` option, which is ambiguous in this case, and now
+  it uses `--manifest-path` instead.
+
 - Mutate functions returning `&'_ str` (whether a lifetime is named or not) to
   return `"xyzzy"` and `""`.
 
