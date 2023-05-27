@@ -15,6 +15,7 @@ use serde::Serialize;
 use similar::TextDiff;
 
 use crate::build_dir::BuildDir;
+use crate::source::Package;
 use crate::source::SourceFile;
 use crate::textedit::{replace_region, Span};
 
@@ -101,7 +102,11 @@ impl Mutant {
 
     /// Return the cargo package name.
     pub fn package_name(&self) -> &str {
-        &self.source_file.package_name
+        &self.source_file.package.name
+    }
+
+    pub fn package(&self) -> &Package {
+        &self.source_file.package
     }
 
     /// Return a unified diff for the mutant.
