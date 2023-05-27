@@ -53,6 +53,18 @@ impl Tool for CargoTool {
         Ok(root)
     }
 
+    /// Find the root files for each relevant package in the source tree.
+    ///
+    /// A source tree might include multiple packages (e.g. in a Cargo workspace),
+    /// and each package might have multiple targets (e.g. a bin and lib). Test targets
+    /// are excluded here: we run them, but we don't mutate them.
+    ///
+    /// Each target has one root file, typically but not necessarily called `src/lib.rs`
+    /// or `src/main.rs`. This function returns a list of all those files.
+    ///
+    /// After this, there is one more level of discovery, by walking those root files
+    /// to find `mod` statements, and then recursively walking those files to find
+    /// all source files.
     fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
         debug!("cargo_toml_path = {}", cargo_toml_path);
