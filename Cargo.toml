@@ -6,6 +6,7 @@ authors = ["Martin Pool"]
 license = "MIT"
 description = "Find inadequately-tested code that can be removed without any tests failing."
 repository = "https://github.com/sourcefrog/cargo-mutants"
+homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
 rust-version = "1.65"
