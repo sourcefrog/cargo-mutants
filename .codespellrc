@@ -1,0 +1,5 @@
+[codespell]
+ignore-words = .codespell.words
+skip = target,.git,mutants.out*
+builtin = clear,rare,code
+dictionary = .codespell.dict
