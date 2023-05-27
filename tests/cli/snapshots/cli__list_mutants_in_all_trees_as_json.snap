@@ -252,7 +252,16 @@ expression: buf
 ## testdata/tree/mut_ref
 
 ```json
-[]
+[
+  {
+    "package": "cargo-mutants-testdata-mut-ref",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "returns_mut_ref",
+    "return_type": "-> &mut u32",
+    "replacement": "Box::leak(Box::new(Default::default()))"
+  }
+]
 ```
 
 ## testdata/tree/never_type

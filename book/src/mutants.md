@@ -19,6 +19,7 @@ More mutation rules will be added in future releases.
 | `bool`      | `true`, `false` |
 | `String`    | `String::new()`, `"xyzzy".into()` |
 | `&'_ str` . | `""`, `"xyzzy"` |
+| `&mut ...`  | `Box::leak(Box::new(...))` |
 | `Result`    | `Ok(Default::default())`, [and an error if configured](error-values.md) |
 | (any other) | `Default::default()` (and hope the type implements `Default`) |
 

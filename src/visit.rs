@@ -357,8 +357,7 @@ fn return_value_replacements(
                 mutability: Some(_),
                 ..
             }) => {
-                // TODO: Return a Box::leak of the inner type?
-                trace!(?box_typ, "Skip function returning &mut");
+                reps.push("Box::leak(Box::new(Default::default()))".into());
             }
             _ => {
                 trace!(?box_typ, "Return type is not recognized, trying Default");

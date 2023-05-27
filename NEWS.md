@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Generate `Box::leak(Box::new(...))` as a mutation of functions returning
+  `&mut`.
+
 ## 23.5.0
 
 _"Pickled crab"_
