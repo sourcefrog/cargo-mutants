@@ -1,0 +1,5 @@
+{
+  "default": true,
+  // Allow lines that are all italics or bold; they're not meant to be headings
+  "MD036": false
+}
