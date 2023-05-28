@@ -17,7 +17,7 @@ use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::visit::Visit;
-use syn::{Attribute, ItemFn};
+use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::path::TreeRelativePathBuf;
@@ -92,13 +92,19 @@ fn walk_file(
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
+    let error_exprs = options
+        .error_values
+        .iter()
+        .map(|e| syn::parse_str(e).with_context(|| "Failed to parse error value {e:?}"))
+        .collect::<Result<Vec<Expr>>>()?;
     let mut visitor = DiscoveryVisitor {
-        root: root.to_owned(),
-        source_file,
+        error_exprs,
         more_files: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
         options,
+        root: root.to_owned(),
+        source_file,
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.more_files))
@@ -123,14 +129,19 @@ struct DiscoveryVisitor<'o> {
     more_files: Vec<TreeRelativePathBuf>,
 
     /// Global options.
+    #[allow(unused)]
     options: &'o Options,
+
+    /// Parsed error expressions, from the config file or command line.
+    error_exprs: Vec<Expr>,
 }
 
 impl<'o> DiscoveryVisitor<'o> {
-    fn collect_fn_mutants(&mut self, return_type: &syn::ReturnType, span: &proc_macro2::Span) {
+    fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
-        let mut new_mutants = return_value_replacements(return_type, self.options)
+        let mut new_mutants = self
+            .return_value_replacements(return_type)
             .into_iter()
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
@@ -163,6 +174,65 @@ impl<'o> DiscoveryVisitor<'o> {
         let r = f(self);
         assert_eq!(self.namespace_stack.pop().unwrap(), name);
         r
+    }
+
+    /// Generate replacement text for a function based on its return type.
+    fn return_value_replacements(&self, return_type: &ReturnType) -> Vec<TokenStream> {
+        let mut reps = Vec::new();
+        match return_type {
+            ReturnType::Default => reps.push(quote! { () }),
+            ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
+                syn::Type::Never(_) => {
+                    // In theory we could mutate this to a function that just
+                    // loops or sleeps, but it seems unlikely to be useful,
+                    // so generate nothing.
+                }
+                syn::Type::Path(syn::TypePath { path, .. }) => {
+                    // dbg!(&path);
+                    if path.is_ident("bool") {
+                        reps.push(quote! { true });
+                        reps.push(quote! { false });
+                    } else if path.is_ident("String") {
+                        reps.push(quote! { String::new() });
+                        reps.push(quote! { "xyzzy".into() });
+                    } else if path_is_result(path) {
+                        // TODO: Recursively generate for types inside the Ok side of the Result.
+                        reps.push(quote! { Ok(Default::default()) });
+                        reps.extend(self.error_exprs.iter().map(|error_expr| {
+                            quote! { Err(#error_expr) }
+                        }));
+                    } else {
+                        reps.push(quote! { Default::default() });
+                    }
+                }
+                syn::Type::Reference(syn::TypeReference {
+                    mutability: None,
+                    elem,
+                    ..
+                }) => match &**elem {
+                    // needs a separate `match` because of the box.
+                    syn::Type::Path(path) if path.path.is_ident("str") => {
+                        reps.push(quote! { "" });
+                        reps.push(quote! { "xyzzy" });
+                    }
+                    _ => {
+                        trace!(?box_typ, "Return type is not recognized, trying Default");
+                        reps.push(quote! { Default::default() });
+                    }
+                },
+                syn::Type::Reference(syn::TypeReference {
+                    mutability: Some(_),
+                    ..
+                }) => {
+                    reps.push(quote! { Box::leak(Box::new(Default::default())) });
+                }
+                _ => {
+                    trace!(?box_typ, "Return type is not recognized, trying Default");
+                    reps.push(quote! { Default::default() });
+                }
+            },
+        }
+        reps
     }
 }
 
@@ -292,72 +362,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     }
 }
 
-/// Generate replacement text for a function based on its return type.
-fn return_value_replacements(return_type: &syn::ReturnType, options: &Options) -> Vec<TokenStream> {
-    let mut reps = Vec::new();
+fn return_type_to_string(return_type: &ReturnType) -> String {
     match return_type {
-        syn::ReturnType::Default => reps.push(quote! { () }),
-        syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
-            syn::Type::Never(_) => {
-                // In theory we could mutate this to a function that just
-                // loops or sleeps, but it seems unlikely to be useful,
-                // so generate nothing.
-            }
-            syn::Type::Path(syn::TypePath { path, .. }) => {
-                // dbg!(&path);
-                if path.is_ident("bool") {
-                    reps.push(quote! { true });
-                    reps.push(quote! { false });
-                } else if path.is_ident("String") {
-                    reps.push(quote! { String::new() });
-                    reps.push(quote! { "xyzzy".into() });
-                } else if path_is_result(path) {
-                    // TODO: Recursively generate for types inside the Ok side of the Result.
-                    // TODO: Parse the error value only once per run.
-                    reps.push(quote! { Ok(Default::default()) });
-                    reps.extend(options.error_values.iter().map(|s| {
-                        let parsed_err: syn::Expr =
-                            syn::parse_str(s).expect("Failed to parse error value");
-                        quote! { Err(#parsed_err) }
-                    }));
-                } else {
-                    reps.push(quote! { Default::default() });
-                }
-            }
-            syn::Type::Reference(syn::TypeReference {
-                mutability: None,
-                elem,
-                ..
-            }) => match &**elem {
-                // needs a separate `match` because of the box.
-                syn::Type::Path(path) if path.path.is_ident("str") => {
-                    reps.push(quote! { "" });
-                    reps.push(quote! { "xyzzy" });
-                }
-                _ => {
-                    trace!(?box_typ, "Return type is not recognized, trying Default");
-                    reps.push(quote! { Default::default() });
-                }
-            },
-            syn::Type::Reference(syn::TypeReference {
-                mutability: Some(_),
-                ..
-            }) => {
-                reps.push(quote! { Box::leak(Box::new(Default::default())) });
-            }
-            _ => {
-                trace!(?box_typ, "Return type is not recognized, trying Default");
-                reps.push(quote! { Default::default() });
-            }
-        },
-    }
-    reps
-}
-
-fn return_type_to_string(return_type: &syn::ReturnType) -> String {
-    match return_type {
-        syn::ReturnType::Default => String::new(),
-        syn::ReturnType::Type(arrow, typ) => {
+        ReturnType::Default => String::new(),
+        ReturnType::Type(arrow, typ) => {
             format!(
                 "{} {}",
                 arrow.to_token_stream(),
@@ -525,31 +533,6 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     }
     skip
 }
-//     fn path_is_mutants_skip(path: &syn::Path) -> bool {
-//         path.segments
-//             .iter()
-//             .map(|ps| &ps.ident)
-//             .eq(["mutants", "skip"].iter())
-//     }
-
-//     fn list_is_mutants_skip(meta_list: &syn::MetaList) -> bool {
-//         return meta_list.nested.iter().any(|n| match n {
-//             syn::NestedMeta::Meta(syn::Meta::Path(path)) => path_is_mutants_skip(path),
-//             syn::NestedMeta::Meta(syn::Meta::List(list)) => list_is_mutants_skip(list),
-//             _ => false,
-//         });
-//     }
-
-//     if path_is_mutants_skip(&attr.path) {
-//         return true;
-//     }
-
-//     if let Ok(syn::Meta::List(meta_list)) = attr.parse_meta() {
-//         return list_is_mutants_skip(&meta_list);
-//     }
-
-//     false
-// }
 
 #[cfg(test)]
 mod test {
