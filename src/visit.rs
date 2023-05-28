@@ -95,7 +95,7 @@ fn walk_file(
     let error_exprs = options
         .error_values
         .iter()
-        .map(|e| syn::parse_str(e).with_context(|| "Failed to parse error value {e:?}"))
+        .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     let mut visitor = DiscoveryVisitor {
         error_exprs,

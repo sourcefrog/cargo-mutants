@@ -4,6 +4,7 @@
 
 use std::env;
 
+use indoc::indoc;
 use predicates::prelude::*;
 
 use super::{copy_of_testdata, run};
@@ -95,5 +96,29 @@ fn warn_if_error_value_starts_with_err() {
         .stdout(predicate::str::contains(
             "error_value option gives the value of the error, and probably should not start with Err(: got Err(anyhow!(\"mutant\"))"
         ));
-    // don't care about stdout here
+}
+
+#[test]
+fn fail_when_error_value_does_not_parse() {
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=shouldn't work",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(1)
+        .stderr(indoc! { "
+            Error: Failed to parse error value \"shouldn\'t work\"
+
+            Caused by:
+                unexpected token
+        "})
+        .stdout(predicate::str::is_empty());
 }
