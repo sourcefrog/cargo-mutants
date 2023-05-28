@@ -170,7 +170,6 @@ impl<'o> DiscoveryVisitor<'o> {
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     /// Visit top-level `fn foo()`.
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
-        // TODO: Filter out more inapplicable fns.
         let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
         let _span = trace_span!(
             "fn",
@@ -220,7 +219,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         let name = if let Some((_, trait_path, _)) = &i.trait_ {
             let trait_name = &trait_path.segments.last().unwrap().ident;
             if trait_name == "Default" {
-                // We don't know (yet) how to generate an interestingly-broken
+                // We don't know how to generate an interestingly-broken
                 // Default::default.
                 return;
             }
@@ -232,9 +231,6 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         } else {
             type_name
         };
-        // Make an approximately-right namespace.
-        // TODO: For `impl X for Y` get both X and Y onto the namespace
-        // stack so that we can show a more descriptive name.
         self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
     }
 
@@ -322,11 +318,9 @@ fn return_value_replacements(
                     reps.push("true".into());
                     reps.push("false".into());
                 } else if path.is_ident("String") {
-                    // TODO: Detect &str etc.
-                    reps.push(r#"String::new()"#.into());
-                    reps.push(r#""xyzzy".into()"#.into());
+                    reps.push("String::new()".into());
+                    reps.push("\"xyzzy\".into()".into());
                 } else if path_is_result(path) {
-                    // TODO: Try this for any path ending in `Result`, to handle e.g. `crate::Result`.
                     // TODO: Recursively generate for types inside the Ok side of the Result.
                     reps.push("Ok(Default::default())".into());
                     reps.extend(
