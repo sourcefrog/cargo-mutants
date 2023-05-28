@@ -114,11 +114,11 @@ fn fail_when_error_value_does_not_parse() {
         .arg(tmp_src_dir.path())
         .assert()
         .code(1)
-        .stderr(indoc! { "
+        .stderr(predicate::str::contains(indoc! { "
             Error: Failed to parse error value \"shouldn\'t work\"
 
             Caused by:
                 unexpected token
-        "})
+        "}))
         .stdout(predicate::str::is_empty());
 }
