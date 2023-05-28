@@ -416,13 +416,6 @@ fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
                 }
             }
             Group(g) => {
-                //     let has_space = match g.delimiter() {
-                //         Delimiter::Brace | Delimiter::Bracket => true,
-                //         Delimiter::Parenthesis | Delimiter::None => false,
-                //     };
-                //     if soft_space && has_space {
-                //         b.push(' ');
-                //     }
                 match g.delimiter() {
                     Delimiter::Brace => b.push('{'),
                     Delimiter::Bracket => b.push('['),
