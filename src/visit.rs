@@ -37,13 +37,18 @@ pub struct Discovered {
 ///
 /// The list of source files includes even those with no mutants.
 pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<Discovered> {
+    let error_exprs = options
+        .error_values
+        .iter()
+        .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
+        .collect::<Result<Vec<Expr>>>()?;
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
-
     let mut file_queue: VecDeque<Arc<SourceFile>> = tool.root_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
-        let (mut file_mutants, more_files) = walk_file(root, Arc::clone(&source_file), options)?;
+        let (mut file_mutants, more_files) =
+            walk_file(root, Arc::clone(&source_file), options, &error_exprs)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -87,16 +92,12 @@ fn walk_file(
     root: &Utf8Path,
     source_file: Arc<SourceFile>,
     options: &Options,
+    error_exprs: &[Expr],
 ) -> Result<(Vec<Mutant>, Vec<TreeRelativePathBuf>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
-    let error_exprs = options
-        .error_values
-        .iter()
-        .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
-        .collect::<Result<Vec<Expr>>>()?;
     let mut visitor = DiscoveryVisitor {
         error_exprs,
         more_files: Vec::new(),
@@ -133,7 +134,7 @@ struct DiscoveryVisitor<'o> {
     options: &'o Options,
 
     /// Parsed error expressions, from the config file or command line.
-    error_exprs: Vec<Expr>,
+    error_exprs: &'o [Expr],
 }
 
 impl<'o> DiscoveryVisitor<'o> {
