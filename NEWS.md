@@ -5,6 +5,10 @@
 - Generate `Box::leak(Box::new(...))` as a mutation of functions returning
   `&mut`.
 
+- Add a concept of mutant "genre", which is included in the json listing of
+  mutants. The only genre today is `FnValue`, in which a function body is
+  replaced by a value. This will in future allow filtering by genre.
+
 ## 23.5.0
 
 _"Pickled crab"_

@@ -4,14 +4,14 @@ cargo mutants generates mutants by inspecting the existing
 source code and applying a set of rules to generate new code
 that is likely to compile but have different behavior.
 
-In the current release, the only mutation pattern is to
-replace function bodies with a value of the same type.
+Mutants each have a "genre". In the current release, the only mutation genre is
+`FnValue`, where a function's body is replaced with a value of the same type.
 This checks that the tests:
 
 1. Observe any side effects of the original function.
 2. Distinguish return values.
 
-More mutation rules will be added in future releases.
+More mutation genres and patterns will be added in future releases.
 
 | Return type | Mutation pattern |
 | ----------- | ---------------- |
