@@ -8,13 +8,13 @@
 //! e.g. for cargo they are identified from the targets. The tree walker then
 //! follows `mod` statements to recursively visit other referenced files.
 
-use std::borrow::Cow;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
 use anyhow::Context;
 use itertools::Itertools;
-use quote::ToTokens;
+use proc_macro2::{Delimiter, TokenStream, TokenTree};
+use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{Attribute, ItemFn};
@@ -132,11 +132,11 @@ impl<'o> DiscoveryVisitor<'o> {
         let return_type_str = Arc::new(return_type_to_string(return_type));
         let mut new_mutants = return_value_replacements(return_type, self.options)
             .into_iter()
-            .map(|replacement| Mutant {
-                function_name: Arc::clone(&full_function_name),
-                replacement,
-                return_type: Arc::clone(&return_type_str),
+            .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
+                function_name: Arc::clone(&full_function_name),
+                return_type: Arc::clone(&return_type_str),
+                replacement: tokens_to_pretty_string(&rep),
                 span: span.into(),
                 genre: Genre::FnValue,
             })
@@ -159,8 +159,7 @@ impl<'o> DiscoveryVisitor<'o> {
     where
         F: FnOnce(&mut Self) -> T,
     {
-        let name = remove_excess_spaces(name);
-        self.namespace_stack.push(name.clone());
+        self.namespace_stack.push(name.to_owned());
         let r = f(self);
         assert_eq!(self.namespace_stack.pop().unwrap(), name);
         r
@@ -170,7 +169,7 @@ impl<'o> DiscoveryVisitor<'o> {
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     /// Visit top-level `fn foo()`.
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
-        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        let function_name = tokens_to_pretty_string(&i.sig.ident);
         let _span = trace_span!(
             "fn",
             line = i.sig.fn_token.span.start().line,
@@ -190,7 +189,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     fn visit_impl_item_fn(&mut self, i: &'ast syn::ImplItemFn) {
         // Don't look inside constructors (called "new") because there's often no good
         // alternative.
-        let function_name = remove_excess_spaces(&i.sig.ident.to_token_stream().to_string());
+        let function_name = tokens_to_pretty_string(&i.sig.ident);
         let _span = trace_span!(
             "fn",
             line = i.sig.fn_token.span.start().line,
@@ -215,19 +214,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        let type_name = type_name_string(&i.self_ty);
+        let type_name = tokens_to_pretty_string(&i.self_ty);
         let name = if let Some((_, trait_path, _)) = &i.trait_ {
             let trait_name = &trait_path.segments.last().unwrap().ident;
             if trait_name == "Default" {
-                // We don't know how to generate an interestingly-broken
-                // Default::default.
+                // Can't think of how to generate a viable different default.
                 return;
             }
-            format!(
-                "<impl {} for {}>",
-                trait_name,
-                remove_excess_spaces(&type_name)
-            )
+            format!("<impl {trait_name} for {type_name}>")
         } else {
             type_name
         };
@@ -299,13 +293,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 }
 
 /// Generate replacement text for a function based on its return type.
-fn return_value_replacements(
-    return_type: &syn::ReturnType,
-    options: &Options,
-) -> Vec<Cow<'static, str>> {
-    let mut reps: Vec<Cow<'static, str>> = Vec::new();
+fn return_value_replacements(return_type: &syn::ReturnType, options: &Options) -> Vec<TokenStream> {
+    let mut reps = Vec::new();
     match return_type {
-        syn::ReturnType::Default => reps.push(Cow::Borrowed("()")),
+        syn::ReturnType::Default => reps.push(quote! { () }),
         syn::ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
             syn::Type::Never(_) => {
                 // In theory we could mutate this to a function that just
@@ -315,22 +306,22 @@ fn return_value_replacements(
             syn::Type::Path(syn::TypePath { path, .. }) => {
                 // dbg!(&path);
                 if path.is_ident("bool") {
-                    reps.push("true".into());
-                    reps.push("false".into());
+                    reps.push(quote! { true });
+                    reps.push(quote! { false });
                 } else if path.is_ident("String") {
-                    reps.push("String::new()".into());
-                    reps.push("\"xyzzy\".into()".into());
+                    reps.push(quote! { String::new() });
+                    reps.push(quote! { "xyzzy".into() });
                 } else if path_is_result(path) {
                     // TODO: Recursively generate for types inside the Ok side of the Result.
-                    reps.push("Ok(Default::default())".into());
-                    reps.extend(
-                        options
-                            .error_values
-                            .iter()
-                            .map(|s| format!("Err({})", s).into()),
-                    );
+                    // TODO: Parse the error value only once per run.
+                    reps.push(quote! { Ok(Default::default()) });
+                    reps.extend(options.error_values.iter().map(|s| {
+                        let parsed_err: syn::Expr =
+                            syn::parse_str(s).expect("Failed to parse error value");
+                        quote! { Err(#parsed_err) }
+                    }));
                 } else {
-                    reps.push("Default::default()".into());
+                    reps.push(quote! { Default::default() });
                 }
             }
             syn::Type::Reference(syn::TypeReference {
@@ -340,31 +331,27 @@ fn return_value_replacements(
             }) => match &**elem {
                 // needs a separate `match` because of the box.
                 syn::Type::Path(path) if path.path.is_ident("str") => {
-                    reps.push("\"\"".into());
-                    reps.push("\"xyzzy\"".into());
+                    reps.push(quote! { "" });
+                    reps.push(quote! { "xyzzy" });
                 }
                 _ => {
                     trace!(?box_typ, "Return type is not recognized, trying Default");
-                    reps.push("Default::default()".into());
+                    reps.push(quote! { Default::default() });
                 }
             },
             syn::Type::Reference(syn::TypeReference {
                 mutability: Some(_),
                 ..
             }) => {
-                reps.push("Box::leak(Box::new(Default::default()))".into());
+                reps.push(quote! { Box::leak(Box::new(Default::default())) });
             }
             _ => {
                 trace!(?box_typ, "Return type is not recognized, trying Default");
-                reps.push("Default::default()".into());
+                reps.push(quote! { Default::default() });
             }
         },
     }
     reps
-}
-
-fn type_name_string(ty: &syn::Type) -> String {
-    ty.to_token_stream().to_string()
 }
 
 fn return_type_to_string(return_type: &syn::ReturnType) -> String {
@@ -374,46 +361,81 @@ fn return_type_to_string(return_type: &syn::ReturnType) -> String {
             format!(
                 "{} {}",
                 arrow.to_token_stream(),
-                remove_excess_spaces(&typ.to_token_stream().to_string())
+                tokens_to_pretty_string(typ)
             )
         }
     }
 }
 
-/// Convert a TokenStream representing a type to a String with typical Rust
-/// spacing between tokens.
+/// Convert a TokenStream representing some code to a reasonably formatted
+/// string of Rust code.
 ///
-/// This shrinks for example "& 'static" to just "&'static".
-fn remove_excess_spaces(s: &str) -> String {
-    // Walk through looking at space characters, and consider whether we can drop them
-    // without it being ambiguous.
-    //
-    // This is a bit hacky but seems to give reasonably legible results on
-    // typical trees...
-    //
-    // We could instead perhaps do this on the type enum.
-    let mut r = String::with_capacity(s.len());
-    for c in s.chars() {
-        match c {
-            ' ' if r.ends_with("->") => {}
-            ' ' => {
-                // drop spaces following any of these chars
-                if let Some(a) = r.chars().next_back() {
-                    match a {
-                        ':' | '&' | '<' | '>' => continue, // drop the space
-                        _ => {}
+/// [TokenStream] has a `to_string`, but it adds spaces in places that don't
+/// look idiomatic, so this reimplements it in a way that looks better.
+///
+/// This is probably not correctly formatted for all Rust syntax, and only tries
+/// to cover cases that can emerge from the code we generate.
+fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
+    use TokenTree::*;
+    let mut b = String::with_capacity(200);
+    let mut ts = t.to_token_stream().into_iter().peekable();
+    while let Some(tt) = ts.next() {
+        let next = ts.peek();
+        match tt {
+            Punct(p) => {
+                let pc = p.as_char();
+                b.push(pc);
+                if b.ends_with(" ->") || pc == ',' {
+                    b.push(' ');
+                }
+            }
+            Ident(_) | Literal(_) => {
+                match tt {
+                    Literal(l) => b.push_str(&l.to_string()),
+                    Ident(i) => b.push_str(&i.to_string()),
+                    _ => unreachable!(),
+                };
+                if let Some(next) = next {
+                    match next {
+                        Ident(_) | Literal(_) => b.push(' '),
+                        Punct(p) => match p.as_char() {
+                            ',' | ';' | '<' | '>' | ':' | '.' | '!' => (),
+                            _ => b.push(' '),
+                        },
+                        Group(_) => (),
                     }
                 }
             }
-            ':' | ',' | '<' | '>' if r.ends_with(' ') => {
-                // drop spaces preceding these chars
-                r.pop();
+            Group(g) => {
+                //     let has_space = match g.delimiter() {
+                //         Delimiter::Brace | Delimiter::Bracket => true,
+                //         Delimiter::Parenthesis | Delimiter::None => false,
+                //     };
+                //     if soft_space && has_space {
+                //         b.push(' ');
+                //     }
+                match g.delimiter() {
+                    Delimiter::Brace => b.push('{'),
+                    Delimiter::Bracket => b.push('['),
+                    Delimiter::Parenthesis => b.push('('),
+                    Delimiter::None => (),
+                }
+                b.push_str(&tokens_to_pretty_string(g.stream()));
+                match g.delimiter() {
+                    Delimiter::Brace => b.push('}'),
+                    Delimiter::Bracket => b.push(']'),
+                    Delimiter::Parenthesis => b.push(')'),
+                    Delimiter::None => (),
+                }
             }
-            _ => {}
         }
-        r.push(c)
     }
-    r
+    debug_assert!(
+        !b.ends_with(' '),
+        "generated a trailing space: ts={ts:?}, b={b:?}",
+        ts = t.to_token_stream(),
+    );
+    b
 }
 
 fn path_is_result(path: &syn::Path) -> bool {
@@ -531,6 +553,8 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
+    use quote::quote;
+
     #[test]
     fn path_is_result() {
         let path: syn::Path = syn::parse_quote! { Result<(), ()> };
@@ -538,11 +562,19 @@ mod test {
     }
 
     #[test]
-    fn remove_excess_spaces() {
-        use super::remove_excess_spaces as rem;
+    fn tokens_to_pretty_string() {
+        use super::tokens_to_pretty_string;
 
-        assert_eq!(rem("<impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next -> Option < Self ::  Item >"),
-    "<impl Iterator for MergeTrees<AE, BE, AIT, BIT>>::next -> Option<Self::Item>");
-        assert_eq!(rem("Lex < 'buf >::take"), "Lex<'buf>::take");
+        assert_eq!(
+            tokens_to_pretty_string(quote! {
+                <impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next
+                -> Option < Self ::  Item >
+            }),
+            "<impl Iterator for MergeTrees<AE, BE, AIT, BIT>>::next -> Option<Self::Item>"
+        );
+        assert_eq!(
+            tokens_to_pretty_string(quote! { Lex < 'buf >::take }),
+            "Lex<'buf>::take"
+        );
     }
 }

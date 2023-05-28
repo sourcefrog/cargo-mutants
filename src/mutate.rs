@@ -2,10 +2,8 @@
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
-use std::borrow::Cow;
 use std::fmt;
 use std::fs;
-
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -45,7 +43,7 @@ pub struct Mutant {
     pub span: Span,
 
     /// The replacement text.
-    pub replacement: Cow<'static, str>,
+    pub replacement: String,
 
     /// What general category of mutant this is.
     pub genre: Genre,
@@ -99,7 +97,7 @@ impl Mutant {
 
     /// Return the text inserted for this mutation.
     pub fn replacement_text(&self) -> &str {
-        self.replacement.as_ref()
+        self.replacement.as_str()
     }
 
     /// Return the name of the function to be mutated.
@@ -203,7 +201,7 @@ impl Serialize for Mutant {
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;
         ss.serialize_field("return_type", &self.return_type.as_ref())?;
-        ss.serialize_field("replacement", self.replacement.as_ref())?;
+        ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
     }
