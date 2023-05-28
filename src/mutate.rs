@@ -23,7 +23,7 @@ use crate::textedit::{replace_region, Span};
 const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
 /// Various broad categories of mutants.
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize)]
 pub enum Genre {
     /// Replace the body of a function with a fixed value.
     FnValue,
@@ -197,13 +197,14 @@ impl Serialize for Mutant {
         S: Serializer,
     {
         // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Mutation", 6)?;
+        let mut ss = serializer.serialize_struct("Mutation", 7)?;
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;
         ss.serialize_field("return_type", &self.return_type.as_ref())?;
         ss.serialize_field("replacement", self.replacement.as_ref())?;
+        ss.serialize_field("genre", &self.genre)?;
         ss.end()
     }
 }

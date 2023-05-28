@@ -9,7 +9,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 3,
     "function": "outer::inner::name",
     "return_type": "-> &'static str",
-    "replacement": "\"\""
+    "replacement": "\"\"",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -17,7 +18,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 3,
     "function": "outer::inner::name",
     "return_type": "-> &'static str",
-    "replacement": "\"xyzzy\""
+    "replacement": "\"xyzzy\"",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -25,7 +27,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 16,
     "function": "Foo::double",
     "return_type": "",
-    "replacement": "()"
+    "replacement": "()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -33,7 +36,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 22,
     "function": "<impl Display for Foo>::fmt",
     "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
+    "replacement": "Ok(Default::default())",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -41,7 +45,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 28,
     "function": "<impl Debug for &Foo>::fmt",
     "return_type": "-> fmt::Result",
-    "replacement": "Ok(Default::default())"
+    "replacement": "Ok(Default::default())",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -49,7 +54,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 1,
     "function": "has_nested",
     "return_type": "-> u32",
-    "replacement": "Default::default()"
+    "replacement": "Default::default()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -57,7 +63,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 2,
     "function": "has_nested::inner",
     "return_type": "-> u32",
-    "replacement": "Default::default()"
+    "replacement": "Default::default()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -65,7 +72,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 5,
     "function": "simple_result",
     "return_type": "-> Result<&'static str, ()>",
-    "replacement": "Ok(Default::default())"
+    "replacement": "Ok(Default::default())",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -73,7 +81,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 9,
     "function": "error_if_negative",
     "return_type": "-> Result<(), ()>",
-    "replacement": "Ok(Default::default())"
+    "replacement": "Ok(Default::default())",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -81,7 +90,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 7,
     "function": "returns_unit",
     "return_type": "",
-    "replacement": "()"
+    "replacement": "()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -89,7 +99,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 12,
     "function": "returns_42u32",
     "return_type": "-> u32",
-    "replacement": "Default::default()"
+    "replacement": "Default::default()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -97,7 +108,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 17,
     "function": "divisible_by_three",
     "return_type": "-> bool",
-    "replacement": "true"
+    "replacement": "true",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -105,7 +117,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 17,
     "function": "divisible_by_three",
     "return_type": "-> bool",
-    "replacement": "false"
+    "replacement": "false",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -113,7 +126,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 26,
     "function": "double_string",
     "return_type": "-> String",
-    "replacement": "String::new()"
+    "replacement": "String::new()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -121,7 +135,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 26,
     "function": "double_string",
     "return_type": "-> String",
-    "replacement": "\"xyzzy\".into()"
+    "replacement": "\"xyzzy\".into()",
+    "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
@@ -129,6 +144,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 14,
     "function": "Lex<'buf>::buf_len",
     "return_type": "-> usize",
-    "replacement": "Default::default()"
+    "replacement": "Default::default()",
+    "genre": "FnValue"
   }
 ]

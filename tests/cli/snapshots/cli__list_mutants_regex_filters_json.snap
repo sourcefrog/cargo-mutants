@@ -1,5 +1,5 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
@@ -9,6 +9,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 17,
     "function": "divisible_by_three",
     "return_type": "-> bool",
-    "replacement": "true"
+    "replacement": "true",
+    "genre": "FnValue"
   }
 ]
