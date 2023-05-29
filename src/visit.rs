@@ -18,7 +18,7 @@ use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{
-    AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, ItemFn, PathArguments,
+    AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, ItemFn, Path, PathArguments,
     ReturnType, Type,
 };
 use tracing::{debug, debug_span, trace, trace_span, warn};
@@ -325,12 +325,20 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
         }
         syn::Type::Path(syn::TypePath { path, .. }) => {
             // dbg!(&path);
+            // TODO: () to (), just to be more clear and concise than Default::default().
             if path.is_ident("bool") {
                 reps.push(quote! { true });
                 reps.push(quote! { false });
             } else if path.is_ident("String") {
                 reps.push(quote! { String::new() });
                 reps.push(quote! { "xyzzy".into() });
+            } else if path_is_unsigned(path) {
+                reps.push(quote! { 0 });
+                reps.push(quote! { 1 });
+            } else if path_is_signed(path) {
+                reps.push(quote! { 0 });
+                reps.push(quote! { 1 });
+                reps.push(quote! { -1 });
             } else if let Some(ok_type) = result_ok_type(path) {
                 // TODO: Recursively generate for types inside the Ok side of the Result.
                 trace!(?ok_type, "Found Result");
@@ -396,6 +404,18 @@ fn return_type_to_string(return_type: &ReturnType) -> String {
             )
         }
     }
+}
+
+fn path_is_unsigned(path: &Path) -> bool {
+    ["u8", "u16", "u32", "u64", "u128", "usize"]
+        .iter()
+        .any(|s| path.is_ident(s))
+}
+
+fn path_is_signed(path: &Path) -> bool {
+    ["i8", "i16", "i32", "i64", "i128", "isize"]
+        .iter()
+        .any(|s| path.is_ident(s))
 }
 
 /// Convert a TokenStream representing some code to a reasonably formatted
@@ -608,6 +628,24 @@ mod test {
                 "Ok(Err(anyhow!(\"mutated\")))",
                 "Err(anyhow!(\"mutated\"))"
             ]
+        );
+    }
+
+    #[test]
+    fn u16_replacements() {
+        let reps = return_type_replacements(&parse_quote! { -> u16 }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["0", "1",]
+        );
+    }
+
+    #[test]
+    fn isize_replacements() {
+        let reps = return_type_replacements(&parse_quote! { -> isize }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["0", "1", "-1"]
         );
     }
 }

@@ -12,7 +12,16 @@ expression: buf
     "line": 9,
     "function": "takes_one_arg",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "mutants-testdata-already-failing-doctests",
+    "file": "src/lib.rs",
+    "line": 9,
+    "function": "takes_one_arg",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -28,7 +37,16 @@ expression: buf
     "line": 1,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "mutants-testdata-already-failing-tests",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -60,7 +78,16 @@ expression: buf
     "line": 1,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-cdylib",
+    "file": "src/entry.rs",
+    "line": 1,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -82,7 +109,16 @@ expression: buf
     "line": 17,
     "function": "double",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
+    "file": "src/lib.rs",
+    "line": 17,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -98,7 +134,16 @@ expression: buf
     "line": 1,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-dependency",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -114,7 +159,16 @@ expression: buf
     "line": 3,
     "function": "even_is_ok",
     "return_type": "-> Result<u32, &'static str>",
-    "replacement": "Ok(Default::default())",
+    "replacement": "Ok(0)",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-error-value",
+    "file": "src/lib.rs",
+    "line": 3,
+    "function": "even_is_ok",
+    "return_type": "-> Result<u32, &'static str>",
+    "replacement": "Ok(1)",
     "genre": "FnValue"
   },
   {
@@ -154,7 +208,16 @@ expression: buf
     "line": 7,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-factorial",
+    "file": "src/bin/factorial.rs",
+    "line": 7,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -170,7 +233,16 @@ expression: buf
     "line": 9,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-fails-without-feature",
+    "file": "src/bin/factorial.rs",
+    "line": 9,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -220,7 +292,16 @@ expression: buf
     "line": 25,
     "function": "controlled_loop",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-hang-when-mutated",
+    "file": "src/lib.rs",
+    "line": 25,
+    "function": "controlled_loop",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -261,7 +342,16 @@ expression: buf
     "line": 1,
     "function": "double",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-integration-tests",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "double",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -365,7 +455,16 @@ expression: buf
     "line": 5,
     "function": "double_factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-relative-dependency",
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "double_factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -406,7 +505,16 @@ expression: buf
     "line": 4,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-small-well-tested",
+    "file": "src/lib.rs",
+    "line": 4,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -422,7 +530,16 @@ expression: buf
     "line": 5,
     "function": "some_fn",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-strict-warnings",
+    "file": "src/lib.rs",
+    "line": 5,
+    "function": "some_fn",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -479,7 +596,25 @@ expression: buf
     "line": 1,
     "function": "one",
     "return_type": "-> i32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/a.rs",
+    "line": 1,
+    "function": "one",
+    "return_type": "-> i32",
+    "replacement": "1",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/a.rs",
+    "line": 1,
+    "function": "one",
+    "return_type": "-> i32",
+    "replacement": "-1",
     "genre": "FnValue"
   },
   {
@@ -488,7 +623,25 @@ expression: buf
     "line": 1,
     "function": "one_untested",
     "return_type": "-> i32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/b.rs",
+    "line": 1,
+    "function": "one_untested",
+    "return_type": "-> i32",
+    "replacement": "1",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/b.rs",
+    "line": 1,
+    "function": "one_untested",
+    "return_type": "-> i32",
+    "replacement": "-1",
     "genre": "FnValue"
   },
   {
@@ -497,7 +650,25 @@ expression: buf
     "line": 1,
     "function": "one",
     "return_type": "-> i32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/c.rs",
+    "line": 1,
+    "function": "one",
+    "return_type": "-> i32",
+    "replacement": "1",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-unapply",
+    "file": "src/c.rs",
+    "line": 1,
+    "function": "one",
+    "return_type": "-> i32",
+    "replacement": "-1",
     "genre": "FnValue"
   }
 ]
@@ -564,7 +735,16 @@ expression: buf
     "line": 1,
     "function": "has_nested",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -573,7 +753,16 @@ expression: buf
     "line": 2,
     "function": "has_nested::inner",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -618,7 +807,16 @@ expression: buf
     "line": 12,
     "function": "returns_42u32",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/simple_fns.rs",
+    "line": 12,
+    "function": "returns_42u32",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -663,7 +861,16 @@ expression: buf
     "line": 14,
     "function": "Lex<'buf>::buf_len",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/struct_with_lifetime.rs",
+    "line": 14,
+    "function": "Lex<'buf>::buf_len",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -679,7 +886,16 @@ expression: buf
     "line": 1,
     "function": "double",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/methods.rs",
+    "line": 1,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -688,7 +904,16 @@ expression: buf
     "line": 1,
     "function": "double",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/module/module_methods.rs",
+    "line": 1,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -715,7 +940,16 @@ expression: buf
     "line": 1,
     "function": "has_nested",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/module/utils/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -724,7 +958,16 @@ expression: buf
     "line": 2,
     "function": "has_nested::inner",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/module/utils/nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -733,7 +976,16 @@ expression: buf
     "line": 1,
     "function": "has_nested",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -742,7 +994,16 @@ expression: buf
     "line": 2,
     "function": "has_nested::inner",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]
@@ -758,7 +1019,25 @@ expression: buf
     "line": 1,
     "function": "triple",
     "return_type": "-> i32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo_mutants_testdata_workspace_utils",
+    "file": "utils/src/lib.rs",
+    "line": 1,
+    "function": "triple",
+    "return_type": "-> i32",
+    "replacement": "1",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo_mutants_testdata_workspace_utils",
+    "file": "utils/src/lib.rs",
+    "line": 1,
+    "function": "triple",
+    "return_type": "-> i32",
+    "replacement": "-1",
     "genre": "FnValue"
   },
   {
@@ -767,7 +1046,16 @@ expression: buf
     "line": 11,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "main",
+    "file": "main/src/main.rs",
+    "line": 11,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -776,7 +1064,25 @@ expression: buf
     "line": 9,
     "function": "triple_3",
     "return_type": "-> i32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "main2",
+    "file": "main2/src/main.rs",
+    "line": 9,
+    "function": "triple_3",
+    "return_type": "-> i32",
+    "replacement": "1",
+    "genre": "FnValue"
+  },
+  {
+    "package": "main2",
+    "file": "main2/src/main.rs",
+    "line": 9,
+    "function": "triple_3",
+    "return_type": "-> i32",
+    "replacement": "-1",
     "genre": "FnValue"
   }
 ]

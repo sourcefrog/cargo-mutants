@@ -12,6 +12,9 @@
 - Recurse into return types, so that for example `Result<bool>` can generate
   `Ok(true)` and `Ok(false)`.
 
+- Generate specific values for integers: [0, 1] for unsigned integers and
+  [0, 1, -1] for signed integers.
+
 ## 23.5.0
 
 _"Pickled crab"_

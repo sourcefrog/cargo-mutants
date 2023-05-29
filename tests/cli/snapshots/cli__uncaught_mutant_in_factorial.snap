@@ -1,10 +1,10 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: redact_timestamps_sizes(stdout)
 ---
-Found 2 mutants to test
+Found 3 mutants to test
 Unmutated baseline ... ok in x.xxxs build + x.xxxs test
 Auto-set test timeout to x.xxxs
 src/bin/factorial.rs:1: replace main with () ... NOT CAUGHT in x.xxxs build + x.xxxs test
-2 mutants tested in x.xxxs: 1 missed, 1 caught
+3 mutants tested in x.xxxs: 1 missed, 2 caught
 

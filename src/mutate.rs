@@ -223,7 +223,7 @@ mod test {
         let source_tree = tool.find_root(tree_path).unwrap();
         let options = Options::default();
         let mutants = walk_tree(&tool, &source_tree, &options).unwrap().mutants;
-        assert_eq!(mutants.len(), 2);
+        assert_eq!(mutants.len(), 3);
         assert_eq!(
             format!("{:?}", mutants[0]),
             "Mutant { \
@@ -245,7 +245,7 @@ mod test {
                 Mutant {
                     function_name: "factorial",
                     return_type: "-> u32",
-                    replacement: "Default::default()",
+                    replacement: "0",
                     genre: FnValue,
                     start: (
                         7,
@@ -261,7 +261,11 @@ mod test {
         );
         assert_eq!(
             mutants[1].to_string(),
-            "src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()"
+            "src/bin/factorial.rs:7: replace factorial -> u32 with 0"
+        );
+        assert_eq!(
+            mutants[2].to_string(),
+            "src/bin/factorial.rs:7: replace factorial -> u32 with 1"
         );
     }
 
@@ -288,7 +292,7 @@ mod test {
         let mutants = walk_tree(&tool, &source_tree, &Options::default())
             .unwrap()
             .mutants;
-        assert_eq!(mutants.len(), 2);
+        assert_eq!(mutants.len(), 3);
 
         let mut mutated_code = mutants[0].mutated_code();
         assert_eq!(mutants[0].function_name(), "main");
@@ -330,7 +334,7 @@ mod test {
                 }
 
                 fn factorial(n: u32) -> u32 {
-                Default::default() /* ~ changed by cargo-mutants ~ */
+                0 /* ~ changed by cargo-mutants ~ */
                 }
 
                 #[test]

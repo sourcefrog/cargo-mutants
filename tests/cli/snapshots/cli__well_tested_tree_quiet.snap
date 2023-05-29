@@ -2,7 +2,7 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 17 mutants to test
+Found 21 mutants to test
 Unmutated baseline ... ok
-17 mutants tested: 17 caught
+21 mutants tested: 21 caught
 

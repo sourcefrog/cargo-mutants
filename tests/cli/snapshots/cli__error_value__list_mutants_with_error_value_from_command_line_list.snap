@@ -2,6 +2,7 @@
 source: tests/cli/error_value.rs
 expression: stdout
 ---
-src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Ok(Default::default())
+src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Ok(0)
+src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Ok(1)
 src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Err(::eyre::eyre!("mutant"))
 

@@ -18,7 +18,16 @@ expression: mutants_json
     "line": 7,
     "function": "factorial",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-factorial",
+    "file": "src/bin/factorial.rs",
+    "line": 7,
+    "function": "factorial",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]

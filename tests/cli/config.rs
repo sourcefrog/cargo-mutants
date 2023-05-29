@@ -151,7 +151,7 @@ fn additional_cargo_args() {
         .arg(testdata.path())
         .assert()
         .success()
-        .stdout(predicates::str::contains("1 caught"));
+        .stdout(predicates::str::contains("2 caught"));
 }
 
 #[test]
@@ -170,5 +170,5 @@ fn additional_cargo_test_args() {
         .arg(testdata.path())
         .assert()
         .success()
-        .stdout(predicates::str::contains("1 caught"));
+        .stdout(predicates::str::contains("2 caught"));
 }

@@ -2,8 +2,12 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 3 mutants to test
+Found 9 mutants to test
 Unmutated baseline ... ok
-src/b.rs:1: replace one_untested -> i32 with Default::default() ... NOT CAUGHT
-3 mutants tested: 1 missed, 2 caught
+src/a.rs:1: replace one -> i32 with 1 ... NOT CAUGHT
+src/b.rs:1: replace one_untested -> i32 with 0 ... NOT CAUGHT
+src/b.rs:1: replace one_untested -> i32 with 1 ... NOT CAUGHT
+src/b.rs:1: replace one_untested -> i32 with -1 ... NOT CAUGHT
+src/c.rs:1: replace one -> i32 with 1 ... NOT CAUGHT
+9 mutants tested: 5 missed, 4 caught
 

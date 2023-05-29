@@ -2,7 +2,8 @@
 source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
-src/module/module_methods.rs:1: replace double -> usize with Default::default()
+src/module/module_methods.rs:1: replace double -> usize with 0
+src/module/module_methods.rs:1: replace double -> usize with 1
 src/module/utils/inside_mod.rs:3: replace outer::inner::name -> &'static str with ""
 src/module/utils/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy"
 
