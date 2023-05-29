@@ -141,8 +141,7 @@ impl<'o> DiscoveryVisitor<'o> {
     fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
-        let mut new_mutants = self
-            .return_value_replacements(return_type)
+        let mut new_mutants = return_value_replacements(return_type, self.error_exprs)
             .into_iter()
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
@@ -175,65 +174,6 @@ impl<'o> DiscoveryVisitor<'o> {
         let r = f(self);
         assert_eq!(self.namespace_stack.pop().unwrap(), name);
         r
-    }
-
-    /// Generate replacement text for a function based on its return type.
-    fn return_value_replacements(&self, return_type: &ReturnType) -> Vec<TokenStream> {
-        let mut reps = Vec::new();
-        match return_type {
-            ReturnType::Default => reps.push(quote! { () }),
-            ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
-                syn::Type::Never(_) => {
-                    // In theory we could mutate this to a function that just
-                    // loops or sleeps, but it seems unlikely to be useful,
-                    // so generate nothing.
-                }
-                syn::Type::Path(syn::TypePath { path, .. }) => {
-                    // dbg!(&path);
-                    if path.is_ident("bool") {
-                        reps.push(quote! { true });
-                        reps.push(quote! { false });
-                    } else if path.is_ident("String") {
-                        reps.push(quote! { String::new() });
-                        reps.push(quote! { "xyzzy".into() });
-                    } else if path_is_result(path) {
-                        // TODO: Recursively generate for types inside the Ok side of the Result.
-                        reps.push(quote! { Ok(Default::default()) });
-                        reps.extend(self.error_exprs.iter().map(|error_expr| {
-                            quote! { Err(#error_expr) }
-                        }));
-                    } else {
-                        reps.push(quote! { Default::default() });
-                    }
-                }
-                syn::Type::Reference(syn::TypeReference {
-                    mutability: None,
-                    elem,
-                    ..
-                }) => match &**elem {
-                    // needs a separate `match` because of the box.
-                    syn::Type::Path(path) if path.path.is_ident("str") => {
-                        reps.push(quote! { "" });
-                        reps.push(quote! { "xyzzy" });
-                    }
-                    _ => {
-                        trace!(?box_typ, "Return type is not recognized, trying Default");
-                        reps.push(quote! { Default::default() });
-                    }
-                },
-                syn::Type::Reference(syn::TypeReference {
-                    mutability: Some(_),
-                    ..
-                }) => {
-                    reps.push(quote! { Box::leak(Box::new(Default::default())) });
-                }
-                _ => {
-                    trace!(?box_typ, "Return type is not recognized, trying Default");
-                    reps.push(quote! { Default::default() });
-                }
-            },
-        }
-        reps
     }
 }
 
@@ -361,6 +301,65 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
+}
+
+/// Generate replacement text for a function based on its return type.
+fn return_value_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<TokenStream> {
+    let mut reps = Vec::new();
+    match return_type {
+        ReturnType::Default => reps.push(quote! { () }),
+        ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
+            syn::Type::Never(_) => {
+                // In theory we could mutate this to a function that just
+                // loops or sleeps, but it seems unlikely to be useful,
+                // so generate nothing.
+            }
+            syn::Type::Path(syn::TypePath { path, .. }) => {
+                // dbg!(&path);
+                if path.is_ident("bool") {
+                    reps.push(quote! { true });
+                    reps.push(quote! { false });
+                } else if path.is_ident("String") {
+                    reps.push(quote! { String::new() });
+                    reps.push(quote! { "xyzzy".into() });
+                } else if path_is_result(path) {
+                    // TODO: Recursively generate for types inside the Ok side of the Result.
+                    reps.push(quote! { Ok(Default::default()) });
+                    reps.extend(error_exprs.iter().map(|error_expr| {
+                        quote! { Err(#error_expr) }
+                    }));
+                } else {
+                    reps.push(quote! { Default::default() });
+                }
+            }
+            syn::Type::Reference(syn::TypeReference {
+                mutability: None,
+                elem,
+                ..
+            }) => match &**elem {
+                // needs a separate `match` because of the box.
+                syn::Type::Path(path) if path.path.is_ident("str") => {
+                    reps.push(quote! { "" });
+                    reps.push(quote! { "xyzzy" });
+                }
+                _ => {
+                    trace!(?box_typ, "Return type is not recognized, trying Default");
+                    reps.push(quote! { Default::default() });
+                }
+            },
+            syn::Type::Reference(syn::TypeReference {
+                mutability: Some(_),
+                ..
+            }) => {
+                reps.push(quote! { Box::leak(Box::new(Default::default())) });
+            }
+            _ => {
+                trace!(?box_typ, "Return type is not recognized, trying Default");
+                reps.push(quote! { Default::default() });
+            }
+        },
+    }
+    reps
 }
 
 fn return_type_to_string(return_type: &ReturnType) -> String {
