@@ -9,6 +9,9 @@
   mutants. The only genre today is `FnValue`, in which a function body is
   replaced by a value. This will in future allow filtering by genre.
 
+- Recurse into return types, so that for example `Result<bool>` can generate
+  `Ok(true)` and `Ok(false)`.
+
 ## 23.5.0
 
 _"Pickled crab"_

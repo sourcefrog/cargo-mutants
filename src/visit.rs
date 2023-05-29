@@ -17,7 +17,10 @@ use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::visit::Visit;
-use syn::{Attribute, Expr, ItemFn, ReturnType};
+use syn::{
+    AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, ItemFn, PathArguments,
+    ReturnType, Type,
+};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::path::TreeRelativePathBuf;
@@ -141,7 +144,7 @@ impl<'o> DiscoveryVisitor<'o> {
     fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
-        let mut new_mutants = return_value_replacements(return_type, self.error_exprs)
+        let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
             .into_iter()
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
@@ -304,61 +307,81 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 }
 
 /// Generate replacement text for a function based on its return type.
-fn return_value_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<TokenStream> {
-    let mut reps = Vec::new();
+fn return_type_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<TokenStream> {
     match return_type {
-        ReturnType::Default => reps.push(quote! { () }),
-        ReturnType::Type(_rarrow, box_typ) => match &**box_typ {
-            syn::Type::Never(_) => {
-                // In theory we could mutate this to a function that just
-                // loops or sleeps, but it seems unlikely to be useful,
-                // so generate nothing.
+        ReturnType::Default => vec![quote! { () }],
+        ReturnType::Type(_rarrow, type_) => type_replacements(type_, error_exprs),
+    }
+}
+
+/// Generate some values that we hope are reasonable replacements for a type.
+fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
+    let mut reps = Vec::new();
+    match type_ {
+        syn::Type::Never(_) => {
+            // In theory we could mutate this to a function that just
+            // loops or sleeps, but it seems unlikely to be useful,
+            // so generate nothing.
+        }
+        syn::Type::Path(syn::TypePath { path, .. }) => {
+            // dbg!(&path);
+            if path.is_ident("bool") {
+                reps.push(quote! { true });
+                reps.push(quote! { false });
+            } else if path.is_ident("String") {
+                reps.push(quote! { String::new() });
+                reps.push(quote! { "xyzzy".into() });
+            } else if let Some(ok_type) = result_ok_type(path) {
+                // TODO: Recursively generate for types inside the Ok side of the Result.
+                trace!(?ok_type, "Found Result");
+                reps.extend(
+                    type_replacements(ok_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { Ok(#rep) }
+                        }),
+                );
+                reps.extend(error_exprs.iter().map(|error_expr| {
+                    quote! { Err(#error_expr) }
+                }));
+            } else if path.segments.last().map_or(false, |s| s.ident == "Result") {
+                // A result but with no type arguments, like `fmt::Result`.
+                reps.push(quote! { Ok(Default::default()) });
+                reps.extend(error_exprs.iter().map(|error_expr| {
+                    quote! { Err(#error_expr) }
+                }));
+            } else {
+                // TODO: Recurse into Option.
+                reps.push(quote! { Default::default() });
             }
-            syn::Type::Path(syn::TypePath { path, .. }) => {
-                // dbg!(&path);
-                if path.is_ident("bool") {
-                    reps.push(quote! { true });
-                    reps.push(quote! { false });
-                } else if path.is_ident("String") {
-                    reps.push(quote! { String::new() });
-                    reps.push(quote! { "xyzzy".into() });
-                } else if path_is_result(path) {
-                    // TODO: Recursively generate for types inside the Ok side of the Result.
-                    reps.push(quote! { Ok(Default::default()) });
-                    reps.extend(error_exprs.iter().map(|error_expr| {
-                        quote! { Err(#error_expr) }
-                    }));
-                } else {
-                    reps.push(quote! { Default::default() });
-                }
-            }
-            syn::Type::Reference(syn::TypeReference {
-                mutability: None,
-                elem,
-                ..
-            }) => match &**elem {
-                // needs a separate `match` because of the box.
-                syn::Type::Path(path) if path.path.is_ident("str") => {
-                    reps.push(quote! { "" });
-                    reps.push(quote! { "xyzzy" });
-                }
-                _ => {
-                    trace!(?box_typ, "Return type is not recognized, trying Default");
-                    reps.push(quote! { Default::default() });
-                }
-            },
-            syn::Type::Reference(syn::TypeReference {
-                mutability: Some(_),
-                ..
-            }) => {
-                reps.push(quote! { Box::leak(Box::new(Default::default())) });
+        }
+        syn::Type::Reference(syn::TypeReference {
+            mutability: None,
+            elem,
+            ..
+        }) => match &**elem {
+            // needs a separate `match` because of the box.
+            syn::Type::Path(path) if path.path.is_ident("str") => {
+                reps.push(quote! { "" });
+                reps.push(quote! { "xyzzy" });
             }
             _ => {
-                trace!(?box_typ, "Return type is not recognized, trying Default");
+                trace!(?type_, "Return type is not recognized, trying Default");
                 reps.push(quote! { Default::default() });
             }
         },
+        syn::Type::Reference(syn::TypeReference {
+            mutability: Some(_),
+            ..
+        }) => {
+            reps.push(quote! { Box::leak(Box::new(Default::default())) });
+        }
+        _ => {
+            trace!(?type_, "Return type is not recognized, trying Default");
+            reps.push(quote! { Default::default() });
+        }
     }
+
     reps
 }
 
@@ -388,12 +411,11 @@ fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
     let mut b = String::with_capacity(200);
     let mut ts = t.to_token_stream().into_iter().peekable();
     while let Some(tt) = ts.next() {
-        let next = ts.peek();
         match tt {
             Punct(p) => {
                 let pc = p.as_char();
                 b.push(pc);
-                if b.ends_with(" ->") || pc == ',' {
+                if ts.peek().is_some() && (b.ends_with("->") || pc == ',') {
                     b.push(' ');
                 }
             }
@@ -403,7 +425,7 @@ fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
                     Ident(i) => b.push_str(&i.to_string()),
                     _ => unreachable!(),
                 };
-                if let Some(next) = next {
+                if let Some(next) = ts.peek() {
                     match next {
                         Ident(_) | Literal(_) => b.push(' '),
                         Punct(p) => match p.as_char() {
@@ -439,11 +461,19 @@ fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
     b
 }
 
-fn path_is_result(path: &syn::Path) -> bool {
-    path.segments
-        .last()
-        .map(|segment| segment.ident == "Result")
-        .unwrap_or_default()
+/// If this looks like `Result<T, E>` (optionally with `Result` in some module), return `T`.
+fn result_ok_type(path: &syn::Path) -> Option<&Type> {
+    let last = path.segments.last()?;
+    if last.ident == "Result" {
+        if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+            &last.arguments
+        {
+            if let Some(GenericArgument::Type(ok_type)) = args.first() {
+                return Some(ok_type);
+            }
+        }
+    }
+    None
 }
 
 /// True if the signature of a function is such that it should be excluded.
@@ -530,17 +560,18 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 #[cfg(test)]
 mod test {
     use quote::quote;
+    use syn::parse_quote;
+
+    use super::{return_type_replacements, tokens_to_pretty_string};
 
     #[test]
     fn path_is_result() {
         let path: syn::Path = syn::parse_quote! { Result<(), ()> };
-        assert!(super::path_is_result(&path));
+        assert!(super::result_ok_type(&path).is_some());
     }
 
     #[test]
-    fn tokens_to_pretty_string() {
-        use super::tokens_to_pretty_string;
-
+    fn pretty_format() {
         assert_eq!(
             tokens_to_pretty_string(quote! {
                 <impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next
@@ -551,6 +582,32 @@ mod test {
         assert_eq!(
             tokens_to_pretty_string(quote! { Lex < 'buf >::take }),
             "Lex<'buf>::take"
+        );
+    }
+
+    #[test]
+    fn recurse_into_result_bool() {
+        let return_type: syn::ReturnType = parse_quote! {-> std::result::Result<bool> };
+        let reps = return_type_replacements(&return_type, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["Ok(true)", "Ok(false)",]
+        );
+    }
+
+    #[test]
+    fn recurse_into_result_result_bool() {
+        let return_type: syn::ReturnType = parse_quote! {-> std::result::Result<Result<bool>> };
+        let error_expr: syn::Expr = parse_quote! { anyhow!("mutated") };
+        let reps = return_type_replacements(&return_type, &[error_expr]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &[
+                "Ok(Ok(true))",
+                "Ok(Ok(false))",
+                "Ok(Err(anyhow!(\"mutated\")))",
+                "Err(anyhow!(\"mutated\"))"
+            ]
         );
     }
 }

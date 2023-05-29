@@ -72,7 +72,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 5,
     "function": "simple_result",
     "return_type": "-> Result<&'static str, ()>",
-    "replacement": "Ok(Default::default())",
+    "replacement": "Ok(\"\")",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/result.rs",
+    "line": 5,
+    "function": "simple_result",
+    "return_type": "-> Result<&'static str, ()>",
+    "replacement": "Ok(\"xyzzy\")",
     "genre": "FnValue"
   },
   {
