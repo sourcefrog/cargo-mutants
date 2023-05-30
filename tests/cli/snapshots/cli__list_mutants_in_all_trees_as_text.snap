@@ -210,7 +210,8 @@ src/nested_function.rs:2: replace has_nested::inner -> u32 with 0
 src/nested_function.rs:2: replace has_nested::inner -> u32 with 1
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
-src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(Default::default())
+src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(())
+src/result.rs:17: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())
 src/simple_fns.rs:7: replace returns_unit with ()
 src/simple_fns.rs:12: replace returns_42u32 -> u32 with 0
 src/simple_fns.rs:12: replace returns_42u32 -> u32 with 1

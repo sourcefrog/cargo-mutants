@@ -19,7 +19,7 @@ use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{
     AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, ItemFn, Path, PathArguments,
-    ReturnType, Type,
+    ReturnType, Type, TypeTuple,
 };
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
@@ -318,12 +318,12 @@ fn return_type_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> V
 fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
     let mut reps = Vec::new();
     match type_ {
-        syn::Type::Never(_) => {
+        Type::Never(_) => {
             // In theory we could mutate this to a function that just
             // loops or sleeps, but it seems unlikely to be useful,
             // so generate nothing.
         }
-        syn::Type::Path(syn::TypePath { path, .. }) => {
+        Type::Path(syn::TypePath { path, .. }) => {
             // dbg!(&path);
             // TODO: () to (), just to be more clear and concise than Default::default().
             if path.is_ident("bool") {
@@ -353,7 +353,8 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                     quote! { Err(#error_expr) }
                 }));
             } else if path.segments.last().map_or(false, |s| s.ident == "Result") {
-                // A result but with no type arguments, like `fmt::Result`.
+                // A result but with no type arguments, like `fmt::Result`; hopefully
+                // the Ok value can be constructed with Default.
                 reps.push(quote! { Ok(Default::default()) });
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
@@ -363,13 +364,13 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { Default::default() });
             }
         }
-        syn::Type::Reference(syn::TypeReference {
+        Type::Reference(syn::TypeReference {
             mutability: None,
             elem,
             ..
         }) => match &**elem {
             // needs a separate `match` because of the box.
-            syn::Type::Path(path) if path.path.is_ident("str") => {
+            Type::Path(path) if path.path.is_ident("str") => {
                 reps.push(quote! { "" });
                 reps.push(quote! { "xyzzy" });
             }
@@ -378,18 +379,20 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { Default::default() });
             }
         },
-        syn::Type::Reference(syn::TypeReference {
+        Type::Reference(syn::TypeReference {
             mutability: Some(_),
             ..
         }) => {
             reps.push(quote! { Box::leak(Box::new(Default::default())) });
+        }
+        Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
+            reps.push(quote! { () });
         }
         _ => {
             trace!(?type_, "Return type is not recognized, trying Default");
             reps.push(quote! { Default::default() });
         }
     }
-
     reps
 }
 
@@ -646,6 +649,24 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["0", "1", "-1"]
+        );
+    }
+
+    #[test]
+    fn unit_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> () }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["()"]
+        );
+    }
+
+    #[test]
+    fn result_unit_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> Result<(), Error> }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["Ok(())"]
         );
     }
 }

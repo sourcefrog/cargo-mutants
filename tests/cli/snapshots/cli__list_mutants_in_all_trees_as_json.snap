@@ -789,6 +789,15 @@ expression: buf
     "line": 9,
     "function": "error_if_negative",
     "return_type": "-> Result<(), ()>",
+    "replacement": "Ok(())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/result.rs",
+    "line": 17,
+    "function": "result_with_no_apparent_type_args",
+    "return_type": "-> std::fmt::Result",
     "replacement": "Ok(Default::default())",
     "genre": "FnValue"
   },
