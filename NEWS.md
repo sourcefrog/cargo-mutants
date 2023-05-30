@@ -10,7 +10,8 @@
   replaced by a value. This will in future allow filtering by genre.
 
 - Recurse into return types, so that for example `Result<bool>` can generate
-  `Ok(true)` and `Ok(false)`.
+  `Ok(true)` and `Ok(false)`, and `Some<T>` generates `None` and every generated
+  value of `T`.
 
 - Generate specific values for integers: [0, 1] for unsigned integers and
   [0, 1, -1] for signed integers.

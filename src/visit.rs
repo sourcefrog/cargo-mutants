@@ -325,7 +325,6 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
         }
         Type::Path(syn::TypePath { path, .. }) => {
             // dbg!(&path);
-            // TODO: () to (), just to be more clear and concise than Default::default().
             if path.is_ident("bool") {
                 reps.push(quote! { true });
                 reps.push(quote! { false });
@@ -340,7 +339,6 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { 1 });
                 reps.push(quote! { -1 });
             } else if let Some(ok_type) = result_ok_type(path) {
-                // TODO: Recursively generate for types inside the Ok side of the Result.
                 trace!(?ok_type, "Found Result");
                 reps.extend(
                     type_replacements(ok_type, error_exprs)
@@ -352,15 +350,23 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
-            } else if path.segments.last().map_or(false, |s| s.ident == "Result") {
+            } else if path_ends_with(path, "Result") {
                 // A result but with no type arguments, like `fmt::Result`; hopefully
                 // the Ok value can be constructed with Default.
                 reps.push(quote! { Ok(Default::default()) });
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
+            } else if let Some(some_type) = match_first_type_arg(path, "Option") {
+                reps.push(quote! { None });
+                reps.extend(
+                    type_replacements(some_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { Some(#rep) }
+                        }),
+                );
             } else {
-                // TODO: Recurse into Option.
                 reps.push(quote! { Default::default() });
             }
         }
@@ -387,6 +393,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
         }
         Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
             reps.push(quote! { () });
+            // TODO: Also recurse into non-empty tuples.
         }
         _ => {
             trace!(?type_, "Return type is not recognized, trying Default");
@@ -407,6 +414,10 @@ fn return_type_to_string(return_type: &ReturnType) -> String {
             )
         }
     }
+}
+
+fn path_ends_with(path: &Path, ident: &str) -> bool {
+    path.segments.last().map_or(false, |s| s.ident == ident)
 }
 
 fn path_is_unsigned(path: &Path) -> bool {
@@ -485,9 +496,14 @@ fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
 }
 
 /// If this looks like `Result<T, E>` (optionally with `Result` in some module), return `T`.
-fn result_ok_type(path: &syn::Path) -> Option<&Type> {
+fn result_ok_type(path: &Path) -> Option<&Type> {
+    match_first_type_arg(path, "Result")
+}
+
+/// If this is a path ending in `expected_ident`, return the first type argument.
+fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p Type> {
     let last = path.segments.last()?;
-    if last.ident == "Result" {
+    if last.ident == expected_ident {
         if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
             &last.arguments
         {
@@ -667,6 +683,21 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Ok(())"]
+        );
+
+        let reps = return_type_replacements(&parse_quote! { -> Result<()> }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["Ok(())"]
+        );
+    }
+
+    #[test]
+    fn option_usize_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> Option<usize> }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["None", "Some(0)", "Some(1)"]
         );
     }
 }
