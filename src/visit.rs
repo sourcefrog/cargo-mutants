@@ -338,22 +338,20 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { 0 });
                 reps.push(quote! { 1 });
                 reps.push(quote! { -1 });
-            } else if let Some(ok_type) = result_ok_type(path) {
-                trace!(?ok_type, "Found Result");
-                reps.extend(
-                    type_replacements(ok_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { Ok(#rep) }
-                        }),
-                );
-                reps.extend(error_exprs.iter().map(|error_expr| {
-                    quote! { Err(#error_expr) }
-                }));
             } else if path_ends_with(path, "Result") {
-                // A result but with no type arguments, like `fmt::Result`; hopefully
-                // the Ok value can be constructed with Default.
-                reps.push(quote! { Ok(Default::default()) });
+                if let Some(ok_type) = result_ok_type(path) {
+                    reps.extend(
+                        type_replacements(ok_type, error_exprs)
+                            .into_iter()
+                            .map(|rep| {
+                                quote! { Ok(#rep) }
+                            }),
+                    );
+                } else {
+                    // A result but with no type arguments, like `fmt::Result`; hopefully
+                    // the Ok value can be constructed with Default.
+                    reps.push(quote! { Ok(Default::default()) });
+                }
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
