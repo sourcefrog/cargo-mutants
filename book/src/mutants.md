@@ -24,8 +24,9 @@ More mutation genres and patterns will be added in future releases.
 | `&mut ...`  | `Box::leak(Box::new(...))` |
 | `Result<T>`    | `Ok(...)` , [and an error if configured](error-values.md) |
 | `Option<T>`    | `Some(...)`, `None` |
-| `Box<T>`    | `Box::new(...)` |
-| (any other) | `Default::default()` (and hope the type implements `Default`) |
+| `Box<T>`       | `Box::new(...)`                                            |
+| `Vec<T>`       | `vec![]`, `vec![...]`                                      |
+| (any other)    | `Default::default()`                                       |
 
 `...` in the mutation patterns indicates that the type is recursively mutated.
  For example, `Result<bool>` can generate `Ok(true)` and `Ok(false)`.

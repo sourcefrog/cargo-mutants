@@ -372,6 +372,17 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { Some(#rep) }
                         }),
                 );
+            } else if let Some(boxed_type) = match_first_type_arg(path, "Vec") {
+                // Generate an empty Vec, and then a one-element vec for every recursive
+                // value.
+                reps.push(quote! { vec![] });
+                reps.extend(
+                    type_replacements(boxed_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { vec![#rep] }
+                        }),
+                )
             } else {
                 reps.push(quote! { Default::default() });
             }
@@ -722,6 +733,15 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Box::new(Default::default())"]
+        );
+    }
+
+    #[test]
+    fn vec_string_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> std::vec::Vec<String> }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["vec![]", "vec![String::new()]", "vec![\"xyzzy\".into()]"]
         );
     }
 }
