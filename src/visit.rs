@@ -355,6 +355,14 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
+            } else if let Some(boxed_type) = match_first_type_arg(path, "Box") {
+                reps.extend(
+                    type_replacements(boxed_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { Box::new(#rep) }
+                        }),
+                )
             } else if let Some(some_type) = match_first_type_arg(path, "Option") {
                 reps.push(quote! { None });
                 reps.extend(
@@ -696,6 +704,24 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["None", "Some(0)", "Some(1)"]
+        );
+    }
+
+    #[test]
+    fn box_usize_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> Box<usize> }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["Box::new(0)", "Box::new(1)"]
+        );
+    }
+
+    #[test]
+    fn box_unrecognized_type_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> Box<MyObject> }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["Box::new(Default::default())"]
         );
     }
 }

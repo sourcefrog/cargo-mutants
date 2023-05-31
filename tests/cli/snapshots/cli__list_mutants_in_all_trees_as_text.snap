@@ -119,7 +119,9 @@ src/lib.rs:1: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(Defaul
 ## testdata/tree/nightly_only
 
 ```
-src/lib.rs:2: replace box_an_int -> Box<i32> with Default::default()
+src/lib.rs:2: replace box_an_int -> Box<i32> with Box::new(0)
+src/lib.rs:2: replace box_an_int -> Box<i32> with Box::new(1)
+src/lib.rs:2: replace box_an_int -> Box<i32> with Box::new(-1)
 ```
 
 ## testdata/tree/override_dependency

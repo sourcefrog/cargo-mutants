@@ -389,7 +389,25 @@ expression: buf
     "line": 2,
     "function": "box_an_int",
     "return_type": "-> Box<i32>",
-    "replacement": "Default::default()",
+    "replacement": "Box::new(0)",
+    "genre": "FnValue"
+  },
+  {
+    "package": "nightly_only",
+    "file": "src/lib.rs",
+    "line": 2,
+    "function": "box_an_int",
+    "return_type": "-> Box<i32>",
+    "replacement": "Box::new(1)",
+    "genre": "FnValue"
+  },
+  {
+    "package": "nightly_only",
+    "file": "src/lib.rs",
+    "line": 2,
+    "function": "box_an_int",
+    "return_type": "-> Box<i32>",
+    "replacement": "Box::new(-1)",
     "genre": "FnValue"
   }
 ]
