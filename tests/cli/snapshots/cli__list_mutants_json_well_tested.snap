@@ -86,6 +86,33 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/numbers.rs",
+    "line": 1,
+    "function": "double_float",
+    "return_type": "-> f32",
+    "replacement": "0.0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/numbers.rs",
+    "line": 1,
+    "function": "double_float",
+    "return_type": "-> f32",
+    "replacement": "1.0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/numbers.rs",
+    "line": 1,
+    "function": "double_float",
+    "return_type": "-> f32",
+    "replacement": "-1.0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
     "line": 5,
     "function": "simple_result",

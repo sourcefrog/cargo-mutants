@@ -8,6 +8,7 @@ src/inside_mod.rs
 src/item_mod.rs
 src/methods.rs
 src/nested_function.rs
+src/numbers.rs
 src/result.rs
 src/simple_fns.rs
 src/struct_with_lifetime.rs

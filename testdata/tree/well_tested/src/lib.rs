@@ -13,6 +13,7 @@ mod inside_mod;
 mod item_mod;
 mod methods;
 mod nested_function;
+mod numbers;
 mod result;
 pub mod simple_fns;
 mod struct_with_lifetime;

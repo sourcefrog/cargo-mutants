@@ -29,6 +29,10 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/numbers.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
     "path": "src/result.rs"
   },
   {

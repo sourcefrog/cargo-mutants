@@ -18,6 +18,7 @@ More mutation genres and patterns will be added in future releases.
 | `()`              | `()` (return unit, with no side effects) |
 | signed integers   | `0, 1, -1`    |
 | unsigned integers | `0, 1`      |
+| floats            | `0.0, 1.0, -1.0`                                        |
 | `NonZeroI*`       | `1, -1`     |
 | `NonZeroU*`       | `1`         |
 | `bool`      | `true`, `false` |

@@ -351,6 +351,10 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                     | "NonZeroU128" => reps.extend([quote! { 1 }]),
                     _ => reps.push(quote! { Default::default() }),
                 }
+            } else if path_is_float(path) {
+                reps.push(quote! { 0.0 });
+                reps.push(quote! { 1.0 });
+                reps.push(quote! { -1.0 });
             } else if path_ends_with(path, "Result") {
                 if let Some(ok_type) = result_ok_type(path) {
                     reps.extend(
@@ -448,6 +452,10 @@ fn return_type_to_string(return_type: &ReturnType) -> String {
 
 fn path_ends_with(path: &Path, ident: &str) -> bool {
     path.segments.last().map_or(false, |s| s.ident == ident)
+}
+
+fn path_is_float(path: &Path) -> bool {
+    ["f32", "f64"].iter().any(|s| path.is_ident(s))
 }
 
 fn path_is_unsigned(path: &Path) -> bool {
@@ -776,6 +784,15 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["vec![]", "vec![String::new()]", "vec![\"xyzzy\".into()]"]
+        );
+    }
+
+    #[test]
+    fn float_replacement() {
+        let reps = return_type_replacements(&parse_quote! { -> f32 }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["0.0", "1.0", "-1.0"]
         );
     }
 }

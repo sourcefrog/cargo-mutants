@@ -17,6 +17,8 @@
   `[0, 1, -1]` for signed integers; `[1]` for NonZero unsigned integers and
   `[1, -1]` for NonZero signed integers.
 
+- Generate specific values for floats: `[0.0, 1.0, -1.0]`.
+
 ## 23.5.0
 
 _"Pickled crab"_
