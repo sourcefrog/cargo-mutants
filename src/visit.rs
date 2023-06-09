@@ -338,6 +338,19 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { 0 });
                 reps.push(quote! { 1 });
                 reps.push(quote! { -1 });
+            } else if let Some(type_name) = path
+                .segments
+                .last()
+                .map(|p| p.ident.to_string())
+                .filter(|t| t.starts_with("NonZero"))
+            {
+                match type_name.as_str() {
+                    "NonZeroIsize" | "NonZeroI8" | "NonZeroI16" | "NonZeroI32" | "NonZeroI64"
+                    | "NonZeroI128" => reps.extend([quote! { 1 }, quote! { -1 }]),
+                    "NonZeroUsize" | "NonZeroU8" | "NonZeroU16" | "NonZeroU32" | "NonZeroU64"
+                    | "NonZeroU128" => reps.extend([quote! { 1 }]),
+                    _ => reps.push(quote! { Default::default() }),
+                }
             } else if path_ends_with(path, "Result") {
                 if let Some(ok_type) = result_ok_type(path) {
                     reps.extend(
@@ -682,6 +695,27 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["0", "1", "-1"]
+        );
+    }
+
+    #[test]
+    fn nonzero_integer_replacements() {
+        let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroIsize }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["1", "-1"]
+        );
+
+        let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroUsize }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["1"]
+        );
+
+        let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroU32 }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["1"]
         );
     }
 

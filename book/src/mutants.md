@@ -13,11 +13,13 @@ This checks that the tests:
 
 More mutation genres and patterns will be added in future releases.
 
-| Return type | Mutation pattern |
-| ----------- | ---------------- |
-| `()`        | `()` (return unit, with no side effects) |
-| signed integers | 0, 1, -1    |
-| unsigned integers | 0, 1      |
+| Return type       | Mutation pattern |
+| ----------------- | ---------------- |
+| `()`              | `()` (return unit, with no side effects) |
+| signed integers   | `0, 1, -1`    |
+| unsigned integers | `0, 1`      |
+| `NonZeroI*`       | `1, -1`     |
+| `NonZeroU*`       | `1`         |
 | `bool`      | `true`, `false` |
 | `String`    | `String::new()`, `"xyzzy".into()` |
 | `&'_ str` . | `""`, `"xyzzy"` |
