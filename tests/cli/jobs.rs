@@ -1,6 +1,6 @@
-// Copyright 2022 Martin Pool.
+// Copyright 2022-2023 Martin Pool.
 
-//! Test handling of `-j` option.
+//! Test handling of `--jobs` concurrency option.
 
 use super::{copy_of_testdata, run};
 
@@ -14,6 +14,7 @@ fn jobs_option_accepted() {
         .arg("-d")
         .arg(testdata.path())
         .arg("-j3")
+        .arg("--minimum-test-timeout=120") // to avoid flakes on slow CI
         .assert()
         .success();
 }
