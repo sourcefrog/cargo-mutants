@@ -315,6 +315,8 @@ fn return_type_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> V
 }
 
 /// Generate some values that we hope are reasonable replacements for a type.
+///
+/// This is really the heart of cargo-mutants.
 fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
     let mut reps = Vec::new();
     match type_ {
