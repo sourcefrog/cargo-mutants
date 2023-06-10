@@ -412,9 +412,13 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
         },
         Type::Reference(syn::TypeReference {
             mutability: Some(_),
+            elem,
             ..
         }) => {
-            reps.push(quote! { Box::leak(Box::new(Default::default())) });
+            // Make &mut with static lifetime by leaking them on the heap.
+            reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
+                quote! { Box::leak(Box::new(#rep)) }
+            }));
         }
         Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
             reps.push(quote! { () });

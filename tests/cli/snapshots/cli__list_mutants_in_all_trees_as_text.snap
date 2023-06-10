@@ -108,7 +108,8 @@ src/lib.rs:1: replace double -> u32 with 1
 ## testdata/tree/mut_ref
 
 ```
-src/lib.rs:1: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(Default::default()))
+src/lib.rs:1: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(0))
+src/lib.rs:1: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(1))
 ```
 
 ## testdata/tree/never_type

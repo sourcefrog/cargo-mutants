@@ -367,7 +367,16 @@ expression: buf
     "line": 1,
     "function": "returns_mut_ref",
     "return_type": "-> &mut u32",
-    "replacement": "Box::leak(Box::new(Default::default()))",
+    "replacement": "Box::leak(Box::new(0))",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-mut-ref",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "returns_mut_ref",
+    "return_type": "-> &mut u32",
+    "replacement": "Box::leak(Box::new(1))",
     "genre": "FnValue"
   }
 ]
