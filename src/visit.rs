@@ -338,19 +338,10 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { 0 });
                 reps.push(quote! { 1 });
                 reps.push(quote! { -1 });
-            } else if let Some(type_name) = path
-                .segments
-                .last()
-                .map(|p| p.ident.to_string())
-                .filter(|t| t.starts_with("NonZero"))
-            {
-                match type_name.as_str() {
-                    "NonZeroIsize" | "NonZeroI8" | "NonZeroI16" | "NonZeroI32" | "NonZeroI64"
-                    | "NonZeroI128" => reps.extend([quote! { 1 }, quote! { -1 }]),
-                    "NonZeroUsize" | "NonZeroU8" | "NonZeroU16" | "NonZeroU32" | "NonZeroU64"
-                    | "NonZeroU128" => reps.extend([quote! { 1 }]),
-                    _ => reps.push(quote! { Default::default() }),
-                }
+            } else if path_is_nonzero_signed(path) {
+                reps.extend([quote! { 1 }, quote! { -1 }]);
+            } else if path_is_nonzero_unsigned(path) {
+                reps.push(quote! { 1 });
             } else if path_is_float(path) {
                 reps.push(quote! { 0.0 });
                 reps.push(quote! { 1.0 });
@@ -468,6 +459,38 @@ fn path_is_signed(path: &Path) -> bool {
     ["i8", "i16", "i32", "i64", "i128", "isize"]
         .iter()
         .any(|s| path.is_ident(s))
+}
+
+fn path_is_nonzero_signed(path: &Path) -> bool {
+    if let Some(l) = path.segments.last().map(|p| p.ident.to_string()) {
+        matches!(
+            l.as_str(),
+            "NonZeroIsize"
+                | "NonZeroI8"
+                | "NonZeroI16"
+                | "NonZeroI32"
+                | "NonZeroI64"
+                | "NonZeroI128",
+        )
+    } else {
+        false
+    }
+}
+
+fn path_is_nonzero_unsigned(path: &Path) -> bool {
+    if let Some(l) = path.segments.last().map(|p| p.ident.to_string()) {
+        matches!(
+            l.as_str(),
+            "NonZeroUsize"
+                | "NonZeroU8"
+                | "NonZeroU16"
+                | "NonZeroU32"
+                | "NonZeroU64"
+                | "NonZeroU128",
+        )
+    } else {
+        false
+    }
 }
 
 /// Convert a TokenStream representing some code to a reasonably formatted
