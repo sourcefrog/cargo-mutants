@@ -202,6 +202,8 @@ src/c.rs:1: replace one -> i32 with -1
 ## testdata/tree/well_tested
 
 ```
+src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new(String::new())
+src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new("xyzzy".into())
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with ""
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy"
 src/methods.rs:16: replace Foo::double with ()

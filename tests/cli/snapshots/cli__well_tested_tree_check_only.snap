@@ -2,8 +2,10 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 25 mutants to test
+Found 27 mutants to test
 Unmutated baseline ... ok
+src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new(String::new()) ... ok
+src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... ok
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "" ... ok
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy" ... ok
 src/methods.rs:16: replace Foo::double with () ... ok
@@ -29,5 +31,5 @@ src/simple_fns.rs:26: replace double_string -> String with String::new() ... ok
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... ok
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0 ... ok
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1 ... ok
-25 mutants tested: 25 succeeded
+27 mutants tested: 27 succeeded
 

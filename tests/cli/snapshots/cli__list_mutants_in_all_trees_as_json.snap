@@ -713,6 +713,24 @@ expression: buf
 [
   {
     "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/arc.rs",
+    "line": 3,
+    "function": "return_arc",
+    "return_type": "-> Arc<String>",
+    "replacement": "Arc::new(String::new())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/arc.rs",
+    "line": 3,
+    "function": "return_arc",
+    "return_type": "-> Arc<String>",
+    "replacement": "Arc::new(\"xyzzy\".into())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",

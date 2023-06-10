@@ -388,6 +388,18 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { vec![#rep] }
                         }),
                 )
+            } else if let Some(inner_type) = match_first_type_arg(path, "Arc") {
+                // TODO: Ideally we should use the path without relying on it being
+                // imported, but we must strip or rewrite the arguments, so that
+                // `std::sync::Arc<String>` becomes either `std::sync::Arc::<String>::new`
+                // or at least `std::sync::Arc::new`. Similarly for other types.
+                reps.extend(
+                    type_replacements(inner_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { Arc::new(#rep) }
+                        }),
+                )
             } else {
                 reps.push(quote! { Default::default() });
             }
@@ -850,6 +862,26 @@ mod test {
             &["[0; 256]", "[1; 256]"]
         );
     }
+
+    #[test]
+    fn arc_replacement() {
+        // Also checks that it matches the path, even using an atypical path.
+        // TODO: Ideally this would be fully qualified like `alloc::sync::Arc::new(String::new())`.
+        assert_eq!(
+            replace(&parse_quote! { -> alloc::sync::Arc<String> }, &[]),
+            &["Arc::new(String::new())", "Arc::new(\"xyzzy\".into())"]
+        );
+    }
+
+    // #[test]
+    // fn rc_replacement() {
+    //     // Also checks that it matches the path, even using an atypical path.
+    //     // TODO: Ideally this would be fully qualified like `alloc::sync::Rc::new(String::new())`.
+    //     assert_eq!(
+    //         replace(&parse_quote! { -> alloc::sync::Rc<String> }, &[]),
+    //         &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"]
+    //     );
+    // }
 
     fn replace(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<String> {
         return_type_replacements(return_type, error_exprs)
