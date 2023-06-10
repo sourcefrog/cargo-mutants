@@ -21,16 +21,17 @@ More mutation genres and patterns will be added in future releases.
 | floats            | `0.0, 1.0, -1.0`                                        |
 | `NonZeroI*`       | `1, -1`     |
 | `NonZeroU*`       | `1`         |
-| `bool`      | `true`, `false` |
-| `String`    | `String::new()`, `"xyzzy".into()` |
-| `&'_ str` . | `""`, `"xyzzy"` |
-| `&mut ...`  | `Box::leak(Box::new(...))` |
-| `Result<T>`    | `Ok(...)` , [and an error if configured](error-values.md) |
-| `Option<T>`    | `Some(...)`, `None` |
-| `Box<T>`       | `Box::new(...)`                                            |
-| `Vec<T>`       | `vec![]`, `vec![...]`                                      |
-| `&T`           | `&...` (all replacements for T)                            |
-| (any other)    | `Default::default()`                                       |
+| `bool`            | `true`, `false` |
+| `String`          | `String::new()`, `"xyzzy".into()` |
+| `&'_ str` .       | `""`, `"xyzzy"` |
+| `&mut ...`        | `Box::leak(Box::new(...))` |
+| `Result<T>`       | `Ok(...)` , [and an error if configured](error-values.md) |
+| `Option<T>`       | `Some(...)`, `None` |
+| `Box<T>`          | `Box::new(...)`                                            |
+| `Vec<T>`          | `vec![]`, `vec![...]`                                      |
+| `[T; L]`          | `[r; L]` for all replacements of T                         |
+| `&T`              | `&...` (all replacements for T)                            |
+| (any other)       | `Default::default()`                                       |
 
 `...` in the mutation patterns indicates that the type is recursively mutated.
  For example, `Result<bool>` can generate `Ok(true)` and `Ok(false)`.

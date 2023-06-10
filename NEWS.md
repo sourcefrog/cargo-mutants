@@ -19,6 +19,9 @@
 
 - Generate specific values for floats: `[0.0, 1.0, -1.0]`.
 
+- Generate (fixed-length) array values, like `[0; 256], [1; 256]` using every
+  recursively generated value for the element type.
+
 ## 23.5.0
 
 _"Pickled crab"_

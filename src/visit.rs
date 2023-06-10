@@ -19,7 +19,7 @@ use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{
     AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, ItemFn, Path, PathArguments,
-    ReturnType, Type, TypeTuple,
+    ReturnType, Type, TypeArray, TypeTuple,
 };
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
@@ -320,11 +320,6 @@ fn return_type_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> V
 fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
     let mut reps = Vec::new();
     match type_ {
-        Type::Never(_) => {
-            // In theory we could mutate this to a function that just
-            // loops or sleeps, but it seems unlikely to be useful,
-            // so generate nothing.
-        }
         Type::Path(syn::TypePath { path, .. }) => {
             // dbg!(&path);
             if path.is_ident("bool") {
@@ -397,6 +392,15 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { Default::default() });
             }
         }
+        Type::Array(TypeArray { elem, len, .. }) => reps.extend(
+            // Generate arrays that repeat each replacement value however many times.
+            // In principle we could generate combinations, but that might get very
+            // large, and values like "all zeros" and "all ones" seem likely to catch
+            // lots of things.
+            type_replacements(elem, error_exprs)
+                .into_iter()
+                .map(|r| quote! { [ #r; #len ] }),
+        ),
         Type::Reference(syn::TypeReference {
             mutability: None,
             elem,
@@ -425,6 +429,11 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
         Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
             reps.push(quote! { () });
             // TODO: Also recurse into non-empty tuples.
+        }
+        Type::Never(_) => {
+            // In theory we could mutate this to a function that just
+            // loops or sleeps, but it seems unlikely to be useful,
+            // so generate nothing.
         }
         _ => {
             trace!(?type_, "Return type is not recognized, trying Default");
@@ -516,7 +525,7 @@ fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
             Punct(p) => {
                 let pc = p.as_char();
                 b.push(pc);
-                if ts.peek().is_some() && (b.ends_with("->") || pc == ',') {
+                if ts.peek().is_some() && (b.ends_with("->") || pc == ',' || pc == ';') {
                     b.push(' ');
                 }
             }
@@ -666,7 +675,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 #[cfg(test)]
 mod test {
     use quote::quote;
-    use syn::parse_quote;
+    use syn::{parse_quote, Expr, ReturnType};
 
     use super::{return_type_replacements, tokens_to_pretty_string};
 
@@ -832,5 +841,20 @@ mod test {
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["&true", "&false"]
         );
+    }
+
+    #[test]
+    fn array_replacement() {
+        assert_eq!(
+            replace(&parse_quote! { -> [u8; 256] }, &[]),
+            &["[0; 256]", "[1; 256]"]
+        );
+    }
+
+    fn replace(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<String> {
+        return_type_replacements(return_type, error_exprs)
+            .into_iter()
+            .map(tokens_to_pretty_string)
+            .collect::<Vec<_>>()
     }
 }
