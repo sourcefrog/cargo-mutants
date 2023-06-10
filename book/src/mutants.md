@@ -29,6 +29,7 @@ More mutation genres and patterns will be added in future releases.
 | `Option<T>`    | `Some(...)`, `None` |
 | `Box<T>`       | `Box::new(...)`                                            |
 | `Vec<T>`       | `vec![]`, `vec![...]`                                      |
+| `&T`           | `&...` (all replacements for T)                            |
 | (any other)    | `Default::default()`                                       |
 
 `...` in the mutation patterns indicates that the type is recursively mutated.

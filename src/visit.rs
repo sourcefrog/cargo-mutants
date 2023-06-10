@@ -400,14 +400,14 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             elem,
             ..
         }) => match &**elem {
-            // needs a separate `match` because of the box.
             Type::Path(path) if path.path.is_ident("str") => {
                 reps.push(quote! { "" });
                 reps.push(quote! { "xyzzy" });
             }
             _ => {
-                trace!(?type_, "Return type is not recognized, trying Default");
-                reps.push(quote! { Default::default() });
+                reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
+                    quote! { &#rep }
+                }));
             }
         },
         Type::Reference(syn::TypeReference {
@@ -816,6 +816,15 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["0.0", "1.0", "-1.0"]
+        );
+    }
+
+    #[test]
+    fn ref_replacement_recurses() {
+        let reps = return_type_replacements(&parse_quote! { -> &bool }, &[]);
+        assert_eq!(
+            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            &["&true", "&false"]
         );
     }
 }
