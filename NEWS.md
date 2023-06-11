@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.6.0
 
 - Generate `Box::leak(Box::new(...))` as a mutation of functions returning
   `&mut`.
