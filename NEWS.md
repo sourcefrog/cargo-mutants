@@ -1,5 +1,10 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Mutate `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, and `VecDeque` to
+  generate empty and one-element containers.
+
 ## 23.6.0
 
 - Generate `Box::leak(Box::new(...))` as a mutation of functions returning

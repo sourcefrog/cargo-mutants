@@ -20,6 +20,9 @@ src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(())
 src/result.rs:17: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())
+src/sets.rs:3: replace make_a_set -> BTreeSet<String> with BTreeSet::new()
+src/sets.rs:3: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()])
+src/sets.rs:3: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter(["xyzzy".into()])
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1
 

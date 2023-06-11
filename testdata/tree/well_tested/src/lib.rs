@@ -16,5 +16,6 @@ mod methods;
 mod nested_function;
 mod numbers;
 mod result;
+mod sets;
 pub mod simple_fns;
 mod struct_with_lifetime;

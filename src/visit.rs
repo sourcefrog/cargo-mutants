@@ -385,7 +385,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { vec![#rep] }
                         }),
                 )
-            } else if let Some((container_type, inner_type)) = known_simple_container(path) {
+            } else if let Some((container_type, inner_type)) = known_container(path) {
                 // Something like Arc, Mutex, etc.
 
                 // TODO: Ideally we should use the path without relying on it being
@@ -399,6 +399,15 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { #container_type::new(#rep) }
                         }),
                 )
+            } else if let Some((collection_type, inner_type)) = known_collection(path) {
+                reps.push(quote! { #collection_type::new() });
+                reps.extend(
+                    type_replacements(inner_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { #collection_type::from_iter([#rep]) }
+                        }),
+                );
             } else {
                 reps.push(quote! { Default::default() });
             }
@@ -475,11 +484,41 @@ fn path_ends_with(path: &Path, ident: &str) -> bool {
 /// like Box, Cell, Mutex, etc, that can be constructed with `T::new(inner_val)`.
 ///
 /// If so, return the short name (like "Box") and the inner type.
-fn known_simple_container(path: &Path) -> Option<(&Ident, &Type)> {
+fn known_container(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
     if !["Box", "Cell", "RefCell", "Arc", "Rc", "Mutex"]
         .iter()
         .any(|v| last.ident == v)
+    {
+        return None;
+    }
+    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last.arguments
+    {
+        // TODO: Skip lifetime args.
+        // TODO: Return the path with args stripped out.
+        if args.len() == 1 {
+            if let Some(GenericArgument::Type(inner_type)) = args.first() {
+                return Some((&last.ident, inner_type));
+            }
+        }
+    }
+    None
+}
+
+/// Match known simple collections that can be empty or constructed from an
+/// iterator.
+fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
+    let last = path.segments.last()?;
+    if ![
+        "BinaryHeap",
+        "BTreeSet",
+        "HashSet",
+        "LinkedList",
+        "VecDeque",
+    ]
+    .iter()
+    .any(|v| last.ident == v)
     {
         return None;
     }
@@ -905,6 +944,18 @@ mod test {
         assert_eq!(
             replace(&parse_quote! { -> alloc::sync::Rc<String> }, &[]),
             &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"]
+        );
+    }
+
+    #[test]
+    fn btreeset_replacement() {
+        assert_eq!(
+            replace(&parse_quote! { -> std::collections::BTreeSet<String> }, &[]),
+            &[
+                "BTreeSet::new()",
+                "BTreeSet::from_iter([String::new()])",
+                "BTreeSet::from_iter([\"xyzzy\".into()])"
+            ]
         );
     }
 

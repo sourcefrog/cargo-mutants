@@ -31,6 +31,7 @@ More mutation genres and patterns will be added in future releases.
 | `Vec<T>`          | `vec![]`, `vec![...]`                                      |
 | `Arc<T>`          | `Arc::new(...)`                                            |
 | `Rc<T>`           | `Rc::new(...)`                                             |
+| `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, `VecDeque` | empty and one-element collections |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
 | `&T`              | `&...` (all replacements for T)                            |
 | (any other)       | `Default::default()`                                       |
