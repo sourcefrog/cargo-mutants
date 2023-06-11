@@ -9,7 +9,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 17,
     "function": "double",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
+    "file": "src/lib.rs",
+    "line": 17,
+    "function": "double",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]

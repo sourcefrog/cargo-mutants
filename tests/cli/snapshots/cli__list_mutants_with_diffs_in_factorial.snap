@@ -20,9 +20,9 @@ src/bin/factorial.rs:1: replace main with ()
      }
      a
 
-src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
+src/bin/factorial.rs:7: replace factorial -> u32 with 0
 --- src/bin/factorial.rs
-+++ replace factorial -> u32 with Default::default()
++++ replace factorial -> u32 with 0
 @@ -1,19 +1,15 @@
  fn main() {
      for i in 1..=6 {
@@ -36,7 +36,32 @@ src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
 -        a *= i;
 -    }
 -    a
-+Default::default() /* ~ changed by cargo-mutants ~ */
++0 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[test]
+ fn test_factorial() {
+     println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
+     assert_eq!(factorial(6), 720);
+ }
+
+src/bin/factorial.rs:7: replace factorial -> u32 with 1
+--- src/bin/factorial.rs
++++ replace factorial -> u32 with 1
+@@ -1,19 +1,15 @@
+ fn main() {
+     for i in 1..=6 {
+         println!("{}! = {}", i, factorial(i));
+     }
+ }
+ 
+ fn factorial(n: u32) -> u32 {
+-    let mut a = 1;
+-    for i in 2..=n {
+-        a *= i;
+-    }
+-    a
++1 /* ~ changed by cargo-mutants ~ */
  }
  
  #[test]

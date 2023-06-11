@@ -76,8 +76,12 @@ pub fn test_unmutated_then_all_mutants(
 
     let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
         timeout
-    } else if let Some(baseline_test_duration) = baseline_outcome.test_duration() {
-        // If we didn't run tests in the baseline, e.g. for `--check`, there might be no duration.
+    } else if let Some(baseline_test_duration) = baseline_outcome
+        .phase_results()
+        .iter()
+        .find(|r| r.phase == Phase::Test)
+        .map(|r| r.duration)
+    {
         let auto_timeout = max(
             options.minimum_test_timeout,
             baseline_test_duration.mul_f32(5.0),
@@ -91,8 +95,6 @@ pub fn test_unmutated_then_all_mutants(
     };
 
     let jobs = std::cmp::max(1, std::cmp::min(options.jobs.unwrap_or(1), mutants.len()));
-    // Create more build dirs
-    // TODO: Progress indicator; maybe run them in parallel.
     console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");

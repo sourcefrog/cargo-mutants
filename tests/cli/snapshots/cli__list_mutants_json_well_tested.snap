@@ -5,6 +5,24 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/arc.rs",
+    "line": 3,
+    "function": "return_arc",
+    "return_type": "-> Arc<String>",
+    "replacement": "Arc::new(String::new())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/arc.rs",
+    "line": 3,
+    "function": "return_arc",
+    "return_type": "-> Arc<String>",
+    "replacement": "Arc::new(\"xyzzy\".into())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
     "line": 3,
     "function": "outer::inner::name",
@@ -54,7 +72,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 1,
     "function": "has_nested",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/nested_function.rs",
+    "line": 1,
+    "function": "has_nested",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -63,7 +90,43 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 2,
     "function": "has_nested::inner",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/nested_function.rs",
+    "line": 2,
+    "function": "has_nested::inner",
+    "return_type": "-> u32",
+    "replacement": "1",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/numbers.rs",
+    "line": 1,
+    "function": "double_float",
+    "return_type": "-> f32",
+    "replacement": "0.0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/numbers.rs",
+    "line": 1,
+    "function": "double_float",
+    "return_type": "-> f32",
+    "replacement": "1.0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/numbers.rs",
+    "line": 1,
+    "function": "double_float",
+    "return_type": "-> f32",
+    "replacement": "-1.0",
     "genre": "FnValue"
   },
   {
@@ -72,7 +135,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 5,
     "function": "simple_result",
     "return_type": "-> Result<&'static str, ()>",
-    "replacement": "Ok(Default::default())",
+    "replacement": "Ok(\"\")",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/result.rs",
+    "line": 5,
+    "function": "simple_result",
+    "return_type": "-> Result<&'static str, ()>",
+    "replacement": "Ok(\"xyzzy\")",
     "genre": "FnValue"
   },
   {
@@ -81,6 +153,15 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 9,
     "function": "error_if_negative",
     "return_type": "-> Result<(), ()>",
+    "replacement": "Ok(())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/result.rs",
+    "line": 17,
+    "function": "result_with_no_apparent_type_args",
+    "return_type": "-> std::fmt::Result",
     "replacement": "Ok(Default::default())",
     "genre": "FnValue"
   },
@@ -99,7 +180,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 12,
     "function": "returns_42u32",
     "return_type": "-> u32",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/simple_fns.rs",
+    "line": 12,
+    "function": "returns_42u32",
+    "return_type": "-> u32",
+    "replacement": "1",
     "genre": "FnValue"
   },
   {
@@ -144,7 +234,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "line": 14,
     "function": "Lex<'buf>::buf_len",
     "return_type": "-> usize",
-    "replacement": "Default::default()",
+    "replacement": "0",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/struct_with_lifetime.rs",
+    "line": 14,
+    "function": "Lex<'buf>::buf_len",
+    "return_type": "-> usize",
+    "replacement": "1",
     "genre": "FnValue"
   }
 ]

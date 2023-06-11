@@ -2,23 +2,34 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 16 mutants to test
+Found 27 mutants to test
 Unmutated baseline ... ok
+src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new(String::new()) ... ok
+src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... ok
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "" ... ok
 src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy" ... ok
 src/methods.rs:16: replace Foo::double with () ... ok
 src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
 src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
-src/nested_function.rs:1: replace has_nested -> u32 with Default::default() ... ok
-src/nested_function.rs:2: replace has_nested::inner -> u32 with Default::default() ... ok
-src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok(Default::default()) ... ok
-src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(Default::default()) ... ok
+src/nested_function.rs:1: replace has_nested -> u32 with 0 ... ok
+src/nested_function.rs:1: replace has_nested -> u32 with 1 ... ok
+src/nested_function.rs:2: replace has_nested::inner -> u32 with 0 ... ok
+src/nested_function.rs:2: replace has_nested::inner -> u32 with 1 ... ok
+src/numbers.rs:1: replace double_float -> f32 with 0.0 ... ok
+src/numbers.rs:1: replace double_float -> f32 with 1.0 ... ok
+src/numbers.rs:1: replace double_float -> f32 with -1.0 ... ok
+src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("") ... ok
+src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy") ... ok
+src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(()) ... ok
+src/result.rs:17: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default()) ... ok
 src/simple_fns.rs:7: replace returns_unit with () ... ok
-src/simple_fns.rs:12: replace returns_42u32 -> u32 with Default::default() ... ok
+src/simple_fns.rs:12: replace returns_42u32 -> u32 with 0 ... ok
+src/simple_fns.rs:12: replace returns_42u32 -> u32 with 1 ... ok
 src/simple_fns.rs:17: replace divisible_by_three -> bool with true ... ok
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... ok
 src/simple_fns.rs:26: replace double_string -> String with String::new() ... ok
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... ok
-src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with Default::default() ... ok
-16 mutants tested: 16 succeeded
+src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0 ... ok
+src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1 ... ok
+27 mutants tested: 27 succeeded
 

@@ -1,9 +1,10 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: stdout
 ---
-Found 1 mutant to test
+Found 2 mutants to test
 Unmutated baseline ... ok
-src/lib.rs:4: replace factorial -> u32 with Default::default() ... caught
-1 mutant tested: 1 caught
+src/lib.rs:4: replace factorial -> u32 with 0 ... caught
+src/lib.rs:4: replace factorial -> u32 with 1 ... caught
+2 mutants tested: 2 caught
 

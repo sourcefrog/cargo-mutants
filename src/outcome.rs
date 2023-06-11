@@ -230,16 +230,6 @@ impl ScenarioOutcome {
             && self.last_phase_result().success()
     }
 
-    /// Duration of the test phase, if tests were run.
-    pub fn test_duration(&self) -> Option<Duration> {
-        if let Some(phase_result) = self.phase_results.last() {
-            if phase_result.phase == Phase::Test {
-                return Some(phase_result.duration);
-            }
-        }
-        None
-    }
-
     pub fn summary(&self) -> SummaryOutcome {
         match self.scenario {
             Scenario::Baseline => {

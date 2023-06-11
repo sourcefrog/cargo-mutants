@@ -2,10 +2,8 @@
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
-use std::borrow::Cow;
 use std::fmt;
 use std::fs;
-
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -45,7 +43,7 @@ pub struct Mutant {
     pub span: Span,
 
     /// The replacement text.
-    pub replacement: Cow<'static, str>,
+    pub replacement: String,
 
     /// What general category of mutant this is.
     pub genre: Genre,
@@ -99,7 +97,7 @@ impl Mutant {
 
     /// Return the text inserted for this mutation.
     pub fn replacement_text(&self) -> &str {
-        self.replacement.as_ref()
+        self.replacement.as_str()
     }
 
     /// Return the name of the function to be mutated.
@@ -203,7 +201,7 @@ impl Serialize for Mutant {
         ss.serialize_field("line", &self.span.start.line)?;
         ss.serialize_field("function", &self.function_name.as_ref())?;
         ss.serialize_field("return_type", &self.return_type.as_ref())?;
-        ss.serialize_field("replacement", self.replacement.as_ref())?;
+        ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
     }
@@ -225,7 +223,7 @@ mod test {
         let source_tree = tool.find_root(tree_path).unwrap();
         let options = Options::default();
         let mutants = walk_tree(&tool, &source_tree, &options).unwrap().mutants;
-        assert_eq!(mutants.len(), 2);
+        assert_eq!(mutants.len(), 3);
         assert_eq!(
             format!("{:?}", mutants[0]),
             "Mutant { \
@@ -247,7 +245,7 @@ mod test {
                 Mutant {
                     function_name: "factorial",
                     return_type: "-> u32",
-                    replacement: "Default::default()",
+                    replacement: "0",
                     genre: FnValue,
                     start: (
                         7,
@@ -263,7 +261,11 @@ mod test {
         );
         assert_eq!(
             mutants[1].to_string(),
-            "src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()"
+            "src/bin/factorial.rs:7: replace factorial -> u32 with 0"
+        );
+        assert_eq!(
+            mutants[2].to_string(),
+            "src/bin/factorial.rs:7: replace factorial -> u32 with 1"
         );
     }
 
@@ -290,7 +292,7 @@ mod test {
         let mutants = walk_tree(&tool, &source_tree, &Options::default())
             .unwrap()
             .mutants;
-        assert_eq!(mutants.len(), 2);
+        assert_eq!(mutants.len(), 3);
 
         let mut mutated_code = mutants[0].mutated_code();
         assert_eq!(mutants[0].function_name(), "main");
@@ -332,7 +334,7 @@ mod test {
                 }
 
                 fn factorial(n: u32) -> u32 {
-                Default::default() /* ~ changed by cargo-mutants ~ */
+                0 /* ~ changed by cargo-mutants ~ */
                 }
 
                 #[test]

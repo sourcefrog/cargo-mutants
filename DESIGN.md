@@ -46,8 +46,9 @@ file to find mutations.
 `textedit.rs` -- A (line, column) addressing within a source file, and edits to
 the content based on those addresses.
 
-`visit.rs` -- Walk a source file's AST. The interface to the `syn` parser is
-localized here.
+`visit.rs` -- Walk a source file's AST, and guess at likely-legal-but-wrong
+replacements. The interface to the `syn` parser is localized here, and also the
+core of cargo-mutants logic to guess at valid replacements.
 
 ## Relative dependencies
 

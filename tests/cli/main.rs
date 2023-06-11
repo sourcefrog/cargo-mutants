@@ -470,8 +470,8 @@ fn workspace_tree_is_well_tested() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
     println!("outcomes.json:\n{json_str}");
     let json: serde_json::Value = json_str.parse().unwrap();
-    assert_eq!(json["total_mutants"].as_u64().unwrap(), 3);
-    assert_eq!(json["caught"].as_u64().unwrap(), 3);
+    assert_eq!(json["total_mutants"].as_u64().unwrap(), 8);
+    assert_eq!(json["caught"].as_u64().unwrap(), 8);
     assert_eq!(json["missed"].as_u64().unwrap(), 0);
     assert_eq!(json["timeout"].as_u64().unwrap(), 0);
     let outcomes = json["outcomes"].as_array().unwrap();
@@ -494,7 +494,7 @@ fn workspace_tree_is_well_tested() {
         );
     }
 
-    assert_eq!(outcomes.len(), 4);
+    assert_eq!(outcomes.len(), 9);
     for outcome in &outcomes[1..] {
         let mutant = &outcome["scenario"]["Mutant"];
         let package_name = mutant["package"].as_str().unwrap();
@@ -569,7 +569,7 @@ fn small_well_tested_tree_is_clean() {
     assert!(log_content.contains(indoc! { r#"
             *** mutation diff:
             --- src/lib.rs
-            +++ replace factorial -> u32 with Default::default()
+            +++ replace factorial -> u32 with 0
             @@ -1,17 +1,13 @@
         "# }));
     assert!(log_content.contains(indoc! { r#"
@@ -579,7 +579,7 @@ fn small_well_tested_tree_is_clean() {
             -        a *= i;
             -    }
             -    a
-            +Default::default() /* ~ changed by cargo-mutants ~ */
+            +0 /* ~ changed by cargo-mutants ~ */
              }
             "# }));
     // Also, it should contain output from the failed tests with mutations applied.
@@ -622,8 +622,8 @@ fn well_tested_tree_quiet() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
     println!("outcomes.json:\n{outcomes_json}");
     let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    assert_eq!(outcomes["total_mutants"], 16);
-    assert_eq!(outcomes["caught"], 16);
+    assert_eq!(outcomes["total_mutants"], 27);
+    assert_eq!(outcomes["caught"], 27);
     assert_eq!(outcomes["unviable"], 0);
     assert_eq!(outcomes["missed"], 0);
 }
@@ -784,7 +784,7 @@ r"Unmutated baseline \.\.\. ok in \d+\.\ds"
 r"src/bin/factorial\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:7: replace factorial -> u32 with Default::default\(\) \.\.\. caught in \d+\.\ds"
+r"src/bin/factorial\.rs:7: replace factorial -> u32 with 0 \.\.\. caught in \d+\.\ds"
         ).unwrap());
 }
 
@@ -897,9 +897,7 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run()
-        .arg("mutants")
-        .arg("--check")
-        .arg("--no-times")
+        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
@@ -982,7 +980,7 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .code(0)
-        .stdout(contains("Found 1 mutant to test"));
+        .stdout(contains("Found 2 mutants to test"));
 }
 
 #[test]
@@ -1176,7 +1174,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         ))
         .stdout(contains("replace should_stop -> bool with true ... caught"))
         .stdout(contains(
-            "replace controlled_loop -> usize with Default::default() ... caught",
+            "replace controlled_loop -> usize with 0 ... caught",
         ));
     // TODO: Inspect outcomes.json.
 }
@@ -1320,7 +1318,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .success()
-        .stdout(contains("1 mutant tested: 1 succeeded"));
+        .stdout(contains("2 mutants tested: 2 succeeded"));
 
     run()
         .arg("mutants")
@@ -1329,7 +1327,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .success()
-        .stdout(contains("1 mutant tested: 1 caught"));
+        .stdout(contains("2 mutants tested: 2 caught"));
 }
 
 /// `INSTA_UPDATE=always` in the environment will cause Insta to update

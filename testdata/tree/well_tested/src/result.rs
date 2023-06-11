@@ -14,6 +14,10 @@ fn error_if_negative(a: i32) -> Result<(), ()> {
     }
 }
 
+fn result_with_no_apparent_type_args() -> std::fmt::Result {
+    Err(Default::default())
+}
+
 mod test {
     use super::*;
 
@@ -29,5 +33,11 @@ mod test {
         assert_eq!(error_if_negative(0), Ok(()));
         assert_eq!(error_if_negative(-1), Err(()));
         assert_eq!(error_if_negative(1), Ok(()));
+    }
+
+    #[test]
+    fn fmt_result_fails() {
+        let r = super::result_with_no_apparent_type_args();
+        assert!(r.is_err(), "Result should be an error: {r:?}");
     }
 }

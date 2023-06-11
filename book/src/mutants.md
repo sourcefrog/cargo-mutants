@@ -13,15 +13,30 @@ This checks that the tests:
 
 More mutation genres and patterns will be added in future releases.
 
-| Return type | Mutation pattern |
-| ----------- | ---------------- |
-| `()`        | `()` (return unit, with no side effects) |
-| `bool`      | `true`, `false` |
-| `String`    | `String::new()`, `"xyzzy".into()` |
-| `&'_ str` . | `""`, `"xyzzy"` |
-| `&mut ...`  | `Box::leak(Box::new(...))` |
-| `Result`    | `Ok(Default::default())`, [and an error if configured](error-values.md) |
-| (any other) | `Default::default()` (and hope the type implements `Default`) |
+| Return type       | Mutation pattern |
+| ----------------- | ---------------- |
+| `()`              | `()` (return unit, with no side effects) |
+| signed integers   | `0, 1, -1`    |
+| unsigned integers | `0, 1`      |
+| floats            | `0.0, 1.0, -1.0`                                        |
+| `NonZeroI*`       | `1, -1`     |
+| `NonZeroU*`       | `1`         |
+| `bool`            | `true`, `false` |
+| `String`          | `String::new()`, `"xyzzy".into()` |
+| `&'_ str` .       | `""`, `"xyzzy"` |
+| `&mut ...`        | `Box::leak(Box::new(...))` |
+| `Result<T>`       | `Ok(...)` , [and an error if configured](error-values.md) |
+| `Option<T>`       | `Some(...)`, `None` |
+| `Box<T>`          | `Box::new(...)`                                            |
+| `Vec<T>`          | `vec![]`, `vec![...]`                                      |
+| `Arc<T>`          | `Arc::new(...)`                                            |
+| `[T; L]`          | `[r; L]` for all replacements of T                         |
+| `&T`              | `&...` (all replacements for T)                            |
+| (any other)       | `Default::default()`                                       |
+
+`...` in the mutation patterns indicates that the type is recursively mutated.
+ For example, `Result<bool>` can generate `Ok(true)` and `Ok(false)`.
+The recursion can nest for types like `Result<Option<String>>`.
 
 Some of these values may not be valid for all types: for example, returning
 `Default::default()` will work for many types, but not all. In this case the

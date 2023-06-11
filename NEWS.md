@@ -9,6 +9,19 @@
   mutants. The only genre today is `FnValue`, in which a function body is
   replaced by a value. This will in future allow filtering by genre.
 
+- Recurse into return types, so that for example `Result<bool>` can generate
+  `Ok(true)` and `Ok(false)`, and `Some<T>` generates `None` and every generated
+  value of `T`. Similarly for `Box<T>`, and `Vec<T>`.
+
+- Generate specific values for integers: `[0, 1]` for unsigned integers,
+  `[0, 1, -1]` for signed integers; `[1]` for NonZero unsigned integers and
+  `[1, -1]` for NonZero signed integers.
+
+- Generate specific values for floats: `[0.0, 1.0, -1.0]`.
+
+- Generate (fixed-length) array values, like `[0; 256], [1; 256]` using every
+  recursively generated value for the element type.
+
 ## 23.5.0
 
 _"Pickled crab"_
