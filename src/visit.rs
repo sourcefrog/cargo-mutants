@@ -365,14 +365,6 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
-            } else if let Some(boxed_type) = match_first_type_arg(path, "Box") {
-                reps.extend(
-                    type_replacements(boxed_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { Box::new(#rep) }
-                        }),
-                )
             } else if let Some(some_type) = match_first_type_arg(path, "Option") {
                 reps.push(quote! { None });
                 reps.extend(
@@ -393,7 +385,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { vec![#rep] }
                         }),
                 )
-            } else if let Some((ident, inner_type)) = could_be_simple_container(path) {
+            } else if let Some((container_type, inner_type)) = known_simple_container(path) {
                 // Something like Arc, Mutex, etc.
 
                 // TODO: Ideally we should use the path without relying on it being
@@ -404,23 +396,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                     type_replacements(inner_type, error_exprs)
                         .into_iter()
                         .map(|rep| {
-                            quote! { Arc::new(#rep) }
-                        }),
-                )
-            } else if let Some(inner_type) = match_first_type_arg(path, "Rc") {
-                reps.extend(
-                    type_replacements(inner_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { Rc::new(#rep) }
-                        }),
-                )
-            } else if let Some(inner_type) = match_first_type_arg(path, "Mutex") {
-                reps.extend(
-                    type_replacements(inner_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { Mutex::new(#rep) }
+                            quote! { #container_type::new(#rep) }
                         }),
                 )
             } else {
@@ -499,12 +475,19 @@ fn path_ends_with(path: &Path, ident: &str) -> bool {
 /// like Box, Cell, Mutex, etc, that can be constructed with `T::new(inner_val)`.
 ///
 /// If so, return the short name (like "Box") and the inner type.
-fn could_be_simple_container(path: &Path) -> Option<(&Ident, &Type)> {
+fn known_simple_container(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
+    if !["Box", "Cell", "RefCell", "Arc", "Rc", "Mutex"]
+        .iter()
+        .any(|v| last.ident == v)
+    {
+        return None;
+    }
     if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
         &last.arguments
     {
         // TODO: Skip lifetime args.
+        // TODO: Return the path with args stripped out.
         if args.len() == 1 {
             if let Some(GenericArgument::Type(inner_type)) = args.first() {
                 return Some((&last.ident, inner_type));
