@@ -30,6 +30,7 @@ More mutation genres and patterns will be added in future releases.
 | `Box<T>`          | `Box::new(...)`                                            |
 | `Vec<T>`          | `vec![]`, `vec![...]`                                      |
 | `Arc<T>`          | `Arc::new(...)`                                            |
+| `Rc<T>`           | `Rc::new(...)`                                             |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
 | `&T`              | `&...` (all replacements for T)                            |
 | (any other)       | `Default::default()`                                       |

@@ -18,8 +18,8 @@ use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{
-    AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, ItemFn, Path, PathArguments,
-    ReturnType, Type, TypeArray, TypeTuple,
+    AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, Ident, ItemFn, Path,
+    PathArguments, ReturnType, Type, TypeArray, TypeTuple,
 };
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
@@ -318,6 +318,11 @@ fn return_type_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> V
 ///
 /// This is really the heart of cargo-mutants.
 fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
+    // This could probably change to run from some configuration rather than
+    // hardcoding various types, which would make it easier to support tree-specific
+    // mutation values, and perhaps reduce duplication. However, it seems better
+    // to support all the core cases with direct code first to learn what generalizations
+    // are needed.
     let mut reps = Vec::new();
     match type_ {
         Type::Path(syn::TypePath { path, .. }) => {
@@ -388,7 +393,9 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { vec![#rep] }
                         }),
                 )
-            } else if let Some(inner_type) = match_first_type_arg(path, "Arc") {
+            } else if let Some((ident, inner_type)) = could_be_simple_container(path) {
+                // Something like Arc, Mutex, etc.
+
                 // TODO: Ideally we should use the path without relying on it being
                 // imported, but we must strip or rewrite the arguments, so that
                 // `std::sync::Arc<String>` becomes either `std::sync::Arc::<String>::new`
@@ -398,6 +405,22 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                         .into_iter()
                         .map(|rep| {
                             quote! { Arc::new(#rep) }
+                        }),
+                )
+            } else if let Some(inner_type) = match_first_type_arg(path, "Rc") {
+                reps.extend(
+                    type_replacements(inner_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { Rc::new(#rep) }
+                        }),
+                )
+            } else if let Some(inner_type) = match_first_type_arg(path, "Mutex") {
+                reps.extend(
+                    type_replacements(inner_type, error_exprs)
+                        .into_iter()
+                        .map(|rep| {
+                            quote! { Mutex::new(#rep) }
                         }),
                 )
             } else {
@@ -470,6 +493,25 @@ fn return_type_to_string(return_type: &ReturnType) -> String {
 
 fn path_ends_with(path: &Path, ident: &str) -> bool {
     path.segments.last().map_or(false, |s| s.ident == ident)
+}
+
+/// If the type has a single type argument then, perhaps it's a simple container
+/// like Box, Cell, Mutex, etc, that can be constructed with `T::new(inner_val)`.
+///
+/// If so, return the short name (like "Box") and the inner type.
+fn could_be_simple_container(path: &Path) -> Option<(&Ident, &Type)> {
+    let last = path.segments.last()?;
+    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last.arguments
+    {
+        // TODO: Skip lifetime args.
+        if args.len() == 1 {
+            if let Some(GenericArgument::Type(inner_type)) = args.first() {
+                return Some((&last.ident, inner_type));
+            }
+        }
+    }
+    None
 }
 
 fn path_is_float(path: &Path) -> bool {
@@ -873,15 +915,15 @@ mod test {
         );
     }
 
-    // #[test]
-    // fn rc_replacement() {
-    //     // Also checks that it matches the path, even using an atypical path.
-    //     // TODO: Ideally this would be fully qualified like `alloc::sync::Rc::new(String::new())`.
-    //     assert_eq!(
-    //         replace(&parse_quote! { -> alloc::sync::Rc<String> }, &[]),
-    //         &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"]
-    //     );
-    // }
+    #[test]
+    fn rc_replacement() {
+        // Also checks that it matches the path, even using an atypical path.
+        // TODO: Ideally this would be fully qualified like `alloc::sync::Rc::new(String::new())`.
+        assert_eq!(
+            replace(&parse_quote! { -> alloc::sync::Rc<String> }, &[]),
+            &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"]
+        );
+    }
 
     fn replace(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<String> {
         return_type_replacements(return_type, error_exprs)
