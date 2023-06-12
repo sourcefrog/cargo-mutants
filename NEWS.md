@@ -5,6 +5,9 @@
 - Mutate `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, and `VecDeque` to
   generate empty and one-element containers.
 
+- Generically recognize functions returning `T<A>` or `T<'a, A>'` and try
+  to construct them from an `A`.
+
 ## 23.6.0
 
 - Generate `Box::leak(Box::new(...))` as a mutation of functions returning

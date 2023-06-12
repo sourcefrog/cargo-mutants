@@ -333,6 +333,9 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             } else if path.is_ident("String") {
                 reps.push(quote! { String::new() });
                 reps.push(quote! { "xyzzy".into() });
+            } else if path.is_ident("str") {
+                reps.push(quote! { "" });
+                reps.push(quote! { "xyzzy" });
             } else if path_is_unsigned(path) {
                 reps.push(quote! { 0 });
                 reps.push(quote! { 1 });
@@ -406,6 +409,23 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                         .into_iter()
                         .map(|rep| {
                             quote! { #collection_type::from_iter([#rep]) }
+                        }),
+                );
+            } else if let Some((collection_type, inner_type)) = maybe_collection_or_container(path)
+            {
+                // Something like `T<A>` or `T<'a, A>`, when we don't know exactly how
+                // to call it, but we strongly suspect that you could construct it from
+                // an `A`. For example, `Cow`.
+                reps.push(quote! { #collection_type::new() });
+                reps.extend(
+                    type_replacements(inner_type, error_exprs)
+                        .into_iter()
+                        .flat_map(|rep| {
+                            [
+                                quote! { #collection_type::from_iter([#rep]) },
+                                quote! { #collection_type::new(#rep) },
+                                quote! { #collection_type::from(#rep) },
+                            ]
                         }),
                 );
             } else {
@@ -531,6 +551,27 @@ fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
             if let Some(GenericArgument::Type(inner_type)) = args.first() {
                 return Some((&last.ident, inner_type));
             }
+        }
+    }
+    None
+}
+
+/// Match a type with one type argument, which might be a container or collection.
+fn maybe_collection_or_container(path: &Path) -> Option<(&Ident, &Type)> {
+    let last = path.segments.last()?;
+    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last.arguments
+    {
+        let type_args: Vec<_> = args
+            .iter()
+            .filter_map(|a| match a {
+                GenericArgument::Type(t) => Some(t),
+                _ => None,
+            })
+            .collect();
+        // TODO: Return the path with args stripped out.
+        if type_args.len() == 1 {
+            return Some((&last.ident, type_args.first().unwrap()));
         }
     }
     None
@@ -955,6 +996,22 @@ mod test {
                 "BTreeSet::new()",
                 "BTreeSet::from_iter([String::new()])",
                 "BTreeSet::from_iter([\"xyzzy\".into()])"
+            ]
+        );
+    }
+
+    #[test]
+    fn cow_replacement() {
+        assert_eq!(
+            replace(&parse_quote! { -> Cow<'static, str> }, &[]),
+            &[
+                "Cow::new()",
+                "Cow::from_iter([\"\"])",
+                "Cow::new(\"\")",
+                "Cow::from(\"\")",
+                "Cow::from_iter([\"xyzzy\"])",
+                "Cow::new(\"xyzzy\")",
+                "Cow::from(\"xyzzy\")",
             ]
         );
     }
