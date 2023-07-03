@@ -98,6 +98,7 @@ exclude = [
     "testdata/tree/hang_when_mutated",
     "testdata/tree/insta",
     "testdata/tree/integration_tests",
+    "testdata/tree/missing_test",
     "testdata/tree/mut_ref",
     "testdata/tree/never_type",
     "testdata/tree/override_dependency",
