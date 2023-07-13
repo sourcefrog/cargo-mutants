@@ -24,4 +24,4 @@ and prioritized.
 One drawback of mutation testing is that it runs the whole test suite once per
 generated mutant, so it can be slow on large trees with slow test suites. There
 are [some techniques to speed up cargo-mutants](performance.md), including
-[running multiple tests in parallel](parallel.md).
+[running multiple tests in parallel](parallelism.md).
