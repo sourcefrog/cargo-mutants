@@ -11,6 +11,9 @@ jobs:
   cargo-mutants:
     runs-on: ubuntu-latest
     steps:
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -18,7 +21,7 @@ jobs:
       - name: Install cargo-mutants
         run: cargo install --locked cargo-mutants
       - name: Run mutant tests
-        run: cargo mutants -- --all-features
+        run: cargo mutants --jobs ${{ steps.cpu-cores.outputs.count }} -- --all-features
       - name: Archive results
         uses: actions/upload-artifact@v3
         if: failure()
