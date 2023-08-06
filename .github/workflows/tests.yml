@@ -34,6 +34,24 @@ jobs:
         run: |
           cargo --version
           rustc --version
+
+      # FIXME: remove, trying out oudside pages/deploy
+      - name: Install mdbook
+        run: |
+          mkdir mdbook
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.21/mdbook-v0.4.21-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=./mdbook
+          echo `pwd`/mdbook >> $GITHUB_PATH
+
+          mkdir -p mdbook-linkcheck && cd "$_" && \
+            curl -L https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v0.7.7/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -o mdbook-linkcheck.zip && \
+            unzip "$_" && \
+            chmod +x mdbook-linkcheck && \
+            ls -alF && \
+            echo `pwd` >> $GITHUB_PATH && \
+            cd ..
+      - name: Build book
+        run: |
+          mdbook build book
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --all -- --check
