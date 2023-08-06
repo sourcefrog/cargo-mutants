@@ -32,6 +32,14 @@ jobs:
           mkdir mdbook
           curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.21/mdbook-v0.4.21-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=./mdbook
           echo `pwd`/mdbook >> $GITHUB_PATH
+
+          mkdir -p mdbook-linkcheck && cd "$_" && \
+            curl -L https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v0.7.7/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -o mdbook-linkcheck.zip && \
+            unzip "$_" && \
+            chmod +x mdbook-linkcheck && \
+            echo `pwd` >> $GITHUB_PATH && \
+            cd ..
+
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Build book
