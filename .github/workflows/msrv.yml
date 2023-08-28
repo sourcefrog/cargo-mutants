@@ -30,14 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/toolchain@v1
-        name: Install older toolchain
+      - name: Toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-          override: true
       - name: Show Cargo and rustc version
         run: |
-          cargo --version
-          rustc --version
+          cargo +${{ matrix.toolchain }} --version
+          rustc +${{ matrix.toolchain }} --version
       - name: Test
-        run: cargo test --workspace
+        run: cargo +${{ matrix.toolchain }} test --workspace
