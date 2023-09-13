@@ -78,11 +78,13 @@ impl Tool for CargoTool {
         for package_metadata in &metadata.workspace_packages() {
             check_interrupted()?;
             let _span = debug_span!("package", name = %package_metadata.name).entered();
-            debug!(manifest_path = %package_metadata.manifest_path, "walk package");
-            let relative_manifest_path = package_metadata
-                .manifest_path
+            let manifest_path = &package_metadata.manifest_path;
+            debug!(%manifest_path, "walk package");
+            let relative_manifest_path = manifest_path
                 .strip_prefix(source_root_path)
-                .expect("manifest_path is within source_root_path")
+                .with_context(|| format!(
+                    "manifest path {manifest_path} is not within the detected source root path {source_root_path}"
+                ))?
                 .to_owned();
             let package = Arc::new(Package {
                 name: package_metadata.name.clone(),
