@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-      - ci-mutants
+      - ci-*
 
 env:
   # Some runners, especially on Windows, have uneven performance; allow lots
