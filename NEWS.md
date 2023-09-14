@@ -13,6 +13,8 @@
   `T<'a, A>'` and try to construct them from an `A` with `T::from_iter`,
   `T::new`, and `T::from`.
 
+- Minimum Rust version updated to 1.70.
+
 ## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a
