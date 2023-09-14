@@ -399,9 +399,11 @@ mod test {
             .iter()
             .map(|sf| sf.tree_relative_path.to_slash_path())
             .collect_vec();
+        // The order here might look strange, but they're actually deterministically
+        // sorted by the package name, not the path name.
         assert_eq!(
             paths,
-            ["main/src/main.rs", "main2/src/main.rs", "utils/src/lib.rs"]
+            ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
         );
     }
 }
