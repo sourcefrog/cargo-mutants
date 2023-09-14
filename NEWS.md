@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Generate `HttpResponse::Ok().finish()` as a mutation of an Actix `HttpResponse`.
+
 ## 23.6.0
 
 - Generate `Box::leak(Box::new(...))` as a mutation of functions returning
