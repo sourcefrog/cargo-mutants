@@ -30,6 +30,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.version }}
+          components: rustfmt
       - name: Show Cargo and rustc version
         run: |
           cargo --version
