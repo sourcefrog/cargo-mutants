@@ -48,6 +48,9 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
       - uses: Swatinem/rust-cache@v2
       - run: cargo install --path .
       - name: Mutants
