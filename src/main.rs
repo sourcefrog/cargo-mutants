@@ -262,8 +262,7 @@ fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool)
                 .iter()
                 .map(|source_file| {
                     json!({
-                        // to_string so that we get it with slashes.
-                        "path": source_file.tree_relative_path.to_string(),
+                        "path": source_file.tree_relative_path.to_slash_path(),
                         "package": source_file.package.name,
                     })
                 })
@@ -273,7 +272,7 @@ fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool)
         writeln!(out)?;
     } else {
         for file in files {
-            writeln!(out, "{}", file.tree_relative_path)?;
+            writeln!(out, "{}", file.tree_relative_path.to_slash_path())?;
         }
     }
     Ok(())

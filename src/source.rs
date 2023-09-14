@@ -9,6 +9,8 @@ use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
+use crate::path::Utf8PathSlashes;
+
 /// A Rust source file within a source tree.
 ///
 /// It can be viewed either relative to the source tree (for display)
@@ -50,7 +52,7 @@ impl SourceFile {
 
     /// Return the path of this file relative to the tree root, with forward slashes.
     pub fn tree_relative_slashes(&self) -> String {
-        self.tree_relative_path.to_string()
+        self.tree_relative_path.to_slash_path()
     }
 
     /// Return the path of this file relative to the base of the source tree.
