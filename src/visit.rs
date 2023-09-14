@@ -47,7 +47,7 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
         .collect::<Result<Vec<Expr>>>()?;
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
-    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.root_files(root)?.into();
+    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
         let (mut file_mutants, more_files) =

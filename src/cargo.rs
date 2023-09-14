@@ -83,7 +83,7 @@ impl Tool for CargoTool {
     /// After this, there is one more level of discovery, by walking those root files
     /// to find `mod` statements, and then recursively walking those files to find
     /// all source files.
-    fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
+    fn top_source_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
         debug!(?cargo_toml_path, ?source_root_path, "Find root files");
         check_interrupted()?;
@@ -380,15 +380,15 @@ mod test {
     }
 
     #[test]
-    fn find_root_files_from_subdirectory_of_workspace() {
+    fn find_top_source_files_from_subdirectory_of_workspace() {
         let tool = CargoTool::new();
         let root_dir = tool
             .find_root(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
-        let root_files = tool.root_files(&root_dir).expect("Find root files");
-        println!("{root_files:#?}");
-        assert_eq!(root_files.len(), 3);
-        let paths: Vec<String> = root_files
+        let top_source_files = tool.top_source_files(&root_dir).expect("Find root files");
+        println!("{top_source_files:#?}");
+        assert_eq!(top_source_files.len(), 3);
+        let paths: Vec<String> = top_source_files
             .iter()
             .map(|sf| sf.tree_relative_path.to_string())
             .sorted()
