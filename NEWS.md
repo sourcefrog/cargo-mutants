@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Mutate the known collection types `BinaryHeap`, `BTreeSet`, `HashSet`,
+  `LinkedList`, and `VecDeque` to generate empty and one-element collections
+  using `T::new()` and `T::from_iter(..)`.
+
+- Mutate known container types like `Arc`, `Box`, `Cell`, `Mutex`, `Rc`,
+  `RefCell` into `T::new(a)`.
+
+- Mutate unknown types that look like containers or collections `T<A>` or
+  `T<'a, A>'` and try to construct them from an `A` with `T::from_iter`,
+  `T::new`, and `T::from`.
+
 - Minimum Rust version updated to 1.70.
 
 ## 23.9.0
@@ -22,7 +33,7 @@
 
 - Recurse into return types, so that for example `Result<bool>` can generate
   `Ok(true)` and `Ok(false)`, and `Some<T>` generates `None` and every generated
-  value of `T`. Similarly for `Box<T>`, and `Vec<T>`.
+  value of `T`. Similarly for `Box<T>`, `Vec<T>`, `Rc<T>`, `Arc<T>`.
 
 - Generate specific values for integers: `[0, 1]` for unsigned integers,
   `[0, 1, -1]` for signed integers; `[1]` for NonZero unsigned integers and

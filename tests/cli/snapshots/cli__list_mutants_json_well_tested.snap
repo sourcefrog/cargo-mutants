@@ -1,5 +1,6 @@
 ---
 source: tests/cli/main.rs
+assertion_line: 73
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
@@ -163,6 +164,33 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "function": "result_with_no_apparent_type_args",
     "return_type": "-> std::fmt::Result",
     "replacement": "Ok(Default::default())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/sets.rs",
+    "line": 3,
+    "function": "make_a_set",
+    "return_type": "-> BTreeSet<String>",
+    "replacement": "BTreeSet::new()",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/sets.rs",
+    "line": 3,
+    "function": "make_a_set",
+    "return_type": "-> BTreeSet<String>",
+    "replacement": "BTreeSet::from_iter([String::new()])",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/sets.rs",
+    "line": 3,
+    "function": "make_a_set",
+    "return_type": "-> BTreeSet<String>",
+    "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
     "genre": "FnValue"
   },
   {
