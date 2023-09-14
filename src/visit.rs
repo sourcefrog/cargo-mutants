@@ -247,15 +247,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
+        // TODO: Maybe while visiting the file we should only collect the
+        // `mod` statements, and then find the files separately, to keep IO
+        // effects away from parsing the file.
         let mod_name = &node.ident.unraw().to_string();
-        let _span = trace_span!(
-            "mod",
-            line = node.mod_token.span.start().line,
-            name = mod_name
-        )
-        .entered();
+        let _span = trace_span!("mod", line = node.mod_token.span.start().line, mod_name).entered();
         if attrs_excluded(&node.attrs) {
-            trace!("mod {:?} excluded by attrs", node.ident,);
+            trace!("mod excluded by attrs");
             return;
         }
         // If there's no content in braces, then this is a `mod foo;`
@@ -511,20 +509,19 @@ fn path_ends_with(path: &Path, ident: &str) -> bool {
 /// If so, return the short name (like "Box") and the inner type.
 fn known_container(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
-    if !["Box", "Cell", "RefCell", "Arc", "Rc", "Mutex"]
+    if ["Box", "Cell", "RefCell", "Arc", "Rc", "Mutex"]
         .iter()
         .any(|v| last.ident == v)
     {
-        return None;
-    }
-    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
-        &last.arguments
-    {
-        // TODO: Skip lifetime args.
-        // TODO: Return the path with args stripped out.
-        if args.len() == 1 {
-            if let Some(GenericArgument::Type(inner_type)) = args.first() {
-                return Some((&last.ident, inner_type));
+        if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+            &last.arguments
+        {
+            // TODO: Skip lifetime args.
+            // TODO: Return the path with args stripped out.
+            if args.len() == 1 {
+                if let Some(GenericArgument::Type(inner_type)) = args.first() {
+                    return Some((&last.ident, inner_type));
+                }
             }
         }
     }
