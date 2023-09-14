@@ -5,8 +5,7 @@
 use std::env;
 use std::sync::Arc;
 
-#[allow(unused_imports)]
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use serde_json::Value;
 use tracing::debug_span;
@@ -82,9 +81,12 @@ impl Tool for CargoTool {
             debug!(%manifest_path, "walk package");
             let relative_manifest_path = manifest_path
                 .strip_prefix(source_root_path)
-                .with_context(|| format!(
-                    "manifest path {manifest_path} is not within the detected source root path {source_root_path}"
-                ))?
+                .map_err(|_| {
+                    anyhow!(
+                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {source_root_path:?}",
+                        name = package_metadata.name
+                    )
+                })?
                 .to_owned();
             let package = Arc::new(Package {
                 name: package_metadata.name.clone(),
@@ -196,17 +198,15 @@ fn rustflags() -> String {
 
 /// Run `cargo locate-project` to find the path of the `Cargo.toml` enclosing this path.
 fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
-    let cargo_bin = cargo_bin();
-    if !path.is_dir() {
-        bail!("{} is not a directory", path);
-    }
+    ensure!(path.is_dir(), "{path:?} is not a directory");
+    let cargo_bin = cargo_bin(); // needed for lifetime
     let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
     let stdout = get_command_output(&argv, path)
         .with_context(|| format!("run cargo locate-project in {path:?}"))?;
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let cargo_toml_path: Utf8PathBuf = val["root"]
         .as_str()
-        .context("cargo locate-project output has no root: {stdout:?}")?
+        .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
         .to_owned()
         .into();
     assert!(cargo_toml_path.is_file());
