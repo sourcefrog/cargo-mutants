@@ -5,8 +5,7 @@
 use std::env;
 use std::sync::Arc;
 
-#[allow(unused_imports)]
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use serde_json::Value;
 use tracing::debug_span;
@@ -44,12 +43,31 @@ impl Tool for CargoTool {
     }
 
     fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf> {
-        let cargo_toml_path = locate_cargo_toml(path)?;
+        ensure!(path.is_dir(), "{path:?} is not a directory");
+        let cargo_bin = cargo_bin(); // needed for lifetime
+        let argv: Vec<&str> = vec![&cargo_bin, "locate-project", "--workspace"];
+        let stdout = get_command_output(&argv, path)
+            .with_context(|| format!("run cargo locate-project in {path:?}"))?;
+        let val: Value =
+            serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
+        let cargo_toml_path: Utf8PathBuf = val["root"]
+            .as_str()
+            .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
+            .to_owned()
+            .into();
+        debug!(?cargo_toml_path, "Found workspace root manifest");
+        ensure!(
+            cargo_toml_path.is_file(),
+            "cargo locate-project root {cargo_toml_path:?} is not a file"
+        );
         let root = cargo_toml_path
             .parent()
-            .expect("cargo_toml_path has a parent")
+            .ok_or_else(|| anyhow!("cargo locate-project root {cargo_toml_path:?} has no parent"))?
             .to_owned();
-        assert!(root.is_dir());
+        ensure!(
+            root.is_dir(),
+            "apparent project root directory {root:?} is not a directory"
+        );
         Ok(root)
     }
 
@@ -65,9 +83,9 @@ impl Tool for CargoTool {
     /// After this, there is one more level of discovery, by walking those root files
     /// to find `mod` statements, and then recursively walking those files to find
     /// all source files.
-    fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
+    fn top_source_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
-        debug!(?cargo_toml_path, ?source_root_path, "find root files");
+        debug!(?cargo_toml_path, ?source_root_path, "Find root files");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
@@ -78,11 +96,16 @@ impl Tool for CargoTool {
         for package_metadata in &metadata.workspace_packages() {
             check_interrupted()?;
             let _span = debug_span!("package", name = %package_metadata.name).entered();
-            debug!(manifest_path = %package_metadata.manifest_path, "walk package");
-            let relative_manifest_path = package_metadata
-                .manifest_path
+            let manifest_path = &package_metadata.manifest_path;
+            debug!(%manifest_path, "walk package");
+            let relative_manifest_path = manifest_path
                 .strip_prefix(source_root_path)
-                .expect("manifest_path is within source_root_path")
+                .map_err(|_| {
+                    anyhow!(
+                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {source_root_path:?}",
+                        name = package_metadata.name
+                    )
+                })?
                 .to_owned();
             let package = Arc::new(Package {
                 name: package_metadata.name.clone(),
@@ -192,25 +215,6 @@ fn rustflags() -> String {
     rustflags.join("\x1f")
 }
 
-/// Run `cargo locate-project` to find the path of the `Cargo.toml` enclosing this path.
-fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
-    let cargo_bin = cargo_bin();
-    if !path.is_dir() {
-        bail!("{} is not a directory", path);
-    }
-    let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
-    let stdout = get_command_output(&argv, path)
-        .with_context(|| format!("run cargo locate-project in {path:?}"))?;
-    let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
-    let cargo_toml_path: Utf8PathBuf = val["root"]
-        .as_str()
-        .context("cargo locate-project output has no root: {stdout:?}")?
-        .to_owned()
-        .into();
-    assert!(cargo_toml_path.is_file());
-    Ok(cargo_toml_path)
-}
-
 /// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
 ///
 /// These are the starting points for discovering source files.
@@ -252,6 +256,7 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
 mod test {
     use std::ffi::OsStr;
 
+    use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
     use crate::{Options, Phase};
@@ -364,5 +369,33 @@ mod test {
         assert!(root.join("Cargo.toml").is_file());
         assert!(root.join("src/bin/factorial.rs").is_file());
         assert_eq!(root.file_name().unwrap(), OsStr::new("factorial"));
+    }
+
+    #[test]
+    fn find_root_from_subdirectory_of_workspace_finds_the_workspace_root() {
+        let root = CargoTool::new()
+            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find root from within workspace/main");
+        assert_eq!(root.file_name(), Some("workspace"), "Wrong root: {root:?}");
+    }
+
+    #[test]
+    fn find_top_source_files_from_subdirectory_of_workspace() {
+        let tool = CargoTool::new();
+        let root_dir = tool
+            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find workspace root");
+        let top_source_files = tool.top_source_files(&root_dir).expect("Find root files");
+        println!("{top_source_files:#?}");
+        assert_eq!(top_source_files.len(), 3);
+        let paths: Vec<String> = top_source_files
+            .iter()
+            .map(|sf| sf.tree_relative_path.to_string())
+            .sorted()
+            .collect_vec();
+        assert_eq!(
+            paths,
+            ["main/src/main.rs", "main2/src/main.rs", "utils/src/lib.rs"]
+        );
     }
 }

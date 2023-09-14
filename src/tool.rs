@@ -21,19 +21,28 @@ use crate::SourceFile;
 use crate::{build_dir, Result};
 
 pub trait Tool: Debug + Send + Sync {
+    /// A short name for this tool, like "cargo".
     fn name(&self) -> &str;
 
-    /// Find the root of the package enclosing a given path.
+    /// Find the root of the source tree enclosing a given path.
     ///
     /// The root is the enclosing directory that needs to be copied to make a self-contained
     /// scratch directory, and from where source discovery begins.
+    ///
+    /// This may include more directories than will actually be tested, sufficient to allow
+    /// the build to work. For Cargo, we copy the whole workspace.
     fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf>;
 
-    /// Find all the root files from whence source discovery should begin.
+    /// Find the top-level files for each package within a tree.
+    ///
+    /// The path is the root returned by [find_root].
     ///
     /// For Cargo, this is files like `src/bin/*.rs`, `src/lib.rs` identified by targets
-    /// in the manifest.
-    fn root_files(&self, path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>>;
+    /// in the manifest for each package.
+    ///
+    /// From each of these top files, we can discover more source by following `mod`
+    /// statements.
+    fn top_source_files(&self, path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>>;
 
     /// Compose argv to run one phase in this tool.
     fn compose_argv(

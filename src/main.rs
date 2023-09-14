@@ -270,7 +270,8 @@ fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool)
                 })
                 .collect(),
         );
-        serde_json::to_writer_pretty(out, &json_list)?;
+        serde_json::to_writer_pretty(&mut out, &json_list)?;
+        writeln!(out)?;
     } else {
         for file in discovered.files {
             writeln!(out, "{}", file.tree_relative_path)?;

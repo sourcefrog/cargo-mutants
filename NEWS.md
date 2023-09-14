@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed a bug causing an assertion failure when cargo-mutants was run from a
+  subdirectory of a workspace. Thanks to Adam Chalmers!
+
 - Generate `HttpResponse::Ok().finish()` as a mutation of an Actix `HttpResponse`.
 
 ## 23.6.0
