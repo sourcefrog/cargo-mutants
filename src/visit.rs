@@ -360,6 +360,8 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
+            } else if path_ends_with(path, "HttpResponse") {
+                reps.push(quote! { HttpResponse::Ok().finish() });
             } else if let Some(boxed_type) = match_first_type_arg(path, "Box") {
                 reps.extend(
                     type_replacements(boxed_type, error_exprs)
@@ -798,6 +800,14 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Ok(())"]
+        );
+    }
+
+    #[test]
+    fn http_response_replacement() {
+        assert_eq!(
+            replace(&parse_quote! { -> HttpResponse }, &[]),
+            &["HttpResponse::Ok().finish()"]
         );
     }
 

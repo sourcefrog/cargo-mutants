@@ -32,6 +32,7 @@ More mutation genres and patterns will be added in future releases.
 | `Arc<T>`          | `Arc::new(...)`                                            |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
 | `&T`              | `&...` (all replacements for T)                            |
+| `HttpResponse`    | `HttpResponse::Ok().finish`                                |
 | (any other)       | `Default::default()`                                       |
 
 `...` in the mutation patterns indicates that the type is recursively mutated.
