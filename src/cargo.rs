@@ -43,12 +43,31 @@ impl Tool for CargoTool {
     }
 
     fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf> {
-        let cargo_toml_path = locate_cargo_toml(path)?;
+        ensure!(path.is_dir(), "{path:?} is not a directory");
+        let cargo_bin = cargo_bin(); // needed for lifetime
+        let argv: Vec<&str> = vec![&cargo_bin, "locate-project", "--workspace"];
+        let stdout = get_command_output(&argv, path)
+            .with_context(|| format!("run cargo locate-project in {path:?}"))?;
+        let val: Value =
+            serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
+        let cargo_toml_path: Utf8PathBuf = val["root"]
+            .as_str()
+            .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
+            .to_owned()
+            .into();
+        debug!(?cargo_toml_path, "Found workspace root manifest");
+        ensure!(
+            cargo_toml_path.is_file(),
+            "cargo locate-project root {cargo_toml_path:?} is not a file"
+        );
         let root = cargo_toml_path
             .parent()
-            .expect("cargo_toml_path has a parent")
+            .ok_or_else(|| anyhow!("cargo locate-project root {cargo_toml_path:?} has no parent"))?
             .to_owned();
-        assert!(root.is_dir());
+        ensure!(
+            root.is_dir(),
+            "apparent project root directory {root:?} is not a directory"
+        );
         Ok(root)
     }
 
@@ -66,7 +85,7 @@ impl Tool for CargoTool {
     /// all source files.
     fn root_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
-        debug!(?cargo_toml_path, ?source_root_path, "find root files");
+        debug!(?cargo_toml_path, ?source_root_path, "Find root files");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .manifest_path(&cargo_toml_path)
@@ -194,23 +213,6 @@ fn rustflags() -> String {
     rustflags.push("--cap-lints=allow".to_owned());
     // debug!("adjusted rustflags: {:?}", rustflags);
     rustflags.join("\x1f")
-}
-
-/// Run `cargo locate-project` to find the path of the `Cargo.toml` enclosing this path.
-fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
-    ensure!(path.is_dir(), "{path:?} is not a directory");
-    let cargo_bin = cargo_bin(); // needed for lifetime
-    let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
-    let stdout = get_command_output(&argv, path)
-        .with_context(|| format!("run cargo locate-project in {path:?}"))?;
-    let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
-    let cargo_toml_path: Utf8PathBuf = val["root"]
-        .as_str()
-        .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
-        .to_owned()
-        .into();
-    assert!(cargo_toml_path.is_file());
-    Ok(cargo_toml_path)
 }
 
 /// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
