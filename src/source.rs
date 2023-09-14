@@ -9,8 +9,6 @@ use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
-use crate::path::TreeRelativePathBuf;
-
 /// A Rust source file within a source tree.
 ///
 /// It can be viewed either relative to the source tree (for display)
@@ -24,7 +22,7 @@ pub struct SourceFile {
     pub package: Arc<Package>,
 
     /// Path relative to the root of the tree.
-    pub tree_relative_path: TreeRelativePathBuf,
+    pub tree_relative_path: Utf8PathBuf,
 
     /// Full copy of the source.
     pub code: Arc<String>,
@@ -36,10 +34,10 @@ impl SourceFile {
     /// This eagerly loads the text of the file.
     pub fn new(
         tree_path: &Utf8Path,
-        tree_relative_path: TreeRelativePathBuf,
+        tree_relative_path: Utf8PathBuf,
         package: &Arc<Package>,
     ) -> Result<SourceFile> {
-        let full_path = tree_relative_path.within(tree_path);
+        let full_path = tree_path.join(&tree_relative_path);
         let code = std::fs::read_to_string(&full_path)
             .with_context(|| format!("failed to read source of {full_path:?}"))?
             .replace("\r\n", "\n");
@@ -56,7 +54,7 @@ impl SourceFile {
     }
 
     /// Return the path of this file relative to the base of the source tree.
-    pub fn tree_relative_path(&self) -> &TreeRelativePathBuf {
+    pub fn tree_relative_path(&self) -> &Utf8Path {
         &self.tree_relative_path
     }
 }

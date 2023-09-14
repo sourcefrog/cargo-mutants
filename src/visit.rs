@@ -23,7 +23,6 @@ use syn::{
 };
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
-use crate::path::TreeRelativePathBuf;
 use crate::source::SourceFile;
 use crate::*;
 
@@ -61,13 +60,13 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
         }
         let path = &source_file.tree_relative_path;
         if let Some(examine_globset) = &options.examine_globset {
-            if !examine_globset.is_match(path.as_ref()) {
+            if !examine_globset.is_match(path) {
                 trace!("{path:?} does not match examine globset");
                 continue;
             }
         }
         if let Some(exclude_globset) = &options.exclude_globset {
-            if exclude_globset.is_match(path.as_ref()) {
+            if exclude_globset.is_match(path) {
                 trace!("{path:?} excluded by globset");
                 continue;
             }
@@ -96,7 +95,7 @@ fn walk_file(
     source_file: Arc<SourceFile>,
     options: &Options,
     error_exprs: &[Expr],
-) -> Result<(Vec<Mutant>, Vec<TreeRelativePathBuf>)> {
+) -> Result<(Vec<Mutant>, Vec<Utf8PathBuf>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
@@ -130,7 +129,7 @@ struct DiscoveryVisitor<'o> {
     namespace_stack: Vec<String>,
 
     /// Files discovered by `mod` statements.
-    more_files: Vec<TreeRelativePathBuf>,
+    more_files: Vec<Utf8PathBuf>,
 
     /// Global options.
     #[allow(unused)]
@@ -269,7 +268,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // Having determined the directory then we can look for either
         // `foo.rs` or `foo/mod.rs`.
         if node.content.is_none() {
-            let my_path: &Utf8Path = self.source_file.tree_relative_path().as_ref();
+            let my_path: &Utf8Path = self.source_file.tree_relative_path();
             // Maybe matching on the name here is no the right approach and
             // we should instead remember how this file was found?
             let dir = if my_path.ends_with("mod.rs")
@@ -282,9 +281,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             };
             let mut found = false;
             let mut tried_paths = Vec::new();
-            for &ext in &[".rs", "/mod.rs"] {
-                let relative_path = TreeRelativePathBuf::new(dir.join(format!("{mod_name}{ext}")));
-                let full_path = relative_path.within(&self.root);
+            for &tail in &[".rs", "/mod.rs"] {
+                let relative_path = dir.join(format!("{mod_name}{tail}"));
+                let full_path = self.root.join(&relative_path);
                 if full_path.is_file() {
                     trace!("found submodule in {full_path}");
                     self.more_files.push(relative_path);
