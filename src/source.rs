@@ -54,11 +54,6 @@ impl SourceFile {
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative_path.to_slash_path()
     }
-
-    /// Return the path of this file relative to the base of the source tree.
-    pub fn tree_relative_path(&self) -> &Utf8Path {
-        &self.tree_relative_path
-    }
 }
 
 /// A package built and tested as a unit.

@@ -269,7 +269,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // Having determined the directory then we can look for either
         // `foo.rs` or `foo/mod.rs`.
         if node.content.is_none() {
-            let my_path: &Utf8Path = self.source_file.tree_relative_path();
+            let my_path = &self.source_file.tree_relative_path;
             // Maybe matching on the name here is no the right approach and
             // we should instead remember how this file was found?
             let dir = if my_path.ends_with("mod.rs")
