@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a
   subdirectory of a workspace. Thanks to Adam Chalmers!
