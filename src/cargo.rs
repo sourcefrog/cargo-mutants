@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
+use itertools::Itertools;
 use serde_json::Value;
 use tracing::debug_span;
 #[allow(unused_imports)]
@@ -92,7 +93,12 @@ impl Tool for CargoTool {
             .context("run cargo metadata")?;
 
         let mut r = Vec::new();
-        for package_metadata in &metadata.workspace_packages() {
+        // cargo-metadata output is not obviously ordered so make it deterministic.
+        for package_metadata in metadata
+            .workspace_packages()
+            .iter()
+            .sorted_by_key(|p| &p.name)
+        {
             check_interrupted()?;
             let _span = debug_span!("package", name = %package_metadata.name).entered();
             let manifest_path = &package_metadata.manifest_path;

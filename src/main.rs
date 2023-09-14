@@ -254,12 +254,11 @@ fn main() -> Result<()> {
 }
 
 fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool) -> Result<()> {
-    let discovered = walk_tree(tool, source, options)?;
+    let files = walk_tree(tool, source, options)?.files;
     let mut out = io::BufWriter::new(io::stdout());
     if json {
         let json_list = Value::Array(
-            discovered
-                .files
+            files
                 .iter()
                 .map(|source_file| {
                     json!({
@@ -273,7 +272,7 @@ fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool)
         serde_json::to_writer_pretty(&mut out, &json_list)?;
         writeln!(out)?;
     } else {
-        for file in discovered.files {
+        for file in files {
             writeln!(out, "{}", file.tree_relative_path)?;
         }
     }
