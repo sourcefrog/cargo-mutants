@@ -6,6 +6,7 @@ use std::fmt;
 use std::fs;
 use std::sync::Arc;
 
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use serde::ser::{SerializeStruct, Serializer};
@@ -138,12 +139,9 @@ impl Mutant {
     }
 
     fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
-        let path = self
-            .source_file
-            .tree_relative_path()
-            .within(build_dir.path());
+        let path = build_dir.path().join(&self.source_file.tree_relative_path);
         // for safety, don't follow symlinks
-        assert!(path.is_file(), "{path:?} is not a file");
+        ensure!(path.is_file(), "{path:?} is not a file");
         fs::write(&path, code.as_bytes())
             .with_context(|| format!("failed to write mutated code to {path:?}"))
     }

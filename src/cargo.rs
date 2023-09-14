@@ -12,7 +12,6 @@ use tracing::debug_span;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
 
-use crate::path::TreeRelativePathBuf;
 use crate::process::get_command_output;
 use crate::source::Package;
 use crate::tool::Tool;
@@ -221,13 +220,16 @@ fn rustflags() -> String {
 fn direct_package_sources(
     workspace_root: &Utf8Path,
     package_metadata: &cargo_metadata::Package,
-) -> Result<Vec<TreeRelativePathBuf>> {
+) -> Result<Vec<Utf8PathBuf>> {
     let mut found = Vec::new();
     let pkg_dir = package_metadata.manifest_path.parent().unwrap();
     for target in &package_metadata.targets {
         if should_mutate_target(target) {
-            if let Ok(relpath) = target.src_path.strip_prefix(workspace_root) {
-                let relpath = TreeRelativePathBuf::new(relpath.into());
+            if let Ok(relpath) = target
+                .src_path
+                .strip_prefix(workspace_root)
+                .map(ToOwned::to_owned)
+            {
                 debug!(
                     "found mutation target {} of kind {:?}",
                     relpath, target.kind
