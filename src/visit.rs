@@ -282,7 +282,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             let mut found = false;
             let mut tried_paths = Vec::new();
             for &tail in &[".rs", "/mod.rs"] {
-                let relative_path = dir.join(format!("{mod_name}{tail}"));
+                let relative_path = dir.join(mod_name.clone() + tail);
                 let full_path = self.root.join(&relative_path);
                 if full_path.is_file() {
                     trace!("found submodule in {full_path}");
