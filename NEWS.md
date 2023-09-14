@@ -3,8 +3,8 @@
 ## Unreleased
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a
-  subdirectory of a workspace.
-
+  subdirectory of a workspace. Thanks to Adam Chalmers!
+ 
 ## 23.6.0
 
 - Generate `Box::leak(Box::new(...))` as a mutation of functions returning
