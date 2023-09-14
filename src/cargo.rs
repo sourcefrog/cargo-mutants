@@ -395,11 +395,9 @@ mod test {
             .expect("Find workspace root");
         let top_source_files = tool.top_source_files(&root_dir).expect("Find root files");
         println!("{top_source_files:#?}");
-        assert_eq!(top_source_files.len(), 3);
-        let paths: Vec<String> = top_source_files
+        let paths = top_source_files
             .iter()
-            .map(|sf| sf.tree_relative_path.to_string())
-            .sorted()
+            .map(|sf| sf.tree_relative_path.to_slash_path())
             .collect_vec();
         assert_eq!(
             paths,
