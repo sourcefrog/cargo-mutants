@@ -256,6 +256,7 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
 mod test {
     use std::ffi::OsStr;
 
+    use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
     use crate::{Options, Phase};
@@ -368,5 +369,33 @@ mod test {
         assert!(root.join("Cargo.toml").is_file());
         assert!(root.join("src/bin/factorial.rs").is_file());
         assert_eq!(root.file_name().unwrap(), OsStr::new("factorial"));
+    }
+
+    #[test]
+    fn find_root_from_subdirectory_of_workspace_finds_the_workspace_root() {
+        let root = CargoTool::new()
+            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find root from within workspace/main");
+        assert_eq!(root.file_name(), Some("workspace"), "Wrong root: {root:?}");
+    }
+
+    #[test]
+    fn find_root_files_from_subdirectory_of_workspace() {
+        let tool = CargoTool::new();
+        let root_dir = tool
+            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find workspace root");
+        let root_files = tool.root_files(&root_dir).expect("Find root files");
+        println!("{root_files:#?}");
+        assert_eq!(root_files.len(), 3);
+        let paths: Vec<String> = root_files
+            .iter()
+            .map(|sf| sf.tree_relative_path.to_string())
+            .sorted()
+            .collect_vec();
+        assert_eq!(
+            paths,
+            ["main/src/main.rs", "main2/src/main.rs", "utils/src/lib.rs"]
+        );
     }
 }
