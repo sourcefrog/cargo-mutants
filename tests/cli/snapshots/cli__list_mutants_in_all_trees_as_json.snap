@@ -357,6 +357,31 @@ expression: buf
 ]
 ```
 
+## testdata/tree/missing_test
+
+```json
+[
+  {
+    "package": "cargo-mutants-testdata-missing-test",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "is_symlink",
+    "return_type": "-> bool",
+    "replacement": "true",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-missing-test",
+    "file": "src/lib.rs",
+    "line": 1,
+    "function": "is_symlink",
+    "return_type": "-> bool",
+    "replacement": "false",
+    "genre": "FnValue"
+  }
+]
+```
+
 ## testdata/tree/mut_ref
 
 ```json

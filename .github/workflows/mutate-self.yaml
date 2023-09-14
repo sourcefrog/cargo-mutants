@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-      - ci-mutants
+      - ci-*
 
 env:
   # Some runners, especially on Windows, have uneven performance; allow lots
@@ -26,7 +26,7 @@ jobs:
           cargo install --path .
       - name: Mutants
         run: |
-          cargo mutants --no-shuffle --exclude console.rs
+          cargo mutants --no-shuffle --exclude console.rs -j 2
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()

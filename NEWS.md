@@ -2,11 +2,23 @@
 
 ## Unreleased
 
-- Mutate `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, and `VecDeque` to
-  generate empty and one-element containers.
+- Mutate the known collection types `BinaryHeap`, `BTreeSet`, `HashSet`,
+  `LinkedList`, and `VecDeque` to generate empty and one-element collections
+  using `T::new()` and `T::from_iter(..)`.
 
-- Generically recognize functions returning `T<A>` or `T<'a, A>'` and try
-  to construct them from an `A`.
+- Mutate known container types like `Arc`, `Box`, `Cell`, `Mutex`, `Rc`,
+  `RefCell` into `T::new(a)`.
+
+- Mutate unknown types that look like containers or collections `T<A>` or
+  `T<'a, A>'` and try to construct them from an `A` with `T::from_iter`,
+  `T::new`, and `T::from`.
+
+## 23.9.0
+
+- Fixed a bug causing an assertion failure when cargo-mutants was run from a
+  subdirectory of a workspace. Thanks to Adam Chalmers!
+
+- Generate `HttpResponse::Ok().finish()` as a mutation of an Actix `HttpResponse`.
 
 ## 23.6.0
 

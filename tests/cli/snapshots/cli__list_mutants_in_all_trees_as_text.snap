@@ -105,6 +105,13 @@ src/lib.rs:1: replace double -> u32 with 0
 src/lib.rs:1: replace double -> u32 with 1
 ```
 
+## testdata/tree/missing_test
+
+```
+src/lib.rs:1: replace is_symlink -> bool with true
+src/lib.rs:1: replace is_symlink -> bool with false
+```
+
 ## testdata/tree/mut_ref
 
 ```

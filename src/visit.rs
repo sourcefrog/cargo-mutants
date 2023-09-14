@@ -47,7 +47,7 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
         .collect::<Result<Vec<Expr>>>()?;
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
-    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.root_files(root)?.into();
+    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
         let (mut file_mutants, more_files) =
@@ -368,6 +368,8 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.extend(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
                 }));
+            } else if path_ends_with(path, "HttpResponse") {
+                reps.push(quote! { HttpResponse::Ok().finish() });
             } else if let Some(some_type) = match_first_type_arg(path, "Option") {
                 reps.push(quote! { None });
                 reps.extend(
@@ -903,6 +905,14 @@ mod test {
         assert_eq!(
             reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Ok(())"]
+        );
+    }
+
+    #[test]
+    fn http_response_replacement() {
+        assert_eq!(
+            replace(&parse_quote! { -> HttpResponse }, &[]),
+            &["HttpResponse::Ok().finish()"]
         );
     }
 

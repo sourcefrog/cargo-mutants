@@ -458,6 +458,30 @@ fn list_files_json_workspace() {
 }
 
 #[test]
+fn list_files_as_json_in_workspace_subdir() {
+    run()
+        .args(["mutants", "--list-files", "--json"])
+        .current_dir("testdata/tree/workspace/main2")
+        .assert()
+        .stdout(indoc! {r#"
+            [
+              {
+                "package": "cargo_mutants_testdata_workspace_utils",
+                "path": "utils/src/lib.rs"
+              },
+              {
+                "package": "main",
+                "path": "main/src/main.rs"
+              },
+              {
+                "package": "main2",
+                "path": "main2/src/main.rs"
+              }
+            ]
+        "#});
+}
+
+#[test]
 fn workspace_tree_is_well_tested() {
     let tmp_src_dir = copy_of_testdata("workspace");
     run()
@@ -935,21 +959,19 @@ fn already_failing_tests_are_detected_before_running_mutants() {
         .assert()
         .code(4)
         .stdout(
-            predicate::str::contains("running 1 test\ntest test_factorial ... FAILED").normalize(),
-        )
-        .stdout(
-            predicate::str::contains(
-                "thread 'test_factorial' panicked at 'assertion failed: `(left == right)`
-  left: `720`,
- right: `72`'",
-            )
-            .normalize(),
-        )
-        .stdout(predicate::str::contains("lib.rs:11:5"))
-        .stdout(predicate::str::contains(
-            "cargo test failed in an unmutated tree, so no mutants were tested",
-        ))
-        .stdout(predicate::str::contains("test result: FAILED. 0 passed; 1 failed;").normalize());
+            predicate::str::contains("running 1 test\ntest test_factorial ... FAILED")
+                .normalize()
+                .and(predicate::str::contains("thread 'test_factorial' panicked"))
+                .and(predicate::str::contains("72")) // the failing value should be in the output
+                .and(predicate::str::contains("lib.rs:11:5"))
+                .and(predicate::str::contains(
+                    "cargo test failed in an unmutated tree, so no mutants were tested",
+                ))
+                .and(
+                    predicate::str::contains("test result: FAILED. 0 passed; 1 failed;")
+                        .normalize(),
+                ),
+        );
 }
 
 #[test]

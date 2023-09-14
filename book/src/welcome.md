@@ -11,7 +11,7 @@ the tests might be insufficient.** ([More about these goals](goals.md).)
 
 To get started:
 
-1. [Install cargo-mutants](install.md).
+1. [Install cargo-mutants](installation.md).
 2. [Run `cargo mutants](getting-started.md) in your Rust source tree.
 
 For more resources see the repository at

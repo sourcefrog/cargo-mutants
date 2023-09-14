@@ -34,6 +34,7 @@ More mutation genres and patterns will be added in future releases.
 | `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, `VecDeque` | empty and one-element collections |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
 | `&T`              | `&...` (all replacements for T)                            |
+| `HttpResponse`    | `HttpResponse::Ok().finish`                                |
 | (any other)       | `Default::default()`                                       |
 
 `...` in the mutation patterns indicates that the type is recursively mutated.

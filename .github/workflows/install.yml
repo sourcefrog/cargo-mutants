@@ -3,8 +3,6 @@ permissions:
 
 on:
   push:
-    branches:
-      - main
     paths:
       - ".github/workflows/install.yml"
   schedule:
@@ -12,9 +10,11 @@ on:
 
 jobs:
   cargo-install:
+    strategy:
+      matrix:
+        locked: ["", "--locked"]
     runs-on: ubuntu-latest
     steps:
-      - uses: Swatinem/rust-cache@v2
       - name: cargo-install
         run: |
-          cargo install cargo-mutants
+          cargo install cargo-mutants ${{ matrix.locked }}

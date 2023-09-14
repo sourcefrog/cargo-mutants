@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "23.6.0"
+version = "23.9.1-pre"
 edition = "2021"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -10,6 +10,19 @@ homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
 rust-version = "1.65"
+exclude = [
+    ".codespell*",
+    ".markdownlint*",
+    "*.md",
+    ".devcontainer",
+    ".gitattributes",
+    ".gitignore",
+    ".github",
+    "mutants.out*",
+    ".vscode",
+    "book",
+    "testdata",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -98,6 +111,7 @@ exclude = [
     "testdata/tree/hang_when_mutated",
     "testdata/tree/insta",
     "testdata/tree/integration_tests",
+    "testdata/tree/missing_test",
     "testdata/tree/mut_ref",
     "testdata/tree/never_type",
     "testdata/tree/override_dependency",
