@@ -44,3 +44,20 @@ jobs:
         run: cargo test --workspace
       - name: Install
         run: cargo install --path .
+
+  cargo-mutants:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install --path .
+      - name: Mutants
+        run: |
+          cargo mutants --no-shuffle --exclude console.rs -j 2
+      - name: Archive mutants.out
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mutants.out
+          path: mutants.out
