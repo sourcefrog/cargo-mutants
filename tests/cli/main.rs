@@ -458,6 +458,30 @@ fn list_files_json_workspace() {
 }
 
 #[test]
+fn list_files_as_json_in_workspace_subdir() {
+    run()
+        .args(["mutants", "--list-files", "--json"])
+        .current_dir("testdata/tree/workspace/main2")
+        .assert()
+        .stdout(indoc! {r#"
+            [
+              {
+                "package": "cargo_mutants_testdata_workspace_utils",
+                "path": "utils/src/lib.rs"
+              },
+              {
+                "package": "main",
+                "path": "main/src/main.rs"
+              },
+              {
+                "package": "main2",
+                "path": "main2/src/main.rs"
+              }
+            ]
+        "#});
+}
+
+#[test]
 fn workspace_tree_is_well_tested() {
     let tmp_src_dir = copy_of_testdata("workspace");
     run()
