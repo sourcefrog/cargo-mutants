@@ -143,7 +143,6 @@ impl<'o> DiscoveryVisitor<'o> {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
         let return_type_str = Arc::new(return_type_to_string(return_type));
         let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
-            .into_iter()
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
                 function_name: Arc::clone(&full_function_name),
@@ -307,17 +306,21 @@ fn find_mod_source(
 }
 
 /// Generate replacement text for a function based on its return type.
-fn return_type_replacements(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<TokenStream> {
+fn return_type_replacements(
+    return_type: &ReturnType,
+    error_exprs: &[Expr],
+) -> impl Iterator<Item = TokenStream> {
     match return_type {
         ReturnType::Default => vec![quote! { () }],
-        ReturnType::Type(_rarrow, type_) => type_replacements(type_, error_exprs),
+        ReturnType::Type(_rarrow, type_) => type_replacements(type_, error_exprs).collect_vec(),
     }
+    .into_iter()
 }
 
 /// Generate some values that we hope are reasonable replacements for a type.
 ///
 /// This is really the heart of cargo-mutants.
-fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
+fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item = TokenStream> {
     // This could probably change to run from some configuration rather than
     // hardcoding various types, which would make it easier to support tree-specific
     // mutation values, and perhaps reduce duplication. However, it seems better
@@ -353,13 +356,9 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { -1.0 });
             } else if path_ends_with(path, "Result") {
                 if let Some(ok_type) = result_ok_type(path) {
-                    reps.extend(
-                        type_replacements(ok_type, error_exprs)
-                            .into_iter()
-                            .map(|rep| {
-                                quote! { Ok(#rep) }
-                            }),
-                    );
+                    reps.extend(type_replacements(ok_type, error_exprs).map(|rep| {
+                        quote! { Ok(#rep) }
+                    }));
                 } else {
                     // A result but with no type arguments, like `fmt::Result`; hopefully
                     // the Ok value can be constructed with Default.
@@ -372,35 +371,23 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { HttpResponse::Ok().finish() });
             } else if let Some(some_type) = match_first_type_arg(path, "Option") {
                 reps.push(quote! { None });
-                reps.extend(
-                    type_replacements(some_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { Some(#rep) }
-                        }),
-                );
+                reps.extend(type_replacements(some_type, error_exprs).map(|rep| {
+                    quote! { Some(#rep) }
+                }));
             } else if let Some(boxed_type) = match_first_type_arg(path, "Vec") {
                 // Generate an empty Vec, and then a one-element vec for every recursive
                 // value.
                 reps.push(quote! { vec![] });
-                reps.extend(
-                    type_replacements(boxed_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { vec![#rep] }
-                        }),
-                )
+                reps.extend(type_replacements(boxed_type, error_exprs).map(|rep| {
+                    quote! { vec![#rep] }
+                }))
             } else if let Some(boxed_type) = match_first_type_arg(path, "Cow") {
-                reps.extend(
-                    type_replacements(boxed_type, error_exprs)
-                        .into_iter()
-                        .flat_map(|rep| {
-                            [
-                                quote! { Cow::Borrowed(#rep) },
-                                quote! { Cow::Owned(#rep.to_owned()) },
-                            ]
-                        }),
-                )
+                reps.extend(type_replacements(boxed_type, error_exprs).flat_map(|rep| {
+                    [
+                        quote! { Cow::Borrowed(#rep) },
+                        quote! { Cow::Owned(#rep.to_owned()) },
+                    ]
+                }))
             } else if let Some((container_type, inner_type)) = known_container(path) {
                 // Something like Arc, Mutex, etc.
 
@@ -408,39 +395,27 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 // imported, but we must strip or rewrite the arguments, so that
                 // `std::sync::Arc<String>` becomes either `std::sync::Arc::<String>::new`
                 // or at least `std::sync::Arc::new`. Similarly for other types.
-                reps.extend(
-                    type_replacements(inner_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { #container_type::new(#rep) }
-                        }),
-                )
+                reps.extend(type_replacements(inner_type, error_exprs).map(|rep| {
+                    quote! { #container_type::new(#rep) }
+                }))
             } else if let Some((collection_type, inner_type)) = known_collection(path) {
                 reps.push(quote! { #collection_type::new() });
-                reps.extend(
-                    type_replacements(inner_type, error_exprs)
-                        .into_iter()
-                        .map(|rep| {
-                            quote! { #collection_type::from_iter([#rep]) }
-                        }),
-                );
+                reps.extend(type_replacements(inner_type, error_exprs).map(|rep| {
+                    quote! { #collection_type::from_iter([#rep]) }
+                }));
             } else if let Some((collection_type, inner_type)) = maybe_collection_or_container(path)
             {
                 // Something like `T<A>` or `T<'a, A>`, when we don't know exactly how
                 // to call it, but we strongly suspect that you could construct it from
                 // an `A`.
                 reps.push(quote! { #collection_type::new() });
-                reps.extend(
-                    type_replacements(inner_type, error_exprs)
-                        .into_iter()
-                        .flat_map(|rep| {
-                            [
-                                quote! { #collection_type::from_iter([#rep]) },
-                                quote! { #collection_type::new(#rep) },
-                                quote! { #collection_type::from(#rep) },
-                            ]
-                        }),
-                );
+                reps.extend(type_replacements(inner_type, error_exprs).flat_map(|rep| {
+                    [
+                        quote! { #collection_type::from_iter([#rep]) },
+                        quote! { #collection_type::new(#rep) },
+                        quote! { #collection_type::from(#rep) },
+                    ]
+                }));
             } else {
                 trace!(?type_, "Return type is not recognized, trying Default");
                 reps.push(quote! { Default::default() });
@@ -451,15 +426,14 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             // In principle we could generate combinations, but that might get very
             // large, and values like "all zeros" and "all ones" seem likely to catch
             // lots of things.
-            type_replacements(elem, error_exprs)
-                .into_iter()
-                .map(|r| quote! { [ #r; #len ] }),
+            type_replacements(elem, error_exprs).map(|r| quote! { [ #r; #len ] }),
         ),
         Type::Reference(syn::TypeReference {
             mutability: None,
             elem,
             ..
         }) => match &**elem {
+            // You can't currently match box patterns in Rust
             Type::Path(path) if path.path.is_ident("str") => {
                 reps.push(quote! { "" });
                 reps.push(quote! { "xyzzy" });
@@ -467,13 +441,11 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             Type::Slice(TypeSlice { elem, .. }) => {
                 reps.push(quote! { Vec::leak(Vec::new()) });
                 reps.extend(
-                    type_replacements(elem, error_exprs)
-                        .into_iter()
-                        .map(|r| quote! { Vec::leak(vec![ #r ]) }),
+                    type_replacements(elem, error_exprs).map(|r| quote! { Vec::leak(vec![ #r ]) }),
                 );
             }
             _ => {
-                reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
+                reps.extend(type_replacements(elem, error_exprs).map(|rep| {
                     quote! { &#rep }
                 }));
             }
@@ -486,15 +458,12 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             Type::Slice(TypeSlice { elem, .. }) => {
                 reps.push(quote! { Vec::leak(Vec::new()) });
                 reps.extend(
-                    type_replacements(elem, error_exprs)
-                        .into_iter()
-                        .map(|r| quote! { Vec::leak(vec![ #r ]) }),
+                    type_replacements(elem, error_exprs).map(|r| quote! { Vec::leak(vec![ #r ]) }),
                 );
             }
-            _ =>
-            // Make &mut with static lifetime by leaking them on the heap.
-            {
-                reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
+            _ => {
+                // Make &mut with static lifetime by leaking them on the heap.
+                reps.extend(type_replacements(elem, error_exprs).map(|rep| {
                     quote! { Box::leak(Box::new(#rep)) }
                 }))
             }
@@ -513,7 +482,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             reps.push(quote! { Default::default() });
         }
     }
-    reps
+    reps.into_iter()
 }
 
 fn return_type_to_string(return_type: &ReturnType) -> String {
@@ -798,7 +767,7 @@ mod test {
         let return_type: syn::ReturnType = parse_quote! {-> std::result::Result<bool> };
         let reps = return_type_replacements(&return_type, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Ok(true)", "Ok(false)",]
         );
     }
@@ -809,7 +778,7 @@ mod test {
         let error_expr: syn::Expr = parse_quote! { anyhow!("mutated") };
         let reps = return_type_replacements(&return_type, &[error_expr]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &[
                 "Ok(Ok(true))",
                 "Ok(Ok(false))",
@@ -823,7 +792,7 @@ mod test {
     fn u16_replacements() {
         let reps = return_type_replacements(&parse_quote! { -> u16 }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["0", "1",]
         );
     }
@@ -832,7 +801,7 @@ mod test {
     fn isize_replacements() {
         let reps = return_type_replacements(&parse_quote! { -> isize }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["0", "1", "-1"]
         );
     }
@@ -841,19 +810,19 @@ mod test {
     fn nonzero_integer_replacements() {
         let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroIsize }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["1", "-1"]
         );
 
         let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroUsize }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["1"]
         );
 
         let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroU32 }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["1"]
         );
     }
@@ -862,7 +831,7 @@ mod test {
     fn unit_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> () }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["()"]
         );
     }
@@ -871,13 +840,13 @@ mod test {
     fn result_unit_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> Result<(), Error> }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Ok(())"]
         );
 
         let reps = return_type_replacements(&parse_quote! { -> Result<()> }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Ok(())"]
         );
     }
@@ -894,7 +863,7 @@ mod test {
     fn option_usize_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> Option<usize> }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["None", "Some(0)", "Some(1)"]
         );
     }
@@ -903,7 +872,7 @@ mod test {
     fn box_usize_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> Box<usize> }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Box::new(0)", "Box::new(1)"]
         );
     }
@@ -912,7 +881,7 @@ mod test {
     fn box_unrecognized_type_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> Box<MyObject> }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["Box::new(Default::default())"]
         );
     }
@@ -921,7 +890,7 @@ mod test {
     fn vec_string_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> std::vec::Vec<String> }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["vec![]", "vec![String::new()]", "vec![\"xyzzy\".into()]"]
         );
     }
@@ -930,7 +899,7 @@ mod test {
     fn float_replacement() {
         let reps = return_type_replacements(&parse_quote! { -> f32 }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["0.0", "1.0", "-1.0"]
         );
     }
@@ -939,7 +908,7 @@ mod test {
     fn ref_replacement_recurses() {
         let reps = return_type_replacements(&parse_quote! { -> &bool }, &[]);
         assert_eq!(
-            reps.iter().map(tokens_to_pretty_string).collect::<Vec<_>>(),
+            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
             &["&true", "&false"]
         );
     }
