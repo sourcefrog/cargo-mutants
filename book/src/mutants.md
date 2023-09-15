@@ -34,6 +34,7 @@ More mutation genres and patterns will be added in future releases.
 | `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, `VecDeque` | empty and one-element collections |
 | `Cow<'_, T>`      | `Cow::Borrowed(t)`, `Cow::Owned(t.to_owned())`             |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
+| `&[T]`, `&mut [T]`| Leaked empty and one-element vecs                          |
 | `&T`              | `&...` (all replacements for T)                            |
 | `HttpResponse`    | `HttpResponse::Ok().finish`                                |
 | (any other)       | `Default::default()`                                       |

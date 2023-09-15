@@ -1,6 +1,5 @@
 ---
 source: tests/cli/main.rs
-assertion_line: 73
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
@@ -50,6 +49,11 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/slices.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
     "path": "src/struct_with_lifetime.rs"
   }
 ]
+

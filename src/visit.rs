@@ -19,7 +19,7 @@ use syn::ext::IdentExt;
 use syn::visit::Visit;
 use syn::{
     AngleBracketedGenericArguments, Attribute, Expr, GenericArgument, Ident, ItemFn, Path,
-    PathArguments, ReturnType, Type, TypeArray, TypeTuple,
+    PathArguments, ReturnType, Type, TypeArray, TypeSlice, TypeTuple,
 };
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
@@ -442,6 +442,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                         }),
                 );
             } else {
+                trace!(?type_, "Return type is not recognized, trying Default");
                 reps.push(quote! { Default::default() });
             }
         }
@@ -463,6 +464,14 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                 reps.push(quote! { "" });
                 reps.push(quote! { "xyzzy" });
             }
+            Type::Slice(TypeSlice { elem, .. }) => {
+                reps.push(quote! { Vec::leak(Vec::new()) });
+                reps.extend(
+                    type_replacements(elem, error_exprs)
+                        .into_iter()
+                        .map(|r| quote! { Vec::leak(vec![ #r ]) }),
+                );
+            }
             _ => {
                 reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
                     quote! { &#rep }
@@ -473,12 +482,23 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             mutability: Some(_),
             elem,
             ..
-        }) => {
+        }) => match &**elem {
+            Type::Slice(TypeSlice { elem, .. }) => {
+                reps.push(quote! { Vec::leak(Vec::new()) });
+                reps.extend(
+                    type_replacements(elem, error_exprs)
+                        .into_iter()
+                        .map(|r| quote! { Vec::leak(vec![ #r ]) }),
+                );
+            }
+            _ =>
             // Make &mut with static lifetime by leaking them on the heap.
-            reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
-                quote! { Box::leak(Box::new(#rep)) }
-            }));
-        }
+            {
+                reps.extend(type_replacements(elem, error_exprs).into_iter().map(|rep| {
+                    quote! { Box::leak(Box::new(#rep)) }
+                }))
+            }
+        },
         Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
             reps.push(quote! { () });
             // TODO: Also recurse into non-empty tuples.
@@ -645,7 +665,7 @@ fn result_ok_type(path: &Path) -> Option<&Type> {
 /// If this is a path ending in `expected_ident`, return the first type argument, ignoring
 /// lifetimes.
 fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p Type> {
-    // TODO: Maybe match only things wit one arg?
+    // TODO: Maybe match only things witn one arg?
     let last = path.segments.last()?;
     if last.ident == expected_ident {
         if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =

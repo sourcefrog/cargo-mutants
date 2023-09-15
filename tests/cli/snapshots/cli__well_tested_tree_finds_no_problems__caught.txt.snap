@@ -30,6 +30,14 @@ src/simple_fns.rs:17: replace divisible_by_three -> bool with true
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false
 src/simple_fns.rs:26: replace double_string -> String with String::new()
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into()
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new())
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("")])
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("".to_owned())])
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("xyzzy")])
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())])
+src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())
+src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])
+src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1
 

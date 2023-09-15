@@ -2,7 +2,7 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 30 mutants to test
+Found 38 mutants to test
 Unmutated baseline ... ok
 src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new(String::new()) ... ok
 src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... ok
@@ -32,7 +32,15 @@ src/simple_fns.rs:17: replace divisible_by_three -> bool with true ... ok
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... ok
 src/simple_fns.rs:26: replace double_string -> String with String::new() ... ok
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... ok
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new()) ... ok
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("")]) ... ok
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("".to_owned())]) ... ok
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("xyzzy")]) ... ok
+src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())]) ... ok
+src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new()) ... ok
+src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0]) ... ok
+src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1]) ... ok
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0 ... ok
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1 ... ok
-30 mutants tested: 30 succeeded
+38 mutants tested: 38 succeeded
 

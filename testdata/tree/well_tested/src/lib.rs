@@ -18,4 +18,5 @@ mod numbers;
 mod result;
 mod sets;
 pub mod simple_fns;
+mod slices;
 mod struct_with_lifetime;

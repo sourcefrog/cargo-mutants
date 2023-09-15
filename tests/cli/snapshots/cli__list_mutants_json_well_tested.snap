@@ -1,6 +1,5 @@
 ---
 source: tests/cli/main.rs
-assertion_line: 73
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
@@ -254,6 +253,78 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "function": "double_string",
     "return_type": "-> String",
     "replacement": "\"xyzzy\".into()",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 3,
+    "function": "pad",
+    "return_type": "-> &'a[Cow<'static, str>]",
+    "replacement": "Vec::leak(Vec::new())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 3,
+    "function": "pad",
+    "return_type": "-> &'a[Cow<'static, str>]",
+    "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 3,
+    "function": "pad",
+    "return_type": "-> &'a[Cow<'static, str>]",
+    "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 3,
+    "function": "pad",
+    "return_type": "-> &'a[Cow<'static, str>]",
+    "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 3,
+    "function": "pad",
+    "return_type": "-> &'a[Cow<'static, str>]",
+    "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 12,
+    "function": "return_mut_slice",
+    "return_type": "-> &mut[usize]",
+    "replacement": "Vec::leak(Vec::new())",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 12,
+    "function": "return_mut_slice",
+    "return_type": "-> &mut[usize]",
+    "replacement": "Vec::leak(vec![0])",
+    "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "file": "src/slices.rs",
+    "line": 12,
+    "function": "return_mut_slice",
+    "return_type": "-> &mut[usize]",
+    "replacement": "Vec::leak(vec![1])",
     "genre": "FnValue"
   },
   {

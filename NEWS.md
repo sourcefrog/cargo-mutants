@@ -17,6 +17,9 @@
 
 - Mutate `Cow<'_, T>` into `Owned` and `Borrowed` variants.
 
+- Mutate functions returning `&[T]` and `&mut [T]` to return leaked vecs
+  of values.
+
 ## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a

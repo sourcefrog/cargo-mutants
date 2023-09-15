@@ -1,6 +1,5 @@
 ---
 source: tests/cli/main.rs
-assertion_line: 73
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 src/lib.rs
@@ -14,5 +13,6 @@ src/numbers.rs
 src/result.rs
 src/sets.rs
 src/simple_fns.rs
+src/slices.rs
 src/struct_with_lifetime.rs
 
