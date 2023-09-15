@@ -17,7 +17,7 @@ use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
-use crate::pretty::{return_type_to_pretty_string, tokens_to_pretty_string};
+use crate::pretty::tokens_to_pretty_string;
 use crate::source::SourceFile;
 use crate::*;
 
@@ -135,7 +135,7 @@ struct DiscoveryVisitor<'o> {
 impl<'o> DiscoveryVisitor<'o> {
     fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
-        let return_type_str = Arc::new(return_type_to_pretty_string(return_type));
+        let return_type_str = Arc::new(tokens_to_pretty_string(return_type));
         let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),

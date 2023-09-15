@@ -4,7 +4,6 @@
 
 use proc_macro2::{Delimiter, TokenTree};
 use quote::ToTokens;
-use syn::ReturnType;
 
 /// Convert a TokenStream representing some code to a reasonably formatted
 /// string of Rust code.
@@ -69,19 +68,6 @@ pub(crate) fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
     b
 }
 
-pub(crate) fn return_type_to_pretty_string(return_type: &ReturnType) -> String {
-    match return_type {
-        ReturnType::Default => String::new(),
-        ReturnType::Type(arrow, typ) => {
-            format!(
-                "{} {}",
-                arrow.to_token_stream(),
-                tokens_to_pretty_string(typ)
-            )
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use pretty_assertions::assert_eq;
@@ -90,7 +76,7 @@ mod test {
     use super::tokens_to_pretty_string;
 
     #[test]
-    fn pretty_format() {
+    fn pretty_format_examples() {
         assert_eq!(
             tokens_to_pretty_string(quote! {
                 <impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next
