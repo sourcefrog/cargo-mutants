@@ -52,7 +52,7 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
         let FileDiscoveries {
             mutants: mut file_mutants,
             more_files,
-        } = walk_file(root, Arc::clone(&source_file), options, &error_exprs)?;
+        } = walk_file(root, Arc::clone(&source_file), &error_exprs)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -102,7 +102,6 @@ struct FileDiscoveries {
 fn walk_file(
     root: &Utf8Path,
     source_file: Arc<SourceFile>,
-    options: &Options,
     error_exprs: &[Expr],
 ) -> Result<FileDiscoveries> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
@@ -114,7 +113,6 @@ fn walk_file(
         external_mods: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
-        options,
         source_file: source_file.clone(),
     };
     visitor.visit_file(&syn_file);
@@ -149,10 +147,6 @@ struct DiscoveryVisitor<'o> {
 
     /// The names from `mod foo;` statements that should be visited later.
     external_mods: Vec<String>,
-
-    /// Global options.
-    #[allow(unused)] // Just not used yet, but may be needed.
-    options: &'o Options,
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
