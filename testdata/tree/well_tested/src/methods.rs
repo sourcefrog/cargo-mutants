@@ -1,6 +1,6 @@
 //! Demonstrate mutation of impl methods.
 
-#![allow(clippy::blacklisted_name)] // "Foo" is just an example name.
+#![allow(clippy::disallowed_names)] // "Foo" is just an example name.
 
 use std::fmt;
 
