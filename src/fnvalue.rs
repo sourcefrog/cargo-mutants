@@ -2,6 +2,8 @@
 
 //! Mutations of replacing a function body with a value of a (hopefully) appropriate type.
 
+use std::iter;
+
 use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -32,108 +34,113 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
     // mutation values, and perhaps reduce duplication. However, it seems better
     // to support all the core cases with direct code first to learn what generalizations
     // are needed.
-    let mut reps = Vec::new();
     match type_ {
         Type::Path(syn::TypePath { path, .. }) => {
             // dbg!(&path);
             if path.is_ident("bool") {
-                reps.push(quote! { true });
-                reps.push(quote! { false });
+                vec![quote! { true }, quote! { false }]
             } else if path.is_ident("String") {
-                reps.push(quote! { String::new() });
-                reps.push(quote! { "xyzzy".into() });
+                vec![quote! { String::new() }, quote! { "xyzzy".into() }]
             } else if path.is_ident("str") {
-                reps.push(quote! { "" });
-                reps.push(quote! { "xyzzy" });
+                vec![quote! { "" }, quote! { "xyzzy" }]
             } else if path_is_unsigned(path) {
-                reps.push(quote! { 0 });
-                reps.push(quote! { 1 });
+                vec![quote! { 0 }, quote! { 1 }]
             } else if path_is_signed(path) {
-                reps.push(quote! { 0 });
-                reps.push(quote! { 1 });
-                reps.push(quote! { -1 });
+                vec![quote! { 0 }, quote! { 1 }, quote! { -1 }]
             } else if path_is_nonzero_signed(path) {
-                reps.extend([quote! { 1 }, quote! { -1 }]);
+                vec![quote! { 1 }, quote! { -1 }]
             } else if path_is_nonzero_unsigned(path) {
-                reps.push(quote! { 1 });
+                vec![quote! { 1 }]
             } else if path_is_float(path) {
-                reps.push(quote! { 0.0 });
-                reps.push(quote! { 1.0 });
-                reps.push(quote! { -1.0 });
+                vec![quote! { 0.0 }, quote! { 1.0 }, quote! { -1.0 }]
             } else if path_ends_with(path, "Result") {
-                if let Some(ok_type) = result_ok_type(path) {
-                    reps.extend(type_replacements(ok_type, error_exprs).map(|rep| {
-                        quote! { Ok(#rep) }
-                    }));
+                if let Some(ok_type) = match_first_type_arg(path, "Result") {
+                    type_replacements(ok_type, error_exprs)
+                        .map(|rep| {
+                            quote! { Ok(#rep) }
+                        })
+                        .collect_vec()
                 } else {
-                    // A result but with no type arguments, like `fmt::Result`; hopefully
+                    // A result with no type arguments, like `fmt::Result`; hopefully
                     // the Ok value can be constructed with Default.
-                    reps.push(quote! { Ok(Default::default()) });
+                    vec![quote! { Ok(Default::default()) }]
                 }
-                reps.extend(error_exprs.iter().map(|error_expr| {
+                .into_iter()
+                .chain(error_exprs.iter().map(|error_expr| {
                     quote! { Err(#error_expr) }
-                }));
+                }))
+                .collect_vec()
             } else if path_ends_with(path, "HttpResponse") {
-                reps.push(quote! { HttpResponse::Ok().finish() });
+                vec![quote! { HttpResponse::Ok().finish() }]
             } else if let Some(some_type) = match_first_type_arg(path, "Option") {
-                reps.push(quote! { None });
-                reps.extend(type_replacements(some_type, error_exprs).map(|rep| {
-                    quote! { Some(#rep) }
-                }));
-            } else if let Some(boxed_type) = match_first_type_arg(path, "Vec") {
+                iter::once(quote! { None })
+                    .chain(type_replacements(some_type, error_exprs).map(|rep| {
+                        quote! { Some(#rep) }
+                    }))
+                    .collect_vec()
+            } else if let Some(element_type) = match_first_type_arg(path, "Vec") {
                 // Generate an empty Vec, and then a one-element vec for every recursive
                 // value.
-                reps.push(quote! { vec![] });
-                reps.extend(type_replacements(boxed_type, error_exprs).map(|rep| {
-                    quote! { vec![#rep] }
-                }))
+                iter::once(quote! { vec![] })
+                    .chain(type_replacements(element_type, error_exprs).map(|rep| {
+                        quote! { vec![#rep] }
+                    }))
+                    .collect_vec()
             } else if let Some(boxed_type) = match_first_type_arg(path, "Cow") {
-                reps.extend(type_replacements(boxed_type, error_exprs).flat_map(|rep| {
-                    [
-                        quote! { Cow::Borrowed(#rep) },
-                        quote! { Cow::Owned(#rep.to_owned()) },
-                    ]
-                }))
+                type_replacements(boxed_type, error_exprs)
+                    .flat_map(|rep| {
+                        [
+                            quote! { Cow::Borrowed(#rep) },
+                            quote! { Cow::Owned(#rep.to_owned()) },
+                        ]
+                    })
+                    .collect_vec()
             } else if let Some((container_type, inner_type)) = known_container(path) {
                 // Something like Arc, Mutex, etc.
-
                 // TODO: Ideally we should use the path without relying on it being
                 // imported, but we must strip or rewrite the arguments, so that
                 // `std::sync::Arc<String>` becomes either `std::sync::Arc::<String>::new`
                 // or at least `std::sync::Arc::new`. Similarly for other types.
-                reps.extend(type_replacements(inner_type, error_exprs).map(|rep| {
-                    quote! { #container_type::new(#rep) }
-                }))
+                type_replacements(inner_type, error_exprs)
+                    .map(|rep| {
+                        quote! { #container_type::new(#rep) }
+                    })
+                    .collect_vec()
             } else if let Some((collection_type, inner_type)) = known_collection(path) {
-                reps.push(quote! { #collection_type::new() });
-                reps.extend(type_replacements(inner_type, error_exprs).map(|rep| {
-                    quote! { #collection_type::from_iter([#rep]) }
-                }));
+                iter::once(quote! { #collection_type::new() })
+                    .chain(type_replacements(inner_type, error_exprs).map(|rep| {
+                        quote! { #collection_type::from_iter([#rep]) }
+                    }))
+                    .collect_vec()
             } else if let Some((collection_type, inner_type)) = maybe_collection_or_container(path)
             {
                 // Something like `T<A>` or `T<'a, A>`, when we don't know exactly how
                 // to call it, but we strongly suspect that you could construct it from
                 // an `A`.
-                reps.push(quote! { #collection_type::new() });
-                reps.extend(type_replacements(inner_type, error_exprs).flat_map(|rep| {
-                    [
-                        quote! { #collection_type::from_iter([#rep]) },
-                        quote! { #collection_type::new(#rep) },
-                        quote! { #collection_type::from(#rep) },
-                    ]
-                }));
+                iter::once(quote! { #collection_type::new() })
+                    .chain(type_replacements(inner_type, error_exprs).flat_map(|rep| {
+                        [
+                            quote! { #collection_type::from_iter([#rep]) },
+                            quote! { #collection_type::new(#rep) },
+                            quote! { #collection_type::from(#rep) },
+                        ]
+                    }))
+                    .collect_vec()
             } else {
                 trace!(?type_, "Return type is not recognized, trying Default");
-                reps.push(quote! { Default::default() });
+                vec![quote! { Default::default() }]
             }
         }
-        Type::Array(TypeArray { elem, len, .. }) => reps.extend(
-            // Generate arrays that repeat each replacement value however many times.
-            // In principle we could generate combinations, but that might get very
-            // large, and values like "all zeros" and "all ones" seem likely to catch
-            // lots of things.
-            type_replacements(elem, error_exprs).map(|r| quote! { [ #r; #len ] }),
-        ),
+        Type::Array(TypeArray { elem, len, .. }) =>
+        // Generate arrays that repeat each replacement value however many times.
+        // In principle we could generate combinations, but that might get very
+        // large, and values like "all zeros" and "all ones" seem likely to catch
+        // lots of things.
+        {
+            type_replacements(elem, error_exprs)
+                .map(|r| quote! { [ #r; #len ] })
+                .collect_vec()
+        }
         Type::Reference(syn::TypeReference {
             mutability: None,
             elem,
@@ -141,54 +148,51 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
         }) => match &**elem {
             // You can't currently match box patterns in Rust
             Type::Path(path) if path.path.is_ident("str") => {
-                reps.push(quote! { "" });
-                reps.push(quote! { "xyzzy" });
+                vec![quote! { "" }, quote! { "xyzzy" }]
             }
-            Type::Slice(TypeSlice { elem, .. }) => {
-                reps.push(quote! { Vec::leak(Vec::new()) });
-                reps.extend(
+            Type::Slice(TypeSlice { elem, .. }) => iter::once(quote! { Vec::leak(Vec::new()) })
+                .chain(
                     type_replacements(elem, error_exprs).map(|r| quote! { Vec::leak(vec![ #r ]) }),
-                );
-            }
-            _ => {
-                reps.extend(type_replacements(elem, error_exprs).map(|rep| {
+                )
+                .collect_vec(),
+            _ => type_replacements(elem, error_exprs)
+                .map(|rep| {
                     quote! { &#rep }
-                }));
-            }
+                })
+                .collect_vec(),
         },
         Type::Reference(syn::TypeReference {
             mutability: Some(_),
             elem,
             ..
         }) => match &**elem {
-            Type::Slice(TypeSlice { elem, .. }) => {
-                reps.push(quote! { Vec::leak(Vec::new()) });
-                reps.extend(
+            Type::Slice(TypeSlice { elem, .. }) => iter::once(quote! { Vec::leak(Vec::new()) })
+                .chain(
                     type_replacements(elem, error_exprs).map(|r| quote! { Vec::leak(vec![ #r ]) }),
-                );
-            }
+                )
+                .collect_vec(),
             _ => {
                 // Make &mut with static lifetime by leaking them on the heap.
-                reps.extend(type_replacements(elem, error_exprs).map(|rep| {
-                    quote! { Box::leak(Box::new(#rep)) }
-                }))
+                type_replacements(elem, error_exprs)
+                    .map(|rep| {
+                        quote! { Box::leak(Box::new(#rep)) }
+                    })
+                    .collect_vec()
             }
         },
         Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
-            reps.push(quote! { () });
+            vec![quote! { () }]
             // TODO: Also recurse into non-empty tuples.
         }
         Type::Never(_) => {
-            // In theory we could mutate this to a function that just
-            // loops or sleeps, but it seems unlikely to be useful,
-            // so generate nothing.
+            vec![]
         }
         _ => {
             trace!(?type_, "Return type is not recognized, trying Default");
-            reps.push(quote! { Default::default() });
+            vec![quote! { Default::default() }]
         }
     }
-    reps.into_iter()
+    .into_iter()
 }
 
 fn path_ends_with(path: &Path, ident: &str) -> bool {
@@ -319,11 +323,6 @@ fn path_is_nonzero_unsigned(path: &Path) -> bool {
     }
 }
 
-/// If this looks like `Result<T, E>` (optionally with `Result` in some module), return `T`.
-fn result_ok_type(path: &Path) -> Option<&Type> {
-    match_first_type_arg(path, "Result")
-}
-
 /// If this is a path ending in `expected_ident`, return the first type argument, ignoring
 /// lifetimes.
 fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p Type> {
@@ -354,12 +353,6 @@ mod test {
     use crate::pretty::ToPrettyString;
 
     use super::return_type_replacements;
-
-    #[test]
-    fn path_is_result() {
-        let path: syn::Path = parse_quote! { Result<(), ()> };
-        assert!(super::result_ok_type(&path).is_some());
-    }
 
     #[test]
     fn recurse_into_result_bool() {
