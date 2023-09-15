@@ -5,6 +5,11 @@
 use proc_macro2::{Delimiter, TokenTree};
 use quote::ToTokens;
 
+/// Convert something to a pretty-printed string.
+pub(crate) trait ToPrettyString {
+    fn to_pretty_string(&self) -> String;
+}
+
 /// Convert a TokenStream representing some code to a reasonably formatted
 /// string of Rust code.
 ///
@@ -13,59 +18,64 @@ use quote::ToTokens;
 ///
 /// This is probably not correctly formatted for all Rust syntax, and only tries
 /// to cover cases that can emerge from the code we generate.
-pub(crate) fn tokens_to_pretty_string<T: ToTokens>(t: T) -> String {
-    use TokenTree::*;
-    let mut b = String::with_capacity(200);
-    let mut ts = t.to_token_stream().into_iter().peekable();
-    while let Some(tt) = ts.next() {
-        match tt {
-            Punct(p) => {
-                let pc = p.as_char();
-                b.push(pc);
-                if ts.peek().is_some() && (b.ends_with("->") || pc == ',' || pc == ';') {
-                    b.push(' ');
+impl<T> ToPrettyString for T
+where
+    T: ToTokens,
+{
+    fn to_pretty_string(&self) -> String {
+        use TokenTree::*;
+        let mut b = String::with_capacity(200);
+        let mut ts = self.to_token_stream().into_iter().peekable();
+        while let Some(tt) = ts.next() {
+            match tt {
+                Punct(p) => {
+                    let pc = p.as_char();
+                    b.push(pc);
+                    if ts.peek().is_some() && (b.ends_with("->") || pc == ',' || pc == ';') {
+                        b.push(' ');
+                    }
                 }
-            }
-            Ident(_) | Literal(_) => {
-                match tt {
-                    Literal(l) => b.push_str(&l.to_string()),
-                    Ident(i) => b.push_str(&i.to_string()),
-                    _ => unreachable!(),
-                };
-                if let Some(next) = ts.peek() {
-                    match next {
-                        Ident(_) | Literal(_) => b.push(' '),
-                        Punct(p) => match p.as_char() {
-                            ',' | ';' | '<' | '>' | ':' | '.' | '!' => (),
-                            _ => b.push(' '),
-                        },
-                        Group(_) => (),
+                Ident(_) | Literal(_) => {
+                    match tt {
+                        Literal(l) => b.push_str(&l.to_string()),
+                        Ident(i) => b.push_str(&i.to_string()),
+                        _ => unreachable!(),
+                    };
+                    if let Some(next) = ts.peek() {
+                        match next {
+                            Ident(_) | Literal(_) => b.push(' '),
+                            Punct(p) => match p.as_char() {
+                                ',' | ';' | '<' | '>' | ':' | '.' | '!' => (),
+                                _ => b.push(' '),
+                            },
+                            Group(_) => (),
+                        }
+                    }
+                }
+                Group(g) => {
+                    match g.delimiter() {
+                        Delimiter::Brace => b.push('{'),
+                        Delimiter::Bracket => b.push('['),
+                        Delimiter::Parenthesis => b.push('('),
+                        Delimiter::None => (),
+                    }
+                    b += &g.stream().to_pretty_string();
+                    match g.delimiter() {
+                        Delimiter::Brace => b.push('}'),
+                        Delimiter::Bracket => b.push(']'),
+                        Delimiter::Parenthesis => b.push(')'),
+                        Delimiter::None => (),
                     }
                 }
             }
-            Group(g) => {
-                match g.delimiter() {
-                    Delimiter::Brace => b.push('{'),
-                    Delimiter::Bracket => b.push('['),
-                    Delimiter::Parenthesis => b.push('('),
-                    Delimiter::None => (),
-                }
-                b.push_str(&tokens_to_pretty_string(g.stream()));
-                match g.delimiter() {
-                    Delimiter::Brace => b.push('}'),
-                    Delimiter::Bracket => b.push(']'),
-                    Delimiter::Parenthesis => b.push(')'),
-                    Delimiter::None => (),
-                }
-            }
         }
+        debug_assert!(
+            !b.ends_with(' '),
+            "generated a trailing space: ts={ts:?}, b={b:?}",
+            ts = self.to_token_stream(),
+        );
+        b
     }
-    debug_assert!(
-        !b.ends_with(' '),
-        "generated a trailing space: ts={ts:?}, b={b:?}",
-        ts = t.to_token_stream(),
-    );
-    b
 }
 
 #[cfg(test)]
@@ -73,19 +83,21 @@ mod test {
     use pretty_assertions::assert_eq;
     use quote::quote;
 
-    use super::tokens_to_pretty_string;
+    use super::ToPrettyString;
 
     #[test]
     fn pretty_format_examples() {
         assert_eq!(
-            tokens_to_pretty_string(quote! {
+            quote! {
+                // Nonsense rust but a big salad of syntax
                 <impl Iterator for MergeTrees < AE , BE , AIT , BIT > > :: next
                 -> Option < Self ::  Item >
-            }),
+            }
+            .to_pretty_string(),
             "<impl Iterator for MergeTrees<AE, BE, AIT, BIT>>::next -> Option<Self::Item>"
         );
         assert_eq!(
-            tokens_to_pretty_string(quote! { Lex < 'buf >::take }),
+            quote! { Lex < 'buf >::take }.to_pretty_string(),
             "Lex<'buf>::take"
         );
     }

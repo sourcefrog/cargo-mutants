@@ -17,7 +17,7 @@ use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
-use crate::pretty::tokens_to_pretty_string;
+use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
 use crate::*;
 
@@ -135,13 +135,13 @@ struct DiscoveryVisitor<'o> {
 impl<'o> DiscoveryVisitor<'o> {
     fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
         let full_function_name = Arc::new(self.namespace_stack.join("::"));
-        let return_type_str = Arc::new(tokens_to_pretty_string(return_type));
+        let return_type_str = Arc::new(return_type.to_pretty_string());
         let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
                 function_name: Arc::clone(&full_function_name),
                 return_type: Arc::clone(&return_type_str),
-                replacement: tokens_to_pretty_string(&rep),
+                replacement: rep.to_pretty_string(),
                 span: span.into(),
                 genre: Genre::FnValue,
             })
@@ -174,7 +174,7 @@ impl<'o> DiscoveryVisitor<'o> {
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     /// Visit top-level `fn foo()`.
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
-        let function_name = tokens_to_pretty_string(&i.sig.ident);
+        let function_name = i.sig.ident.to_pretty_string();
         let _span = trace_span!(
             "fn",
             line = i.sig.fn_token.span.start().line,
@@ -194,7 +194,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     fn visit_impl_item_fn(&mut self, i: &'ast syn::ImplItemFn) {
         // Don't look inside constructors (called "new") because there's often no good
         // alternative.
-        let function_name = tokens_to_pretty_string(&i.sig.ident);
+        let function_name = i.sig.ident.to_pretty_string();
         let _span = trace_span!(
             "fn",
             line = i.sig.fn_token.span.start().line,
@@ -219,7 +219,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        let type_name = tokens_to_pretty_string(&i.self_ty);
+        let type_name = i.self_ty.to_pretty_string();
         let name = if let Some((_, trait_path, _)) = &i.trait_ {
             let trait_name = &trait_path.segments.last().unwrap().ident;
             if trait_name == "Default" {

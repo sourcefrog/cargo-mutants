@@ -347,10 +347,11 @@ fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p 
 
 #[cfg(test)]
 mod test {
+    use itertools::Itertools;
     use pretty_assertions::assert_eq;
     use syn::{parse_quote, Expr, ReturnType};
 
-    use crate::pretty::tokens_to_pretty_string;
+    use crate::pretty::ToPrettyString;
 
     use super::return_type_replacements;
 
@@ -362,160 +363,123 @@ mod test {
 
     #[test]
     fn recurse_into_result_bool() {
-        let return_type: syn::ReturnType = parse_quote! {-> std::result::Result<bool> };
-        let reps = return_type_replacements(&return_type, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["Ok(true)", "Ok(false)",]
+        check_replacements(
+            parse_quote! {-> std::result::Result<bool> },
+            &[],
+            &["Ok(true)", "Ok(false)"],
         );
     }
 
     #[test]
     fn recurse_into_result_result_bool() {
-        let return_type: syn::ReturnType = parse_quote! {-> std::result::Result<Result<bool>> };
-        let error_expr: syn::Expr = parse_quote! { anyhow!("mutated") };
-        let reps = return_type_replacements(&return_type, &[error_expr]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
+        check_replacements(
+            parse_quote! {-> std::result::Result<Result<bool>> },
+            &[parse_quote! { anyhow!("mutated") }],
             &[
                 "Ok(Ok(true))",
                 "Ok(Ok(false))",
                 "Ok(Err(anyhow!(\"mutated\")))",
-                "Err(anyhow!(\"mutated\"))"
-            ]
+                "Err(anyhow!(\"mutated\"))",
+            ],
         );
     }
 
     #[test]
     fn u16_replacements() {
-        let reps = return_type_replacements(&parse_quote! { -> u16 }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["0", "1",]
-        );
+        check_replacements(parse_quote! { -> u16 }, &[], &["0", "1"]);
     }
 
     #[test]
     fn isize_replacements() {
-        let reps = return_type_replacements(&parse_quote! { -> isize }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["0", "1", "-1"]
-        );
+        check_replacements(parse_quote! { -> isize }, &[], &["0", "1", "-1"]);
     }
 
     #[test]
     fn nonzero_integer_replacements() {
-        let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroIsize }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["1", "-1"]
+        check_replacements(
+            parse_quote! { -> std::num::NonZeroIsize },
+            &[],
+            &["1", "-1"],
         );
 
-        let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroUsize }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["1"]
-        );
+        check_replacements(parse_quote! { -> std::num::NonZeroUsize }, &[], &["1"]);
 
-        let reps = return_type_replacements(&parse_quote! { -> std::num::NonZeroU32 }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["1"]
-        );
+        check_replacements(parse_quote! { -> std::num::NonZeroU32 }, &[], &["1"]);
     }
 
     #[test]
     fn unit_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> () }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["()"]
-        );
+        check_replacements(parse_quote! { -> () }, &[], &["()"]);
     }
 
     #[test]
     fn result_unit_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> Result<(), Error> }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["Ok(())"]
-        );
+        check_replacements(parse_quote! { -> Result<(), Error> }, &[], &["Ok(())"]);
 
-        let reps = return_type_replacements(&parse_quote! { -> Result<()> }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["Ok(())"]
-        );
+        check_replacements(parse_quote! { -> Result<()> }, &[], &["Ok(())"]);
     }
 
     #[test]
     fn http_response_replacement() {
-        assert_eq!(
-            replace(&parse_quote! { -> HttpResponse }, &[]),
-            &["HttpResponse::Ok().finish()"]
+        check_replacements(
+            parse_quote! { -> HttpResponse },
+            &[],
+            &["HttpResponse::Ok().finish()"],
         );
     }
 
     #[test]
     fn option_usize_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> Option<usize> }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["None", "Some(0)", "Some(1)"]
+        check_replacements(
+            parse_quote! { -> Option<usize> },
+            &[],
+            &["None", "Some(0)", "Some(1)"],
         );
     }
 
     #[test]
     fn box_usize_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> Box<usize> }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["Box::new(0)", "Box::new(1)"]
+        check_replacements(
+            parse_quote! { -> Box<usize> },
+            &[],
+            &["Box::new(0)", "Box::new(1)"],
         );
     }
 
     #[test]
     fn box_unrecognized_type_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> Box<MyObject> }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["Box::new(Default::default())"]
+        check_replacements(
+            parse_quote! { -> Box<MyObject> },
+            &[],
+            &["Box::new(Default::default())"],
         );
     }
 
     #[test]
     fn vec_string_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> std::vec::Vec<String> }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["vec![]", "vec![String::new()]", "vec![\"xyzzy\".into()]"]
+        check_replacements(
+            parse_quote! { -> std::vec::Vec<String> },
+            &[],
+            &["vec![]", "vec![String::new()]", "vec![\"xyzzy\".into()]"],
         );
     }
 
     #[test]
     fn float_replacement() {
-        let reps = return_type_replacements(&parse_quote! { -> f32 }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["0.0", "1.0", "-1.0"]
-        );
+        check_replacements(parse_quote! { -> f32 }, &[], &["0.0", "1.0", "-1.0"]);
     }
 
     #[test]
     fn ref_replacement_recurses() {
-        let reps = return_type_replacements(&parse_quote! { -> &bool }, &[]);
-        assert_eq!(
-            reps.map(tokens_to_pretty_string).collect::<Vec<_>>(),
-            &["&true", "&false"]
-        );
+        check_replacements(parse_quote! { -> &bool }, &[], &["&true", "&false"]);
     }
 
     #[test]
     fn array_replacement() {
-        assert_eq!(
-            replace(&parse_quote! { -> [u8; 256] }, &[]),
-            &["[0; 256]", "[1; 256]"]
+        check_replacements(
+            parse_quote! { -> [u8; 256] },
+            &[],
+            &["[0; 256]", "[1; 256]"],
         );
     }
 
@@ -523,9 +487,10 @@ mod test {
     fn arc_replacement() {
         // Also checks that it matches the path, even using an atypical path.
         // TODO: Ideally this would be fully qualified like `alloc::sync::Arc::new(String::new())`.
-        assert_eq!(
-            replace(&parse_quote! { -> alloc::sync::Arc<String> }, &[]),
-            &["Arc::new(String::new())", "Arc::new(\"xyzzy\".into())"]
+        check_replacements(
+            parse_quote! { -> alloc::sync::Arc<String> },
+            &[],
+            &["Arc::new(String::new())", "Arc::new(\"xyzzy\".into())"],
         );
     }
 
@@ -533,34 +498,37 @@ mod test {
     fn rc_replacement() {
         // Also checks that it matches the path, even using an atypical path.
         // TODO: Ideally this would be fully qualified like `alloc::sync::Rc::new(String::new())`.
-        assert_eq!(
-            replace(&parse_quote! { -> alloc::sync::Rc<String> }, &[]),
-            &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"]
+        check_replacements(
+            parse_quote! { -> alloc::sync::Rc<String> },
+            &[],
+            &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"],
         );
     }
 
     #[test]
     fn btreeset_replacement() {
-        assert_eq!(
-            replace(&parse_quote! { -> std::collections::BTreeSet<String> }, &[]),
+        check_replacements(
+            parse_quote! { -> std::collections::BTreeSet<String> },
+            &[],
             &[
                 "BTreeSet::new()",
                 "BTreeSet::from_iter([String::new()])",
-                "BTreeSet::from_iter([\"xyzzy\".into()])"
-            ]
+                "BTreeSet::from_iter([\"xyzzy\".into()])",
+            ],
         );
     }
 
     #[test]
     fn cow_generates_borrowed_and_owned() {
-        assert_eq!(
-            replace(&parse_quote! { -> Cow<'static, str> }, &[]),
+        check_replacements(
+            parse_quote! { -> Cow<'static, str> },
+            &[],
             &[
                 "Cow::Borrowed(\"\")",
                 "Cow::Owned(\"\".to_owned())",
                 "Cow::Borrowed(\"xyzzy\")",
                 "Cow::Owned(\"xyzzy\".to_owned())",
-            ]
+            ],
         );
     }
 
@@ -568,8 +536,9 @@ mod test {
     fn unknown_container_replacement() {
         // This looks like something that holds a String, and maybe can be constructed
         // from a String, but we don't know anythig else about it.
-        assert_eq!(
-            replace(&parse_quote! { -> UnknownContainer<'static, str> }, &[]),
+        check_replacements(
+            parse_quote! { -> UnknownContainer<'static, str> },
+            &[],
             &[
                 "UnknownContainer::new()",
                 "UnknownContainer::from_iter([\"\"])",
@@ -578,14 +547,17 @@ mod test {
                 "UnknownContainer::from_iter([\"xyzzy\"])",
                 "UnknownContainer::new(\"xyzzy\")",
                 "UnknownContainer::from(\"xyzzy\")",
-            ]
+            ],
         );
     }
 
-    fn replace(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<String> {
-        return_type_replacements(return_type, error_exprs)
-            .into_iter()
-            .map(tokens_to_pretty_string)
-            .collect::<Vec<_>>()
+    fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {
+        assert_eq!(
+            return_type_replacements(&return_type, error_exprs)
+                .into_iter()
+                .map(|t| t.to_pretty_string())
+                .collect_vec(),
+            expected
+        );
     }
 }
