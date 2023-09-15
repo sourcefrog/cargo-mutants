@@ -37,6 +37,7 @@ More mutation genres and patterns will be added in future releases.
 | `&[T]`, `&mut [T]`| Leaked empty and one-element vecs                          |
 | `&T`              | `&...` (all replacements for T)                            |
 | `HttpResponse`    | `HttpResponse::Ok().finish`                                |
+| `(A, B, ...)`     | `(a, b, ...)` for the product of all replacements of A, B, ... |
 | (any other)       | `Default::default()`                                       |
 
 `...` in the mutation patterns indicates that the type is recursively mutated.

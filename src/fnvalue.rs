@@ -182,7 +182,17 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
         },
         Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
             vec![quote! { () }]
-            // TODO: Also recurse into non-empty tuples.
+        }
+        Type::Tuple(TypeTuple { elems, .. }) => {
+            // Generate the cartesian product of replacements of every type within the tuple.
+            elems
+                .iter()
+                .map(|elem| type_replacements(elem, error_exprs).collect_vec())
+                .multi_cartesian_product()
+                .map(|reps| {
+                    quote! { ( #( #reps ),* ) }
+                })
+                .collect_vec()
         }
         Type::Never(_) => {
             vec![]
@@ -542,6 +552,31 @@ mod test {
                 r#"UnknownContainer::from("xyzzy")"#,
             ],
         );
+    }
+
+    #[test]
+    fn tuple_combinations() {
+        check_replacements(
+            parse_quote! { -> (bool, usize) },
+            &[],
+            &["(true, 0)", "(true, 1)", "(false, 0)", "(false, 1)"],
+        )
+    }
+
+    #[test]
+    fn tuple_combination_longer() {
+        check_replacements(
+            parse_quote! { -> (bool, Option<String>) },
+            &[],
+            &[
+                "(true, None)",
+                "(true, Some(String::new()))",
+                r#"(true, Some("xyzzy".into()))"#,
+                "(false, None)",
+                "(false, Some(String::new()))",
+                r#"(false, Some("xyzzy".into()))"#,
+            ],
+        )
     }
 
     fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {

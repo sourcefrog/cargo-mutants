@@ -20,6 +20,9 @@
 - Mutate functions returning `&[T]` and `&mut [T]` to return leaked vecs
   of values.
 
+- Mutate `(A, B, C, ...)` into the product of all replacements for
+  `a, b, c, ...`
+
 ## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a
