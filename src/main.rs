@@ -7,6 +7,7 @@ mod cargo;
 mod config;
 mod console;
 mod exit_code;
+mod fnvalue;
 mod interrupt;
 mod lab;
 mod log_file;
