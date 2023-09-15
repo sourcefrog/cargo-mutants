@@ -371,15 +371,15 @@ mod test {
     }
 
     #[test]
-    fn recurse_into_result_result_bool() {
+    fn recurse_into_result_result_bool_with_error_values() {
         check_replacements(
             parse_quote! {-> std::result::Result<Result<bool>> },
             &[parse_quote! { anyhow!("mutated") }],
             &[
                 "Ok(Ok(true))",
                 "Ok(Ok(false))",
-                "Ok(Err(anyhow!(\"mutated\")))",
-                "Err(anyhow!(\"mutated\"))",
+                r#"Ok(Err(anyhow!("mutated")))"#,
+                r#"Err(anyhow!("mutated"))"#,
             ],
         );
     }
@@ -460,7 +460,7 @@ mod test {
         check_replacements(
             parse_quote! { -> std::vec::Vec<String> },
             &[],
-            &["vec![]", "vec![String::new()]", "vec![\"xyzzy\".into()]"],
+            &["vec![]", "vec![String::new()]", r#"vec!["xyzzy".into()]"#],
         );
     }
 
@@ -490,7 +490,7 @@ mod test {
         check_replacements(
             parse_quote! { -> alloc::sync::Arc<String> },
             &[],
-            &["Arc::new(String::new())", "Arc::new(\"xyzzy\".into())"],
+            &["Arc::new(String::new())", r#"Arc::new("xyzzy".into())"#],
         );
     }
 
@@ -501,7 +501,7 @@ mod test {
         check_replacements(
             parse_quote! { -> alloc::sync::Rc<String> },
             &[],
-            &["Rc::new(String::new())", "Rc::new(\"xyzzy\".into())"],
+            &["Rc::new(String::new())", r#"Rc::new("xyzzy".into())"#],
         );
     }
 
@@ -513,7 +513,7 @@ mod test {
             &[
                 "BTreeSet::new()",
                 "BTreeSet::from_iter([String::new()])",
-                "BTreeSet::from_iter([\"xyzzy\".into()])",
+                r#"BTreeSet::from_iter(["xyzzy".into()])"#,
             ],
         );
     }
@@ -524,29 +524,29 @@ mod test {
             parse_quote! { -> Cow<'static, str> },
             &[],
             &[
-                "Cow::Borrowed(\"\")",
-                "Cow::Owned(\"\".to_owned())",
-                "Cow::Borrowed(\"xyzzy\")",
-                "Cow::Owned(\"xyzzy\".to_owned())",
+                r#"Cow::Borrowed("")"#,
+                r#"Cow::Owned("".to_owned())"#,
+                r#"Cow::Borrowed("xyzzy")"#,
+                r#"Cow::Owned("xyzzy".to_owned())"#,
             ],
         );
     }
 
     #[test]
     fn unknown_container_replacement() {
-        // This looks like something that holds a String, and maybe can be constructed
-        // from a String, but we don't know anythig else about it.
+        // This looks like something that holds a &str, and maybe can be constructed
+        // from a &str, but we don't know anythig else about it, so we just guess.
         check_replacements(
             parse_quote! { -> UnknownContainer<'static, str> },
             &[],
             &[
                 "UnknownContainer::new()",
-                "UnknownContainer::from_iter([\"\"])",
-                "UnknownContainer::new(\"\")",
-                "UnknownContainer::from(\"\")",
-                "UnknownContainer::from_iter([\"xyzzy\"])",
-                "UnknownContainer::new(\"xyzzy\")",
-                "UnknownContainer::from(\"xyzzy\")",
+                r#"UnknownContainer::from_iter([""])"#,
+                r#"UnknownContainer::new("")"#,
+                r#"UnknownContainer::from("")"#,
+                r#"UnknownContainer::from_iter(["xyzzy"])"#,
+                r#"UnknownContainer::new("xyzzy")"#,
+                r#"UnknownContainer::from("xyzzy")"#,
             ],
         );
     }
