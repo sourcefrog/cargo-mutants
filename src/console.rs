@@ -535,18 +535,23 @@ pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
 pub(crate) fn style_mutant(mutant: &Mutant) -> String {
     // This is like `impl Display for Mutant`, but with colors.
     // The text content should be the same.
-    format!(
-        "{}: replace {}{}{} with {}",
-        mutant.describe_location(),
-        style(mutant.function_name()).bright().magenta(),
-        if mutant.return_type().is_empty() {
-            ""
-        } else {
-            " "
-        },
-        style(mutant.return_type()).magenta(),
-        style(mutant.replacement_text()).yellow(),
+    let mut s = String::with_capacity(200);
+    write!(
+        &mut s,
+        "{}:{}",
+        mutant.source_file.tree_relative_slashes(),
+        mutant.span.start.line,
     )
+    .unwrap();
+    s.push_str(": replace ");
+    s.push_str(&style(mutant.function_name()).bright().magenta().to_string());
+    if !mutant.return_type().is_empty() {
+        s.push(' ');
+        s.push_str(&style(mutant.return_type()).magenta().to_string());
+    }
+    s.push_str(" with ");
+    s.push_str(&style(mutant.replacement_text()).yellow().to_string());
+    s
 }
 
 fn style_elapsed_secs(since: Instant) -> String {

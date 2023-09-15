@@ -382,6 +382,8 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
+    use regex::Regex;
+
     use crate::cargo::CargoTool;
 
     use super::*;
@@ -410,6 +412,9 @@ mod test {
         )
         .expect("Discover mutants in own source tree");
 
-        println!("{list_output}");
+        // Strip line numbers so this is not too brittle.
+        let line_re = Regex::new(r"(?m)^([^:]+:)\d+:( .*)$").unwrap();
+        let list_output = line_re.replace_all(&list_output, "$1$2");
+        insta::assert_snapshot!(list_output);
     }
 }
