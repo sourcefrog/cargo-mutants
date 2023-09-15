@@ -49,8 +49,10 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
     let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
-        let (mut file_mutants, more_files) =
-            walk_file(root, Arc::clone(&source_file), options, &error_exprs)?;
+        let FileDiscoveries {
+            mutants: mut file_mutants,
+            more_files,
+        } = walk_file(root, Arc::clone(&source_file), options, &error_exprs)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -87,6 +89,13 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
     Ok(Discovered { mutants, files })
 }
 
+/// The result of walking one file: some mutants generated in it, and
+/// some more files from `mod` statements to look into.
+struct FileDiscoveries {
+    mutants: Vec<Mutant>,
+    more_files: Vec<Utf8PathBuf>,
+}
+
 /// Find all possible mutants in a source file.
 ///
 /// Returns the mutants found, and more files discovered by `mod` statements to visit.
@@ -95,22 +104,32 @@ fn walk_file(
     source_file: Arc<SourceFile>,
     options: &Options,
     error_exprs: &[Expr],
-) -> Result<(Vec<Mutant>, Vec<Utf8PathBuf>)> {
+) -> Result<FileDiscoveries> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
         error_exprs,
-        more_files: Vec::new(),
+        external_mods: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
         options,
-        root: root.to_owned(),
-        source_file,
+        source_file: source_file.clone(),
     };
     visitor.visit_file(&syn_file);
-    Ok((visitor.mutants, visitor.more_files))
+    let more_files = visitor
+        .external_mods
+        .iter()
+        .map(|mod_name| find_mod_source(root, &source_file, mod_name))
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .flatten()
+        .collect_vec();
+    Ok(FileDiscoveries {
+        mutants: visitor.mutants,
+        more_files,
+    })
 }
 
 /// `syn` visitor that recursively traverses the syntax tree, accumulating places
@@ -125,17 +144,14 @@ struct DiscoveryVisitor<'o> {
     /// The file being visited.
     source_file: Arc<SourceFile>,
 
-    /// The root of the source tree.
-    root: Utf8PathBuf,
-
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
 
-    /// Files discovered by `mod` statements.
-    more_files: Vec<Utf8PathBuf>,
+    /// The names from `mod foo;` statements that should be visited later.
+    external_mods: Vec<String>,
 
     /// Global options.
-    #[allow(unused)]
+    #[allow(unused)] // Just not used yet, but may be needed.
     options: &'o Options,
 
     /// Parsed error expressions, from the config file or command line.
@@ -246,9 +262,6 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
-        // TODO: Maybe while visiting the file we should only collect the
-        // `mod` statements, and then find the files separately, to keep IO
-        // effects away from parsing the file.
         let mod_name = &node.ident.unraw().to_string();
         let _span = trace_span!("mod", line = node.mod_token.span.start().line, mod_name).entered();
         if attrs_excluded(&node.attrs) {
@@ -256,54 +269,61 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
         // If there's no content in braces, then this is a `mod foo;`
-        // statement referring to an external file. We find the file name
-        // then remember to visit it later.
-        //
-        // Both the current module and the included sub-module can be in
-        // either style: `.../foo.rs` or `.../foo/mod.rs`.
-        //
-        // If the current file ends with `/mod.rs`, then sub-modules
-        // will be in the same directory as this file. Otherwise, this is
-        // `/foo.rs` and sub-modules will be in `foo/`.
-        //
-        // Having determined the directory then we can look for either
-        // `foo.rs` or `foo/mod.rs`.
+        // statement referring to an external file. We remember the module
+        // name and then later look for the file.
         if node.content.is_none() {
-            let my_path = &self.source_file.tree_relative_path;
-            // Maybe matching on the name here is no the right approach and
-            // we should instead remember how this file was found?
-            let dir = if my_path.ends_with("mod.rs")
-                || my_path.ends_with("lib.rs")
-                || my_path.ends_with("main.rs")
-            {
-                my_path.parent().expect("mod path has no parent").to_owned()
-            } else {
-                my_path.with_extension("")
-            };
-            let mut found = false;
-            let mut tried_paths = Vec::new();
-            for &tail in &[".rs", "/mod.rs"] {
-                let relative_path = dir.join(mod_name.clone() + tail);
-                let full_path = self.root.join(&relative_path);
-                if full_path.is_file() {
-                    trace!("found submodule in {full_path}");
-                    self.more_files.push(relative_path);
-                    found = true;
-                    break;
-                } else {
-                    tried_paths.push(full_path);
-                }
-            }
-            if !found {
-                warn!(
-                    "{path}:{line}: referent of mod {mod_name:#?} not found: tried {tried_paths:?}",
-                    path = self.source_file.tree_relative_path,
-                    line = node.mod_token.span.start().line,
-                );
-            }
+            self.external_mods.push(mod_name.to_owned());
         }
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
+}
+
+/// Find a new source file referenced by a `mod` statement.
+///
+/// Possibly, our heuristics just won't be able to find which file it is,
+/// in which case we return `Ok(None)`.
+fn find_mod_source(
+    tree_root: &Utf8Path,
+    parent: &SourceFile,
+    mod_name: &str,
+) -> Result<Option<Utf8PathBuf>> {
+    // Both the current module and the included sub-module can be in
+    // either style: `.../foo.rs` or `.../foo/mod.rs`.
+    //
+    // If the current file ends with `/mod.rs`, then sub-modules
+    // will be in the same directory as this file. Otherwise, this is
+    // `/foo.rs` and sub-modules will be in `foo/`.
+    //
+    // Having determined the directory then we can look for either
+    // `foo.rs` or `foo/mod.rs`.
+    let parent_path = &parent.tree_relative_path;
+    // TODO: Maybe matching on the name here is not the right approach and
+    // we should instead remember how this file was found? This might go wrong
+    // with unusually-named files.
+    let dir = if parent_path.ends_with("mod.rs")
+        || parent_path.ends_with("lib.rs")
+        || parent_path.ends_with("main.rs")
+    {
+        parent_path
+            .parent()
+            .expect("mod path has no parent")
+            .to_owned()
+    } else {
+        parent_path.with_extension("")
+    };
+    let mut tried_paths = Vec::new();
+    for &tail in &[".rs", "/mod.rs"] {
+        let relative_path = dir.join(mod_name.to_owned() + tail);
+        let full_path = tree_root.join(&relative_path);
+        if full_path.is_file() {
+            trace!("found submodule in {full_path}");
+            return Ok(Some(relative_path));
+        } else {
+            tried_paths.push(full_path);
+        }
+    }
+    warn!(?parent_path, %mod_name, ?tried_paths, "referent of mod not found");
+    Ok(None)
 }
 
 /// Generate replacement text for a function based on its return type.
