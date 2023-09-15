@@ -390,6 +390,17 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
                             quote! { vec![#rep] }
                         }),
                 )
+            } else if let Some(boxed_type) = match_first_type_arg(path, "Cow") {
+                reps.extend(
+                    type_replacements(boxed_type, error_exprs)
+                        .into_iter()
+                        .flat_map(|rep| {
+                            [
+                                quote! { Cow::Borrowed(#rep) },
+                                quote! { Cow::Owned(#rep.to_owned()) },
+                            ]
+                        }),
+                )
             } else if let Some((container_type, inner_type)) = known_container(path) {
                 // Something like Arc, Mutex, etc.
 
@@ -417,7 +428,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> Vec<TokenStream> {
             {
                 // Something like `T<A>` or `T<'a, A>`, when we don't know exactly how
                 // to call it, but we strongly suspect that you could construct it from
-                // an `A`. For example, `Cow`.
+                // an `A`.
                 reps.push(quote! { #collection_type::new() });
                 reps.extend(
                     type_replacements(inner_type, error_exprs)
@@ -631,15 +642,21 @@ fn result_ok_type(path: &Path) -> Option<&Type> {
     match_first_type_arg(path, "Result")
 }
 
-/// If this is a path ending in `expected_ident`, return the first type argument.
+/// If this is a path ending in `expected_ident`, return the first type argument, ignoring
+/// lifetimes.
 fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p Type> {
+    // TODO: Maybe match only things wit one arg?
     let last = path.segments.last()?;
     if last.ident == expected_ident {
         if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
             &last.arguments
         {
-            if let Some(GenericArgument::Type(ok_type)) = args.first() {
-                return Some(ok_type);
+            for arg in args {
+                match arg {
+                    GenericArgument::Type(arg_type) => return Some(arg_type),
+                    GenericArgument::Lifetime(_) => (),
+                    _ => return None,
+                }
             }
         }
     }
@@ -729,6 +746,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
+    use pretty_assertions::assert_eq;
     use quote::quote;
     use syn::{parse_quote, Expr, ReturnType};
 
@@ -947,21 +965,35 @@ mod test {
     }
 
     #[test]
-    fn cow_replacement() {
+    fn cow_generates_borrowed_and_owned() {
         assert_eq!(
             replace(&parse_quote! { -> Cow<'static, str> }, &[]),
             &[
-                "Cow::new()",
-                "Cow::from_iter([\"\"])",
-                "Cow::new(\"\")",
-                "Cow::from(\"\")",
-                "Cow::from_iter([\"xyzzy\"])",
-                "Cow::new(\"xyzzy\")",
-                "Cow::from(\"xyzzy\")",
+                "Cow::Borrowed(\"\")",
+                "Cow::Owned(\"\".to_owned())",
+                "Cow::Borrowed(\"xyzzy\")",
+                "Cow::Owned(\"xyzzy\".to_owned())",
             ]
         );
     }
 
+    #[test]
+    fn unknown_container_replacement() {
+        // This looks like something that holds a String, and maybe can be constructed
+        // from a String, but we don't know anythig else about it.
+        assert_eq!(
+            replace(&parse_quote! { -> UnknownContainer<'static, str> }, &[]),
+            &[
+                "UnknownContainer::new()",
+                "UnknownContainer::from_iter([\"\"])",
+                "UnknownContainer::new(\"\")",
+                "UnknownContainer::from(\"\")",
+                "UnknownContainer::from_iter([\"xyzzy\"])",
+                "UnknownContainer::new(\"xyzzy\")",
+                "UnknownContainer::from(\"xyzzy\")",
+            ]
+        );
+    }
     fn replace(return_type: &ReturnType, error_exprs: &[Expr]) -> Vec<String> {
         return_type_replacements(return_type, error_exprs)
             .into_iter()

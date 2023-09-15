@@ -32,6 +32,7 @@ More mutation genres and patterns will be added in future releases.
 | `Arc<T>`          | `Arc::new(...)`                                            |
 | `Rc<T>`           | `Rc::new(...)`                                             |
 | `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, `VecDeque` | empty and one-element collections |
+| `Cow<'_, T>`      | `Cow::Borrowed(t)`, `Cow::Owned(t.to_owned())`             |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
 | `&T`              | `&...` (all replacements for T)                            |
 | `HttpResponse`    | `HttpResponse::Ok().finish`                                |

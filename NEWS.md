@@ -15,6 +15,8 @@
 
 - Minimum Rust version updated to 1.70.
 
+- Mutate `Cow<'_, T>` into `Owned` and `Borrowed` variants.
+
 ## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a
