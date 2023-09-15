@@ -5,18 +5,20 @@
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::fs::File;
+use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use ::console::{style, StyledObject};
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
+use console::{style, StyledObject};
 
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::prelude::*;
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
-use crate::*;
+use crate::scenario::Scenario;
+use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
 
 static COPY_MESSAGE: &str = "Copy source to scratch directory";
 
@@ -530,16 +532,7 @@ pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
     }
 }
 
-pub fn list_mutants(mutants: &[Mutant], show_diffs: bool) {
-    for mutant in mutants {
-        println!("{}", style_mutant(mutant));
-        if show_diffs {
-            println!("{}", mutant.diff());
-        }
-    }
-}
-
-fn style_mutant(mutant: &Mutant) -> String {
+pub(crate) fn style_mutant(mutant: &Mutant) -> String {
     // This is like `impl Display for Mutant`, but with colors.
     // The text content should be the same.
     format!(
@@ -586,7 +579,7 @@ fn style_mb(bytes: u64) -> StyledObject<String> {
 pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
     match scenario {
         Scenario::Baseline => "Unmutated baseline".into(),
-        Scenario::Mutant(mutant) => console::style_mutant(mutant).into(),
+        Scenario::Mutant(mutant) => style_mutant(mutant).into(),
     }
 }
 

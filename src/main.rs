@@ -10,6 +10,7 @@ mod exit_code;
 mod fnvalue;
 mod interrupt;
 mod lab;
+mod list;
 mod log_file;
 mod manifest;
 mod mutate;
@@ -26,7 +27,7 @@ mod tool;
 mod visit;
 
 use std::env;
-use std::io::{self, Write};
+use std::io;
 use std::process::exit;
 
 use anyhow::Result;
@@ -36,7 +37,6 @@ use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::{generate, Shell};
 use path_slash::PathExt;
-use serde_json::{json, Value};
 use tracing::debug;
 
 // Imports of public names from this crate.
@@ -44,6 +44,7 @@ use crate::build_dir::BuildDir;
 use crate::cargo::CargoTool;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
+use crate::list::{list_files, list_mutants, GlueWrite};
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
@@ -235,47 +236,23 @@ fn main() -> Result<()> {
     let options = Options::new(&args, &config)?;
     debug!(?options);
     if args.list_files {
-        list_files(&tool, &source_tree_root, &options, args.json)?;
+        list_files(
+            GlueWrite::new(io::stdout()),
+            &tool,
+            &source_tree_root,
+            &options,
+        )?;
     } else if args.list {
-        let discovered = walk_tree(&tool, &source_tree_root, &options)?;
-        if args.json {
-            if args.diff {
-                eprintln!("--list --diff --json is not (yet) supported");
-                exit(exit_code::USAGE);
-            }
-            serde_json::to_writer_pretty(io::BufWriter::new(io::stdout()), &discovered.mutants)?;
-        } else {
-            console::list_mutants(&discovered.mutants, args.diff);
-        }
+        list_mutants(
+            GlueWrite::new(io::stdout()),
+            &tool,
+            &source_tree_root,
+            &options,
+        )?;
     } else {
         let lab_outcome =
             lab::test_unmutated_then_all_mutants(&tool, &source_tree_root, options, &console)?;
         exit(lab_outcome.exit_code());
-    }
-    Ok(())
-}
-
-fn list_files(tool: &dyn Tool, source: &Utf8Path, options: &Options, json: bool) -> Result<()> {
-    let files = walk_tree(tool, source, options)?.files;
-    let mut out = io::BufWriter::new(io::stdout());
-    if json {
-        let json_list = Value::Array(
-            files
-                .iter()
-                .map(|source_file| {
-                    json!({
-                        "path": source_file.tree_relative_path.to_slash_path(),
-                        "package": source_file.package.name,
-                    })
-                })
-                .collect(),
-        );
-        serde_json::to_writer_pretty(&mut out, &json_list)?;
-        writeln!(out)?;
-    } else {
-        for file in files {
-            writeln!(out, "{}", file.tree_relative_path.to_slash_path())?;
-        }
     }
     Ok(())
 }

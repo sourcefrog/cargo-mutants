@@ -379,3 +379,37 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     }
     skip
 }
+
+#[cfg(test)]
+mod test {
+    use crate::cargo::CargoTool;
+
+    use super::*;
+
+    /// As a generic protection against regressions in discovery, the the mutants
+    /// generated from `cargo-mutants` own tree against a checked-in list.
+    ///
+    /// The snapshot will need to be updated when functions are added or removed,
+    /// as well as when new mutation patterns are added.
+    ///
+    /// To stop it being too noisy, we use a custom format with no line numbers.
+    #[test]
+    fn expected_mutants_for_own_source_tree() {
+        let options = Options {
+            error_values: vec!["::anyhow::anyhow!(\"mutated!\")".to_owned()],
+            ..Default::default()
+        };
+        let mut list_output = String::new();
+        crate::list_mutants(
+            &mut list_output,
+            &CargoTool::new(),
+            &Utf8Path::new(".")
+                .canonicalize_utf8()
+                .expect("Canonicalize source path"),
+            &options,
+        )
+        .expect("Discover mutants in own source tree");
+
+        println!("{list_output}");
+    }
+}

@@ -75,6 +75,15 @@ pub struct Options {
 
     /// Insert these values as errors from functions returning `Result`.
     pub error_values: Vec<String>,
+
+    /// Show ANSI colors.
+    pub colors: bool,
+
+    /// List mutants in json, etc.
+    pub emit_json: bool,
+
+    /// Emit diffs showing just what changed.
+    pub emit_diffs: bool,
 }
 
 fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
@@ -126,6 +135,9 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
+            emit_json: args.json,
+            colors: true, // TODO: An option for this and use CLICOLORS.
+            emit_diffs: args.diff,
             minimum_test_timeout,
         };
         options.error_values.iter().for_each(|e| {

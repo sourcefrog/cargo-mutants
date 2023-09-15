@@ -152,7 +152,7 @@ fn list_diff_json_not_yet_supported() {
         .args(["mutants", "--list", "--json", "--diff"])
         .assert()
         .code(1)
-        .stderr("--list --diff --json is not (yet) supported\n")
+        .stderr("Error: --list --diff --json is not (yet) supported\n")
         .stdout("");
 }
 
