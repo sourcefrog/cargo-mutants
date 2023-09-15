@@ -16,6 +16,7 @@ mod options;
 mod outcome;
 mod output;
 mod path;
+mod pretty;
 mod process;
 mod scenario;
 mod source;
