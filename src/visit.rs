@@ -49,16 +49,19 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
     let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         check_interrupted()?;
-        let FileDiscoveries {
-            mutants: mut file_mutants,
-            more_files,
-        } = walk_file(root, Arc::clone(&source_file), &error_exprs)?;
+        let (mut file_mutants, external_mods) = walk_file(Arc::clone(&source_file), &error_exprs)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
-        for path in more_files {
-            file_queue.push_back(Arc::new(SourceFile::new(root, path, &source_file.package)?));
+        for mod_name in &external_mods {
+            if let Some(mod_path) = find_mod_source(root, &source_file, mod_name)? {
+                file_queue.push_back(Arc::new(SourceFile::new(
+                    root,
+                    mod_path,
+                    &source_file.package,
+                )?))
+            }
         }
         let path = &source_file.tree_relative_path;
         if let Some(examine_globset) = &options.examine_globset {
@@ -84,26 +87,19 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
             }
         }
         mutants.append(&mut file_mutants);
-        files.push(Arc::clone(&source_file));
+        files.push(source_file);
     }
     Ok(Discovered { mutants, files })
 }
 
-/// The result of walking one file: some mutants generated in it, and
-/// some more files from `mod` statements to look into.
-struct FileDiscoveries {
-    mutants: Vec<Mutant>,
-    more_files: Vec<Utf8PathBuf>,
-}
-
 /// Find all possible mutants in a source file.
 ///
-/// Returns the mutants found, and more files discovered by `mod` statements to visit.
+/// Returns the mutants found, and the names of modules referenced by `mod` statements
+/// that should be visited later.
 fn walk_file(
-    root: &Utf8Path,
     source_file: Arc<SourceFile>,
     error_exprs: &[Expr],
-) -> Result<FileDiscoveries> {
+) -> Result<(Vec<Mutant>, Vec<String>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(&source_file.code)
@@ -116,18 +112,7 @@ fn walk_file(
         source_file: source_file.clone(),
     };
     visitor.visit_file(&syn_file);
-    let more_files = visitor
-        .external_mods
-        .iter()
-        .map(|mod_name| find_mod_source(root, &source_file, mod_name))
-        .collect::<Result<Vec<_>>>()?
-        .into_iter()
-        .flatten()
-        .collect_vec();
-    Ok(FileDiscoveries {
-        mutants: visitor.mutants,
-        more_files,
-    })
+    Ok((visitor.mutants, visitor.external_mods))
 }
 
 /// `syn` visitor that recursively traverses the syntax tree, accumulating places
