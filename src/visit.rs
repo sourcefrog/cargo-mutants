@@ -33,16 +33,23 @@ pub struct Discovered {
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
-pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<Discovered> {
+pub fn walk_tree(
+    tool: &dyn Tool,
+    root: &Utf8Path,
+    options: &Options,
+    console: &Console,
+) -> Result<Discovered> {
     let error_exprs = options
         .error_values
         .iter()
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
+    console.walk_tree_start();
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
     let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
+        console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
         let (mut file_mutants, external_mods) = walk_file(Arc::clone(&source_file), &error_exprs)?;
         // We'll still walk down through files that don't match globs, so that
@@ -84,6 +91,7 @@ pub fn walk_tree(tool: &dyn Tool, root: &Utf8Path, options: &Options) -> Result<
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
+    console.walk_tree_done();
     Ok(Discovered { mutants, files })
 }
 
@@ -409,6 +417,7 @@ mod test {
                 .canonicalize_utf8()
                 .expect("Canonicalize source path"),
             &options,
+            &Console::new(),
         )
         .expect("Discover mutants in own source tree");
 

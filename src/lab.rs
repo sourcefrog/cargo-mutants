@@ -4,7 +4,7 @@
 
 use std::cmp::max;
 use std::sync::Mutex;
-use std::thread;
+use std::thread::{self};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
@@ -36,7 +36,7 @@ pub fn test_unmutated_then_all_mutants(
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
 
-    let mut mutants = walk_tree(tool, source_tree, &options)?.mutants;
+    let mut mutants = walk_tree(tool, source_tree, &options, console)?.mutants;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }

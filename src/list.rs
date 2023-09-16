@@ -9,6 +9,7 @@ use camino::Utf8Path;
 use serde_json::{json, Value};
 
 use crate::console::style_mutant;
+use crate::console::Console;
 use crate::path::Utf8PathSlashes;
 use crate::{walk_tree, Options, Result, Tool};
 
@@ -32,8 +33,9 @@ pub(crate) fn list_mutants<W: fmt::Write>(
     tool: &dyn Tool,
     source_tree_root: &Utf8Path,
     options: &Options,
+    console: &Console,
 ) -> Result<()> {
-    let discovered = walk_tree(tool, source_tree_root, options)?;
+    let discovered = walk_tree(tool, source_tree_root, options, console)?;
     if options.emit_json {
         let mut list: Vec<serde_json::Value> = Vec::new();
         for mutant in discovered.mutants {
@@ -66,8 +68,9 @@ pub(crate) fn list_files<W: fmt::Write>(
     tool: &dyn Tool,
     source: &Utf8Path,
     options: &Options,
+    console: &Console,
 ) -> Result<()> {
-    let files = walk_tree(tool, source, options)?.files;
+    let files = walk_tree(tool, source, options, console)?.files;
     if options.emit_json {
         let json_list = Value::Array(
             files

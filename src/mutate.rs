@@ -211,7 +211,9 @@ mod test {
         let tool = CargoTool::new();
         let source_tree = tool.find_root(tree_path).unwrap();
         let options = Options::default();
-        let mutants = walk_tree(&tool, &source_tree, &options).unwrap().mutants;
+        let mutants = walk_tree(&tool, &source_tree, &options, &Console::new())
+            .unwrap()
+            .mutants;
         assert_eq!(mutants.len(), 3);
         assert_eq!(
             format!("{:?}", mutants[0]),
@@ -263,7 +265,7 @@ mod test {
         let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
         let tool = CargoTool::new();
         let source_tree = tool.find_root(tree_path).unwrap();
-        let mutants = walk_tree(&tool, &source_tree, &Options::default())
+        let mutants = walk_tree(&tool, &source_tree, &Options::default(), &Console::new())
             .unwrap()
             .mutants;
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
@@ -278,7 +280,7 @@ mod test {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
         let tool = CargoTool::new();
         let source_tree = tool.find_root(tree_path).unwrap();
-        let mutants = walk_tree(&tool, &source_tree, &Options::default())
+        let mutants = walk_tree(&tool, &source_tree, &Options::default(), &Console::new())
             .unwrap()
             .mutants;
         assert_eq!(mutants.len(), 3);

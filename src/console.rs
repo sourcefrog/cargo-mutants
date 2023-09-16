@@ -41,6 +41,24 @@ impl Console {
         }
     }
 
+    pub fn walk_tree_start(&self) {
+        self.view
+            .update(|model| model.walk_tree = Some(WalkModel::default()));
+    }
+
+    pub fn walk_tree_update(&self, files_done: usize, mutants_found: usize) {
+        self.view.update(|model| {
+            *model.walk_tree.as_mut().expect("walk tree started") = WalkModel {
+                files_done,
+                mutants_found,
+            }
+        });
+    }
+
+    pub fn walk_tree_done(&self) {
+        self.view.update(|model| model.walk_tree = None);
+    }
+
     /// Update that a cargo task is starting.
     pub fn scenario_started(&self, scenario: &Scenario, log_file: &Utf8Path) {
         let start = Instant::now();
@@ -309,6 +327,7 @@ impl io::Write for DebugLogWriter {
 /// might be concurrent activities.
 #[derive(Default)]
 struct LabModel {
+    walk_tree: Option<WalkModel>,
     copy_model: Option<CopyModel>,
     scenario_models: Vec<ScenarioModel>,
     lab_start_time: Option<Instant>,
@@ -326,7 +345,10 @@ struct LabModel {
 
 impl nutmeg::Model for LabModel {
     fn render(&mut self, width: usize) -> String {
-        let mut s = String::with_capacity(100);
+        let mut s = String::with_capacity(1024);
+        if let Some(walk_tree) = &mut self.walk_tree {
+            s += &walk_tree.render(width);
+        }
         if let Some(copy) = self.copy_model.as_mut() {
             s.push_str(&copy.render(width));
         }
@@ -416,6 +438,26 @@ impl LabModel {
 
     fn remove_scenario(&mut self, scenario: &Scenario) {
         self.scenario_models.retain(|sm| sm.scenario != *scenario);
+    }
+}
+
+/// A Nutmeg progress model for walking the tree.
+#[derive(Default)]
+struct WalkModel {
+    files_done: usize,
+    mutants_found: usize,
+}
+
+impl nutmeg::Model for WalkModel {
+    fn render(&mut self, _width: usize) -> String {
+        if self.files_done == 0 {
+            "Scanning tree metadata...\n".to_owned()
+        } else {
+            format!(
+                "Finding mutation opportunities: {} files done, {} mutants found\n",
+                self.files_done, self.mutants_found
+            )
+        }
     }
 }
 

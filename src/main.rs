@@ -241,6 +241,7 @@ fn main() -> Result<()> {
             &tool,
             &source_tree_root,
             &options,
+            &console,
         )?;
     } else if args.list {
         list_mutants(
@@ -248,6 +249,7 @@ fn main() -> Result<()> {
             &tool,
             &source_tree_root,
             &options,
+            &console,
         )?;
     } else {
         let lab_outcome =
