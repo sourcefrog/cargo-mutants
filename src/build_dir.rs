@@ -52,6 +52,7 @@ impl BuildDir {
         let source_abs = source
             .canonicalize_utf8()
             .expect("canonicalize source path");
+        // TODO: Only exclude `target` in directories containing Cargo.toml?
         let temp_dir = copy_tree(source, &name_base, SOURCE_EXCLUDE, console)?;
         let path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
