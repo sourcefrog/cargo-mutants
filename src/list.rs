@@ -13,15 +13,15 @@ use crate::path::Utf8PathSlashes;
 use crate::{walk_tree, Options, Result, Tool};
 
 /// Convert `fmt::Write` to `io::Write`.
-pub(crate) struct GlueWrite<W: io::Write>(W);
+pub(crate) struct FmtToIoWrite<W: io::Write>(W);
 
-impl<W: io::Write> GlueWrite<W> {
+impl<W: io::Write> FmtToIoWrite<W> {
     pub(crate) fn new(w: W) -> Self {
         Self(w)
     }
 }
 
-impl<W: io::Write> fmt::Write for GlueWrite<W> {
+impl<W: io::Write> fmt::Write for FmtToIoWrite<W> {
     fn write_str(&mut self, s: &str) -> Result<(), fmt::Error> {
         self.0.write_all(s.as_bytes()).map_err(|_| fmt::Error)
     }

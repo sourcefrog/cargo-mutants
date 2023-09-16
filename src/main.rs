@@ -44,7 +44,7 @@ use crate::build_dir::BuildDir;
 use crate::cargo::CargoTool;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
-use crate::list::{list_files, list_mutants, GlueWrite};
+use crate::list::{list_files, list_mutants, FmtToIoWrite};
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
@@ -237,14 +237,14 @@ fn main() -> Result<()> {
     debug!(?options);
     if args.list_files {
         list_files(
-            GlueWrite::new(io::stdout()),
+            FmtToIoWrite::new(io::stdout()),
             &tool,
             &source_tree_root,
             &options,
         )?;
     } else if args.list {
         list_mutants(
-            GlueWrite::new(io::stdout()),
+            FmtToIoWrite::new(io::stdout()),
             &tool,
             &source_tree_root,
             &options,
