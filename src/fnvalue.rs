@@ -582,7 +582,6 @@ mod test {
     fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {
         assert_eq!(
             return_type_replacements(&return_type, error_exprs)
-                .into_iter()
                 .map(|t| t.to_pretty_string())
                 .collect_vec(),
             expected
