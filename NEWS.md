@@ -26,6 +26,9 @@
 - The combination of options `--list --diff --json` is now supported, and emits
   a `diff` key in the JSON.
 
+- Mutate `-> impl Iterator<Item = A>` to produce empty and one-element iterators
+  of the item type.
+
 ## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a

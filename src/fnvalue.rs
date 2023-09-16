@@ -8,8 +8,8 @@ use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
-    AngleBracketedGenericArguments, Expr, GenericArgument, Ident, Path, PathArguments, ReturnType,
-    Type, TypeArray, TypeSlice, TypeTuple,
+    AngleBracketedGenericArguments, AssocType, Expr, GenericArgument, Ident, Path, PathArguments,
+    ReturnType, TraitBound, Type, TypeArray, TypeImplTrait, TypeParamBound, TypeSlice, TypeTuple,
 };
 use tracing::trace;
 
@@ -86,8 +86,8 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                         quote! { vec![#rep] }
                     }))
                     .collect_vec()
-            } else if let Some(boxed_type) = match_first_type_arg(path, "Cow") {
-                type_replacements(boxed_type, error_exprs)
+            } else if let Some(borrowed_type) = match_first_type_arg(path, "Cow") {
+                type_replacements(borrowed_type, error_exprs)
                     .flat_map(|rep| {
                         [
                             quote! { Cow::Borrowed(#rep) },
@@ -194,6 +194,20 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                 })
                 .collect_vec()
         }
+        // -> impl Iterator<Item = T>
+        Type::ImplTrait(impl_trait) => {
+            if let Some(item_type) = match_impl_iterator(impl_trait) {
+                iter::once(quote! { ::std::iter::empty() })
+                    .chain(
+                        type_replacements(item_type, error_exprs)
+                            .map(|r| quote! { ::std::iter::once(#r) }),
+                    )
+                    .collect_vec()
+            } else {
+                // TODO: Can we do anything with other impl traits?
+                vec![]
+            }
+        }
         Type::Never(_) => {
             vec![]
         }
@@ -207,6 +221,28 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
 
 fn path_ends_with(path: &Path, ident: &str) -> bool {
     path.segments.last().map_or(false, |s| s.ident == ident)
+}
+
+fn match_impl_iterator(TypeImplTrait { bounds, .. }: &TypeImplTrait) -> Option<&Type> {
+    for bound in bounds {
+        if let TypeParamBound::Trait(TraitBound { path, .. }) = bound {
+            if path.segments.len() == 1 && path.segments[0].ident == "Iterator" {
+                if let PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                    args, ..
+                }) = &path.segments[0].arguments
+                {
+                    if let Some(GenericArgument::AssocType(AssocType { ident, ty, .. })) =
+                        args.first()
+                    {
+                        if ident == "Item" {
+                            return Some(ty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 /// If the type has a single type argument then, perhaps it's a simple container
@@ -577,6 +613,19 @@ mod test {
                 r#"(false, Some("xyzzy".into()))"#,
             ],
         )
+    }
+
+    #[test]
+    fn iter_replacement() {
+        check_replacements(
+            parse_quote! { -> impl Iterator<Item = String> },
+            &[],
+            &[
+                "::std::iter::empty()",
+                "::std::iter::once(String::new())",
+                r#"::std::iter::once("xyzzy".into())"#,
+            ],
+        );
     }
 
     fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {
