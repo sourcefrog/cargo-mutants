@@ -87,6 +87,9 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                     }))
                     .collect_vec()
             } else if let Some(borrowed_type) = match_first_type_arg(path, "Cow") {
+                // TODO: We could specialize Cows for cases like Vec and Box where
+                // we would have to leak to make the reference; perhaps it would only
+                // look better...
                 type_replacements(borrowed_type, error_exprs)
                     .flat_map(|rep| {
                         [
@@ -141,6 +144,9 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                 .map(|r| quote! { [ #r; #len ] })
                 .collect_vec()
         }
+        Type::Slice(TypeSlice { elem, .. }) => iter::once(quote! { Vec::leak(Vec::new()) })
+            .chain(type_replacements(elem, error_exprs).map(|r| quote! { Vec::leak(vec![ #r ]) }))
+            .collect_vec(),
         Type::Reference(syn::TypeReference {
             mutability: None,
             elem,
@@ -624,6 +630,19 @@ mod test {
                 "::std::iter::empty()",
                 "::std::iter::once(String::new())",
                 r#"::std::iter::once("xyzzy".into())"#,
+            ],
+        );
+    }
+
+    #[test]
+    fn slice_replacement() {
+        check_replacements(
+            parse_quote! { -> [u8] },
+            &[],
+            &[
+                "Vec::leak(Vec::new())",
+                "Vec::leak(vec![0])",
+                "Vec::leak(vec![1])",
             ],
         );
     }
