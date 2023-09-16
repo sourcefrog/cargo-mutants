@@ -112,14 +112,14 @@ pub fn test_unmutated_then_all_mutants(
         for build_dir in build_dirs {
             threads.push(scope.spawn(|| {
                 let mut build_dir = build_dir; // move it into this thread
-                let _thread_span = debug_span!("test thread", thread = ?thread::current().id()).entered();
+                let _thread_span =
+                    debug_span!("test thread", thread = ?thread::current().id()).entered();
                 trace!("start thread in {build_dir:?}");
                 loop {
                     // Not a while loop so that it only holds the lock briefly.
                     let next = numbered_mutants.lock().expect("lock mutants queue").next();
                     if let Some((mutant_id, mutant)) = next {
                         let _span = debug_span!("mutant", id = mutant_id).entered();
-                        debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
                         // We don't care about the outcome; it's been collected into the output_dir.
                         let _outcome = test_scenario(
                             tool,
@@ -133,7 +133,7 @@ pub fn test_unmutated_then_all_mutants(
                         .expect("scenario test");
                     } else {
                         trace!("no more work");
-                        break
+                        break;
                     }
                 }
             }));

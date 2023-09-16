@@ -70,15 +70,6 @@ impl Mutant {
         &self.return_type
     }
 
-    /// Return a "file:line" description of the location of this mutation.
-    pub fn describe_location(&self) -> String {
-        format!(
-            "{}:{}",
-            self.source_file.tree_relative_slashes(),
-            self.span.start.line,
-        )
-    }
-
     /// Describe the mutant briefly, not including the location.
     ///
     /// The result is like `replace factorial -> u32 with Default::default()`.

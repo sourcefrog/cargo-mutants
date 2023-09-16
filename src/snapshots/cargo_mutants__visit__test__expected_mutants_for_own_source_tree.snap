@@ -184,8 +184,6 @@ src/mutate.rs: replace Mutant::original_code -> &str with ""
 src/mutate.rs: replace Mutant::original_code -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::return_type -> &str with ""
 src/mutate.rs: replace Mutant::return_type -> &str with "xyzzy"
-src/mutate.rs: replace Mutant::describe_location -> String with String::new()
-src/mutate.rs: replace Mutant::describe_location -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::describe_change -> String with String::new()
 src/mutate.rs: replace Mutant::describe_change -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::replacement_text -> &str with ""
