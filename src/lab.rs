@@ -162,7 +162,7 @@ pub fn test_unmutated_then_all_mutants(
 ///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
-#[allow(clippy::needless_pass_by_ref_mut)]
+#[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
 fn test_scenario(
     tool: &dyn Tool,
     build_dir: &mut BuildDir,
