@@ -36,6 +36,9 @@ where
                     }
                 }
                 Ident(_) | Literal(_) => {
+                    if b.ends_with('=') || b.ends_with("=>") {
+                        b.push(' ');
+                    }
                     match tt {
                         Literal(l) => b.push_str(&l.to_string()),
                         Ident(i) => b.push_str(&i.to_string()),
@@ -100,5 +103,18 @@ mod test {
             quote! { Lex < 'buf >::take }.to_pretty_string(),
             "Lex<'buf>::take"
         );
+    }
+
+    #[test]
+    fn format_trait_with_assoc_type() {
+        assert_eq!(
+            quote! { impl Iterator < Item = String > }.to_pretty_string(),
+            "impl Iterator<Item = String>"
+        );
+    }
+
+    #[test]
+    fn format_thick_arrow() {
+        assert_eq!(quote! { a => b }.to_pretty_string(), "a => b");
     }
 }

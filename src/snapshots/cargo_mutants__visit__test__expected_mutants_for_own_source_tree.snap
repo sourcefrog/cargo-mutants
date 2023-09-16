@@ -115,10 +115,10 @@ src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Borrowed("
 src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Owned("xyzzy".to_owned())
 src/console.rs: replace plural -> String with String::new()
 src/console.rs: replace plural -> String with "xyzzy".into()
-src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item =TokenStream> with ::std::iter::empty()
-src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item =TokenStream> with ::std::iter::once(Default::default())
-src/fnvalue.rs: replace type_replacements -> impl Iterator<Item =TokenStream> with ::std::iter::empty()
-src/fnvalue.rs: replace type_replacements -> impl Iterator<Item =TokenStream> with ::std::iter::once(Default::default())
+src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
+src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
+src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
+src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
 src/fnvalue.rs: replace path_ends_with -> bool with true
 src/fnvalue.rs: replace path_ends_with -> bool with false
 src/fnvalue.rs: replace match_impl_iterator -> Option<&Type> with None
