@@ -23,6 +23,9 @@
 - Mutate `(A, B, C, ...)` into the product of all replacements for
   `a, b, c, ...`
 
+- The combination of options `--list --diff --json` is now supported, and emits
+  a `diff` key in the JSON.
+
 ## 23.9.0
 
 - Fixed a bug causing an assertion failure when cargo-mutants was run from a

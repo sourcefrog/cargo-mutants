@@ -147,15 +147,28 @@ fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
 }
 
 #[test]
-fn list_diff_json_not_yet_supported() {
-    run()
-        .args(["mutants", "--list", "--json", "--diff"])
+fn list_diff_json_contains_diffs() {
+    let cmd = run()
+        .args([
+            "mutants",
+            "--list",
+            "--json",
+            "--diff",
+            "-d",
+            "testdata/tree/factorial",
+        ])
         .assert()
-        .code(1)
-        .stderr(predicates::str::contains(
-            "Error: --list --diff --json is not (yet) supported\n",
-        ))
-        .stdout("");
+        .success(); // needed for lifetime
+    let out = cmd.get_output();
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+    println!("{}", String::from_utf8_lossy(&out.stdout));
+    let out_json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
+    let mutants_json = out_json.as_array().expect("json output is array");
+    assert_eq!(mutants_json.len(), 3);
+    assert!(mutants_json.iter().all(|e| e.as_object().unwrap()["diff"]
+        .as_str()
+        .unwrap()
+        .contains("--- src/bin/factorial.rs")));
 }
 
 /// Return paths to all testdata trees, in order, excluding leftover git

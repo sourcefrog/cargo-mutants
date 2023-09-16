@@ -4,21 +4,21 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
-    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "file": "src/lib.rs",
-    "line": 17,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "file": "src/lib.rs",
-    "line": 17,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]

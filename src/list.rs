@@ -5,7 +5,6 @@
 use std::fmt;
 use std::io;
 
-use anyhow::bail;
 use camino::Utf8Path;
 use serde_json::{json, Value};
 
@@ -36,11 +35,17 @@ pub(crate) fn list_mutants<W: fmt::Write>(
 ) -> Result<()> {
     let discovered = walk_tree(tool, source_tree_root, options)?;
     if options.emit_json {
-        if options.emit_diffs {
-            // TODO: Include diffs in json.
-            bail!("--list --diff --json is not (yet) supported");
+        let mut list: Vec<serde_json::Value> = Vec::new();
+        for mutant in discovered.mutants {
+            let mut obj = serde_json::to_value(&mutant)?;
+            if options.emit_diffs {
+                obj.as_object_mut()
+                    .unwrap()
+                    .insert("diff".to_owned(), json!(mutant.diff()));
+            }
+            list.push(obj);
         }
-        out.write_str(&serde_json::to_string_pretty(&discovered.mutants)?)?;
+        out.write_str(&serde_json::to_string_pretty(&list)?)?;
     } else {
         for mutant in &discovered.mutants {
             if options.colors {

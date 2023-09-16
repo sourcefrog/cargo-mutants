@@ -7,22 +7,22 @@ expression: buf
 ```json
 [
   {
-    "package": "mutants-testdata-already-failing-doctests",
     "file": "src/lib.rs",
-    "line": 9,
     "function": "takes_one_arg",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "mutants-testdata-already-failing-doctests",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "mutants-testdata-already-failing-doctests",
     "file": "src/lib.rs",
-    "line": 9,
     "function": "takes_one_arg",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "mutants-testdata-already-failing-doctests",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]
 ```
@@ -32,22 +32,22 @@ expression: buf
 ```json
 [
   {
-    "package": "mutants-testdata-already-failing-tests",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "mutants-testdata-already-failing-tests",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "mutants-testdata-already-failing-tests",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "mutants-testdata-already-failing-tests",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -57,13 +57,13 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-already-hangs",
     "file": "src/lib.rs",
-    "line": 8,
     "function": "infinite_loop",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 8,
+    "package": "cargo-mutants-testdata-already-hangs",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   }
 ]
 ```
@@ -73,22 +73,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-cdylib",
     "file": "src/entry.rs",
-    "line": 1,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-cdylib",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-cdylib",
     "file": "src/entry.rs",
-    "line": 1,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-cdylib",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -104,22 +104,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "file": "src/lib.rs",
-    "line": 17,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "file": "src/lib.rs",
-    "line": 17,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]
 ```
@@ -129,22 +129,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-dependency",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-dependency",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-dependency",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-dependency",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -154,31 +154,31 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-error-value",
     "file": "src/lib.rs",
-    "line": 3,
     "function": "even_is_ok",
-    "return_type": "-> Result<u32, &'static str>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-error-value",
     "replacement": "Ok(0)",
-    "genre": "FnValue"
+    "return_type": "-> Result<u32, &'static str>"
   },
   {
-    "package": "cargo-mutants-testdata-error-value",
     "file": "src/lib.rs",
-    "line": 3,
     "function": "even_is_ok",
-    "return_type": "-> Result<u32, &'static str>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-error-value",
     "replacement": "Ok(1)",
-    "genre": "FnValue"
+    "return_type": "-> Result<u32, &'static str>"
   },
   {
-    "package": "cargo-mutants-testdata-error-value",
     "file": "src/lib.rs",
-    "line": 3,
     "function": "even_is_ok",
-    "return_type": "-> Result<u32, &'static str>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-error-value",
     "replacement": "Err(\"injected\")",
-    "genre": "FnValue"
+    "return_type": "-> Result<u32, &'static str>"
   }
 ]
 ```
@@ -194,31 +194,31 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
-    "line": 1,
     "function": "main",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   },
   {
-    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
-    "line": 7,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 7,
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
-    "line": 7,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 7,
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -228,22 +228,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-fails-without-feature",
     "file": "src/bin/factorial.rs",
-    "line": 9,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "cargo-mutants-testdata-fails-without-feature",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-fails-without-feature",
     "file": "src/bin/factorial.rs",
-    "line": 9,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "cargo-mutants-testdata-fails-without-feature",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -253,13 +253,13 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-hang-avoided-by-attr",
     "file": "src/lib.rs",
-    "line": 14,
     "function": "controlled_loop",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 14,
+    "package": "cargo-mutants-testdata-hang-avoided-by-attr",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   }
 ]
 ```
@@ -269,40 +269,40 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 12,
     "function": "should_stop",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 12,
     "function": "should_stop",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 25,
     "function": "controlled_loop",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 25,
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-hang-when-mutated",
     "file": "src/lib.rs",
-    "line": 25,
     "function": "controlled_loop",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 25,
+    "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]
 ```
@@ -312,22 +312,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-insta",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "say_hello",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-insta",
     "replacement": "String::new()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   },
   {
-    "package": "cargo-mutants-testdata-insta",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "say_hello",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-insta",
     "replacement": "\"xyzzy\".into()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   }
 ]
 ```
@@ -337,22 +337,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-integration-tests",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "double",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-integration-tests",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-integration-tests",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "double",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-integration-tests",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -362,22 +362,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-missing-test",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "is_symlink",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-missing-test",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-missing-test",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "is_symlink",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-missing-test",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   }
 ]
 ```
@@ -387,22 +387,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-mut-ref",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "returns_mut_ref",
-    "return_type": "-> &mut u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-mut-ref",
     "replacement": "Box::leak(Box::new(0))",
-    "genre": "FnValue"
+    "return_type": "-> &mut u32"
   },
   {
-    "package": "cargo-mutants-testdata-mut-ref",
     "file": "src/lib.rs",
-    "line": 1,
     "function": "returns_mut_ref",
-    "return_type": "-> &mut u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-mut-ref",
     "replacement": "Box::leak(Box::new(1))",
-    "genre": "FnValue"
+    "return_type": "-> &mut u32"
   }
 ]
 ```
@@ -418,31 +418,31 @@ expression: buf
 ```json
 [
   {
-    "package": "nightly_only",
     "file": "src/lib.rs",
-    "line": 2,
     "function": "box_an_int",
-    "return_type": "-> Box<i32>",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "nightly_only",
     "replacement": "Box::new(0)",
-    "genre": "FnValue"
+    "return_type": "-> Box<i32>"
   },
   {
-    "package": "nightly_only",
     "file": "src/lib.rs",
-    "line": 2,
     "function": "box_an_int",
-    "return_type": "-> Box<i32>",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "nightly_only",
     "replacement": "Box::new(1)",
-    "genre": "FnValue"
+    "return_type": "-> Box<i32>"
   },
   {
-    "package": "nightly_only",
     "file": "src/lib.rs",
-    "line": 2,
     "function": "box_an_int",
-    "return_type": "-> Box<i32>",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "nightly_only",
     "replacement": "Box::new(-1)",
-    "genre": "FnValue"
+    "return_type": "-> Box<i32>"
   }
 ]
 ```
@@ -452,22 +452,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-override-dependency",
     "file": "src/lib.rs",
-    "line": 6,
     "function": "is_even",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 6,
+    "package": "cargo-mutants-testdata-override-dependency",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-override-dependency",
     "file": "src/lib.rs",
-    "line": 6,
     "function": "is_even",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 6,
+    "package": "cargo-mutants-testdata-override-dependency",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   }
 ]
 ```
@@ -477,22 +477,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-patch-dependency",
     "file": "src/lib.rs",
-    "line": 6,
     "function": "is_even",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 6,
+    "package": "cargo-mutants-testdata-patch-dependency",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-patch-dependency",
     "file": "src/lib.rs",
-    "line": 6,
     "function": "is_even",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 6,
+    "package": "cargo-mutants-testdata-patch-dependency",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   }
 ]
 ```
@@ -502,22 +502,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-relative-dependency",
     "file": "src/lib.rs",
-    "line": 5,
     "function": "double_factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-relative-dependency",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-relative-dependency",
     "file": "src/lib.rs",
-    "line": 5,
     "function": "double_factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-relative-dependency",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -527,22 +527,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-replace-dependency",
     "file": "src/lib.rs",
-    "line": 6,
     "function": "is_even",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 6,
+    "package": "cargo-mutants-testdata-replace-dependency",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-replace-dependency",
     "file": "src/lib.rs",
-    "line": 6,
     "function": "is_even",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 6,
+    "package": "cargo-mutants-testdata-replace-dependency",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   }
 ]
 ```
@@ -552,22 +552,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-small-well-tested",
     "file": "src/lib.rs",
-    "line": 4,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 4,
+    "package": "cargo-mutants-testdata-small-well-tested",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-small-well-tested",
     "file": "src/lib.rs",
-    "line": 4,
     "function": "factorial",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 4,
+    "package": "cargo-mutants-testdata-small-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -577,22 +577,22 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-strict-warnings",
     "file": "src/lib.rs",
-    "line": 5,
     "function": "some_fn",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-strict-warnings",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-strict-warnings",
     "file": "src/lib.rs",
-    "line": 5,
     "function": "some_fn",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-strict-warnings",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]
 ```
@@ -602,13 +602,13 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-struct-with-no-default",
     "file": "src/lib.rs",
-    "line": 11,
     "function": "make_an_s",
-    "return_type": "-> S",
+    "genre": "FnValue",
+    "line": 11,
+    "package": "cargo-mutants-testdata-struct-with-no-default",
     "replacement": "Default::default()",
-    "genre": "FnValue"
+    "return_type": "-> S"
   }
 ]
 ```
@@ -618,22 +618,22 @@ expression: buf
 ```json
 [
   {
-    "package": "mutants-testdata-typecheck-fails",
     "file": "src/lib.rs",
-    "line": 5,
     "function": "try_value_coercion",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "mutants-testdata-typecheck-fails",
     "replacement": "String::new()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   },
   {
-    "package": "mutants-testdata-typecheck-fails",
     "file": "src/lib.rs",
-    "line": 5,
     "function": "try_value_coercion",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "mutants-testdata-typecheck-fails",
     "replacement": "\"xyzzy\".into()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   }
 ]
 ```
@@ -643,85 +643,85 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/a.rs",
-    "line": 1,
     "function": "one",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/a.rs",
-    "line": 1,
     "function": "one",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/a.rs",
-    "line": 1,
     "function": "one",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/b.rs",
-    "line": 1,
     "function": "one_untested",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/b.rs",
-    "line": 1,
     "function": "one_untested",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/b.rs",
-    "line": 1,
     "function": "one_untested",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/c.rs",
-    "line": 1,
     "function": "one",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/c.rs",
-    "line": 1,
     "function": "one",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo-mutants-testdata-unapply",
     "file": "src/c.rs",
-    "line": 1,
     "function": "one",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   }
 ]
 ```
@@ -737,346 +737,346 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/arc.rs",
-    "line": 3,
     "function": "return_arc",
-    "return_type": "-> Arc<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(String::new())",
-    "genre": "FnValue"
+    "return_type": "-> Arc<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/arc.rs",
-    "line": 3,
     "function": "return_arc",
-    "return_type": "-> Arc<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(\"xyzzy\".into())",
-    "genre": "FnValue"
+    "return_type": "-> Arc<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
-    "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> &'static str",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"\"",
-    "genre": "FnValue"
+    "return_type": "-> &'static str"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
-    "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> &'static str",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\"",
-    "genre": "FnValue"
+    "return_type": "-> &'static str"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
-    "line": 16,
     "function": "Foo::double",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 16,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
-    "line": 22,
     "function": "<impl Display for Foo>::fmt",
-    "return_type": "-> fmt::Result",
+    "genre": "FnValue",
+    "line": 22,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
-    "genre": "FnValue"
+    "return_type": "-> fmt::Result"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
-    "line": 28,
     "function": "<impl Debug for &Foo>::fmt",
-    "return_type": "-> fmt::Result",
+    "genre": "FnValue",
+    "line": 28,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
-    "genre": "FnValue"
+    "return_type": "-> fmt::Result"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
-    "line": 1,
     "function": "has_nested",
-    "return_type": "-> u32",
-    "replacement": "0",
-    "genre": "FnValue"
-  },
-  {
-    "package": "cargo-mutants-testdata-well-tested",
-    "file": "src/nested_function.rs",
+    "genre": "FnValue",
     "line": 1,
-    "function": "has_nested",
-    "return_type": "-> u32",
-    "replacement": "1",
-    "genre": "FnValue"
-  },
-  {
     "package": "cargo-mutants-testdata-well-tested",
-    "file": "src/nested_function.rs",
-    "line": 2,
-    "function": "has_nested::inner",
-    "return_type": "-> u32",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
-    "line": 2,
-    "function": "has_nested::inner",
-    "return_type": "-> u32",
+    "function": "has_nested",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
+    "file": "src/nested_function.rs",
+    "function": "has_nested::inner",
+    "genre": "FnValue",
+    "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "0",
+    "return_type": "-> u32"
+  },
+  {
+    "file": "src/nested_function.rs",
+    "function": "has_nested::inner",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "1",
+    "return_type": "-> u32"
+  },
+  {
     "file": "src/numbers.rs",
-    "line": 1,
     "function": "double_float",
-    "return_type": "-> f32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0.0",
-    "genre": "FnValue"
+    "return_type": "-> f32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/numbers.rs",
-    "line": 1,
     "function": "double_float",
-    "return_type": "-> f32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1.0",
-    "genre": "FnValue"
+    "return_type": "-> f32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/numbers.rs",
-    "line": 1,
     "function": "double_float",
-    "return_type": "-> f32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1.0",
-    "genre": "FnValue"
+    "return_type": "-> f32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 5,
     "function": "simple_result",
-    "return_type": "-> Result<&'static str, ()>",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"\")",
-    "genre": "FnValue"
+    "return_type": "-> Result<&'static str, ()>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 5,
     "function": "simple_result",
-    "return_type": "-> Result<&'static str, ()>",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"xyzzy\")",
-    "genre": "FnValue"
+    "return_type": "-> Result<&'static str, ()>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 9,
     "function": "error_if_negative",
-    "return_type": "-> Result<(), ()>",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(())",
-    "genre": "FnValue"
+    "return_type": "-> Result<(), ()>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 17,
     "function": "result_with_no_apparent_type_args",
-    "return_type": "-> std::fmt::Result",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
-    "genre": "FnValue"
+    "return_type": "-> std::fmt::Result"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/sets.rs",
-    "line": 3,
     "function": "make_a_set",
-    "return_type": "-> BTreeSet<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::new()",
-    "genre": "FnValue"
+    "return_type": "-> BTreeSet<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/sets.rs",
-    "line": 3,
     "function": "make_a_set",
-    "return_type": "-> BTreeSet<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([String::new()])",
-    "genre": "FnValue"
+    "return_type": "-> BTreeSet<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/sets.rs",
-    "line": 3,
     "function": "make_a_set",
-    "return_type": "-> BTreeSet<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
-    "genre": "FnValue"
+    "return_type": "-> BTreeSet<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 7,
     "function": "returns_unit",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 7,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 12,
     "function": "returns_42u32",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 12,
     "function": "returns_42u32",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 17,
     "function": "divisible_by_three",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 17,
     "function": "divisible_by_three",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 26,
     "function": "double_string",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 26,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "String::new()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 26,
     "function": "double_string",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 26,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\".into()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 12,
     "function": "return_mut_slice",
-    "return_type": "-> &mut[usize]",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
-    "genre": "FnValue"
+    "return_type": "-> &mut[usize]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 12,
     "function": "return_mut_slice",
-    "return_type": "-> &mut[usize]",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![0])",
-    "genre": "FnValue"
+    "return_type": "-> &mut[usize]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 12,
     "function": "return_mut_slice",
-    "return_type": "-> &mut[usize]",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![1])",
-    "genre": "FnValue"
+    "return_type": "-> &mut[usize]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/struct_with_lifetime.rs",
-    "line": 14,
     "function": "Lex<'buf>::buf_len",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 14,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/struct_with_lifetime.rs",
-    "line": 14,
     "function": "Lex<'buf>::buf_len",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 14,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]
 ```
@@ -1086,130 +1086,130 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/methods.rs",
-    "line": 1,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/methods.rs",
-    "line": 1,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/module_methods.rs",
-    "line": 1,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/module_methods.rs",
-    "line": 1,
     "function": "double",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/inside_mod.rs",
-    "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> &'static str",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "\"\"",
-    "genre": "FnValue"
+    "return_type": "-> &'static str"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/inside_mod.rs",
-    "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> &'static str",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "\"xyzzy\"",
-    "genre": "FnValue"
+    "return_type": "-> &'static str"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/nested_function.rs",
-    "line": 1,
     "function": "has_nested",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/nested_function.rs",
-    "line": 1,
     "function": "has_nested",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/nested_function.rs",
-    "line": 2,
     "function": "has_nested::inner",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/nested_function.rs",
-    "line": 2,
     "function": "has_nested::inner",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "line": 1,
     "function": "has_nested",
-    "return_type": "-> u32",
-    "replacement": "0",
-    "genre": "FnValue"
-  },
-  {
-    "package": "cargo-mutants-testdata-with-child-directories",
-    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "genre": "FnValue",
     "line": 1,
-    "function": "has_nested",
-    "return_type": "-> u32",
-    "replacement": "1",
-    "genre": "FnValue"
-  },
-  {
     "package": "cargo-mutants-testdata-with-child-directories",
-    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "line": 2,
-    "function": "has_nested::inner",
-    "return_type": "-> u32",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-with-child-directories",
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "line": 2,
-    "function": "has_nested::inner",
-    "return_type": "-> u32",
+    "function": "has_nested",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
+  },
+  {
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "function": "has_nested::inner",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "replacement": "0",
+    "return_type": "-> u32"
+  },
+  {
+    "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
+    "function": "has_nested::inner",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "cargo-mutants-testdata-with-child-directories",
+    "replacement": "1",
+    "return_type": "-> u32"
   }
 ]
 ```
@@ -1219,76 +1219,76 @@ expression: buf
 ```json
 [
   {
-    "package": "cargo_mutants_testdata_workspace_utils",
     "file": "utils/src/lib.rs",
-    "line": 1,
     "function": "triple",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo_mutants_testdata_workspace_utils",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo_mutants_testdata_workspace_utils",
     "file": "utils/src/lib.rs",
-    "line": 1,
     "function": "triple",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo_mutants_testdata_workspace_utils",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "cargo_mutants_testdata_workspace_utils",
     "file": "utils/src/lib.rs",
-    "line": 1,
     "function": "triple",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo_mutants_testdata_workspace_utils",
     "replacement": "-1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   },
   {
-    "package": "main",
     "file": "main/src/main.rs",
-    "line": 11,
     "function": "factorial",
-    "return_type": "-> u32",
-    "replacement": "0",
-    "genre": "FnValue"
-  },
-  {
+    "genre": "FnValue",
+    "line": 11,
     "package": "main",
-    "file": "main/src/main.rs",
-    "line": 11,
-    "function": "factorial",
-    "return_type": "-> u32",
-    "replacement": "1",
-    "genre": "FnValue"
-  },
-  {
-    "package": "main2",
-    "file": "main2/src/main.rs",
-    "line": 9,
-    "function": "triple_3",
-    "return_type": "-> i32",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "main2",
-    "file": "main2/src/main.rs",
-    "line": 9,
-    "function": "triple_3",
-    "return_type": "-> i32",
+    "file": "main/src/main.rs",
+    "function": "factorial",
+    "genre": "FnValue",
+    "line": 11,
+    "package": "main",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "main2",
     "file": "main2/src/main.rs",
-    "line": 9,
     "function": "triple_3",
-    "return_type": "-> i32",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "main2",
+    "replacement": "0",
+    "return_type": "-> i32"
+  },
+  {
+    "file": "main2/src/main.rs",
+    "function": "triple_3",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "main2",
+    "replacement": "1",
+    "return_type": "-> i32"
+  },
+  {
+    "file": "main2/src/main.rs",
+    "function": "triple_3",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "main2",
     "replacement": "-1",
-    "genre": "FnValue"
+    "return_type": "-> i32"
   }
 ]
 ```

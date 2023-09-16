@@ -4,345 +4,345 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 [
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/arc.rs",
-    "line": 3,
     "function": "return_arc",
-    "return_type": "-> Arc<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(String::new())",
-    "genre": "FnValue"
+    "return_type": "-> Arc<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/arc.rs",
-    "line": 3,
     "function": "return_arc",
-    "return_type": "-> Arc<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(\"xyzzy\".into())",
-    "genre": "FnValue"
+    "return_type": "-> Arc<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
-    "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> &'static str",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"\"",
-    "genre": "FnValue"
+    "return_type": "-> &'static str"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/inside_mod.rs",
-    "line": 3,
     "function": "outer::inner::name",
-    "return_type": "-> &'static str",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\"",
-    "genre": "FnValue"
+    "return_type": "-> &'static str"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
-    "line": 16,
     "function": "Foo::double",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 16,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
-    "line": 22,
     "function": "<impl Display for Foo>::fmt",
-    "return_type": "-> fmt::Result",
+    "genre": "FnValue",
+    "line": 22,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
-    "genre": "FnValue"
+    "return_type": "-> fmt::Result"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/methods.rs",
-    "line": 28,
     "function": "<impl Debug for &Foo>::fmt",
-    "return_type": "-> fmt::Result",
+    "genre": "FnValue",
+    "line": 28,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
-    "genre": "FnValue"
+    "return_type": "-> fmt::Result"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
-    "line": 1,
     "function": "has_nested",
-    "return_type": "-> u32",
-    "replacement": "0",
-    "genre": "FnValue"
-  },
-  {
-    "package": "cargo-mutants-testdata-well-tested",
-    "file": "src/nested_function.rs",
+    "genre": "FnValue",
     "line": 1,
-    "function": "has_nested",
-    "return_type": "-> u32",
-    "replacement": "1",
-    "genre": "FnValue"
-  },
-  {
     "package": "cargo-mutants-testdata-well-tested",
-    "file": "src/nested_function.rs",
-    "line": 2,
-    "function": "has_nested::inner",
-    "return_type": "-> u32",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/nested_function.rs",
-    "line": 2,
-    "function": "has_nested::inner",
-    "return_type": "-> u32",
+    "function": "has_nested",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
+    "file": "src/nested_function.rs",
+    "function": "has_nested::inner",
+    "genre": "FnValue",
+    "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "0",
+    "return_type": "-> u32"
+  },
+  {
+    "file": "src/nested_function.rs",
+    "function": "has_nested::inner",
+    "genre": "FnValue",
+    "line": 2,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "1",
+    "return_type": "-> u32"
+  },
+  {
     "file": "src/numbers.rs",
-    "line": 1,
     "function": "double_float",
-    "return_type": "-> f32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0.0",
-    "genre": "FnValue"
+    "return_type": "-> f32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/numbers.rs",
-    "line": 1,
     "function": "double_float",
-    "return_type": "-> f32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1.0",
-    "genre": "FnValue"
+    "return_type": "-> f32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/numbers.rs",
-    "line": 1,
     "function": "double_float",
-    "return_type": "-> f32",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1.0",
-    "genre": "FnValue"
+    "return_type": "-> f32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 5,
     "function": "simple_result",
-    "return_type": "-> Result<&'static str, ()>",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"\")",
-    "genre": "FnValue"
+    "return_type": "-> Result<&'static str, ()>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 5,
     "function": "simple_result",
-    "return_type": "-> Result<&'static str, ()>",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"xyzzy\")",
-    "genre": "FnValue"
+    "return_type": "-> Result<&'static str, ()>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 9,
     "function": "error_if_negative",
-    "return_type": "-> Result<(), ()>",
+    "genre": "FnValue",
+    "line": 9,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(())",
-    "genre": "FnValue"
+    "return_type": "-> Result<(), ()>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/result.rs",
-    "line": 17,
     "function": "result_with_no_apparent_type_args",
-    "return_type": "-> std::fmt::Result",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
-    "genre": "FnValue"
+    "return_type": "-> std::fmt::Result"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/sets.rs",
-    "line": 3,
     "function": "make_a_set",
-    "return_type": "-> BTreeSet<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::new()",
-    "genre": "FnValue"
+    "return_type": "-> BTreeSet<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/sets.rs",
-    "line": 3,
     "function": "make_a_set",
-    "return_type": "-> BTreeSet<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([String::new()])",
-    "genre": "FnValue"
+    "return_type": "-> BTreeSet<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/sets.rs",
-    "line": 3,
     "function": "make_a_set",
-    "return_type": "-> BTreeSet<String>",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
-    "genre": "FnValue"
+    "return_type": "-> BTreeSet<String>"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 7,
     "function": "returns_unit",
-    "return_type": "",
+    "genre": "FnValue",
+    "line": 7,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
-    "genre": "FnValue"
+    "return_type": ""
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 12,
     "function": "returns_42u32",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 12,
     "function": "returns_42u32",
-    "return_type": "-> u32",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> u32"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 17,
     "function": "divisible_by_three",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 17,
     "function": "divisible_by_three",
-    "return_type": "-> bool",
+    "genre": "FnValue",
+    "line": 17,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
-    "genre": "FnValue"
+    "return_type": "-> bool"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 26,
     "function": "double_string",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 26,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "String::new()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/simple_fns.rs",
-    "line": 26,
     "function": "double_string",
-    "return_type": "-> String",
+    "genre": "FnValue",
+    "line": 26,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\".into()",
-    "genre": "FnValue"
+    "return_type": "-> String"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 3,
     "function": "pad",
-    "return_type": "-> &'a[Cow<'static, str>]",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
-    "genre": "FnValue"
+    "return_type": "-> &'a[Cow<'static, str>]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 12,
     "function": "return_mut_slice",
-    "return_type": "-> &mut[usize]",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
-    "genre": "FnValue"
+    "return_type": "-> &mut[usize]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 12,
     "function": "return_mut_slice",
-    "return_type": "-> &mut[usize]",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![0])",
-    "genre": "FnValue"
+    "return_type": "-> &mut[usize]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/slices.rs",
-    "line": 12,
     "function": "return_mut_slice",
-    "return_type": "-> &mut[usize]",
+    "genre": "FnValue",
+    "line": 12,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![1])",
-    "genre": "FnValue"
+    "return_type": "-> &mut[usize]"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/struct_with_lifetime.rs",
-    "line": 14,
     "function": "Lex<'buf>::buf_len",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 14,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   },
   {
-    "package": "cargo-mutants-testdata-well-tested",
     "file": "src/struct_with_lifetime.rs",
-    "line": 14,
     "function": "Lex<'buf>::buf_len",
-    "return_type": "-> usize",
+    "genre": "FnValue",
+    "line": 14,
+    "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
-    "genre": "FnValue"
+    "return_type": "-> usize"
   }
 ]

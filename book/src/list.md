@@ -8,4 +8,3 @@
 (The same format is written to `mutants.out/mutants.json` when running tests.)
 
 `--check`: Run `cargo check` on all generated mutants to find out which ones are viable, but don't actually run the tests. (This is primarily useful when debugging cargo-mutants.)
-
