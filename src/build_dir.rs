@@ -99,17 +99,17 @@ fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,
     exclude: &[&str],
-    _console: &Console,
+    console: &Console,
 ) -> Result<TempDir> {
     let temp_dir = tempfile::Builder::new()
         .prefix(&name_base)
         .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
-    // console.start_copy();
+    console.start_copy();
     let copy_options = cp_r::CopyOptions::new()
-        .after_entry_copied(|path, _ft, _stats| {
-            // console.copy_progress(stats.file_bytes);
+        .after_entry_copied(|path, _ft, stats| {
+            console.copy_progress(stats.file_bytes);
             check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
         })
         .filter(|path, _dir_entry| {
@@ -138,7 +138,7 @@ fn copy_tree(
             return Err(err);
         }
     }
-    // console.finish_copy();
+    console.finish_copy();
     Ok(temp_dir)
 }
 

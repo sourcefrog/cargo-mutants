@@ -4,7 +4,7 @@
 
 use std::cmp::max;
 use std::sync::Mutex;
-use std::thread::{self};
+use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};

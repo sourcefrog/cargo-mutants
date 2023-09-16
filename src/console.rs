@@ -145,28 +145,28 @@ impl Console {
 
     pub fn build_dirs_finished(&self) {}
 
-    // pub fn start_copy(&self) {
-    //     self.view.update(|model| {
-    //         assert!(model.copy_model.is_none());
-    //         model.copy_model = Some(CopyModel::new());
-    //     });
-    // }
+    pub fn start_copy(&self) {
+        self.view.update(|model| {
+            assert!(model.copy_model.is_none());
+            model.copy_model = Some(CopyModel::new());
+        });
+    }
 
-    // pub fn finish_copy(&self) {
-    //     self.view.update(|model| {
-    //         model.copy_model = None;
-    //     });
-    // }
+    pub fn finish_copy(&self) {
+        self.view.update(|model| {
+            model.copy_model = None;
+        });
+    }
 
-    // pub fn copy_progress(&self, total_bytes: u64) {
-    //     self.view.update(|model| {
-    //         model
-    //             .copy_model
-    //             .as_mut()
-    //             .expect("copy in progress")
-    //             .bytes_copied(total_bytes)
-    //     });
-    // }
+    pub fn copy_progress(&self, total_bytes: u64) {
+        self.view.update(|model| {
+            model
+                .copy_model
+                .as_mut()
+                .expect("copy in progress")
+                .bytes_copied(total_bytes)
+        });
+    }
 
     /// Update that we discovered some mutants to test.
     pub fn discovered_mutants(&self, mutants: &[Mutant]) {
