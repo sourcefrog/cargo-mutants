@@ -1,6 +1,7 @@
 // Copyright 2021-2023 Martin Pool
 
-//! Visit the abstract syntax tree and discover things to mutate.
+//! Visit all the files in a source tree, and then the AST of each file,
+//! to discover mutation opportunities.
 //!
 //! Walking the tree starts with some root files known to the build tool:
 //! e.g. for cargo they are identified from the targets. The tree walker then

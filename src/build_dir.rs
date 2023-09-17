@@ -103,7 +103,7 @@ fn copy_tree(
     console: &Console,
 ) -> Result<TempDir> {
     let temp_dir = tempfile::Builder::new()
-        .prefix(&name_base)
+        .prefix(name_base)
         .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
