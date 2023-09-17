@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.9.1
 
 - Mutate the known collection types `BinaryHeap`, `BTreeSet`, `HashSet`,
   `LinkedList`, and `VecDeque` to generate empty and one-element collections
