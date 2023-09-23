@@ -66,8 +66,9 @@ version = "1.5"
 version = "0.5.1"
 
 [dependencies.nutmeg]
-version = "0.1.2"
+version = "0.1.4"
 # git = "https://github.com/sourcefrog/nutmeg.git"
+# branch = "const-new"
 
 [dependencies.proc-macro2]
 features = ["span-locations"]
