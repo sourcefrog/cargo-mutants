@@ -3,7 +3,6 @@
 use serde::Serialize;
 use std::fmt;
 
-use crate::source::Package;
 use crate::Mutant;
 
 /// A scenario is either a freshening build in the source tree, a baseline test with no mutations, or a mutation test.
@@ -33,15 +32,6 @@ impl Scenario {
         match self {
             Scenario::Baseline => "baseline".into(),
             Scenario::Mutant(mutant) => mutant.log_file_name_base(),
-        }
-    }
-
-    /// Return the package tested for this scenario (for mutants), or None to test
-    /// every package (for baselines).
-    pub fn package(&self) -> Option<&Package> {
-        match self {
-            Scenario::Mutant(mutant) => Some(mutant.package()),
-            Scenario::Baseline => None,
         }
     }
 }

@@ -131,24 +131,14 @@ impl Tool for CargoTool {
     fn compose_argv(
         &self,
         build_dir: &BuildDir,
-        scenario: &Scenario,
+        packages: Option<&[&Package]>,
         phase: Phase,
         options: &Options,
     ) -> Result<Vec<String>> {
-        Ok(cargo_argv(
-            build_dir.path(),
-            scenario.package(),
-            phase,
-            options,
-        ))
+        Ok(cargo_argv(build_dir.path(), packages, phase, options))
     }
 
-    fn compose_env(
-        &self,
-        _scenario: &Scenario,
-        _phase: Phase,
-        _options: &Options,
-    ) -> Result<Vec<(String, String)>> {
+    fn compose_env(&self) -> Result<Vec<(String, String)>> {
         Ok(self.env.clone())
     }
 }
@@ -163,9 +153,10 @@ fn cargo_bin() -> String {
 
 /// Make up the argv for a cargo check/build/test invocation, including argv[0] as the
 /// cargo binary itself.
+// (This is split out so it's easier to test.)
 fn cargo_argv(
     build_dir: &Utf8Path,
-    package: Option<&Package>,
+    packages: Option<&[&Package]>,
     phase: Phase,
     options: &Options,
 ) -> Vec<String> {
@@ -173,9 +164,11 @@ fn cargo_argv(
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
     }
-    if let Some(package) = package {
-        cargo_args.push("--manifest-path".to_owned());
-        cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
+    if let Some(packages) = packages {
+        for package in packages {
+            cargo_args.push("--manifest-path".to_owned());
+            cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
+        }
     } else {
         cargo_args.push("--workspace".to_string());
     }
@@ -304,7 +297,7 @@ mod test {
         });
         let build_manifest_path = build_dir.join(relative_manifest_path);
         assert_eq!(
-            cargo_argv(build_dir, Some(&package), Phase::Check, &options)[1..],
+            cargo_argv(build_dir, Some(&[&package]), Phase::Check, &options)[1..],
             [
                 "check",
                 "--tests",
@@ -313,7 +306,7 @@ mod test {
             ]
         );
         assert_eq!(
-            cargo_argv(build_dir, Some(&package), Phase::Build, &options)[1..],
+            cargo_argv(build_dir, Some(&[&package]), Phase::Build, &options)[1..],
             [
                 "build",
                 "--tests",
@@ -322,7 +315,7 @@ mod test {
             ]
         );
         assert_eq!(
-            cargo_argv(build_dir, Some(&package), Phase::Test, &options)[1..],
+            cargo_argv(build_dir, Some(&[&package]), Phase::Test, &options)[1..],
             [
                 "test",
                 "--manifest-path",
