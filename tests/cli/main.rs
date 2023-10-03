@@ -572,7 +572,10 @@ fn workspace_tree_is_well_tested() {
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["argv"].as_array().unwrap()[1..].into_iter().map(|v| v.as_str().unwrap()).join(" "),
+            baseline_phases[1]["argv"].as_array().unwrap()[1..]
+                .into_iter()
+                .map(|v| v.as_str().unwrap())
+                .join(" "),
             "test --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
     }
