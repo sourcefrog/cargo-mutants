@@ -36,6 +36,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
     console: &Console,
 ) -> Result<()> {
     let discovered = walk_tree(tool, source_tree_root, options, console)?;
+    console.clear();
     if options.emit_json {
         let mut list: Vec<serde_json::Value> = Vec::new();
         for mutant in discovered.mutants {
