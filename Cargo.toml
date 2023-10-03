@@ -92,6 +92,7 @@ walkdir = "2.3"
 
 [workspace]
 members = ["mutants_attrs"]
+resolver = "2"
 
 # Exclude all testdata, so that they're more isolated from the real tree, and
 # so that support for testing workspaces does not try to test the whole
@@ -115,6 +116,7 @@ exclude = [
     "testdata/tree/mut_ref",
     "testdata/tree/never_type",
     "testdata/tree/override_dependency",
+    "testdata/tree/package-fails/",
     "testdata/tree/patch_dependency",
     "testdata/tree/relative_dependency",
     "testdata/tree/replace_dependency",
