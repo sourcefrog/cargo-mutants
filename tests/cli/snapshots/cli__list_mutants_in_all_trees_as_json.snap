@@ -472,7 +472,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/package-fails
+## testdata/tree/package_fails
 
 ```json
 [

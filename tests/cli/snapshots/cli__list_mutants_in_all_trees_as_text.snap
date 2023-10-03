@@ -139,7 +139,7 @@ src/lib.rs:6: replace is_even -> bool with true
 src/lib.rs:6: replace is_even -> bool with false
 ```
 
-## testdata/tree/package-fails
+## testdata/tree/package_fails
 
 ```
 failing/src/lib.rs:1: replace triple -> usize with 0

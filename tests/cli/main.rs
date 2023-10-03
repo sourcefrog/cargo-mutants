@@ -4,7 +4,7 @@
 
 use std::env;
 use std::fmt::Write;
-use std::fs::{self, read_dir};
+use std::fs::{self, read_dir, read_to_string};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::thread::sleep;
@@ -579,6 +579,38 @@ fn workspace_tree_is_well_tested() {
             "test --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
     }
+}
+
+#[test]
+/// Baseline tests in a workspace only test the packages that will later
+/// be mutated.
+/// See <https://github.com/sourcefrog/cargo-mutants/issues/151>
+fn in_workspace_only_relevant_packages_included_in_baseline_tests() {
+    let tmp = copy_of_testdata("package_fails");
+    run()
+        .args(["mutants", "-f", "passing/src/lib.rs", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        indoc! { "\
+            passing/src/lib.rs:1: replace triple -> usize with 0
+            passing/src/lib.rs:1: replace triple -> usize with 1
+            "}
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
+        ""
+    );
 }
 
 #[test]
