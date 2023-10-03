@@ -164,10 +164,15 @@ fn cargo_argv(
     if phase == Phase::Check || phase == Phase::Build {
         cargo_args.push("--tests".to_string());
     }
-    if let Some(packages) = packages {
-        for package in packages {
-            cargo_args.push("--manifest-path".to_owned());
-            cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
+    if let Some([package]) = packages {
+        // Use the unambiguous form for this case; it works better when the same
+        // package occurs multiple times in the tree with different versions?
+        cargo_args.push("--manifest-path".to_owned());
+        cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
+    } else if let Some(packages) = packages {
+        for package in packages.iter().map(|p| p.name.to_owned()).sorted() {
+            cargo_args.push("--package".to_owned());
+            cargo_args.push(package);
         }
     } else {
         cargo_args.push("--workspace".to_string());
