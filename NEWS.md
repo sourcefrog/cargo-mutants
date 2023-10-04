@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.10.0
 
 - The baseline test (with no mutants) now tests only the packages in which
   mutants will be generated, subject to any file or regex filters. This
