@@ -16,7 +16,7 @@ use tracing::{debug, debug_span, trace};
 
 use crate::options::Options;
 use crate::outcome::Phase;
-use crate::scenario::Scenario;
+use crate::source::Package;
 use crate::SourceFile;
 use crate::{build_dir, Result};
 
@@ -48,15 +48,10 @@ pub trait Tool: Debug + Send + Sync {
     fn compose_argv(
         &self,
         build_dir: &build_dir::BuildDir,
-        scenario: &Scenario,
+        packages: Option<&[&Package]>,
         phase: Phase,
         options: &Options,
     ) -> Result<Vec<String>>;
 
-    fn compose_env(
-        &self,
-        scenario: &Scenario,
-        phase: Phase,
-        options: &Options,
-    ) -> Result<Vec<(String, String)>>;
+    fn compose_env(&self) -> Result<Vec<(String, String)>>;
 }

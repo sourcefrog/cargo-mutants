@@ -139,6 +139,15 @@ src/lib.rs:6: replace is_even -> bool with true
 src/lib.rs:6: replace is_even -> bool with false
 ```
 
+## testdata/tree/package_fails
+
+```
+failing/src/lib.rs:1: replace triple -> usize with 0
+failing/src/lib.rs:1: replace triple -> usize with 1
+passing/src/lib.rs:1: replace triple -> usize with 0
+passing/src/lib.rs:1: replace triple -> usize with 1
+```
+
 ## testdata/tree/patch_dependency
 
 ```

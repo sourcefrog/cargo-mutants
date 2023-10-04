@@ -57,7 +57,7 @@ impl SourceFile {
 }
 
 /// A package built and tested as a unit.
-#[derive(Debug, Eq, PartialEq)] // no clone, use Arc
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
 pub struct Package {
     /// The short name of the package, like "mutants".
     pub name: String,

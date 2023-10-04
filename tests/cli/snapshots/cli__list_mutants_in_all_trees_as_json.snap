@@ -472,6 +472,49 @@ expression: buf
 ]
 ```
 
+## testdata/tree/package_fails
+
+```json
+[
+  {
+    "file": "failing/src/lib.rs",
+    "function": "triple",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-package-fails-failing",
+    "replacement": "0",
+    "return_type": "-> usize"
+  },
+  {
+    "file": "failing/src/lib.rs",
+    "function": "triple",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-package-fails-failing",
+    "replacement": "1",
+    "return_type": "-> usize"
+  },
+  {
+    "file": "passing/src/lib.rs",
+    "function": "triple",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-package-fails-passing",
+    "replacement": "0",
+    "return_type": "-> usize"
+  },
+  {
+    "file": "passing/src/lib.rs",
+    "function": "triple",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "cargo-mutants-testdata-package-fails-passing",
+    "replacement": "1",
+    "return_type": "-> usize"
+  }
+]
+```
+
 ## testdata/tree/patch_dependency
 
 ```json

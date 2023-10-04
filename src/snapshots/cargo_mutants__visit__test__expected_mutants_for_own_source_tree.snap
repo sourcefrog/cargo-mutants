@@ -58,6 +58,7 @@ src/console.rs: replace Console::start_testing_mutants with ()
 src/console.rs: replace Console::scenario_phase_started with ()
 src/console.rs: replace Console::scenario_phase_finished with ()
 src/console.rs: replace Console::lab_finished with ()
+src/console.rs: replace Console::clear with ()
 src/console.rs: replace Console::message with ()
 src/console.rs: replace Console::tick with ()
 src/console.rs: replace Console::make_terminal_writer -> TerminalWriter with Default::default()
@@ -301,8 +302,6 @@ src/scenario.rs: replace Scenario::is_mutant -> bool with true
 src/scenario.rs: replace Scenario::is_mutant -> bool with false
 src/scenario.rs: replace Scenario::log_file_name_base -> String with String::new()
 src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".into()
-src/scenario.rs: replace Scenario::package -> Option<&Package> with None
-src/scenario.rs: replace Scenario::package -> Option<&Package> with Some(&Default::default())
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::new()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with "xyzzy".into()
 src/textedit.rs: replace <impl From for LineColumn>::from -> Self with Default::default()

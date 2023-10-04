@@ -8,6 +8,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context, Result};
+use itertools::Itertools;
 use tracing::warn;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
@@ -16,6 +17,7 @@ use crate::console::Console;
 use crate::outcome::{LabOutcome, Phase, PhaseResult, ScenarioOutcome};
 use crate::output::OutputDir;
 use crate::process::Process;
+use crate::source::Package;
 use crate::*;
 
 /// Run all possible mutation experiments.
@@ -45,6 +47,7 @@ pub fn test_unmutated_then_all_mutants(
     if mutants.is_empty() {
         return Err(anyhow!("No mutants found"));
     }
+    let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
 
     let output_mutex = Mutex::new(output_dir);
     let mut build_dirs = vec![BuildDir::new(source_tree, &options, console)?];
@@ -56,6 +59,7 @@ pub fn test_unmutated_then_all_mutants(
             &output_mutex,
             &options,
             &Scenario::Baseline,
+            &all_packages,
             options.test_timeout.unwrap_or(Duration::MAX),
             console,
         )?
@@ -120,6 +124,7 @@ pub fn test_unmutated_then_all_mutants(
                     let next = numbered_mutants.lock().expect("lock mutants queue").next();
                     if let Some((mutant_id, mutant)) = next {
                         let _span = debug_span!("mutant", id = mutant_id).entered();
+                        let package = mutant.package().clone();
                         // We don't care about the outcome; it's been collected into the output_dir.
                         let _outcome = test_scenario(
                             tool,
@@ -127,6 +132,7 @@ pub fn test_unmutated_then_all_mutants(
                             &output_mutex,
                             &options,
                             &Scenario::Mutant(mutant),
+                            &[&package],
                             mutated_test_timeout,
                             console,
                         )
@@ -169,6 +175,7 @@ fn test_scenario(
     output_mutex: &Mutex<OutputDir>,
     options: &Options,
     scenario: &Scenario,
+    packages: &[&Package],
     test_timeout: Duration,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
@@ -197,8 +204,8 @@ fn test_scenario(
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let argv = tool.compose_argv(build_dir, scenario, phase, options)?;
-        let env = tool.compose_env(scenario, phase, options)?;
+        let argv = tool.compose_argv(build_dir, Some(packages), phase, options)?;
+        let env = tool.compose_env()?;
         let process_status = Process::run(
             &argv,
             &env,

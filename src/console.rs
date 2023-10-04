@@ -210,6 +210,10 @@ impl Console {
         ));
     }
 
+    pub fn clear(&self) {
+        self.view.clear()
+    }
+
     pub fn message(&self, message: &str) {
         self.view.message(message)
     }

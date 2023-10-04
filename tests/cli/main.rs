@@ -4,7 +4,7 @@
 
 use std::env;
 use std::fmt::Write;
-use std::fs::{self, read_dir};
+use std::fs::{self, read_dir, read_to_string};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::thread::sleep;
@@ -523,13 +523,20 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap()[1..],
-            ["build", "--tests", "--workspace"]
+            baseline_phases[0]["argv"].as_array().unwrap().into_iter().map(|v| v.as_str().unwrap()).skip(1).collect_vec().join(" "),
+            "build --tests --package cargo_mutants_testdata_workspace_utils --package main --package main2"
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["argv"].as_array().unwrap()[1..],
-            ["test", "--workspace"]
+            baseline_phases[1]["argv"]
+                .as_array()
+                .unwrap()
+                .into_iter()
+                .map(|v| v.as_str().unwrap())
+                .skip(1)
+                .collect_vec()
+                .join(" "),
+            "test --package cargo_mutants_testdata_workspace_utils --package main --package main2"
         );
     }
 
@@ -560,15 +567,50 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap()[1..],
-            ["build", "--tests", "--workspace"]
+            baseline_phases[0]["argv"].as_array().unwrap()[1..].into_iter().map(|v| v.as_str().unwrap()).join(" "),
+            "build --tests --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[1]["argv"].as_array().unwrap()[1..],
-            ["test", "--workspace"]
+            baseline_phases[1]["argv"].as_array().unwrap()[1..]
+                .into_iter()
+                .map(|v| v.as_str().unwrap())
+                .join(" "),
+            "test --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
     }
+}
+
+#[test]
+/// Baseline tests in a workspace only test the packages that will later
+/// be mutated.
+/// See <https://github.com/sourcefrog/cargo-mutants/issues/151>
+fn in_workspace_only_relevant_packages_included_in_baseline_tests() {
+    let tmp = copy_of_testdata("package_fails");
+    run()
+        .args(["mutants", "-f", "passing/src/lib.rs", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        indoc! { "\
+            passing/src/lib.rs:1: replace triple -> usize with 0
+            passing/src/lib.rs:1: replace triple -> usize with 1
+            "}
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
+        ""
+    );
 }
 
 #[test]
@@ -881,11 +923,11 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
     println!("{log_content}");
-    regex::Regex::new(r"cargo.* build --tests --workspace --release")
+    regex::Regex::new(r"cargo.* build --tests --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
-    regex::Regex::new(r"cargo.* test --workspace --release")
+    regex::Regex::new(r"cargo.* test --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
