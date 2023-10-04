@@ -4,7 +4,7 @@ cargo-mutants supports testing Cargo workspaces that contain multiple packages. 
 
 By default, all source files in all packages in the workspace are tested.
 
-**NOTE: This behavior might not be the best choice, and this may change in future.**
+**NOTE: This behavior is likely to change in future: see <https://github.com/sourcefrog/cargo-mutants/issues/156>.**
 
 You can use the `--file` options to restrict cargo-mutants to testing only files
 from some subdirectory, e.g. with `-f "utils/**/*.rs"`. (Remember to quote globs
@@ -13,3 +13,6 @@ on the command line, so that the shell doesn't expand them.) You can use `--list
 
 For each mutant, only the containing package's tests are run, on the theory that
 each package's tests are responsible for testing the package's code.
+
+The baseline tests exercise all and only the packages for which mutants will
+be generated.

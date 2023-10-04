@@ -1,5 +1,12 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- The baseline test (with no mutants) now tests only the packages in which
+  mutants will be generated, subject to any file or regex filters. This
+  should both make baseline tests faster, and allow testing workspaces in
+  which some packages have non-hermetic tests.
+
 ## 23.9.1
 
 - Mutate the known collection types `BinaryHeap`, `BTreeSet`, `HashSet`,
