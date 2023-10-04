@@ -37,7 +37,7 @@ cargo mutants
 
 ## Project status
 
-As of April 2023 this is an actively-maintained spare time project. It is very usable as it is
+As of October 2023 this is an actively-maintained spare time project. It is very usable as it is
 and there is room for future improvements, especially in adding new types of mutation.
 
 I expect to make releases about every one or two months, depending on how much time and 
