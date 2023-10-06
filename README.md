@@ -6,8 +6,8 @@
 [![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
 [![libs.rs](https://img.shields.io/badge/libs.rs-cargo--mutants-blue)](https://lib.rs/crates/cargo-mutants)
 
-cargo-mutants is a mutation testing tool for Rust. It helps you improve your
-program's quality by finding functions whose body could be replaced without
+cargo-mutants helps you improve your
+program's quality by finding places where bugs could be inserted without
 causing any tests to fail.
 
 Coverage measurements can be helpful, but they really tell you what code is
@@ -35,23 +35,35 @@ From within a Rust source directory, just run
 cargo mutants
 ```
 
+To generate mutants in only one file:
+
+```sh
+cargo mutants -f src/something.rs
+```
+
+**For more, see the user guide is at <https://mutants.rs/>.**
+
+## Help advance cargo-mutants
+
+If you use cargo-mutants or just like the idea you can help it get better:
+
+* [Post an experience report in GitHub discussions](https://github.com/sourcefrog/cargo-mutants/discussions), saying whether it worked, failed, found interesting results, etc.
+* [Sponsor development](https://github.com/sponsors/sourcefrog)
+
 ## Project status
 
-As of October 2023 this is an actively-maintained spare time project. It is very usable as it is
-and there is room for future improvements, especially in adding new types of mutation.
+As of October 2023 this is an actively-maintained spare time project. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) about every one or two months.
 
-I expect to make releases about every one or two months, depending on how much time and 
-energy I have available.
-
-Constructive feedback is welcome but there is absolutely no warranty or guarantee of support.
+It's very usable at it is and there's room for lots more future improvement,
+especially in adding new types of mutation.
 
 ## Further reading
 
-**The main documentation is the user guide at <https://mutants.rs/>.**
-
 See also:
 
+- [cargo-mutants manual](https://mutants.rs/)
 - [How cargo-mutants compares to other techniques and tools](https://github.com/sourcefrog/cargo-mutants/wiki/Compared).
 - [Design notes](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)
 - [Release notes](NEWS.md)
+- [Discussions](https://github.com/sourcefrog/cargo-mutants/discussions)
