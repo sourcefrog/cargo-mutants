@@ -523,7 +523,7 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap().into_iter().map(|v| v.as_str().unwrap()).skip(1).collect_vec().join(" "),
+            baseline_phases[0]["argv"].as_array().unwrap().iter().map(|v| v.as_str().unwrap()).skip(1).collect_vec().join(" "),
             "build --tests --package cargo_mutants_testdata_workspace_utils --package main --package main2"
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
@@ -531,7 +531,7 @@ fn workspace_tree_is_well_tested() {
             baseline_phases[1]["argv"]
                 .as_array()
                 .unwrap()
-                .into_iter()
+                .iter()
                 .map(|v| v.as_str().unwrap())
                 .skip(1)
                 .collect_vec()
@@ -567,13 +567,13 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap()[1..].into_iter().map(|v| v.as_str().unwrap()).join(" "),
+            baseline_phases[0]["argv"].as_array().unwrap()[1..].iter().map(|v| v.as_str().unwrap()).join(" "),
             "build --tests --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
             baseline_phases[1]["argv"].as_array().unwrap()[1..]
-                .into_iter()
+                .iter()
                 .map(|v| v.as_str().unwrap())
                 .join(" "),
             "test --package cargo_mutants_testdata_workspace_utils --package main --package main2",
