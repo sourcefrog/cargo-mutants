@@ -34,8 +34,8 @@ pub struct Discovered {
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
-pub fn walk_tree(
-    tool: &dyn Tool,
+pub fn walk_tree<T: Tool>(
+    tool: &T,
     root: &Utf8Path,
     options: &Options,
     console: &Console,

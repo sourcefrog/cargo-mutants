@@ -25,8 +25,8 @@ use crate::*;
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn test_unmutated_then_all_mutants(
-    tool: &dyn Tool,
+pub fn test_unmutated_then_all_mutants<T: Tool>(
+    tool: &T,
     discovered: Discovered,
     source_tree: &Utf8Path,
     options: Options,
@@ -177,8 +177,8 @@ pub fn test_unmutated_then_all_mutants(
 )]
 // Yes, it's a lot of arguments, but it does use them all and I don't think creating objects
 // just to group them would help...
-fn test_scenario(
-    tool: &dyn Tool,
+fn test_scenario<T: Tool>(
+    tool: &T,
     build_dir: &mut BuildDir,
     output_mutex: &Mutex<OutputDir>,
     options: &Options,
