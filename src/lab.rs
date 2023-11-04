@@ -2,12 +2,12 @@
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{ensure, Context, Result};
 use itertools::Itertools;
 use tracing::warn;
 #[allow(unused)]
@@ -46,9 +46,7 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
     }
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
-    if mutants.is_empty() {
-        return Err(anyhow!("No mutants found"));
-    }
+    ensure!(!mutants.is_empty(), "No mutants found");
     let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
 
     let output_mutex = Mutex::new(output_dir);
@@ -100,7 +98,7 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
         Duration::MAX
     };
 
-    let jobs = std::cmp::max(1, std::cmp::min(options.jobs.unwrap_or(1), mutants.len()));
+    let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");
@@ -183,7 +181,7 @@ fn test_scenario<T: Tool>(
     output_mutex: &Mutex<OutputDir>,
     options: &Options,
     scenario: &Scenario,
-    packages: &[&Package],
+    test_packages: &[&Package],
     test_timeout: Duration,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
@@ -212,7 +210,7 @@ fn test_scenario<T: Tool>(
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let argv = tool.compose_argv(build_dir, Some(packages), phase, options)?;
+        let argv = tool.compose_argv(build_dir, Some(test_packages), phase, options)?;
         let env = tool.compose_env()?;
         let process_status = Process::run(
             &argv,
