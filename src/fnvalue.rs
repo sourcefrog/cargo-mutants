@@ -115,6 +115,17 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                         quote! { #collection_type::from_iter([#rep]) }
                     }))
                     .collect_vec()
+            } else if let Some((collection_type, key_type, value_type)) = known_map(path) {
+                let key_reps = type_replacements(key_type, error_exprs).collect_vec();
+                let val_reps = type_replacements(value_type, error_exprs).collect_vec();
+                iter::once(quote! { #collection_type::new() })
+                    .chain(
+                        key_reps
+                            .iter()
+                            .cartesian_product(val_reps)
+                            .map(|(k, v)| quote! { #collection_type::from_iter([(#k, #v)]) }),
+                    )
+                    .collect_vec()
             } else if let Some((collection_type, inner_type)) = maybe_collection_or_container(path)
             {
                 // Something like `T<A>` or `T<'a, A>`, when we don't know exactly how
@@ -306,6 +317,26 @@ fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
     None
 }
 
+/// Match known key-value maps that can be empty or constructed from pair of
+/// recursively-generated values.
+fn known_map(path: &Path) -> Option<(&Ident, &Type, &Type)> {
+    let last = path.segments.last()?;
+    if !["BTreeMap", "HashMap"].iter().any(|v| last.ident == v) {
+        return None;
+    }
+    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last.arguments
+    {
+        // TODO: Skip lifetime args.
+        // TODO: Return the path with args stripped out.
+        if let Some((GenericArgument::Type(key_type), GenericArgument::Type(value_type))) =
+            args.iter().collect_tuple()
+        {
+            return Some((&last.ident, &key_type, &value_type));
+        }
+    }
+    None
+}
 /// Match a type with one type argument, which might be a container or collection.
 fn maybe_collection_or_container(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
@@ -404,7 +435,7 @@ mod test {
 
     use crate::pretty::ToPrettyString;
 
-    use super::return_type_replacements;
+    use super::{known_map, return_type_replacements};
 
     #[test]
     fn recurse_into_result_bool() {
@@ -647,6 +678,21 @@ mod test {
         );
     }
 
+    #[test]
+    fn btreemap_replacement() {
+        check_replacements(
+            parse_quote! { -> BTreeMap<String, bool> },
+            &[],
+            &[
+                "BTreeMap::new()",
+                "BTreeMap::from_iter([(String::new(), true)])",
+                "BTreeMap::from_iter([(String::new(), false)])",
+                "BTreeMap::from_iter([(\"xyzzy\".into(), true)])",
+                "BTreeMap::from_iter([(\"xyzzy\".into(), false)])",
+            ],
+        );
+    }
+
     fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {
         assert_eq!(
             return_type_replacements(&return_type, error_exprs)
@@ -654,5 +700,12 @@ mod test {
                 .collect_vec(),
             expected
         );
+    }
+
+    #[test]
+    fn match_map() {
+        assert!(known_map(&parse_quote! { BTreeMap<String, usize> }).is_some());
+        assert!(known_map(&parse_quote! { HashMap<(usize, usize), bool> }).is_some());
+        assert!(known_map(&parse_quote! { Option<(usize, usize)> }).is_none());
     }
 }

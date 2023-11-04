@@ -136,6 +136,8 @@ src/fnvalue.rs: replace known_container -> Option<(&Ident, &Type)> with None
 src/fnvalue.rs: replace known_container -> Option<(&Ident, &Type)> with Some((&Default::default(), &Default::default()))
 src/fnvalue.rs: replace known_collection -> Option<(&Ident, &Type)> with None
 src/fnvalue.rs: replace known_collection -> Option<(&Ident, &Type)> with Some((&Default::default(), &Default::default()))
+src/fnvalue.rs: replace known_map -> Option<(&Ident, &Type, &Type)> with None
+src/fnvalue.rs: replace known_map -> Option<(&Ident, &Type, &Type)> with Some((&Default::default(), &Default::default(), &Default::default()))
 src/fnvalue.rs: replace maybe_collection_or_container -> Option<(&Ident, &Type)> with None
 src/fnvalue.rs: replace maybe_collection_or_container -> Option<(&Ident, &Type)> with Some((&Default::default(), &Default::default()))
 src/fnvalue.rs: replace path_is_float -> bool with true

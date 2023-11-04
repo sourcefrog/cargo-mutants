@@ -32,6 +32,7 @@ More mutation genres and patterns will be added in future releases.
 | `Arc<T>`          | `Arc::new(...)`                                            |
 | `Rc<T>`           | `Rc::new(...)`                                             |
 | `BinaryHeap`, `BTreeSet`, `HashSet`, `LinkedList`, `VecDeque` | empty and one-element collections |
+| `BTreeMap`, `HashMap` | empty map and the product of all key and value replacements |
 | `Cow<'_, T>`      | `Cow::Borrowed(t)`, `Cow::Owned(t.to_owned())`             |
 | `[T; L]`          | `[r; L]` for all replacements of T                         |
 | `&[T]`, `&mut [T]`| Leaked empty and one-element vecs                          |
