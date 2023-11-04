@@ -27,3 +27,4 @@
   - [Differences from fuzzing](vs-fuzzing.md)
   - [Limitations](limitations.md)
   - [How to help](how-to-help.md)
+- [Changelog](changelog.md)
