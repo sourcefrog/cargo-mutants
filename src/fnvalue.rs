@@ -306,6 +306,26 @@ fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
     None
 }
 
+/// Match known key-value maps that can be empty or constructed from pair of
+/// recursively-generated values.
+fn known_map(path: &Path) -> Option<(&Ident, &Type, &Type)> {
+    let last = path.segments.last()?;
+    if !["BTreeMap", "HashMap"].iter().any(|v| last.ident == v) {
+        return None;
+    }
+    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last.arguments
+    {
+        // TODO: Skip lifetime args.
+        // TODO: Return the path with args stripped out.
+        if let Some((GenericArgument::Type(key_type), GenericArgument::Type(value_type))) =
+            args.iter().collect_tuple()
+        {
+            return Some((&last.ident, &key_type, &value_type));
+        }
+    }
+    None
+}
 /// Match a type with one type argument, which might be a container or collection.
 fn maybe_collection_or_container(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
@@ -404,7 +424,7 @@ mod test {
 
     use crate::pretty::ToPrettyString;
 
-    use super::return_type_replacements;
+    use super::{known_map, return_type_replacements};
 
     #[test]
     fn recurse_into_result_bool() {
@@ -654,5 +674,12 @@ mod test {
                 .collect_vec(),
             expected
         );
+    }
+
+    #[test]
+    fn match_map() {
+        assert!(known_map(&parse_quote! { BTreeMap<String, usize> }).is_some());
+        assert!(known_map(&parse_quote! { HashMap<(usize, usize), bool> }).is_some());
+        assert!(known_map(&parse_quote! { Option<(usize, usize)> }).is_none());
     }
 }
