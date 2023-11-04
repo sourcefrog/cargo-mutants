@@ -6,6 +6,8 @@ By default, all source files in all packages in the workspace are tested.
 
 **NOTE: This behavior is likely to change in future: see <https://github.com/sourcefrog/cargo-mutants/issues/156>.**
 
+With the `--package` option, only mutants from the package with the given name are testeg. The effect can be seen in `--list`, etc. This option can be repeated.
+
 You can use the `--file` options to restrict cargo-mutants to testing only files
 from some subdirectory, e.g. with `-f "utils/**/*.rs"`. (Remember to quote globs
 on the command line, so that the shell doesn't expand them.) You can use `--list` or

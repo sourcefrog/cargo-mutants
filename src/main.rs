@@ -164,6 +164,10 @@ struct Args {
     #[arg(long, short = 'o')]
     output: Option<Utf8PathBuf>,
 
+    /// only test mutants from these packages.
+    #[arg(id = "package", long, short = 'p')]
+    mutate_packages: Vec<String>,
+
     /// run mutants in random order.
     #[arg(long)]
     shuffle: bool,
@@ -235,7 +239,13 @@ fn main() -> Result<()> {
     debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
-    let discovered = walk_tree(&tool, &source_tree_root, &options, &console)?;
+    let discovered = walk_tree(
+        &tool,
+        &source_tree_root,
+        &args.mutate_packages,
+        &options,
+        &console,
+    )?;
     if args.list_files {
         console.clear();
         list_files(FmtToIoWrite::new(io::stdout()), discovered, &options)?;

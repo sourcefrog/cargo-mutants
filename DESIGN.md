@@ -67,6 +67,8 @@ A source tree may be a single crate or a Cargo workspace. There are several leve
 * Each source file contains some functions.
 * For each function we generate some mutants.
 
+At the discovery stage we can filter to only some packages of interest using the `--package` option.
+
 The name of the containing package is passed through to the `SourceFile` and the `Mutant` objects.
 
 For source tree and baseline builds and tests, we pass Cargo `--workspace` to build and test everything. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.

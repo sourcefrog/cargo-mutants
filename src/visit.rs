@@ -34,9 +34,12 @@ pub struct Discovered {
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
+///
+/// `mutate_packages`: If non-empty, only generate mutants from these packages.
 pub fn walk_tree<T: Tool>(
     tool: &T,
     root: &Utf8Path,
+    mutate_packages: &[String],
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
@@ -46,9 +49,10 @@ pub fn walk_tree<T: Tool>(
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     console.walk_tree_start();
+    let mut file_queue: VecDeque<Arc<SourceFile>> =
+        tool.top_source_files(root, mutate_packages)?.into();
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
-    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
@@ -415,7 +419,7 @@ mod test {
             .canonicalize_utf8()
             .expect("Canonicalize source path");
         let console = Console::new();
-        let discovered = walk_tree(&CargoTool::new(), source_tree_root, &options, &console)
+        let discovered = walk_tree(&CargoTool::new(), source_tree_root, &[], &options, &console)
             .expect("Discover mutants");
         crate::list_mutants(&mut list_output, discovered, &options)
             .expect("Discover mutants in own source tree");

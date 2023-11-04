@@ -42,7 +42,13 @@ pub trait Tool: Debug + Send + Sync {
     ///
     /// From each of these top files, we can discover more source by following `mod`
     /// statements.
-    fn top_source_files(&self, path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>>;
+    ///
+    /// If `packages` is non-empty, include only packages whose name is in this list.
+    fn top_source_files(
+        &self,
+        path: &Utf8Path,
+        packages: &[String],
+    ) -> Result<Vec<Arc<SourceFile>>>;
 
     /// Compose argv to run one phase in this tool.
     fn compose_argv(

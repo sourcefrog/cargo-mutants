@@ -83,7 +83,11 @@ impl Tool for CargoTool {
     /// After this, there is one more level of discovery, by walking those root files
     /// to find `mod` statements, and then recursively walking those files to find
     /// all source files.
-    fn top_source_files(&self, source_root_path: &Utf8Path) -> Result<Vec<Arc<SourceFile>>> {
+    fn top_source_files(
+        &self,
+        source_root_path: &Utf8Path,
+        packages: &[String],
+    ) -> Result<Vec<Arc<SourceFile>>> {
         let cargo_toml_path = source_root_path.join("Cargo.toml");
         debug!(?cargo_toml_path, ?source_root_path, "Find root files");
         check_interrupted()?;
@@ -97,6 +101,7 @@ impl Tool for CargoTool {
         for package_metadata in metadata
             .workspace_packages()
             .iter()
+            .filter(|p| packages.is_empty() || packages.contains(&p.name))
             .sorted_by_key(|p| &p.name)
         {
             check_interrupted()?;
@@ -391,7 +396,9 @@ mod test {
         let root_dir = tool
             .find_root(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
-        let top_source_files = tool.top_source_files(&root_dir).expect("Find root files");
+        let top_source_files = tool
+            .top_source_files(&root_dir, &[])
+            .expect("Find root files");
         println!("{top_source_files:#?}");
         let paths = top_source_files
             .iter()
@@ -402,6 +409,55 @@ mod test {
         assert_eq!(
             paths,
             ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
+        );
+    }
+
+    #[test]
+    fn filter_by_single_package() {
+        let tool = CargoTool::new();
+        let root_dir = tool
+            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find workspace root");
+        assert_eq!(
+            root_dir.file_name(),
+            Some("workspace"),
+            "found the workspace root"
+        );
+        let top_source_files = tool
+            .top_source_files(&root_dir, &["main".to_owned()])
+            .expect("Find root files");
+        println!("{top_source_files:#?}");
+        assert_eq!(top_source_files.len(), 1);
+        assert_eq!(
+            top_source_files
+                .iter()
+                .map(|sf| sf.tree_relative_path.clone())
+                .collect_vec(),
+            ["main/src/main.rs"]
+        );
+    }
+
+    #[test]
+    fn filter_by_multiple_packages() {
+        let tool = CargoTool::new();
+        let root_dir = tool
+            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find workspace root");
+        assert_eq!(
+            root_dir.file_name(),
+            Some("workspace"),
+            "found the workspace root"
+        );
+        let top_source_files = tool
+            .top_source_files(&root_dir, &["main".to_owned(), "main2".to_owned()])
+            .expect("Find root files");
+        println!("{top_source_files:#?}");
+        assert_eq!(
+            top_source_files
+                .iter()
+                .map(|sf| sf.tree_relative_path.clone())
+                .collect_vec(),
+            ["main/src/main.rs", "main2/src/main.rs"]
         );
     }
 }

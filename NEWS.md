@@ -4,6 +4,8 @@
 
 - New: generate key-value map values.
 
+- New: `--package` option tests only mutants from that package.
+
 ## 23.10.0
 
 - The baseline test (with no mutants) now tests only the packages in which
