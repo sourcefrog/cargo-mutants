@@ -411,16 +411,14 @@ mod test {
             ..Default::default()
         };
         let mut list_output = String::new();
-        crate::list_mutants(
-            &mut list_output,
-            &CargoTool::new(),
-            &Utf8Path::new(".")
-                .canonicalize_utf8()
-                .expect("Canonicalize source path"),
-            &options,
-            &Console::new(),
-        )
-        .expect("Discover mutants in own source tree");
+        let source_tree_root = &Utf8Path::new(".")
+            .canonicalize_utf8()
+            .expect("Canonicalize source path");
+        let console = Console::new();
+        let discovered = walk_tree(&CargoTool::new(), source_tree_root, &options, &console)
+            .expect("Discover mutants");
+        crate::list_mutants(&mut list_output, discovered, &options)
+            .expect("Discover mutants in own source tree");
 
         // Strip line numbers so this is not too brittle.
         let line_re = Regex::new(r"(?m)^([^:]+:)\d+:( .*)$").unwrap();

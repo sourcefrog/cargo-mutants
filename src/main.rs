@@ -235,22 +235,13 @@ fn main() -> Result<()> {
     }
     let options = Options::new(&args, &config)?;
     debug!(?options);
+    let discovered = walk_tree(&tool, &source_tree_root, &options, &console)?;
     if args.list_files {
-        list_files(
-            FmtToIoWrite::new(io::stdout()),
-            &tool,
-            &source_tree_root,
-            &options,
-            &console,
-        )?;
+        console.clear();
+        list_files(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
     } else if args.list {
-        list_mutants(
-            FmtToIoWrite::new(io::stdout()),
-            &tool,
-            &source_tree_root,
-            &options,
-            &console,
-        )?;
+        console.clear();
+        list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
     } else {
         let lab_outcome =
             lab::test_unmutated_then_all_mutants(&tool, &source_tree_root, options, &console)?;

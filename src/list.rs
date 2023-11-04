@@ -5,13 +5,12 @@
 use std::fmt;
 use std::io;
 
-use camino::Utf8Path;
 use serde_json::{json, Value};
 
 use crate::console::style_mutant;
-use crate::console::Console;
 use crate::path::Utf8PathSlashes;
-use crate::{walk_tree, Options, Result, Tool};
+use crate::visit::Discovered;
+use crate::{Options, Result};
 
 /// Convert `fmt::Write` to `io::Write`.
 pub(crate) struct FmtToIoWrite<W: io::Write>(W);
@@ -30,13 +29,9 @@ impl<W: io::Write> fmt::Write for FmtToIoWrite<W> {
 
 pub(crate) fn list_mutants<W: fmt::Write>(
     mut out: W,
-    tool: &dyn Tool,
-    source_tree_root: &Utf8Path,
+    discovered: Discovered,
     options: &Options,
-    console: &Console,
 ) -> Result<()> {
-    let discovered = walk_tree(tool, source_tree_root, options, console)?;
-    console.clear();
     if options.emit_json {
         let mut list: Vec<serde_json::Value> = Vec::new();
         for mutant in discovered.mutants {
@@ -66,15 +61,13 @@ pub(crate) fn list_mutants<W: fmt::Write>(
 
 pub(crate) fn list_files<W: fmt::Write>(
     mut out: W,
-    tool: &dyn Tool,
-    source: &Utf8Path,
+    discovered: Discovered,
     options: &Options,
-    console: &Console,
 ) -> Result<()> {
-    let files = walk_tree(tool, source, options, console)?.files;
     if options.emit_json {
         let json_list = Value::Array(
-            files
+            discovered
+                .files
                 .iter()
                 .map(|source_file| {
                     json!({
@@ -86,7 +79,7 @@ pub(crate) fn list_files<W: fmt::Write>(
         );
         writeln!(out, "{}", serde_json::to_string_pretty(&json_list)?)?;
     } else {
-        for file in files {
+        for file in discovered.files {
             writeln!(out, "{}", file.tree_relative_path.to_slash_path())?;
         }
     }
