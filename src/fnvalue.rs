@@ -115,6 +115,17 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                         quote! { #collection_type::from_iter([#rep]) }
                     }))
                     .collect_vec()
+            } else if let Some((collection_type, key_type, value_type)) = known_map(path) {
+                let key_reps = type_replacements(key_type, error_exprs).collect_vec();
+                let val_reps = type_replacements(value_type, error_exprs).collect_vec();
+                iter::once(quote! { #collection_type::new() })
+                    .chain(
+                        key_reps
+                            .iter()
+                            .cartesian_product(val_reps)
+                            .map(|(k, v)| quote! { #collection_type::from_iter([(#k, #v)]) }),
+                    )
+                    .collect_vec()
             } else if let Some((collection_type, inner_type)) = maybe_collection_or_container(path)
             {
                 // Something like `T<A>` or `T<'a, A>`, when we don't know exactly how
@@ -663,6 +674,21 @@ mod test {
                 "Vec::leak(Vec::new())",
                 "Vec::leak(vec![0])",
                 "Vec::leak(vec![1])",
+            ],
+        );
+    }
+
+    #[test]
+    fn btreemap_replacement() {
+        check_replacements(
+            parse_quote! { -> BTreeMap<String, bool> },
+            &[],
+            &[
+                "BTreeMap::new()",
+                "BTreeMap::from_iter([(String::new(), true)])",
+                "BTreeMap::from_iter([(String::new(), false)])",
+                "BTreeMap::from_iter([(\"xyzzy\".into(), true)])",
+                "BTreeMap::from_iter([(\"xyzzy\".into(), false)])",
             ],
         );
     }

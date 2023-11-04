@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: generate key-value map values.
+
 ## 23.10.0
 
 - The baseline test (with no mutants) now tests only the packages in which
