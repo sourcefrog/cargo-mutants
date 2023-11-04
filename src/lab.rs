@@ -18,6 +18,7 @@ use crate::outcome::{LabOutcome, Phase, PhaseResult, ScenarioOutcome};
 use crate::output::OutputDir;
 use crate::process::Process;
 use crate::source::Package;
+use crate::visit::Discovered;
 use crate::*;
 
 /// Run all possible mutation experiments.
@@ -26,6 +27,7 @@ use crate::*;
 /// mutations applied.
 pub fn test_unmutated_then_all_mutants(
     tool: &dyn Tool,
+    discovered: Discovered,
     source_tree: &Utf8Path,
     options: Options,
     console: &Console,
@@ -37,8 +39,8 @@ pub fn test_unmutated_then_all_mutants(
         .map_or(source_tree, |p| p.as_path());
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
+    let mut mutants = discovered.mutants;
 
-    let mut mutants = walk_tree(tool, source_tree, &options, console)?.mutants;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }

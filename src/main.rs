@@ -243,8 +243,13 @@ fn main() -> Result<()> {
         console.clear();
         list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
     } else {
-        let lab_outcome =
-            lab::test_unmutated_then_all_mutants(&tool, &source_tree_root, options, &console)?;
+        let lab_outcome = lab::test_unmutated_then_all_mutants(
+            &tool,
+            discovered,
+            &source_tree_root,
+            options,
+            &console,
+        )?;
         exit(lab_outcome.exit_code());
     }
     Ok(())
