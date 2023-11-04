@@ -207,6 +207,7 @@ fn main() -> Result<()> {
             exit(exit_code::USAGE);
         }
     };
+
     let console = Console::new();
     console.setup_global_trace(args.level)?;
     interrupt::install_handler();
@@ -226,13 +227,12 @@ fn main() -> Result<()> {
     };
     let tool = CargoTool::new();
     let source_tree_root = tool.find_root(source_path)?;
-    let config;
-    if args.no_config {
-        config = config::Config::default();
+    let config = if args.no_config {
+        config::Config::default()
     } else {
-        config = config::Config::read_tree_config(&source_tree_root)?;
-        debug!(?config);
-    }
+        config::Config::read_tree_config(&source_tree_root)?
+    };
+    debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
     let discovered = walk_tree(&tool, &source_tree_root, &options, &console)?;
