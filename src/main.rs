@@ -208,10 +208,6 @@ fn main() -> Result<()> {
         }
     };
 
-    let console = Console::new();
-    console.setup_global_trace(args.level)?;
-    interrupt::install_handler();
-
     if args.version {
         println!("{NAME} {VERSION}");
         return Ok(());
@@ -219,6 +215,10 @@ fn main() -> Result<()> {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
         return Ok(());
     }
+
+    let console = Console::new();
+    console.setup_global_trace(args.level)?;
+    interrupt::install_handler();
 
     let source_path: &Utf8Path = if let Some(p) = &args.dir {
         p
