@@ -11,8 +11,6 @@ src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Ok(
 src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default())
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::name -> &str with ""
-src/cargo.rs: replace <impl Tool for CargoTool>::name -> &str with "xyzzy"
 src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec![])
 src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec![String::new()])
 src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec!["xyzzy".into()])

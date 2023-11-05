@@ -18,9 +18,6 @@ use crate::source::Package;
 use crate::{build_dir, Result};
 
 pub trait Tool: Debug + Send + Sync {
-    /// A short name for this tool, like "cargo".
-    fn name(&self) -> &str;
-
     /// Compose argv to run one phase in this tool.
     fn compose_argv(
         &self,

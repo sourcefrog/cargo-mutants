@@ -38,10 +38,6 @@ impl CargoTool {
 }
 
 impl Tool for CargoTool {
-    fn name(&self) -> &str {
-        "cargo"
-    }
-
     fn compose_argv(
         &self,
         build_dir: &BuildDir,
