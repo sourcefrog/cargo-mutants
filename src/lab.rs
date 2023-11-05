@@ -45,6 +45,7 @@ pub fn test_mutants(
     console.discovered_mutants(&mutants);
     ensure!(!mutants.is_empty(), "No mutants found");
     let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
+    debug!(?all_packages);
 
     let output_mutex = Mutex::new(output_dir);
     let mut build_dirs = vec![BuildDir::new(workspace_dir, &options, console)?];
@@ -53,10 +54,10 @@ pub fn test_mutants(
         test_scenario(
             &mut build_dirs[0],
             &output_mutex,
-            &options,
             &Scenario::Baseline,
             &all_packages,
             options.test_timeout.unwrap_or(Duration::MAX),
+            &options,
             console,
         )?
     };
@@ -124,10 +125,10 @@ pub fn test_mutants(
                         let _outcome = test_scenario(
                             &mut build_dir,
                             &output_mutex,
-                            &options,
                             &Scenario::Mutant(mutant),
                             &[&package],
                             mutated_test_timeout,
+                            &options,
                             console,
                         )
                         .expect("scenario test");
@@ -165,10 +166,10 @@ pub fn test_mutants(
 fn test_scenario(
     build_dir: &mut BuildDir,
     output_mutex: &Mutex<OutputDir>,
-    options: &Options,
     scenario: &Scenario,
     test_packages: &[&Package],
     test_timeout: Duration,
+    options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
     let mut log_file = output_mutex
