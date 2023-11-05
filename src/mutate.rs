@@ -209,7 +209,7 @@ mod test {
     fn discover_factorial_mutants() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
         let tool = CargoTool::new();
-        let source_tree = tool.find_root(tree_path).unwrap();
+        let source_tree = cargo::find_workspace(tree_path).unwrap();
         let options = Options::default();
         let mutants = walk_tree(&tool, &source_tree, &[], &options, &Console::new())
             .unwrap()
@@ -264,7 +264,7 @@ mod test {
     fn filter_by_attributes() {
         let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
         let tool = CargoTool::new();
-        let source_tree = tool.find_root(tree_path).unwrap();
+        let source_tree = cargo::find_workspace(tree_path).unwrap();
         let mutants = walk_tree(
             &tool,
             &source_tree,
@@ -285,7 +285,7 @@ mod test {
     fn mutate_factorial() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
         let tool = CargoTool::new();
-        let source_tree = tool.find_root(tree_path).unwrap();
+        let source_tree = cargo::find_workspace(tree_path).unwrap();
         let mutants = walk_tree(
             &tool,
             &source_tree,

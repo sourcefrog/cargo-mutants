@@ -280,7 +280,7 @@ mod test {
     fn create_output_dir() {
         let tmp = minimal_source_tree();
         let tmp_path = tmp.path().try_into().unwrap();
-        let root = CargoTool::new().find_root(tmp_path).unwrap();
+        let root = cargo::find_workspace(tmp_path).unwrap();
         let output_dir = OutputDir::new(&root).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),

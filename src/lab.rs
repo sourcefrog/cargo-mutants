@@ -28,7 +28,7 @@ use crate::*;
 pub fn test_unmutated_then_all_mutants<T: Tool>(
     tool: &T,
     discovered: Discovered,
-    source_tree: &Utf8Path,
+    workspace_dir: &Utf8Path,
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
@@ -36,7 +36,7 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
     let output_in_dir: &Utf8Path = options
         .output_in_dir
         .as_ref()
-        .map_or(source_tree, |p| p.as_path());
+        .map_or(workspace_dir, |p| p.as_path());
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
     let mut mutants = discovered.mutants;
@@ -50,7 +50,7 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
     let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
 
     let output_mutex = Mutex::new(output_dir);
-    let mut build_dirs = vec![BuildDir::new(source_tree, &options, console)?];
+    let mut build_dirs = vec![BuildDir::new(workspace_dir, &options, console)?];
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(

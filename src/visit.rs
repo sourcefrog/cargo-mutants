@@ -38,7 +38,7 @@ pub struct Discovered {
 /// `mutate_packages`: If non-empty, only generate mutants from these packages.
 pub fn walk_tree<T: Tool>(
     tool: &T,
-    root: &Utf8Path,
+    workspace_dir: &Utf8Path,
     mutate_packages: &[String],
     options: &Options,
     console: &Console,
@@ -49,8 +49,9 @@ pub fn walk_tree<T: Tool>(
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     console.walk_tree_start();
-    let mut file_queue: VecDeque<Arc<SourceFile>> =
-        tool.top_source_files(root, mutate_packages)?.into();
+    let mut file_queue: VecDeque<Arc<SourceFile>> = tool
+        .top_source_files(workspace_dir, mutate_packages)?
+        .into();
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
     while let Some(source_file) = file_queue.pop_front() {
@@ -62,9 +63,9 @@ pub fn walk_tree<T: Tool>(
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
         for mod_name in &external_mods {
-            if let Some(mod_path) = find_mod_source(root, &source_file, mod_name)? {
+            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_name)? {
                 file_queue.push_back(Arc::new(SourceFile::new(
-                    root,
+                    workspace_dir,
                     mod_path,
                     &source_file.package,
                 )?))

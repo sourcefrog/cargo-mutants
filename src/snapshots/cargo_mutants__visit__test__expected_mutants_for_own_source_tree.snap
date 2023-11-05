@@ -13,8 +13,6 @@ src/build_dir.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default(
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace <impl Tool for CargoTool>::name -> &str with ""
 src/cargo.rs: replace <impl Tool for CargoTool>::name -> &str with "xyzzy"
-src/cargo.rs: replace <impl Tool for CargoTool>::find_root -> Result<Utf8PathBuf> with Ok(Default::default())
-src/cargo.rs: replace <impl Tool for CargoTool>::find_root -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace <impl Tool for CargoTool>::top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
 src/cargo.rs: replace <impl Tool for CargoTool>::top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
 src/cargo.rs: replace <impl Tool for CargoTool>::top_source_files -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
@@ -28,6 +26,8 @@ src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(Stri
 src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![("xyzzy".into(), String::new())])
 src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![("xyzzy".into(), "xyzzy".into())])
 src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Err(::anyhow::anyhow!("mutated!"))
+src/cargo.rs: replace find_workspace -> Result<Utf8PathBuf> with Ok(Default::default())
+src/cargo.rs: replace find_workspace -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace cargo_bin -> String with String::new()
 src/cargo.rs: replace cargo_bin -> String with "xyzzy".into()
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![]

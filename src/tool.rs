@@ -10,7 +10,7 @@ use std::fmt::Debug;
 use std::marker::{Send, Sync};
 use std::sync::Arc;
 
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
 #[allow(unused_imports)]
 use tracing::{debug, debug_span, trace};
 
@@ -23,15 +23,6 @@ use crate::{build_dir, Result};
 pub trait Tool: Debug + Send + Sync {
     /// A short name for this tool, like "cargo".
     fn name(&self) -> &str;
-
-    /// Find the root of the source tree enclosing a given path.
-    ///
-    /// The root is the enclosing directory that needs to be copied to make a self-contained
-    /// scratch directory, and from where source discovery begins.
-    ///
-    /// This may include more directories than will actually be tested, sufficient to allow
-    /// the build to work. For Cargo, we copy the whole workspace.
-    fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf>;
 
     /// Find the top-level files for each package within a tree.
     ///

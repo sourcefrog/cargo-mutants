@@ -42,35 +42,6 @@ impl Tool for CargoTool {
         "cargo"
     }
 
-    fn find_root(&self, path: &Utf8Path) -> Result<Utf8PathBuf> {
-        ensure!(path.is_dir(), "{path:?} is not a directory");
-        let cargo_bin = cargo_bin(); // needed for lifetime
-        let argv: Vec<&str> = vec![&cargo_bin, "locate-project", "--workspace"];
-        let stdout = get_command_output(&argv, path)
-            .with_context(|| format!("run cargo locate-project in {path:?}"))?;
-        let val: Value =
-            serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
-        let cargo_toml_path: Utf8PathBuf = val["root"]
-            .as_str()
-            .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
-            .to_owned()
-            .into();
-        debug!(?cargo_toml_path, "Found workspace root manifest");
-        ensure!(
-            cargo_toml_path.is_file(),
-            "cargo locate-project root {cargo_toml_path:?} is not a file"
-        );
-        let root = cargo_toml_path
-            .parent()
-            .ok_or_else(|| anyhow!("cargo locate-project root {cargo_toml_path:?} has no parent"))?
-            .to_owned();
-        ensure!(
-            root.is_dir(),
-            "apparent project root directory {root:?} is not a directory"
-        );
-        Ok(root)
-    }
-
     /// Find the root files for each relevant package in the source tree.
     ///
     /// A source tree might include multiple packages (e.g. in a Cargo workspace),
@@ -146,6 +117,35 @@ impl Tool for CargoTool {
     fn compose_env(&self) -> Result<Vec<(String, String)>> {
         Ok(self.env.clone())
     }
+}
+
+/// Return the path of the workspace directory enclosing a given directory.
+pub fn find_workspace(path: &Utf8Path) -> Result<Utf8PathBuf> {
+    ensure!(path.is_dir(), "{path:?} is not a directory");
+    let cargo_bin = cargo_bin(); // needed for lifetime
+    let argv: Vec<&str> = vec![&cargo_bin, "locate-project", "--workspace"];
+    let stdout = get_command_output(&argv, path)
+        .with_context(|| format!("run cargo locate-project in {path:?}"))?;
+    let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
+    let cargo_toml_path: Utf8PathBuf = val["root"]
+        .as_str()
+        .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
+        .to_owned()
+        .into();
+    debug!(?cargo_toml_path, "Found workspace root manifest");
+    ensure!(
+        cargo_toml_path.is_file(),
+        "cargo locate-project root {cargo_toml_path:?} is not a file"
+    );
+    let root = cargo_toml_path
+        .parent()
+        .ok_or_else(|| anyhow!("cargo locate-project root {cargo_toml_path:?} has no parent"))?
+        .to_owned();
+    ensure!(
+        root.is_dir(),
+        "apparent project root directory {root:?} is not a directory"
+    );
+    Ok(root)
 }
 
 /// Return the name of the cargo binary.
@@ -368,13 +368,12 @@ mod test {
 
     #[test]
     fn error_opening_outside_of_crate() {
-        CargoTool::new().find_root(Utf8Path::new("/")).unwrap_err();
+        cargo::find_workspace(Utf8Path::new("/")).unwrap_err();
     }
 
     #[test]
     fn open_subdirectory_of_crate_opens_the_crate() {
-        let root = CargoTool::new()
-            .find_root(Utf8Path::new("testdata/tree/factorial/src"))
+        let root = cargo::find_workspace(Utf8Path::new("testdata/tree/factorial/src"))
             .expect("open source tree from subdirectory");
         assert!(root.is_dir());
         assert!(root.join("Cargo.toml").is_file());
@@ -384,8 +383,7 @@ mod test {
 
     #[test]
     fn find_root_from_subdirectory_of_workspace_finds_the_workspace_root() {
-        let root = CargoTool::new()
-            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+        let root = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find root from within workspace/main");
         assert_eq!(root.file_name(), Some("workspace"), "Wrong root: {root:?}");
     }
@@ -393,8 +391,7 @@ mod test {
     #[test]
     fn find_top_source_files_from_subdirectory_of_workspace() {
         let tool = CargoTool::new();
-        let root_dir = tool
-            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+        let root_dir = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
         let top_source_files = tool
             .top_source_files(&root_dir, &[])
@@ -415,8 +412,7 @@ mod test {
     #[test]
     fn filter_by_single_package() {
         let tool = CargoTool::new();
-        let root_dir = tool
-            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+        let root_dir = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
         assert_eq!(
             root_dir.file_name(),
@@ -440,8 +436,7 @@ mod test {
     #[test]
     fn filter_by_multiple_packages() {
         let tool = CargoTool::new();
-        let root_dir = tool
-            .find_root(Utf8Path::new("testdata/tree/workspace/main"))
+        let root_dir = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
         assert_eq!(
             root_dir.file_name(),

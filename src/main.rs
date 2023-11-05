@@ -230,18 +230,18 @@ fn main() -> Result<()> {
         Utf8Path::new(".")
     };
     let tool = CargoTool::new();
-    let source_tree_root = tool.find_root(source_path)?;
+    let workspace_dir = cargo::find_workspace(source_path)?;
     let config = if args.no_config {
         config::Config::default()
     } else {
-        config::Config::read_tree_config(&source_tree_root)?
+        config::Config::read_tree_config(&workspace_dir)?
     };
     debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
     let discovered = walk_tree(
         &tool,
-        &source_tree_root,
+        &workspace_dir,
         &args.mutate_packages,
         &options,
         &console,
@@ -256,7 +256,7 @@ fn main() -> Result<()> {
         let lab_outcome = lab::test_unmutated_then_all_mutants(
             &tool,
             discovered,
-            &source_tree_root,
+            &workspace_dir,
             options,
             &console,
         )?;
