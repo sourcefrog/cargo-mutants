@@ -13,10 +13,10 @@ use tracing::warn;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
+use crate::cargo::run_cargo;
 use crate::console::Console;
-use crate::outcome::{LabOutcome, Phase, PhaseResult, ScenarioOutcome};
+use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
-use crate::process::Process;
 use crate::source::Package;
 use crate::visit::Discovered;
 use crate::*;
@@ -25,8 +25,7 @@ use crate::*;
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn test_unmutated_then_all_mutants<T: Tool>(
-    tool: &T,
+pub fn test_unmutated_then_all_mutants(
     discovered: Discovered,
     workspace_dir: &Utf8Path,
     options: Options,
@@ -54,7 +53,6 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(
-            tool,
             &mut build_dirs[0],
             &output_mutex,
             &options,
@@ -126,7 +124,6 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
                         let package = mutant.package().clone();
                         // We don't care about the outcome; it's been collected into the output_dir.
                         let _outcome = test_scenario(
-                            tool,
                             &mut build_dir,
                             &output_mutex,
                             &options,
@@ -174,8 +171,7 @@ pub fn test_unmutated_then_all_mutants<T: Tool>(
 )]
 // Yes, it's a lot of arguments, but it does use them all and I don't think creating objects
 // just to group them would help...
-fn test_scenario<T: Tool>(
-    tool: &T,
+fn test_scenario(
     build_dir: &mut BuildDir,
     output_mutex: &Mutex<OutputDir>,
     options: &Options,
@@ -202,34 +198,24 @@ fn test_scenario<T: Tool>(
         &[Phase::Build, Phase::Test]
     };
     for &phase in phases {
-        let _span = debug_span!("run", ?phase).entered();
-        let start = Instant::now();
         console.scenario_phase_started(scenario, phase);
         let timeout = match phase {
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let argv = tool.compose_argv(build_dir, Some(test_packages), phase, options)?;
-        let env = tool.compose_env()?;
-        let process_status = Process::run(
-            &argv,
-            &env,
-            build_dir.path(),
+        let phase_result = run_cargo(
+            build_dir,
+            Some(test_packages),
+            phase,
             timeout,
             &mut log_file,
+            options,
             console,
         )?;
-        check_interrupted()?;
-        debug!(?process_status, elapsed = ?start.elapsed());
-        let phase_result = PhaseResult {
-            phase,
-            duration: start.elapsed(),
-            process_status,
-            argv,
-        };
+        let success = phase_result.is_success();
         outcome.add_phase_result(phase_result);
         console.scenario_phase_finished(scenario, phase);
-        if (phase == Phase::Check && options.check_only) || !process_status.success() {
+        if (phase == Phase::Check && options.check_only) || !success {
             break;
         }
     }

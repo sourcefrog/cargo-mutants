@@ -23,7 +23,6 @@ mod process;
 mod scenario;
 mod source;
 mod textedit;
-mod tool;
 mod visit;
 
 use std::env;
@@ -41,7 +40,6 @@ use tracing::debug;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
-use crate::cargo::CargoTool;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
@@ -53,7 +51,6 @@ use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
 use crate::source::SourceFile;
-use crate::tool::Tool;
 use crate::visit::walk_tree;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -229,7 +226,6 @@ fn main() -> Result<()> {
     } else {
         Utf8Path::new(".")
     };
-    let tool = CargoTool::new();
     let workspace_dir = cargo::find_workspace(source_path)?;
     let config = if args.no_config {
         config::Config::default()
@@ -247,13 +243,8 @@ fn main() -> Result<()> {
         console.clear();
         list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
     } else {
-        let lab_outcome = lab::test_unmutated_then_all_mutants(
-            &tool,
-            discovered,
-            &workspace_dir,
-            options,
-            &console,
-        )?;
+        let lab_outcome =
+            lab::test_unmutated_then_all_mutants(discovered, &workspace_dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

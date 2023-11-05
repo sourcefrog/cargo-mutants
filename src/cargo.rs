@@ -4,6 +4,7 @@
 
 use std::env;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, ensure, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -13,44 +14,40 @@ use tracing::debug_span;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, span, trace, warn, Level};
 
-use crate::process::get_command_output;
+use crate::outcome::PhaseResult;
+use crate::process::{get_command_output, Process};
 use crate::source::Package;
-use crate::tool::Tool;
 use crate::*;
 
-#[derive(Debug)]
-pub struct CargoTool {
-    // environment is currently constant across all invocations.
-    env: Vec<(String, String)>,
-}
-
-impl CargoTool {
-    pub fn new() -> CargoTool {
-        let env = vec![
-            ("CARGO_ENCODED_RUSTFLAGS".to_owned(), rustflags()),
-            // The tests might use Insta <https://insta.rs>, and we don't want it to write
-            // updates to the source tree, and we *certainly* don't want it to write
-            // updates and then let the test pass.
-            ("INSTA_UPDATE".to_owned(), "no".to_owned()),
-        ];
-        CargoTool { env }
-    }
-}
-
-impl Tool for CargoTool {
-    fn compose_argv(
-        &self,
-        build_dir: &BuildDir,
-        packages: Option<&[&Package]>,
-        phase: Phase,
-        options: &Options,
-    ) -> Result<Vec<String>> {
-        Ok(cargo_argv(build_dir.path(), packages, phase, options))
-    }
-
-    fn compose_env(&self) -> Result<Vec<(String, String)>> {
-        Ok(self.env.clone())
-    }
+/// Run cargo build, check, or test.
+pub fn run_cargo(
+    build_dir: &BuildDir,
+    packages: Option<&[&Package]>,
+    phase: Phase,
+    timeout: Duration,
+    log_file: &mut LogFile,
+    options: &Options,
+    console: &Console,
+) -> Result<PhaseResult> {
+    let _span = debug_span!("run", ?phase).entered();
+    let start = Instant::now();
+    let argv = cargo_argv(build_dir.path(), packages, phase, options);
+    let env = vec![
+        ("CARGO_ENCODED_RUSTFLAGS".to_owned(), rustflags()),
+        // The tests might use Insta <https://insta.rs>, and we don't want it to write
+        // updates to the source tree, and we *certainly* don't want it to write
+        // updates and then let the test pass.
+        ("INSTA_UPDATE".to_owned(), "no".to_owned()),
+    ];
+    let process_status = Process::run(&argv, &env, build_dir.path(), timeout, log_file, console)?;
+    check_interrupted()?;
+    debug!(?process_status, elapsed = ?start.elapsed());
+    Ok(PhaseResult {
+        phase,
+        duration: start.elapsed(),
+        process_status,
+        argv,
+    })
 }
 
 /// Return the path of the workspace directory enclosing a given directory.

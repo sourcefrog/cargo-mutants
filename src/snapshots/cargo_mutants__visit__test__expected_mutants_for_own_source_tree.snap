@@ -11,16 +11,8 @@ src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Ok(
 src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default())
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec![])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec![String::new()])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec!["xyzzy".into()])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![(String::new(), String::new())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![(String::new(), "xyzzy".into())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![("xyzzy".into(), String::new())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![("xyzzy".into(), "xyzzy".into())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Err(::anyhow::anyhow!("mutated!"))
+src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Ok(Default::default())
+src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace find_workspace -> Result<Utf8PathBuf> with Ok(Default::default())
 src/cargo.rs: replace find_workspace -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
@@ -257,6 +249,8 @@ src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with false
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with false
 src/outcome.rs: replace ScenarioOutcome::summary -> SummaryOutcome with Default::default()
+src/outcome.rs: replace PhaseResult::is_success -> bool with true
+src/outcome.rs: replace PhaseResult::is_success -> bool with false
 src/outcome.rs: replace <impl Serialize for PhaseResult>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
 src/outcome.rs: replace <impl Serialize for PhaseResult>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace LockFile::acquire_lock -> Result<File> with Ok(Default::default())
