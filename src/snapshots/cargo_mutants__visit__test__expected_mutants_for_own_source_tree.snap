@@ -143,8 +143,8 @@ src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with false
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with None
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with Some(&Default::default())
 src/interrupt.rs: replace install_handler with ()
-src/lab.rs: replace test_unmutated_then_all_mutants -> Result<LabOutcome> with Ok(Default::default())
-src/lab.rs: replace test_unmutated_then_all_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
+src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
+src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/list.rs: replace <impl Write for FmtToIoWrite<W>>::write_str -> Result<(), fmt::Error> with Ok(())

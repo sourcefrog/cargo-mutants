@@ -18,15 +18,14 @@ use crate::console::Console;
 use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
 use crate::source::Package;
-use crate::visit::Discovered;
 use crate::*;
 
 /// Run all possible mutation experiments.
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn test_unmutated_then_all_mutants(
-    discovered: Discovered,
+pub fn test_mutants(
+    mut mutants: Vec<Mutant>,
     workspace_dir: &Utf8Path,
     options: Options,
     console: &Console,
@@ -38,7 +37,6 @@ pub fn test_unmutated_then_all_mutants(
         .map_or(workspace_dir, |p| p.as_path());
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
-    let mut mutants = discovered.mutants;
 
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
@@ -164,13 +162,7 @@ pub fn test_unmutated_then_all_mutants(
 ///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
-#[allow(
-    unknown_lints,
-    clippy::needless_pass_by_ref_mut,
-    clippy::too_many_arguments
-)]
-// Yes, it's a lot of arguments, but it does use them all and I don't think creating objects
-// just to group them would help...
+#[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
 fn test_scenario(
     build_dir: &mut BuildDir,
     output_mutex: &Mutex<OutputDir>,

@@ -42,6 +42,7 @@ use tracing::debug;
 use crate::build_dir::BuildDir;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
+use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
@@ -243,8 +244,7 @@ fn main() -> Result<()> {
         console.clear();
         list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
     } else {
-        let lab_outcome =
-            lab::test_unmutated_then_all_mutants(discovered, &workspace_dir, options, &console)?;
+        let lab_outcome = test_mutants(discovered.mutants, &workspace_dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())
