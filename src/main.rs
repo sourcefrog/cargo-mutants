@@ -222,11 +222,7 @@ fn main() -> Result<()> {
     console.setup_global_trace(args.level)?;
     interrupt::install_handler();
 
-    let source_path: &Utf8Path = if let Some(p) = &args.dir {
-        p
-    } else {
-        Utf8Path::new(".")
-    };
+    let source_path: &Utf8Path = args.dir.as_deref().unwrap_or(Utf8Path::new("."));
     let workspace_dir = cargo::find_workspace(source_path)?;
     let config = if args.no_config {
         config::Config::default()
