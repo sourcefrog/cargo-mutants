@@ -121,15 +121,18 @@ impl Mutant {
             .to_string()
     }
 
-    pub fn apply(&self, build_dir: &BuildDir) -> Result<()> {
+    /// Apply this mutant to the relevant file within a BuildDir.
+    pub fn apply(&self, build_dir: &mut BuildDir) -> Result<()> {
         self.write_in_dir(build_dir, &self.mutated_code())
     }
 
-    pub fn unapply(&self, build_dir: &BuildDir) -> Result<()> {
+    pub fn unapply(&self, build_dir: &mut BuildDir) -> Result<()> {
         self.write_in_dir(build_dir, self.original_code())
     }
 
-    fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
+    #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
+    // The Rust object is not mutated, but the BuildDir on disk should be exclusively owned for this to be safe.
+    fn write_in_dir(&self, build_dir: &mut BuildDir, code: &str) -> Result<()> {
         let path = build_dir.path().join(&self.source_file.tree_relative_path);
         // for safety, don't follow symlinks
         ensure!(path.is_file(), "{path:?} is not a file");
