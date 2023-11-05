@@ -50,32 +50,60 @@ the content based on those addresses.
 replacements. The interface to the `syn` parser is localized here, and also the
 core of cargo-mutants logic to guess at valid replacements.
 
-## Relative dependencies
+## Major processing stages
+
+1. Find the workspace enclosing the start directory, and the packages within it.
+1. Determine which packages to mutate.
+1. Generate mutants by walking each package.
+1. Copy the source tree.
+1. Run baseline tests.
+1. Test each mutant in parallel.
+
+### Finding the workspace and packages
+
+cargo-mutants is invoked from within, or given with `-d`, a single directory. To find mutants and run tests we first need to find the enclosing workspace and the packages within it.
+
+This is done basically by parsing the output of `cargo metadata`.
+
+For each package, cargo tells us the build targets including tests and the main library or binary. The tests are not considered for mutation, so this leaves us with
+some targets of interest, and for each of them cargo tells us one top source file, typically something like `src/lib.rs` or `src/main.rs`.
+
+### Finding packages to mutate
+
+We may often want to test only one or a subset of packages in the workspace.
+
+This can be controlled by an explicit `--package` option.
+
+**UNIMPLEMENTED:** In non-workspace directories test only that one package. Match Cargo's heuristics for running tests from a workspace; add a `--workspace` option.
+
+### Discovering mutants
+
+After discovering packages and before running any tests, we discover all the potential mutants.
+
+Starting from the top files for each package, we parse each source file using `syn`
+and then walk its AST. In the course of that walk we can find three broad categories of patterns:
+
+* A `mod` statement (without a block), which tells us of another source file we must remember
+  to walk.
+* A source pattern that cargo-mutants knows how to mutate, such as a function returning a value.
+* A pattern that tells cargo-mutants not to look further into this branch of the tree, such as `#[test]` or `#[mutants::skip]`.
+
+For baseline builds and tests, we pass Cargo `--workspace` to build and test everything. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
+
+We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
+
+### Copying the source tree
+
+Mutations are tested in copies of the source tree. (An option could be added to test in-place, which would be nice for CI.)
+
+Initially, one copy is made to run baseline tests; if they succeed then additional copies are made as necessary for each parallel job.
 
 After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
 `.cargo/config.toml` for relative dependencies. If there are any, the paths are
 rewritten to be absolute, so that they still work when cargo is run in the
 scratch directory.
 
-## Enumerating the source tree
-
-A source tree may be a single crate or a Cargo workspace. There are several levels of nesting:
-
-* A workspace contains one or more packages.
-* A package contains one or more targets.
-* Each target names one (or possibly-more) top level source files, whose directories are walked to find more source files.
-* Each source file contains some functions.
-* For each function we generate some mutants.
-
-At the discovery stage we can filter to only some packages of interest using the `--package` option.
-
-The name of the containing package is passed through to the `SourceFile` and the `Mutant` objects.
-
-For source tree and baseline builds and tests, we pass Cargo `--workspace` to build and test everything. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
-
-Currently source files are discovered by finding any `bin` or `lib` targets in the package, then taking every `*.rs` file in the same directory as their top-level source file. (This is a bit approximate and will pick up files that might not actually be referenced by a `mod` statement, so may change in the future.)
-
-We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
+Currently, the whole workspace tree is copied. In future, possibly only the package to be mutated could be copied: this would require changes to the code that fixes up dependencies.
 
 ## Handling timeouts
 
