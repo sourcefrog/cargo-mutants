@@ -239,13 +239,7 @@ fn main() -> Result<()> {
     debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
-    let discovered = walk_tree(
-        &tool,
-        &workspace_dir,
-        &args.mutate_packages,
-        &options,
-        &console,
-    )?;
+    let discovered = walk_tree(&workspace_dir, &args.mutate_packages, &options, &console)?;
     if args.list_files {
         console.clear();
         list_files(FmtToIoWrite::new(io::stdout()), discovered, &options)?;

@@ -17,6 +17,7 @@ use syn::visit::Visit;
 use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
+use crate::cargo::top_source_files;
 use crate::fnvalue::return_type_replacements;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
@@ -36,8 +37,7 @@ pub struct Discovered {
 /// The list of source files includes even those with no mutants.
 ///
 /// `mutate_packages`: If non-empty, only generate mutants from these packages.
-pub fn walk_tree<T: Tool>(
-    tool: &T,
+pub fn walk_tree(
     workspace_dir: &Utf8Path,
     mutate_packages: &[String],
     options: &Options,
@@ -49,9 +49,8 @@ pub fn walk_tree<T: Tool>(
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     console.walk_tree_start();
-    let mut file_queue: VecDeque<Arc<SourceFile>> = tool
-        .top_source_files(workspace_dir, mutate_packages)?
-        .into();
+    let mut file_queue: VecDeque<Arc<SourceFile>> =
+        top_source_files(workspace_dir, mutate_packages)?.into();
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
     while let Some(source_file) = file_queue.pop_front() {
@@ -398,8 +397,6 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 mod test {
     use regex::Regex;
 
-    use crate::cargo::CargoTool;
-
     use super::*;
 
     /// As a generic protection against regressions in discovery, the the mutants
@@ -416,12 +413,12 @@ mod test {
             ..Default::default()
         };
         let mut list_output = String::new();
-        let source_tree_root = &Utf8Path::new(".")
+        let workspace_dir = &Utf8Path::new(".")
             .canonicalize_utf8()
             .expect("Canonicalize source path");
         let console = Console::new();
-        let discovered = walk_tree(&CargoTool::new(), source_tree_root, &[], &options, &console)
-            .expect("Discover mutants");
+        let discovered =
+            walk_tree(workspace_dir, &[], &options, &console).expect("Discover mutants");
         crate::list_mutants(&mut list_output, discovered, &options)
             .expect("Discover mutants in own source tree");
 

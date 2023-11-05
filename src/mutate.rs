@@ -208,10 +208,9 @@ mod test {
     #[test]
     fn discover_factorial_mutants() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let tool = CargoTool::new();
-        let source_tree = cargo::find_workspace(tree_path).unwrap();
+        let workspace_dir = cargo::find_workspace(tree_path).unwrap();
         let options = Options::default();
-        let mutants = walk_tree(&tool, &source_tree, &[], &options, &Console::new())
+        let mutants = walk_tree(&workspace_dir, &[], &options, &Console::new())
             .unwrap()
             .mutants;
         assert_eq!(mutants.len(), 3);
@@ -263,11 +262,8 @@ mod test {
     #[test]
     fn filter_by_attributes() {
         let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
-        let tool = CargoTool::new();
-        let source_tree = cargo::find_workspace(tree_path).unwrap();
         let mutants = walk_tree(
-            &tool,
-            &source_tree,
+            &cargo::find_workspace(tree_path).unwrap(),
             &[],
             &Options::default(),
             &Console::new(),
@@ -284,17 +280,10 @@ mod test {
     #[test]
     fn mutate_factorial() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let tool = CargoTool::new();
         let source_tree = cargo::find_workspace(tree_path).unwrap();
-        let mutants = walk_tree(
-            &tool,
-            &source_tree,
-            &[],
-            &Options::default(),
-            &Console::new(),
-        )
-        .unwrap()
-        .mutants;
+        let mutants = walk_tree(&source_tree, &[], &Options::default(), &Console::new())
+            .unwrap()
+            .mutants;
         assert_eq!(mutants.len(), 3);
 
         let mut mutated_code = mutants[0].mutated_code();

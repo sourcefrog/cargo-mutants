@@ -42,68 +42,6 @@ impl Tool for CargoTool {
         "cargo"
     }
 
-    /// Find the root files for each relevant package in the source tree.
-    ///
-    /// A source tree might include multiple packages (e.g. in a Cargo workspace),
-    /// and each package might have multiple targets (e.g. a bin and lib). Test targets
-    /// are excluded here: we run them, but we don't mutate them.
-    ///
-    /// Each target has one root file, typically but not necessarily called `src/lib.rs`
-    /// or `src/main.rs`. This function returns a list of all those files.
-    ///
-    /// After this, there is one more level of discovery, by walking those root files
-    /// to find `mod` statements, and then recursively walking those files to find
-    /// all source files.
-    fn top_source_files(
-        &self,
-        source_root_path: &Utf8Path,
-        packages: &[String],
-    ) -> Result<Vec<Arc<SourceFile>>> {
-        let cargo_toml_path = source_root_path.join("Cargo.toml");
-        debug!(?cargo_toml_path, ?source_root_path, "Find root files");
-        check_interrupted()?;
-        let metadata = cargo_metadata::MetadataCommand::new()
-            .manifest_path(&cargo_toml_path)
-            .exec()
-            .context("run cargo metadata")?;
-
-        let mut r = Vec::new();
-        // cargo-metadata output is not obviously ordered so make it deterministic.
-        for package_metadata in metadata
-            .workspace_packages()
-            .iter()
-            .filter(|p| packages.is_empty() || packages.contains(&p.name))
-            .sorted_by_key(|p| &p.name)
-        {
-            check_interrupted()?;
-            let _span = debug_span!("package", name = %package_metadata.name).entered();
-            let manifest_path = &package_metadata.manifest_path;
-            debug!(%manifest_path, "walk package");
-            let relative_manifest_path = manifest_path
-                .strip_prefix(source_root_path)
-                .map_err(|_| {
-                    anyhow!(
-                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {source_root_path:?}",
-                        name = package_metadata.name
-                    )
-                })?
-                .to_owned();
-            let package = Arc::new(Package {
-                name: package_metadata.name.clone(),
-                relative_manifest_path,
-            });
-            for source_path in direct_package_sources(source_root_path, package_metadata)? {
-                check_interrupted()?;
-                r.push(Arc::new(SourceFile::new(
-                    source_root_path,
-                    source_path,
-                    &package,
-                )?));
-            }
-        }
-        Ok(r)
-    }
-
     fn compose_argv(
         &self,
         build_dir: &BuildDir,
@@ -146,6 +84,69 @@ pub fn find_workspace(path: &Utf8Path) -> Result<Utf8PathBuf> {
         "apparent project root directory {root:?} is not a directory"
     );
     Ok(root)
+}
+
+/// Find the root files for each relevant package in the source tree.
+///
+/// A source tree might include multiple packages (e.g. in a Cargo workspace),
+/// and each package might have multiple targets (e.g. a bin and lib). Test targets
+/// are excluded here: we run them, but we don't mutate them.
+///
+/// Each target has one root file, typically but not necessarily called `src/lib.rs`
+/// or `src/main.rs`. This function returns a list of all those files.
+///
+/// After this, there is one more level of discovery, by walking those root files
+/// to find `mod` statements, and then recursively walking those files to find
+/// all source files.
+///
+/// Packages are only included if their name is in `include_packages`.
+pub fn top_source_files(
+    workspace_dir: &Utf8Path,
+    include_packages: &[String],
+) -> Result<Vec<Arc<SourceFile>>> {
+    let cargo_toml_path = workspace_dir.join("Cargo.toml");
+    debug!(?cargo_toml_path, ?workspace_dir, "Find root files");
+    check_interrupted()?;
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .manifest_path(&cargo_toml_path)
+        .exec()
+        .context("run cargo metadata")?;
+
+    let mut r = Vec::new();
+    // cargo-metadata output is not obviously ordered so make it deterministic.
+    for package_metadata in metadata
+        .workspace_packages()
+        .iter()
+        .filter(|p| include_packages.is_empty() || include_packages.contains(&p.name))
+        .sorted_by_key(|p| &p.name)
+    {
+        check_interrupted()?;
+        let _span = debug_span!("package", name = %package_metadata.name).entered();
+        let manifest_path = &package_metadata.manifest_path;
+        debug!(%manifest_path, "walk package");
+        let relative_manifest_path = manifest_path
+                .strip_prefix(workspace_dir)
+                .map_err(|_| {
+                    anyhow!(
+                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {workspace_dir:?}",
+                        name = package_metadata.name
+                    )
+                })?
+                .to_owned();
+        let package = Arc::new(Package {
+            name: package_metadata.name.clone(),
+            relative_manifest_path,
+        });
+        for source_path in direct_package_sources(workspace_dir, package_metadata)? {
+            check_interrupted()?;
+            r.push(Arc::new(SourceFile::new(
+                workspace_dir,
+                source_path,
+                &package,
+            )?));
+        }
+    }
+    Ok(r)
 }
 
 /// Return the name of the cargo binary.
@@ -390,12 +391,9 @@ mod test {
 
     #[test]
     fn find_top_source_files_from_subdirectory_of_workspace() {
-        let tool = CargoTool::new();
         let root_dir = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
-        let top_source_files = tool
-            .top_source_files(&root_dir, &[])
-            .expect("Find root files");
+        let top_source_files = top_source_files(&root_dir, &[]).expect("Find root files");
         println!("{top_source_files:#?}");
         let paths = top_source_files
             .iter()
@@ -411,7 +409,6 @@ mod test {
 
     #[test]
     fn filter_by_single_package() {
-        let tool = CargoTool::new();
         let root_dir = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
         assert_eq!(
@@ -419,9 +416,8 @@ mod test {
             Some("workspace"),
             "found the workspace root"
         );
-        let top_source_files = tool
-            .top_source_files(&root_dir, &["main".to_owned()])
-            .expect("Find root files");
+        let top_source_files =
+            top_source_files(&root_dir, &["main".to_owned()]).expect("Find root files");
         println!("{top_source_files:#?}");
         assert_eq!(top_source_files.len(), 1);
         assert_eq!(
@@ -435,7 +431,6 @@ mod test {
 
     #[test]
     fn filter_by_multiple_packages() {
-        let tool = CargoTool::new();
         let root_dir = cargo::find_workspace(Utf8Path::new("testdata/tree/workspace/main"))
             .expect("Find workspace root");
         assert_eq!(
@@ -443,9 +438,9 @@ mod test {
             Some("workspace"),
             "found the workspace root"
         );
-        let top_source_files = tool
-            .top_source_files(&root_dir, &["main".to_owned(), "main2".to_owned()])
-            .expect("Find root files");
+        let top_source_files =
+            top_source_files(&root_dir, &["main".to_owned(), "main2".to_owned()])
+                .expect("Find root files");
         println!("{top_source_files:#?}");
         assert_eq!(
             top_source_files
