@@ -139,6 +139,11 @@ pub fn top_source_files(
             )?));
         }
     }
+    for p in include_packages {
+        if !r.iter().any(|sf| sf.package.name == *p) {
+            warn!("package {p} not found in source tree");
+        }
+    }
     Ok(r)
 }
 

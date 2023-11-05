@@ -27,6 +27,7 @@ mod jobs;
 mod trace;
 #[cfg(windows)]
 mod windows;
+mod workspace;
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
 /// long enough that even commands that do a lot of work can pass even on slow
