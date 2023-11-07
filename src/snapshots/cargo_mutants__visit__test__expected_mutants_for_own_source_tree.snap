@@ -13,11 +13,8 @@ src/build_dir.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default(
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Ok(Default::default())
 src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace find_workspace -> Result<Utf8PathBuf> with Ok(Default::default())
-src/cargo.rs: replace find_workspace -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
-src/cargo.rs: replace top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
-src/cargo.rs: replace top_source_files -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
+src/cargo.rs: replace run_cargo_metadata -> Result<Metadata> with Ok(Default::default())
+src/cargo.rs: replace run_cargo_metadata -> Result<Metadata> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace cargo_bin -> String with String::new()
 src/cargo.rs: replace cargo_bin -> String with "xyzzy".into()
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![]
@@ -25,11 +22,6 @@ src/cargo.rs: replace cargo_argv -> Vec<String> with vec![String::new()]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec!["xyzzy".into()]
 src/cargo.rs: replace rustflags -> String with String::new()
 src/cargo.rs: replace rustflags -> String with "xyzzy".into()
-src/cargo.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![])
-src/cargo.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![Default::default()])
-src/cargo.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace should_mutate_target -> bool with true
-src/cargo.rs: replace should_mutate_target -> bool with false
 src/config.rs: replace Config::read_file -> Result<Config> with Ok(Default::default())
 src/config.rs: replace Config::read_file -> Result<Config> with Err(::anyhow::anyhow!("mutated!"))
 src/config.rs: replace Config::read_tree_config -> Result<Config> with Ok(Default::default())
@@ -335,4 +327,32 @@ src/visit.rs: replace path_is -> bool with true
 src/visit.rs: replace path_is -> bool with false
 src/visit.rs: replace attr_is_mutants_skip -> bool with true
 src/visit.rs: replace attr_is_mutants_skip -> bool with false
+src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Ok(Default::default())
+src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace PackageFilter::explicit -> PackageFilter with Default::default()
+src/workspace.rs: replace Workspace::open -> Result<Self> with Ok(Default::default())
+src/workspace.rs: replace Workspace::open -> Result<Self> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![])
+src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![Arc::new(Default::default())])
+src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::top_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![])
+src/workspace.rs: replace Workspace::top_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![Default::default()])
+src/workspace.rs: replace Workspace::top_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Ok(Default::default())
+src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![])
+src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
+src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace filter_package_metadata -> Vec<&'m cargo_metadata::Package> with vec![]
+src/workspace.rs: replace filter_package_metadata -> Vec<&'m cargo_metadata::Package> with vec![&Default::default()]
+src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![])
+src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![Default::default()])
+src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace should_mutate_target -> bool with true
+src/workspace.rs: replace should_mutate_target -> bool with false
+src/workspace.rs: replace find_workspace -> Result<Utf8PathBuf> with Ok(Default::default())
+src/workspace.rs: replace find_workspace -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 

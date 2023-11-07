@@ -14,7 +14,7 @@ use serde::Serialize;
 use similar::TextDiff;
 
 use crate::build_dir::BuildDir;
-use crate::source::Package;
+use crate::package::Package;
 use crate::source::SourceFile;
 use crate::textedit::{replace_region, Span};
 
@@ -211,11 +211,11 @@ mod test {
     #[test]
     fn discover_factorial_mutants() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let workspace_dir = cargo::find_workspace(tree_path).unwrap();
+        let workspace = Workspace::open(tree_path).unwrap();
         let options = Options::default();
-        let mutants = walk_tree(&workspace_dir, &[], &options, &Console::new())
-            .unwrap()
-            .mutants;
+        let mutants = workspace
+            .mutants(&PackageFilter::All, &options, &Console::new())
+            .unwrap();
         assert_eq!(mutants.len(), 3);
         assert_eq!(
             format!("{:?}", mutants[0]),
@@ -264,15 +264,10 @@ mod test {
 
     #[test]
     fn filter_by_attributes() {
-        let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
-        let mutants = walk_tree(
-            &cargo::find_workspace(tree_path).unwrap(),
-            &[],
-            &Options::default(),
-            &Console::new(),
-        )
-        .unwrap()
-        .mutants;
+        let mutants = Workspace::open(Utf8Path::new("testdata/tree/hang_avoided_by_attr"))
+            .unwrap()
+            .mutants(&PackageFilter::All, &Options::default(), &Console::new())
+            .unwrap();
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
@@ -281,12 +276,13 @@ mod test {
     }
 
     #[test]
-    fn mutate_factorial() {
+    fn mutate_factorial() -> Result<()> {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let source_tree = cargo::find_workspace(tree_path).unwrap();
-        let mutants = walk_tree(&source_tree, &[], &Options::default(), &Console::new())
-            .unwrap()
-            .mutants;
+        let mutants = Workspace::open(&tree_path)?.mutants(
+            &PackageFilter::All,
+            &Options::default(),
+            &Console::new(),
+        )?;
         assert_eq!(mutants.len(), 3);
 
         let mut mutated_code = mutants[0].mutated_code();
@@ -340,5 +336,6 @@ mod test {
                 "#
             }
         );
+        Ok(())
     }
 }

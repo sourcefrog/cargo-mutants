@@ -279,13 +279,14 @@ mod test {
     #[test]
     fn create_output_dir() {
         let tmp = minimal_source_tree();
-        let tmp_path = tmp.path().try_into().unwrap();
-        let root = cargo::find_workspace(tmp_path).unwrap();
-        let output_dir = OutputDir::new(&root).unwrap();
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let workspace = Workspace::open(tmp_path).unwrap();
+        let output_dir = OutputDir::new(&workspace.dir).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
             &[
                 "",
+                "Cargo.lock",
                 "Cargo.toml",
                 "mutants.out",
                 "mutants.out/caught.txt",
@@ -298,8 +299,8 @@ mod test {
                 "src/lib.rs",
             ]
         );
-        assert_eq!(output_dir.path(), root.join("mutants.out"));
-        assert_eq!(output_dir.log_dir, root.join("mutants.out/log"));
+        assert_eq!(output_dir.path(), workspace.dir.join("mutants.out"));
+        assert_eq!(output_dir.log_dir, workspace.dir.join("mutants.out/log"));
         assert!(output_dir.path().join("lock.json").is_file());
     }
 

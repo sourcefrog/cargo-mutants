@@ -17,7 +17,6 @@ use syn::visit::Visit;
 use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
-use crate::cargo::top_source_files;
 use crate::fnvalue::return_type_replacements;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
@@ -36,21 +35,20 @@ pub struct Discovered {
 ///
 /// The list of source files includes even those with no mutants.
 ///
-/// `mutate_packages`: If non-empty, only generate mutants from these packages.
 pub fn walk_tree(
     workspace_dir: &Utf8Path,
-    mutate_packages: &[String],
+    top_source_files: &[Arc<SourceFile>],
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
+    // TODO: Lift up parsing the error expressions...
     let error_exprs = options
         .error_values
         .iter()
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     console.walk_tree_start();
-    let mut file_queue: VecDeque<Arc<SourceFile>> =
-        top_source_files(workspace_dir, mutate_packages)?.into();
+    let mut file_queue: VecDeque<Arc<SourceFile>> = top_source_files.iter().cloned().collect();
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
     while let Some(source_file) = file_queue.pop_front() {
@@ -413,12 +411,16 @@ mod test {
             ..Default::default()
         };
         let mut list_output = String::new();
-        let workspace_dir = &Utf8Path::new(".")
-            .canonicalize_utf8()
-            .expect("Canonicalize source path");
         let console = Console::new();
-        let discovered =
-            walk_tree(workspace_dir, &[], &options, &console).expect("Discover mutants");
+        let workspace = Workspace::open(
+            &Utf8Path::new(".")
+                .canonicalize_utf8()
+                .expect("Canonicalize source path"),
+        )
+        .unwrap();
+        let discovered = workspace
+            .discover(&PackageFilter::All, &options, &console)
+            .expect("Discover mutants");
         crate::list_mutants(&mut list_output, discovered, &options)
             .expect("Discover mutants in own source tree");
 

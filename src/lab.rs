@@ -17,7 +17,7 @@ use crate::cargo::run_cargo;
 use crate::console::Console;
 use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
-use crate::source::Package;
+use crate::package::Package;
 use crate::*;
 
 /// Run all possible mutation experiments.

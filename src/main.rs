@@ -17,6 +17,7 @@ mod mutate;
 mod options;
 mod outcome;
 mod output;
+mod package;
 mod path;
 mod pretty;
 mod process;
@@ -24,6 +25,7 @@ mod scenario;
 mod source;
 mod textedit;
 mod visit;
+pub mod workspace;
 
 use std::env;
 use std::io;
@@ -53,6 +55,8 @@ use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
 use crate::source::SourceFile;
 use crate::visit::walk_tree;
+use crate::workspace::PackageFilter;
+use crate::workspace::Workspace;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -222,17 +226,20 @@ fn main() -> Result<()> {
     console.setup_global_trace(args.level)?;
     interrupt::install_handler();
 
-    let source_path: &Utf8Path = args.dir.as_deref().unwrap_or(Utf8Path::new("."));
-    let workspace_dir = cargo::find_workspace(source_path)?;
+    let start_dir: &Utf8Path = args.dir.as_deref().unwrap_or(Utf8Path::new("."));
+    let workspace = Workspace::open(&start_dir)?;
+    // let discovered_workspace = discover_packages(start_dir, false, &args.mutate_packages)?;
+    // let workspace_dir = &discovered_workspace.workspace_dir;
     let config = if args.no_config {
         config::Config::default()
     } else {
-        config::Config::read_tree_config(&workspace_dir)?
+        config::Config::read_tree_config(&workspace.dir)?
     };
     debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
-    let discovered = walk_tree(&workspace_dir, &args.mutate_packages, &options, &console)?;
+    let package_filter = PackageFilter::All; // TODO: From args
+    let discovered = workspace.discover(&package_filter, &options, &console)?;
     if args.list_files {
         console.clear();
         list_files(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
@@ -240,7 +247,7 @@ fn main() -> Result<()> {
         console.clear();
         list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
     } else {
-        let lab_outcome = test_mutants(discovered.mutants, &workspace_dir, options, &console)?;
+        let lab_outcome = test_mutants(discovered.mutants, &workspace.dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())
