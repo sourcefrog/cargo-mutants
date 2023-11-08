@@ -46,6 +46,12 @@ impl PackageFilter {
     }
 }
 
+/// A package and the top source files within it.
+struct PackageTop {
+    package: Arc<Package>,
+    top_sources: Vec<Utf8PathBuf>,
+}
+
 impl Workspace {
     pub fn open(start_dir: &Utf8Path) -> Result<Self> {
         let dir = find_workspace(start_dir)?;
@@ -61,7 +67,16 @@ impl Workspace {
 
     /// Find packages to mutate, subject to some filtering.
     pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<Package>>> {
-        let mut packages = Vec::new();
+        Ok(self
+            .package_tops(package_filter)?
+            .into_iter()
+            .map(|pt| pt.package)
+            .collect())
+    }
+
+    /// Find all the packages and their top source files.
+    fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<PackageTop>> {
+        let mut tops = Vec::new();
         for package_metadata in filter_package_metadata(&self.metadata, package_filter)
             .into_iter()
             .sorted_by_key(|p| &p.name)
@@ -85,39 +100,30 @@ impl Workspace {
                 name: package_metadata.name.clone(),
                 relative_manifest_path,
             });
-            packages.push(package);
+            tops.push(PackageTop {
+                package,
+                top_sources: direct_package_sources(&self.dir, package_metadata)?,
+            });
         }
         if let PackageFilter::Explicit(names) = package_filter {
             for wanted in names {
-                if !packages.iter().any(|found| found.name == *wanted) {
+                if !tops.iter().any(|found| found.package.name == *wanted) {
                     warn!("package {wanted:?} not found in source tree");
                 }
             }
         }
-        Ok(packages)
-    }
-
-    /// Return the top source files (like `src/lib.rs`) for a named package.
-    fn top_package_sources(&self, package_name: &str) -> Result<Vec<Utf8PathBuf>> {
-        if let Some(package_metadata) = self
-            .metadata
-            .workspace_packages()
-            .iter()
-            .find(|p| p.name == package_name)
-        {
-            direct_package_sources(&self.dir, package_metadata)
-        } else {
-            Err(anyhow!(
-                "package {package_name:?} not found in workspace metadata"
-            ))
-        }
+        Ok(tops)
     }
 
     /// Find all the top source files for selected packages.
-    pub fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<SourceFile>>> {
+    fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<SourceFile>>> {
         let mut sources = Vec::new();
-        for package in self.packages(package_filter)? {
-            for source_path in self.top_package_sources(&package.name)? {
+        for PackageTop {
+            package,
+            top_sources,
+        } in self.package_tops(package_filter)?
+        {
+            for source_path in top_sources {
                 sources.push(Arc::new(SourceFile::new(
                     &self.dir,
                     source_path.to_owned(),
@@ -143,6 +149,7 @@ impl Workspace {
         )
     }
 
+    /// Return all mutants generated from this workspace.
     pub fn mutants(
         &self,
         package_filter: &PackageFilter,
@@ -254,7 +261,7 @@ mod test {
 
     #[test]
     fn error_opening_outside_of_crate() {
-        Workspace::open(&Utf8Path::new("/")).unwrap_err();
+        Workspace::open(Utf8Path::new("/")).unwrap_err();
     }
 
     #[test]

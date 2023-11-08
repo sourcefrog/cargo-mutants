@@ -53,10 +53,7 @@ use crate::options::Options;
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
-use crate::source::SourceFile;
-use crate::visit::walk_tree;
-use crate::workspace::PackageFilter;
-use crate::workspace::Workspace;
+use crate::workspace::{PackageFilter, Workspace};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -227,7 +224,7 @@ fn main() -> Result<()> {
     interrupt::install_handler();
 
     let start_dir: &Utf8Path = args.dir.as_deref().unwrap_or(Utf8Path::new("."));
-    let workspace = Workspace::open(&start_dir)?;
+    let workspace = Workspace::open(start_dir)?;
     // let discovered_workspace = discover_packages(start_dir, false, &args.mutate_packages)?;
     // let workspace_dir = &discovered_workspace.workspace_dir;
     let config = if args.no_config {
@@ -238,7 +235,13 @@ fn main() -> Result<()> {
     debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
-    let package_filter = PackageFilter::All; // TODO: From args
+    let package_filter = if !args.mutate_packages.is_empty() {
+        PackageFilter::explicit(&args.mutate_packages)
+    } else {
+        // TODO: --workspace
+        // TODO: Actually, Auto(start_dir) if not otherwise set.
+        PackageFilter::All
+    };
     let discovered = workspace.discover(&package_filter, &options, &console)?;
     if args.list_files {
         console.clear();

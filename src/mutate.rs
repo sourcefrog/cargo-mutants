@@ -278,7 +278,7 @@ mod test {
     #[test]
     fn mutate_factorial() -> Result<()> {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let mutants = Workspace::open(&tree_path)?.mutants(
+        let mutants = Workspace::open(tree_path)?.mutants(
             &PackageFilter::All,
             &Options::default(),
             &Console::new(),

@@ -22,7 +22,7 @@ fn list_warns_about_unmatched_packages() {
         ])
         .assert()
         .stdout(predicates::str::contains(
-            "package notapackage not found in source tree",
+            "package \"notapackage\" not found in source tree",
         ))
         .code(0);
 }

@@ -2,15 +2,7 @@
 
 //! Discover and represent cargo packages within a workspace.
 
-use std::sync::Arc;
-
-use anyhow::{anyhow, Context};
-use camino::{Utf8Path, Utf8PathBuf};
-use itertools::Itertools;
-use tracing::{debug_span, warn};
-
-use crate::source::SourceFile;
-use crate::*;
+use camino::Utf8PathBuf;
 
 /// A package built and tested as a unit.
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]

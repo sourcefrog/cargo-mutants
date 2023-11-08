@@ -3,21 +3,16 @@
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
 use std::env;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, ensure, Context, Result};
-use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::Metadata;
+use anyhow::Result;
+use camino::Utf8Path;
 use itertools::Itertools;
-use serde_json::Value;
-use tracing::debug_span;
-#[allow(unused_imports)]
-use tracing::{debug, error, info, span, trace, warn, Level};
+use tracing::{debug, debug_span};
 
 use crate::outcome::PhaseResult;
 use crate::package::Package;
-use crate::process::{get_command_output, Process};
+use crate::process::Process;
 use crate::*;
 
 /// Run cargo build, check, or test.
@@ -49,18 +44,6 @@ pub fn run_cargo(
         process_status,
         argv,
     })
-}
-
-pub fn run_cargo_metadata(workspace_dir: &Utf8Path) -> Result<Metadata> {
-    let cargo_toml_path = workspace_dir.join("Cargo.toml");
-    debug!(?cargo_toml_path, ?workspace_dir, "run cargo metadata");
-    check_interrupted()?;
-    let metadata = cargo_metadata::MetadataCommand::new()
-        .manifest_path(&cargo_toml_path)
-        .exec()
-        .context("run cargo metadata")?;
-    check_interrupted()?;
-    Ok(metadata)
 }
 
 /// Return the name of the cargo binary.
@@ -140,9 +123,8 @@ fn rustflags() -> String {
 
 #[cfg(test)]
 mod test {
-    use std::ffi::OsStr;
+    use std::sync::Arc;
 
-    use itertools::Itertools;
     use pretty_assertions::assert_eq;
 
     use crate::{Options, Phase};
