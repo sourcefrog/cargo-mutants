@@ -39,7 +39,7 @@ fn list_files_json_workspace() {
 #[test]
 fn list_files_as_json_in_workspace_subdir() {
     run()
-        .args(["mutants", "--list-files", "--json"])
+        .args(["mutants", "--list-files", "--json", "--workspace"])
         .current_dir("testdata/tree/workspace/main2")
         .assert()
         .stdout(indoc! {r#"

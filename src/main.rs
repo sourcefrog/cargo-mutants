@@ -191,6 +191,10 @@ struct Args {
     #[arg(long, action = clap::ArgAction::SetTrue)]
     version: bool,
 
+    /// test every package in the workspace.
+    #[arg(long)]
+    workspace: bool,
+
     /// additional args for all cargo invocations.
     #[arg(long, short = 'C', allow_hyphen_values = true)]
     cargo_arg: Vec<String>,
@@ -237,8 +241,9 @@ fn main() -> Result<()> {
     debug!(?options);
     let package_filter = if !args.mutate_packages.is_empty() {
         PackageFilter::explicit(&args.mutate_packages)
+    } else if args.workspace {
+        PackageFilter::All
     } else {
-        // TODO: --workspace to ::All
         PackageFilter::Auto(start_dir.to_owned())
     };
     let discovered = workspace.discover(&package_filter, &options, &console)?;

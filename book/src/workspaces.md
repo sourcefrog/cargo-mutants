@@ -2,11 +2,12 @@
 
 cargo-mutants supports testing Cargo workspaces that contain multiple packages. The entire workspace tree is copied.
 
-By default, all source files in all packages in the workspace are tested.
+By default, cargo-mutants has [the same behavior as Cargo](https://doc.rust-lang.org/cargo/reference/workspaces.html):
 
-**NOTE: This behavior is likely to change in future: see <https://github.com/sourcefrog/cargo-mutants/issues/156>.**
-
-With the `--package` option, only mutants from the package with the given name are testeg. The effect can be seen in `--list`, etc. This option can be repeated.
+* If `--workspace` is given, all packages in the workspace are tested.
+* If `--package` is given, the named packages are tested.
+* If the starting directory (or `-d` directory) is in a package, that package is tested.
+* Otherwise, the starting directory must be in a virtual workspace. If it specifies default members, they are tested. Otherwise, all packages are tested.
 
 You can use the `--file` options to restrict cargo-mutants to testing only files
 from some subdirectory, e.g. with `-f "utils/**/*.rs"`. (Remember to quote globs

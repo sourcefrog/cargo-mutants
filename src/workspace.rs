@@ -351,9 +351,37 @@ mod test {
     }
 
     #[test]
+    fn package_filter_all_from_subdir_gets_everything() {
+        let subdir_path = Utf8Path::new("testdata/tree/workspace/main");
+        let workspace = Workspace::open(subdir_path).expect("Find workspace root");
+        let packages = workspace.packages(&PackageFilter::All).unwrap();
+        assert_eq!(
+            packages.iter().map(|p| &p.name).collect_vec(),
+            ["cargo_mutants_testdata_workspace_utils", "main", "main2"]
+        );
+    }
+
+    #[test]
     fn auto_packages_in_workspace_subdir_finds_single_package() {
-        let workspace =
-            Workspace::open("testdata/tree/workspace/main").expect("Find workspace root");
+        let subdir_path = Utf8Path::new("testdata/tree/workspace/main");
+        let workspace = Workspace::open(subdir_path).expect("Find workspace root");
+        let packages = workspace
+            .packages(&PackageFilter::Auto(subdir_path.to_owned()))
+            .unwrap();
+        assert_eq!(packages.iter().map(|p| &p.name).collect_vec(), ["main"]);
+    }
+
+    #[test]
+    fn auto_packages_in_virtual_workspace_gets_everything() {
+        let path = Utf8Path::new("testdata/tree/workspace");
+        let workspace = Workspace::open(path).expect("Find workspace root");
+        let packages = workspace
+            .packages(&PackageFilter::Auto(path.to_owned()))
+            .unwrap();
+        assert_eq!(
+            packages.iter().map(|p| &p.name).collect_vec(),
+            ["cargo_mutants_testdata_workspace_utils", "main", "main2"]
+        );
     }
 
     #[test]
