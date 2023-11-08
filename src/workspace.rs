@@ -44,6 +44,16 @@ impl PackageFilter {
     pub fn explicit<S: ToString, I: IntoIterator<Item = S>>(names: I) -> PackageFilter {
         PackageFilter::Explicit(names.into_iter().map(|s| s.to_string()).collect_vec())
     }
+
+    pub fn matches(&self, package_metadata: &cargo_metadata::Package) -> bool {
+        match self {
+            PackageFilter::All => true,
+            PackageFilter::Explicit(include_names) => {
+                include_names.contains(&package_metadata.name)
+            }
+            PackageFilter::Auto(..) => todo!(),
+        }
+    }
 }
 
 /// A package and the top source files within it.
@@ -77,8 +87,11 @@ impl Workspace {
     /// Find all the packages and their top source files.
     fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<PackageTop>> {
         let mut tops = Vec::new();
-        for package_metadata in filter_package_metadata(&self.metadata, package_filter)
+        for package_metadata in self
+            .metadata
+            .workspace_packages()
             .into_iter()
+            .filter(|pmeta| package_filter.matches(pmeta))
             .sorted_by_key(|p| &p.name)
         {
             check_interrupted()?;
@@ -158,23 +171,6 @@ impl Workspace {
     ) -> Result<Vec<Mutant>> {
         Ok(self.discover(package_filter, options, console)?.mutants)
     }
-}
-
-fn filter_package_metadata<'m>(
-    metadata: &'m cargo_metadata::Metadata,
-    package_filter: &PackageFilter,
-) -> Vec<&'m cargo_metadata::Package> {
-    metadata
-        .workspace_packages()
-        .iter()
-        .filter(move |pmeta| match package_filter {
-            PackageFilter::All => true,
-            PackageFilter::Explicit(include_names) => include_names.contains(&pmeta.name),
-            PackageFilter::Auto(..) => todo!(),
-        })
-        .sorted_by_key(|pm| &pm.name)
-        .copied()
-        .collect()
 }
 
 /// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.

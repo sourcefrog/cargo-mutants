@@ -328,6 +328,8 @@ src/visit.rs: replace attr_is_mutants_skip -> bool with false
 src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Ok(Default::default())
 src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace PackageFilter::explicit -> PackageFilter with Default::default()
+src/workspace.rs: replace PackageFilter::matches -> bool with true
+src/workspace.rs: replace PackageFilter::matches -> bool with false
 src/workspace.rs: replace Workspace::open -> Result<Self> with Ok(Default::default())
 src/workspace.rs: replace Workspace::open -> Result<Self> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![])
@@ -344,8 +346,6 @@ src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Err(::a
 src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![])
 src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
 src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
-src/workspace.rs: replace filter_package_metadata -> Vec<&'m cargo_metadata::Package> with vec![]
-src/workspace.rs: replace filter_package_metadata -> Vec<&'m cargo_metadata::Package> with vec![&Default::default()]
 src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![])
 src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![Default::default()])
 src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
