@@ -238,9 +238,8 @@ fn main() -> Result<()> {
     let package_filter = if !args.mutate_packages.is_empty() {
         PackageFilter::explicit(&args.mutate_packages)
     } else {
-        // TODO: --workspace
-        // TODO: Actually, Auto(start_dir) if not otherwise set.
-        PackageFilter::All
+        // TODO: --workspace to ::All
+        PackageFilter::Auto(start_dir.to_owned())
     };
     let discovered = workspace.discover(&package_filter, &options, &console)?;
     if args.list_files {

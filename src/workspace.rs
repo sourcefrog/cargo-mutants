@@ -34,9 +34,21 @@ impl fmt::Debug for Workspace {
     }
 }
 
+/// Which packages to mutate in a workspace?
+#[derive(Debug, Clone)]
 pub enum PackageFilter {
+    /// Include every package in the workspace.
     All,
+    /// Packages with given names, from `--package`.
     Explicit(Vec<String>),
+    /// Automatic behavior when invoked from a subdirectory, as per
+    /// <https://doc.rust-lang.org/cargo/reference/workspaces.html#package-selection>.
+    ///
+    /// If the directory is within a package directory, select that package.
+    ///
+    /// Otherwise, this is a "virtual workspace" directory, containing members but no
+    /// primary package. In this case, if there is a `default-members` field in the workspace,
+    /// use that list. Otherwise, apply to all members of the workspace.
     Auto(Utf8PathBuf),
 }
 
@@ -45,13 +57,39 @@ impl PackageFilter {
         PackageFilter::Explicit(names.into_iter().map(|s| s.to_string()).collect_vec())
     }
 
-    pub fn matches(&self, package_metadata: &cargo_metadata::Package) -> bool {
-        match self {
-            PackageFilter::All => true,
-            PackageFilter::Explicit(include_names) => {
-                include_names.contains(&package_metadata.name)
+    /// Translate an auto package filter to either All or Explicit.
+    pub fn resolve_auto(&self, metadata: &cargo_metadata::Metadata) -> Result<PackageFilter> {
+        if let PackageFilter::Auto(dir) = &self {
+            let package_dir = locate_project(dir, false)?;
+            let workspace_dir = &metadata.workspace_root;
+            ensure!(
+                package_dir.strip_prefix(workspace_dir).is_ok(),
+                "package {package_dir:?} does not seem to be inside workspace root {workspace_dir:?}",
+            );
+            for package in metadata.workspace_packages() {
+                if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
+                    debug!("resolved auto package filter to {:?}", package.name);
+                    return Ok(PackageFilter::explicit([&package.name]));
+                }
             }
-            PackageFilter::Auto(..) => todo!(),
+            // Presumably our manifest is the workspace root manifest and there is no
+            // top-level package?
+            ensure!(
+                &package_dir == workspace_dir,
+                "package {package_dir:?} doesn't match any child and doesn't match the workspace root {workspace_dir:?}?",
+            );
+            // TODO: "This will panic if running with a version of Cargo older than 1.71."; will this break builds with old cargo? If
+            // so maybe we need to do this by hand, unfortunately?
+            let default_members = metadata.workspace_default_packages();
+            if default_members.is_empty() {
+                Ok(PackageFilter::All)
+            } else {
+                Ok(PackageFilter::explicit(
+                    default_members.into_iter().map(|pmeta| &pmeta.name),
+                ))
+            }
+        } else {
+            Ok(self.clone())
         }
     }
 }
@@ -64,7 +102,7 @@ struct PackageTop {
 
 impl Workspace {
     pub fn open(start_dir: &Utf8Path) -> Result<Self> {
-        let dir = find_workspace(start_dir)?;
+        let dir = locate_project(start_dir, true)?;
         let cargo_toml_path = dir.join("Cargo.toml");
         debug!(?cargo_toml_path, ?dir, "Find root files");
         check_interrupted()?;
@@ -87,16 +125,21 @@ impl Workspace {
     /// Find all the packages and their top source files.
     fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<PackageTop>> {
         let mut tops = Vec::new();
+        let package_filter = package_filter.resolve_auto(&self.metadata)?;
         for package_metadata in self
             .metadata
             .workspace_packages()
             .into_iter()
-            .filter(|pmeta| package_filter.matches(pmeta))
             .sorted_by_key(|p| &p.name)
         {
             check_interrupted()?;
             let name = &package_metadata.name;
             let _span = debug_span!("package", %name).entered();
+            if let PackageFilter::Explicit(ref include_names) = package_filter {
+                if !include_names.contains(name) {
+                    continue;
+                }
+            }
             let manifest_path = &package_metadata.manifest_path;
             debug!(%manifest_path, "walk package");
             let relative_manifest_path = manifest_path
@@ -118,7 +161,7 @@ impl Workspace {
                 top_sources: direct_package_sources(&self.dir, package_metadata)?,
             });
         }
-        if let PackageFilter::Explicit(names) = package_filter {
+        if let PackageFilter::Explicit(ref names) = package_filter {
             for wanted in names {
                 if !tops.iter().any(|found| found.package.name == *wanted) {
                     warn!("package {wanted:?} not found in source tree");
@@ -213,11 +256,14 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
     target.kind.iter().any(|k| k.ends_with("lib") || k == "bin")
 }
 
-/// Return the path of the workspace directory enclosing a given directory.
-fn find_workspace(path: &Utf8Path) -> Result<Utf8PathBuf> {
+/// Return the path of the workspace or package directory enclosing a given directory.
+fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
     ensure!(path.is_dir(), "{path:?} is not a directory");
     let cargo_bin = cargo_bin(); // needed for lifetime
-    let argv: Vec<&str> = vec![&cargo_bin, "locate-project", "--workspace"];
+    let mut argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
+    if workspace {
+        argv.push("--workspace");
+    }
     let stdout = get_command_output(&argv, path)
         .with_context(|| format!("run cargo locate-project in {path:?}"))?;
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
@@ -302,6 +348,12 @@ mod test {
             // ordered by package name
             ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
         );
+    }
+
+    #[test]
+    fn auto_packages_in_workspace_subdir_finds_single_package() {
+        let workspace = Workspace::open(Utf8Path::new("testdata/tree/workspace/main"))
+            .expect("Find workspace root");
     }
 
     #[test]

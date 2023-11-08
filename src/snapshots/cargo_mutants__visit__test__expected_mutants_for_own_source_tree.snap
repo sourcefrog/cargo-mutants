@@ -328,8 +328,8 @@ src/visit.rs: replace attr_is_mutants_skip -> bool with false
 src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Ok(Default::default())
 src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace PackageFilter::explicit -> PackageFilter with Default::default()
-src/workspace.rs: replace PackageFilter::matches -> bool with true
-src/workspace.rs: replace PackageFilter::matches -> bool with false
+src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Ok(Default::default())
+src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::open -> Result<Self> with Ok(Default::default())
 src/workspace.rs: replace Workspace::open -> Result<Self> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![])
@@ -351,6 +351,6 @@ src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> wit
 src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace should_mutate_target -> bool with true
 src/workspace.rs: replace should_mutate_target -> bool with false
-src/workspace.rs: replace find_workspace -> Result<Utf8PathBuf> with Ok(Default::default())
-src/workspace.rs: replace find_workspace -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Ok(Default::default())
+src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 
