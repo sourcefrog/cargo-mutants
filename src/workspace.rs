@@ -62,10 +62,8 @@ impl PackageFilter {
         if let PackageFilter::Auto(dir) = &self {
             let package_dir = locate_project(dir, false)?;
             let workspace_dir = &metadata.workspace_root;
-            ensure!(
-                package_dir.strip_prefix(workspace_dir).is_ok(),
-                "package {package_dir:?} does not seem to be inside workspace root {workspace_dir:?}",
-            );
+            // It's not required that the members be inside the workspace directory: see
+            // <https://doc.rust-lang.org/cargo/reference/workspaces.html>
             for package in metadata.workspace_packages() {
                 if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
                     debug!("resolved auto package filter to {:?}", package.name);
