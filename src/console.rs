@@ -267,6 +267,12 @@ impl Console {
     }
 }
 
+impl Default for Console {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Write trace output to the terminal via the console.
 pub struct TerminalWriter {
     view: Arc<nutmeg::View<LabModel>>,
