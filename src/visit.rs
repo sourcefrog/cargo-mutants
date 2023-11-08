@@ -413,7 +413,7 @@ mod test {
         let mut list_output = String::new();
         let console = Console::new();
         let workspace = Workspace::open(
-            &Utf8Path::new(".")
+            Utf8Path::new(".")
                 .canonicalize_utf8()
                 .expect("Canonicalize source path"),
         )
