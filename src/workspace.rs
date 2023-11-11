@@ -120,6 +120,7 @@ impl Workspace {
     }
 
     /// Find packages to mutate, subject to some filtering.
+    #[allow(dead_code)]
     pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<Package>>> {
         Ok(self
             .package_tops(package_filter)?
@@ -212,6 +213,7 @@ impl Workspace {
     }
 
     /// Return all mutants generated from this workspace.
+    #[allow(dead_code)] // called from tests, for now
     pub fn mutants(
         &self,
         package_filter: &PackageFilter,

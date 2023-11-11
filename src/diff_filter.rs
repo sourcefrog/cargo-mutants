@@ -10,13 +10,13 @@ use std::collections::HashMap;
 use anyhow::{anyhow, bail, Context};
 use camino::Utf8Path;
 use patch::{Patch, Range};
-use tracing::warn;
+use tracing::{trace, warn};
 
 use crate::mutate::Mutant;
 use crate::Result;
 
 /// Return only mutants to functions whose source was touched by this diff.
-pub fn diff_filter<'a>(mutants: &[&'a Mutant], diff_text: &str) -> Result<Vec<&'a Mutant>> {
+pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>> {
     // Flatten the error to a string because otherwise it references the diff, and can't be returned.
     let patches =
         Patch::from_multiple(diff_text).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
@@ -27,25 +27,20 @@ pub fn diff_filter<'a>(mutants: &[&'a Mutant], diff_text: &str) -> Result<Vec<&'
             bail!("Patch input contains repeated filename: {path:?}");
         }
     }
-
-    /* TODO: Find the intersection of the patches and mutants:
-
-    For each patch, changing one file:
-
-    Only mutants matching that file could be relevant: we might need some heuristics to
-    strip a `b/` prefix off the filesname.
-
-    The naive way is quadratic but we could first group the mutants by filename. And,
-    there are probably not so many mutants to make it too expensive for a first version.
-
-    Allow for diffs that might have multiple changes to the same file.
-    We shouldn't duplicate mutants even if the diffs have duplicates.
-    */
-    let mut matched: Vec<&Mutant> = Vec::with_capacity(mutants.len());
-    'mutant: for mutant in mutants {
+    /* The line numbers in the diff include context lines, which don't count as really changed.
+     */
+    let mut matched: Vec<Mutant> = Vec::with_capacity(mutants.len());
+    'mutant: for mutant in mutants.into_iter() {
         if let Some(patch) = patch_by_path.get(mutant.source_file.path()) {
             for hunk in &patch.hunks {
-                if range_overlaps(&hunk.new_range, mutant) {
+                if range_overlaps(&hunk.new_range, &mutant) {
+                    trace!(
+                        path = ?patch.new.path,
+                        diff_range = ?hunk.new_range,
+                        mutant_span = ?&mutant.span,
+                        mutant = %mutant,
+                        "diff hunk matched mutant"
+                    );
                     matched.push(mutant);
                     continue 'mutant;
                 }
@@ -76,7 +71,7 @@ mod test_super {
     #[test]
     fn patch_parse_error() {
         let diff = "not really a diff\n";
-        let err = diff_filter(&[], diff).unwrap_err();
+        let err = diff_filter(Vec::new(), diff).unwrap_err();
         assert_eq!(
             err.to_string(),
             "Failed to parse diff: Line 1: Error while parsing: not really a diff\n"
@@ -102,7 +97,7 @@ index eb42779..a0091b7 100644
  use serde::Serialize;
  use similar::TextDiff;
 ";
-        let filtered: Vec<&Mutant> = diff_filter(&[], diff).expect("diff filtered");
+        let filtered: Vec<Mutant> = diff_filter(Vec::new(), diff).expect("diff filtered");
         assert_eq!(filtered.len(), 0);
     }
 }
