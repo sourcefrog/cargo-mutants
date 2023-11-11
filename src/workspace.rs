@@ -1,6 +1,7 @@
 // Copyright 2023 Martin Pool
 
 use std::fmt;
+use std::panic::catch_unwind;
 use std::sync::Arc;
 
 use anyhow::{anyhow, ensure, Context};
@@ -76,15 +77,21 @@ impl PackageFilter {
                 &package_dir == workspace_dir,
                 "package {package_dir:?} doesn't match any child and doesn't match the workspace root {workspace_dir:?}?",
             );
-            // TODO: "This will panic if running with a version of Cargo older than 1.71."; will this break builds with old cargo? If
-            // so maybe we need to do this by hand, unfortunately?
-            let default_members = metadata.workspace_default_packages();
-            if default_members.is_empty() {
-                Ok(PackageFilter::All)
-            } else {
-                Ok(PackageFilter::explicit(
-                    default_members.into_iter().map(|pmeta| &pmeta.name),
-                ))
+            // `workspace_default_packages` will panic when calling Cargo older than 1.71;
+            // in that case we'll just fall back to everything, for lack of a better option.
+            match catch_unwind(|| metadata.workspace_default_packages()) {
+                Ok(dm) if dm.is_empty() => Ok(PackageFilter::All),
+                Ok(dm) => Ok(PackageFilter::explicit(
+                    dm.into_iter().map(|pmeta| &pmeta.name),
+                )),
+                Err(err) => {
+                    warn!(
+                        cargo_metadata_error =
+                            err.downcast::<String>().expect("panic message is a string"),
+                        "workspace_default_packages is not supported; testing all packages",
+                    );
+                    Ok(PackageFilter::All)
+                }
             }
         } else {
             Ok(self.clone())
