@@ -15,8 +15,8 @@ fn env_var_controls_trace() {
         .arg("testdata/tree/never_type")
         .assert()
         // This is a debug!() message; it should only be seen if the trace var
-        // was wired correctly.
-        .stdout(predicate::str::contains(
+        // was wired correctly to stderr.
+        .stderr(predicate::str::contains(
             "No mutants generated for this return type",
         ));
 }

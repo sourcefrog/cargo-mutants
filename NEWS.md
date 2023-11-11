@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- New: generate key-value map values.
+- New: generate key-value map values from types like `BTreeMap<String, Vec<u8>>`.
+
+- Changed: Send trace messages to stderr rather stdout, in part so that it won't pollute json output.
 
 - New: `--package` option tests only mutants from that package.
 

@@ -871,14 +871,14 @@ fn already_failing_tests_are_detected_before_running_mutants() {
                 .and(predicate::str::contains("thread 'test_factorial' panicked"))
                 .and(predicate::str::contains("72")) // the failing value should be in the output
                 .and(predicate::str::contains("lib.rs:11:5"))
-                .and(predicate::str::contains(
-                    "cargo test failed in an unmutated tree, so no mutants were tested",
-                ))
                 .and(
                     predicate::str::contains("test result: FAILED. 0 passed; 1 failed;")
                         .normalize(),
                 ),
-        );
+        )
+        .stderr(predicate::str::contains(
+            "cargo test failed in an unmutated tree, so no mutants were tested",
+        ));
 }
 
 #[test]
@@ -894,7 +894,7 @@ fn already_failing_doctests_are_detected() {
         .stdout(contains(
             "this function takes 1 argument but 3 arguments were supplied",
         ))
-        .stdout(predicate::str::contains(
+        .stderr(predicate::str::contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
 }
@@ -942,7 +942,7 @@ fn source_tree_typecheck_fails() {
         .stdout(contains("build --tests")) // Caught at the check phase
         .stdout(contains("lib.rs:6"))
         .stdout(contains("*** result: "))
-        .stdout(contains(
+        .stderr(contains(
             "build failed in an unmutated tree, so no mutants were tested",
         ));
 }
@@ -981,8 +981,8 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
         .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\ds").unwrap())
-        .stdout(contains("timeout"))
-        .stdout(contains(
+        .stderr(contains("timeout"))
+        .stderr(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
 }
@@ -1062,9 +1062,10 @@ fn interrupt_caught_and_kills_children() {
         .expect("read stderr");
     println!("stderr:\n{stderr}");
 
-    assert!(stdout.contains("interrupted"));
-    assert!(stdout.contains("terminating child process"));
-    assert!(stdout.contains("terminated child exit status"));
+    assert!(stderr.contains("interrupted"));
+    // Also because of `--level=trace` we see some debug details.
+    assert!(stderr.contains("terminating child process"));
+    assert!(stderr.contains("terminated child exit status"));
 }
 
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants

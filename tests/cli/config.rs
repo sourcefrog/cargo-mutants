@@ -130,7 +130,7 @@ fn tree_fails_without_needed_feature() {
         .arg(testdata.path())
         .assert()
         .failure()
-        .stdout(predicates::str::contains(
+        .stderr(predicates::str::contains(
             "test failed in an unmutated tree",
         ));
 }
