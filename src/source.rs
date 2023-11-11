@@ -28,7 +28,7 @@ pub struct SourceFile {
     pub tree_relative_path: Utf8PathBuf,
 
     /// Full copy of the source.
-    pub code: Arc<String>,
+    pub code: String,
 }
 
 impl SourceFile {
@@ -46,7 +46,7 @@ impl SourceFile {
             .replace("\r\n", "\n");
         Ok(SourceFile {
             tree_relative_path,
-            code: Arc::new(code),
+            code,
             package: Arc::clone(package),
         })
     }
@@ -85,6 +85,6 @@ mod test {
             }),
         )
         .unwrap();
-        assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
+        assert_eq!(source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 }
