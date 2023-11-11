@@ -61,20 +61,14 @@ core of cargo-mutants logic to guess at valid replacements.
 
 ### Finding the workspace and packages
 
-cargo-mutants is invoked from within, or given with `-d`, a single directory. To find mutants and run tests we first need to find the enclosing workspace and the packages within it.
+cargo-mutants is invoked from within, or given with `-d`, a single directory, called the _start directory_. To find mutants and run tests we first need to find the enclosing workspace and the packages within it.
 
-This is done basically by parsing the output of `cargo metadata`.
+This is done basically by parsing the output of `cargo locate-project` and `cargo metadata`.
+
+We often want to test only one or a subset of packages in the workspace. This can be set explicitly with `--package` and `--workspace`, or heuristically depending on the project metadata and the start directory.
 
 For each package, cargo tells us the build targets including tests and the main library or binary. The tests are not considered for mutation, so this leaves us with
 some targets of interest, and for each of them cargo tells us one top source file, typically something like `src/lib.rs` or `src/main.rs`.
-
-### Finding packages to mutate
-
-We may often want to test only one or a subset of packages in the workspace.
-
-This can be controlled by an explicit `--package` option.
-
-**UNIMPLEMENTED:** In non-workspace directories test only that one package. Match Cargo's heuristics for running tests from a workspace; add a `--workspace` option.
 
 ### Discovering mutants
 
@@ -88,7 +82,7 @@ and then walk its AST. In the course of that walk we can find three broad catego
 * A source pattern that cargo-mutants knows how to mutate, such as a function returning a value.
 * A pattern that tells cargo-mutants not to look further into this branch of the tree, such as `#[test]` or `#[mutants::skip]`.
 
-For baseline builds and tests, we pass Cargo `--workspace` to build and test everything. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
+For baseline builds and tests, we test all the packages that will later be mutated. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
 
 We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
 
@@ -104,6 +98,8 @@ rewritten to be absolute, so that they still work when cargo is run in the
 scratch directory.
 
 Currently, the whole workspace tree is copied. In future, possibly only the package to be mutated could be copied: this would require changes to the code that fixes up dependencies.
+
+(This current approach assumes that all the packages are under the workspace directory, which is common but not actually required.)
 
 ## Handling timeouts
 
