@@ -2,31 +2,31 @@
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{ensure, Context, Result};
 use itertools::Itertools;
 use tracing::warn;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
+use crate::cargo::run_cargo;
 use crate::console::Console;
-use crate::outcome::{LabOutcome, Phase, PhaseResult, ScenarioOutcome};
+use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
 use crate::output::OutputDir;
-use crate::process::Process;
-use crate::source::Package;
+use crate::package::Package;
 use crate::*;
 
 /// Run all possible mutation experiments.
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn test_unmutated_then_all_mutants(
-    tool: &dyn Tool,
-    source_tree: &Utf8Path,
+pub fn test_mutants(
+    mut mutants: Vec<Mutant>,
+    workspace_dir: &Utf8Path,
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
@@ -34,44 +34,38 @@ pub fn test_unmutated_then_all_mutants(
     let output_in_dir: &Utf8Path = options
         .output_in_dir
         .as_ref()
-        .map_or(source_tree, |p| p.as_path());
+        .map_or(workspace_dir, |p| p.as_path());
     let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
 
-    let mut mutants = walk_tree(tool, source_tree, &options, console)?.mutants;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
-    if mutants.is_empty() {
-        return Err(anyhow!("No mutants found"));
-    }
+    ensure!(!mutants.is_empty(), "No mutants found");
     let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
+    debug!(?all_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let mut build_dirs = vec![BuildDir::new(source_tree, &options, console)?];
+    let mut build_dirs = vec![BuildDir::new(workspace_dir, &options, console)?];
     let baseline_outcome = {
         let _span = debug_span!("baseline").entered();
         test_scenario(
-            tool,
             &mut build_dirs[0],
             &output_mutex,
-            &options,
             &Scenario::Baseline,
             &all_packages,
             options.test_timeout.unwrap_or(Duration::MAX),
+            &options,
             console,
         )?
     };
     if !baseline_outcome.success() {
         error!(
-            "{} {} failed in an unmutated tree, so no mutants were tested",
-            tool.name(),
+            "cargo {} failed in an unmutated tree, so no mutants were tested",
             baseline_outcome.last_phase(),
         );
-        // TODO: Maybe should be Err, but it would need to be an error that can map to the right
-        // exit code.
         return Ok(output_mutex
             .into_inner()
             .expect("lock output_dir")
@@ -98,7 +92,7 @@ pub fn test_unmutated_then_all_mutants(
         Duration::MAX
     };
 
-    let jobs = std::cmp::max(1, std::cmp::min(options.jobs.unwrap_or(1), mutants.len()));
+    let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");
@@ -127,13 +121,12 @@ pub fn test_unmutated_then_all_mutants(
                         let package = mutant.package().clone();
                         // We don't care about the outcome; it's been collected into the output_dir.
                         let _outcome = test_scenario(
-                            tool,
                             &mut build_dir,
                             &output_mutex,
-                            &options,
                             &Scenario::Mutant(mutant),
                             &[&package],
                             mutated_test_timeout,
+                            &options,
                             console,
                         )
                         .expect("scenario test");
@@ -168,21 +161,13 @@ pub fn test_unmutated_then_all_mutants(
 ///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
-#[allow(
-    unknown_lints,
-    clippy::needless_pass_by_ref_mut,
-    clippy::too_many_arguments
-)]
-// Yes, it's a lot of arguments, but it does use them all and I don't think creating objects
-// just to group them would help...
 fn test_scenario(
-    tool: &dyn Tool,
     build_dir: &mut BuildDir,
     output_mutex: &Mutex<OutputDir>,
-    options: &Options,
     scenario: &Scenario,
-    packages: &[&Package],
+    test_packages: &[&Package],
     test_timeout: Duration,
+    options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
     let mut log_file = output_mutex
@@ -203,34 +188,24 @@ fn test_scenario(
         &[Phase::Build, Phase::Test]
     };
     for &phase in phases {
-        let _span = debug_span!("run", ?phase).entered();
-        let start = Instant::now();
         console.scenario_phase_started(scenario, phase);
         let timeout = match phase {
             Phase::Test => test_timeout,
             _ => Duration::MAX,
         };
-        let argv = tool.compose_argv(build_dir, Some(packages), phase, options)?;
-        let env = tool.compose_env()?;
-        let process_status = Process::run(
-            &argv,
-            &env,
-            build_dir.path(),
+        let phase_result = run_cargo(
+            build_dir,
+            Some(test_packages),
+            phase,
             timeout,
             &mut log_file,
+            options,
             console,
         )?;
-        check_interrupted()?;
-        debug!(?process_status, elapsed = ?start.elapsed());
-        let phase_result = PhaseResult {
-            phase,
-            duration: start.elapsed(),
-            process_status,
-            argv,
-        };
+        let success = phase_result.is_success();
         outcome.add_phase_result(phase_result);
         console.scenario_phase_finished(scenario, phase);
-        if (phase == Phase::Check && options.check_only) || !process_status.success() {
+        if (phase == Phase::Check && options.check_only) || !success {
             break;
         }
     }

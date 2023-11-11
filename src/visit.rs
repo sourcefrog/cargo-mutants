@@ -34,21 +34,23 @@ pub struct Discovered {
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
+///
 pub fn walk_tree(
-    tool: &dyn Tool,
-    root: &Utf8Path,
+    workspace_dir: &Utf8Path,
+    top_source_files: &[Arc<SourceFile>],
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
+    // TODO: Lift up parsing the error expressions...
     let error_exprs = options
         .error_values
         .iter()
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     console.walk_tree_start();
+    let mut file_queue: VecDeque<Arc<SourceFile>> = top_source_files.iter().cloned().collect();
     let mut mutants = Vec::new();
     let mut files: Vec<Arc<SourceFile>> = Vec::new();
-    let mut file_queue: VecDeque<Arc<SourceFile>> = tool.top_source_files(root)?.into();
     while let Some(source_file) = file_queue.pop_front() {
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
@@ -58,9 +60,9 @@ pub fn walk_tree(
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
         for mod_name in &external_mods {
-            if let Some(mod_path) = find_mod_source(root, &source_file, mod_name)? {
+            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_name)? {
                 file_queue.push_back(Arc::new(SourceFile::new(
-                    root,
+                    workspace_dir,
                     mod_path,
                     &source_file.package,
                 )?))
@@ -393,8 +395,6 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 mod test {
     use regex::Regex;
 
-    use crate::cargo::CargoTool;
-
     use super::*;
 
     /// As a generic protection against regressions in discovery, the the mutants
@@ -411,16 +411,18 @@ mod test {
             ..Default::default()
         };
         let mut list_output = String::new();
-        crate::list_mutants(
-            &mut list_output,
-            &CargoTool::new(),
-            &Utf8Path::new(".")
+        let console = Console::new();
+        let workspace = Workspace::open(
+            Utf8Path::new(".")
                 .canonicalize_utf8()
                 .expect("Canonicalize source path"),
-            &options,
-            &Console::new(),
         )
-        .expect("Discover mutants in own source tree");
+        .unwrap();
+        let discovered = workspace
+            .discover(&PackageFilter::All, &options, &console)
+            .expect("Discover mutants");
+        crate::list_mutants(&mut list_output, discovered, &options)
+            .expect("Discover mutants in own source tree");
 
         // Strip line numbers so this is not too brittle.
         let line_re = Regex::new(r"(?m)^([^:]+:)\d+:( .*)$").unwrap();

@@ -152,10 +152,8 @@ mod test {
     #[test]
     fn build_dir_debug_form() {
         let options = Options::default();
-        let root = CargoTool::new()
-            .find_root("testdata/tree/factorial".into())
-            .unwrap();
-        let build_dir = BuildDir::new(&root, &options, &Console::new()).unwrap();
+        let workspace = Workspace::open("testdata/tree/factorial").unwrap();
+        let build_dir = BuildDir::new(&workspace.dir, &options, &Console::new()).unwrap();
         let debug_form = format!("{build_dir:?}");
         assert!(
             Regex::new(r#"^BuildDir \{ path: "[^"]*[/\\]cargo-mutants-factorial[^"]*" \}$"#)

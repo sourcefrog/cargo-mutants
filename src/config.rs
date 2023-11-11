@@ -50,8 +50,8 @@ impl Config {
 
     /// Read the config from a tree's `.cargo/mutants.toml`, and return a default (empty)
     /// Config is the file does not exist.
-    pub fn read_tree_config(source_tree_root: &Utf8Path) -> Result<Config> {
-        let path = source_tree_root.join(".cargo").join("mutants.toml");
+    pub fn read_tree_config(workspace_dir: &Utf8Path) -> Result<Config> {
+        let path = workspace_dir.join(".cargo").join("mutants.toml");
         if path.exists() {
             Config::read_file(&path)
         } else {

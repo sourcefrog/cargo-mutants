@@ -11,23 +11,8 @@ src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Ok(
 src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default())
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::name -> &str with ""
-src/cargo.rs: replace <impl Tool for CargoTool>::name -> &str with "xyzzy"
-src/cargo.rs: replace <impl Tool for CargoTool>::find_root -> Result<Utf8PathBuf> with Ok(Default::default())
-src/cargo.rs: replace <impl Tool for CargoTool>::find_root -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
-src/cargo.rs: replace <impl Tool for CargoTool>::top_source_files -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
-src/cargo.rs: replace <impl Tool for CargoTool>::top_source_files -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec![])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec![String::new()])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Ok(vec!["xyzzy".into()])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_argv -> Result<Vec<String>> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![(String::new(), String::new())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![(String::new(), "xyzzy".into())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![("xyzzy".into(), String::new())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Ok(vec![("xyzzy".into(), "xyzzy".into())])
-src/cargo.rs: replace <impl Tool for CargoTool>::compose_env -> Result<Vec<(String, String)>> with Err(::anyhow::anyhow!("mutated!"))
+src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Ok(Default::default())
+src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace cargo_bin -> String with String::new()
 src/cargo.rs: replace cargo_bin -> String with "xyzzy".into()
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![]
@@ -35,11 +20,6 @@ src/cargo.rs: replace cargo_argv -> Vec<String> with vec![String::new()]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec!["xyzzy".into()]
 src/cargo.rs: replace rustflags -> String with String::new()
 src/cargo.rs: replace rustflags -> String with "xyzzy".into()
-src/cargo.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![])
-src/cargo.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![Default::default()])
-src/cargo.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
-src/cargo.rs: replace should_mutate_target -> bool with true
-src/cargo.rs: replace should_mutate_target -> bool with false
 src/config.rs: replace Config::read_file -> Result<Config> with Ok(Default::default())
 src/config.rs: replace Config::read_file -> Result<Config> with Err(::anyhow::anyhow!("mutated!"))
 src/config.rs: replace Config::read_tree_config -> Result<Config> with Ok(Default::default())
@@ -153,8 +133,8 @@ src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with false
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with None
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with Some(&Default::default())
 src/interrupt.rs: replace install_handler with ()
-src/lab.rs: replace test_unmutated_then_all_mutants -> Result<LabOutcome> with Ok(Default::default())
-src/lab.rs: replace test_unmutated_then_all_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
+src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
+src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/list.rs: replace <impl Write for FmtToIoWrite<W>>::write_str -> Result<(), fmt::Error> with Ok(())
@@ -259,6 +239,8 @@ src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with false
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with false
 src/outcome.rs: replace ScenarioOutcome::summary -> SummaryOutcome with Default::default()
+src/outcome.rs: replace PhaseResult::is_success -> bool with true
+src/outcome.rs: replace PhaseResult::is_success -> bool with false
 src/outcome.rs: replace <impl Serialize for PhaseResult>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
 src/outcome.rs: replace <impl Serialize for PhaseResult>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace LockFile::acquire_lock -> Result<File> with Ok(Default::default())
@@ -343,4 +325,30 @@ src/visit.rs: replace path_is -> bool with true
 src/visit.rs: replace path_is -> bool with false
 src/visit.rs: replace attr_is_mutants_skip -> bool with true
 src/visit.rs: replace attr_is_mutants_skip -> bool with false
+src/workspace.rs: replace PackageFilter::explicit -> PackageFilter with Default::default()
+src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Ok(Default::default())
+src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::open -> Result<Self> with Ok(Default::default())
+src/workspace.rs: replace Workspace::open -> Result<Self> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![])
+src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![Arc::new(Default::default())])
+src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Ok(vec![])
+src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Ok(vec![Default::default()])
+src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Ok(Default::default())
+src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![])
+src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
+src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![])
+src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Ok(vec![Default::default()])
+src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace should_mutate_target -> bool with true
+src/workspace.rs: replace should_mutate_target -> bool with false
+src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Ok(Default::default())
+src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 

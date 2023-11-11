@@ -9,6 +9,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
+use crate::package::Package;
 use crate::path::Utf8PathSlashes;
 
 /// A Rust source file within a source tree.
@@ -23,11 +24,11 @@ pub struct SourceFile {
     /// Package within the workspace.
     pub package: Arc<Package>,
 
-    /// Path relative to the root of the tree.
+    /// Path of this source file relative to workspace.
     pub tree_relative_path: Utf8PathBuf,
 
     /// Full copy of the source.
-    pub code: Arc<String>,
+    pub code: String,
 }
 
 impl SourceFile {
@@ -45,7 +46,7 @@ impl SourceFile {
             .replace("\r\n", "\n");
         Ok(SourceFile {
             tree_relative_path,
-            code: Arc::new(code),
+            code,
             package: Arc::clone(package),
         })
     }
@@ -54,15 +55,6 @@ impl SourceFile {
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative_path.to_slash_path()
     }
-}
-
-/// A package built and tested as a unit.
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct Package {
-    /// The short name of the package, like "mutants".
-    pub name: String,
-    /// For Cargo, the path of the `Cargo.toml` manifest file, relative to the top of the tree.
-    pub relative_manifest_path: Utf8PathBuf,
 }
 
 #[cfg(test)]
@@ -93,6 +85,6 @@ mod test {
             }),
         )
         .unwrap();
-        assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
+        assert_eq!(source_file.code, "fn main() {\n    640 << 10;\n}\n");
     }
 }

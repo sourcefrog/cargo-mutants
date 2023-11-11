@@ -4,6 +4,7 @@
 
 use std::fs::{create_dir, write};
 
+use indoc::indoc;
 use predicates::prelude::*;
 use tempfile::TempDir;
 
@@ -87,10 +88,10 @@ fn list_with_config_file_inclusion() {
         .arg(testdata.path())
         .assert()
         .success()
-        .stdout(predicates::str::diff(
-            "src/inside_mod.rs
-src/item_mod.rs\n",
-        ));
+        .stdout(predicates::str::diff(indoc! { "\
+            src/inside_mod.rs
+            src/item_mod.rs
+        " }));
     run()
         .args(["mutants", "--list", "-d"])
         .arg(testdata.path())

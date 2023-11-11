@@ -161,7 +161,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use toml::Table;
 
-    use super::fix_manifest_toml;
+    use super::{fix_cargo_config_toml, fix_manifest_toml};
 
     #[test]
     fn fix_path_absolute_unchanged() {
@@ -305,7 +305,7 @@ mod test {
                 "/src/other",
             ]"# };
         let source_dir = Utf8Path::new("/Users/jane/src/foo");
-        let fixed_toml = super::fix_cargo_config_toml(cargo_config_toml, source_dir)
+        let fixed_toml = fix_cargo_config_toml(cargo_config_toml, source_dir)
             .unwrap()
             .expect("toml was modified");
         println!("fixed toml:\n{fixed_toml}");

@@ -17,14 +17,15 @@ mod mutate;
 mod options;
 mod outcome;
 mod output;
+mod package;
 mod path;
 mod pretty;
 mod process;
 mod scenario;
 mod source;
 mod textedit;
-mod tool;
 mod visit;
+pub mod workspace;
 
 use std::env;
 use std::io;
@@ -41,9 +42,9 @@ use tracing::debug;
 
 // Imports of public names from this crate.
 use crate::build_dir::BuildDir;
-use crate::cargo::CargoTool;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
+use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
 use crate::log_file::{last_line, LogFile};
 use crate::manifest::fix_manifest;
@@ -52,9 +53,7 @@ use crate::options::Options;
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
-use crate::source::SourceFile;
-use crate::tool::Tool;
-use crate::visit::walk_tree;
+use crate::workspace::{PackageFilter, Workspace};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -164,6 +163,10 @@ struct Args {
     #[arg(long, short = 'o')]
     output: Option<Utf8PathBuf>,
 
+    /// only test mutants from these packages.
+    #[arg(id = "package", long, short = 'p')]
+    mutate_packages: Vec<String>,
+
     /// run mutants in random order.
     #[arg(long)]
     shuffle: bool,
@@ -188,6 +191,10 @@ struct Args {
     #[arg(long, action = clap::ArgAction::SetTrue)]
     version: bool,
 
+    /// test every package in the workspace.
+    #[arg(long)]
+    workspace: bool,
+
     /// additional args for all cargo invocations.
     #[arg(long, short = 'C', allow_hyphen_values = true)]
     cargo_arg: Vec<String>,
@@ -207,9 +214,6 @@ fn main() -> Result<()> {
             exit(exit_code::USAGE);
         }
     };
-    let console = Console::new();
-    console.setup_global_trace(args.level)?;
-    interrupt::install_handler();
 
     if args.version {
         println!("{NAME} {VERSION}");
@@ -219,41 +223,38 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    let source_path: &Utf8Path = if let Some(p) = &args.dir {
-        p
+    let console = Console::new();
+    console.setup_global_trace(args.level)?;
+    interrupt::install_handler();
+
+    let start_dir: &Utf8Path = args.dir.as_deref().unwrap_or(Utf8Path::new("."));
+    let workspace = Workspace::open(start_dir)?;
+    // let discovered_workspace = discover_packages(start_dir, false, &args.mutate_packages)?;
+    // let workspace_dir = &discovered_workspace.workspace_dir;
+    let config = if args.no_config {
+        config::Config::default()
     } else {
-        Utf8Path::new(".")
+        config::Config::read_tree_config(&workspace.dir)?
     };
-    let tool = CargoTool::new();
-    let source_tree_root = tool.find_root(source_path)?;
-    let config;
-    if args.no_config {
-        config = config::Config::default();
-    } else {
-        config = config::Config::read_tree_config(&source_tree_root)?;
-        debug!(?config);
-    }
+    debug!(?config);
     let options = Options::new(&args, &config)?;
     debug!(?options);
-    if args.list_files {
-        list_files(
-            FmtToIoWrite::new(io::stdout()),
-            &tool,
-            &source_tree_root,
-            &options,
-            &console,
-        )?;
-    } else if args.list {
-        list_mutants(
-            FmtToIoWrite::new(io::stdout()),
-            &tool,
-            &source_tree_root,
-            &options,
-            &console,
-        )?;
+    let package_filter = if !args.mutate_packages.is_empty() {
+        PackageFilter::explicit(&args.mutate_packages)
+    } else if args.workspace {
+        PackageFilter::All
     } else {
-        let lab_outcome =
-            lab::test_unmutated_then_all_mutants(&tool, &source_tree_root, options, &console)?;
+        PackageFilter::Auto(start_dir.to_owned())
+    };
+    let discovered = workspace.discover(&package_filter, &options, &console)?;
+    if args.list_files {
+        console.clear();
+        list_files(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
+    } else if args.list {
+        console.clear();
+        list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
+    } else {
+        let lab_outcome = test_mutants(discovered.mutants, &workspace.dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

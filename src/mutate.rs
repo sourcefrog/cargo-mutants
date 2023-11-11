@@ -14,7 +14,7 @@ use serde::Serialize;
 use similar::TextDiff;
 
 use crate::build_dir::BuildDir;
-use crate::source::Package;
+use crate::package::Package;
 use crate::source::SourceFile;
 use crate::textedit::{replace_region, Span};
 
@@ -121,15 +121,18 @@ impl Mutant {
             .to_string()
     }
 
-    pub fn apply(&self, build_dir: &BuildDir) -> Result<()> {
+    /// Apply this mutant to the relevant file within a BuildDir.
+    pub fn apply(&self, build_dir: &mut BuildDir) -> Result<()> {
         self.write_in_dir(build_dir, &self.mutated_code())
     }
 
-    pub fn unapply(&self, build_dir: &BuildDir) -> Result<()> {
+    pub fn unapply(&self, build_dir: &mut BuildDir) -> Result<()> {
         self.write_in_dir(build_dir, self.original_code())
     }
 
-    fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
+    #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
+    // The Rust object is not mutated, but the BuildDir on disk should be exclusively owned for this to be safe.
+    fn write_in_dir(&self, build_dir: &mut BuildDir, code: &str) -> Result<()> {
         let path = build_dir.path().join(&self.source_file.tree_relative_path);
         // for safety, don't follow symlinks
         ensure!(path.is_file(), "{path:?} is not a file");
@@ -208,12 +211,11 @@ mod test {
     #[test]
     fn discover_factorial_mutants() {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let tool = CargoTool::new();
-        let source_tree = tool.find_root(tree_path).unwrap();
+        let workspace = Workspace::open(tree_path).unwrap();
         let options = Options::default();
-        let mutants = walk_tree(&tool, &source_tree, &options, &Console::new())
-            .unwrap()
-            .mutants;
+        let mutants = workspace
+            .mutants(&PackageFilter::All, &options, &Console::new())
+            .unwrap();
         assert_eq!(mutants.len(), 3);
         assert_eq!(
             format!("{:?}", mutants[0]),
@@ -262,12 +264,10 @@ mod test {
 
     #[test]
     fn filter_by_attributes() {
-        let tree_path = Utf8Path::new("testdata/tree/hang_avoided_by_attr");
-        let tool = CargoTool::new();
-        let source_tree = tool.find_root(tree_path).unwrap();
-        let mutants = walk_tree(&tool, &source_tree, &Options::default(), &Console::new())
+        let mutants = Workspace::open(Utf8Path::new("testdata/tree/hang_avoided_by_attr"))
             .unwrap()
-            .mutants;
+            .mutants(&PackageFilter::All, &Options::default(), &Console::new())
+            .unwrap();
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
@@ -276,13 +276,13 @@ mod test {
     }
 
     #[test]
-    fn mutate_factorial() {
+    fn mutate_factorial() -> Result<()> {
         let tree_path = Utf8Path::new("testdata/tree/factorial");
-        let tool = CargoTool::new();
-        let source_tree = tool.find_root(tree_path).unwrap();
-        let mutants = walk_tree(&tool, &source_tree, &Options::default(), &Console::new())
-            .unwrap()
-            .mutants;
+        let mutants = Workspace::open(tree_path)?.mutants(
+            &PackageFilter::All,
+            &Options::default(),
+            &Console::new(),
+        )?;
         assert_eq!(mutants.len(), 3);
 
         let mut mutated_code = mutants[0].mutated_code();
@@ -336,5 +336,6 @@ mod test {
                 "#
             }
         );
+        Ok(())
     }
 }

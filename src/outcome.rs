@@ -273,6 +273,12 @@ pub struct PhaseResult {
     pub argv: Vec<String>,
 }
 
+impl PhaseResult {
+    pub fn is_success(&self) -> bool {
+        self.process_status.success()
+    }
+}
+
 impl Serialize for PhaseResult {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
