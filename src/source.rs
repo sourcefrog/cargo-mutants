@@ -55,6 +55,10 @@ impl SourceFile {
     pub fn tree_relative_slashes(&self) -> String {
         self.tree_relative_path.to_slash_path()
     }
+
+    pub fn path(&self) -> &Utf8Path {
+        self.tree_relative_path.as_path()
+    }
 }
 
 #[cfg(test)]

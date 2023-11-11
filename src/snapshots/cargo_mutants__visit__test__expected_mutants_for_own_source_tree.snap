@@ -104,6 +104,12 @@ src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Borrowed("
 src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Owned("xyzzy".to_owned())
 src/console.rs: replace plural -> String with String::new()
 src/console.rs: replace plural -> String with "xyzzy".into()
+src/diff_filter.rs: replace diff_filter -> Result<Vec<&'a Mutant>> with Ok(vec![])
+src/diff_filter.rs: replace diff_filter -> Result<Vec<&'a Mutant>> with Ok(vec![&Default::default()])
+src/diff_filter.rs: replace diff_filter -> Result<Vec<&'a Mutant>> with Err(::anyhow::anyhow!("mutated!"))
+src/diff_filter.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
+src/diff_filter.rs: replace range_overlaps -> bool with true
+src/diff_filter.rs: replace range_overlaps -> bool with false
 src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
 src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
@@ -288,6 +294,7 @@ src/scenario.rs: replace Scenario::log_file_name_base -> String with String::new
 src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".into()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::new()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with "xyzzy".into()
+src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
 src/textedit.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()

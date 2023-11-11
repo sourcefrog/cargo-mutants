@@ -6,6 +6,7 @@ mod build_dir;
 mod cargo;
 mod config;
 mod console;
+mod diff_filter;
 mod exit_code;
 mod fnvalue;
 mod interrupt;
