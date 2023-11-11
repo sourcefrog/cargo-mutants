@@ -7,7 +7,7 @@ use std::fs::{self, read_to_string};
 use indoc::indoc;
 use itertools::Itertools;
 
-use super::{copy_of_testdata, run, CommandInstaExt};
+use super::{copy_of_testdata, run};
 
 #[test]
 fn list_warns_about_unmatched_packages() {
@@ -21,7 +21,7 @@ fn list_warns_about_unmatched_packages() {
             "notapackage",
         ])
         .assert()
-        .stdout(predicates::str::contains(
+        .stderr(predicates::str::contains(
             "package \"notapackage\" not found in source tree",
         ))
         .code(0);
@@ -33,7 +33,23 @@ fn list_files_json_workspace() {
     run()
         .args(["mutants", "--list-files", "--json"])
         .current_dir("testdata/tree/workspace")
-        .assert_insta("list_files_json_workspace");
+        .assert()
+        .stdout(indoc! { r#"[
+          {
+            "package": "cargo_mutants_testdata_workspace_utils",
+            "path": "utils/src/lib.rs"
+          },
+          {
+            "package": "main",
+            "path": "main/src/main.rs"
+          },
+          {
+            "package": "main2",
+            "path": "main2/src/main.rs"
+          }
+        ]
+        "# })
+        .success();
 }
 
 #[test]
