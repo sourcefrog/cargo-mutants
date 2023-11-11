@@ -9,7 +9,8 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Context};
 use camino::Utf8Path;
-use patch::{Patch, Range};
+use itertools::Itertools;
+use patch::{Line, Patch, Range};
 use tracing::{trace, warn};
 
 use crate::mutate::Mutant;
@@ -20,26 +21,35 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
     // Flatten the error to a string because otherwise it references the diff, and can't be returned.
     let patches =
         Patch::from_multiple(diff_text).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
-    let mut patch_by_path: HashMap<&Utf8Path, &Patch> = HashMap::new();
+    let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
     for patch in &patches {
         let path = strip_patch_path(&patch.new.path);
-        if patch_by_path.insert(path, patch).is_some() {
+        if lines_changed_by_path
+            .insert(path, remove_context(patch))
+            .is_some()
+        {
             bail!("Patch input contains repeated filename: {path:?}");
         }
     }
-    /* The line numbers in the diff include context lines, which don't count as really changed.
-     */
     let mut matched: Vec<Mutant> = Vec::with_capacity(mutants.len());
     'mutant: for mutant in mutants.into_iter() {
-        if let Some(patch) = patch_by_path.get(mutant.source_file.path()) {
-            for hunk in &patch.hunks {
-                if range_overlaps(&hunk.new_range, &mutant) {
+        let path = mutant.source_file.path();
+        if let Some(lines_changed) = lines_changed_by_path.get(path) {
+            // We could do be smarter about searching for an intersection of ranges, rather
+            // than probing one line at a time... But, the numbers are likely to be small
+            // enough that this is tolerable...
+            //
+            // We could also search for each unique span in each file, and then include
+            // every mutant that intersects any of those spans, since commonly there will
+            // be multiple mutants in the same function.
+            for line in mutant.span.start.line..=mutant.span.end.line {
+                if lines_changed.binary_search(&line).is_ok() {
                     trace!(
-                        path = ?patch.new.path,
-                        diff_range = ?hunk.new_range,
+                        ?path,
+                        line,
+                        %mutant,
                         mutant_span = ?&mutant.span,
-                        mutant = %mutant,
-                        "diff hunk matched mutant"
+                        "diff matched mutant"
                     );
                     matched.push(mutant);
                     continue 'mutant;
@@ -56,10 +66,47 @@ fn strip_patch_path(path: &str) -> &Utf8Path {
     path.strip_prefix("b").unwrap_or(path)
 }
 
-fn range_overlaps(diff_range: &Range, mutant: &Mutant) -> bool {
-    let diff_end = diff_range.start + diff_range.count;
-    diff_end >= mutant.span.start.line.try_into().unwrap()
-        && diff_range.start <= mutant.span.end.line.try_into().unwrap()
+/// Given a diff, return the ranges of actually-changed lines, ignoring context lines.
+///
+/// Code that's only included as context doesn't need to be tested.
+///
+/// This returns a list of line numbers that are either added to the new file, or
+/// adjacent to deletions.
+///
+/// (A list of ranges would be more concise but this is easier for a first version.)
+///
+/// If a line is deleted then the range will span from the line before to the line after.
+fn remove_context(patch: &Patch) -> Vec<usize> {
+    let mut r = Vec::new();
+    for hunk in &patch.hunks {
+        let mut lineno: usize = hunk.new_range.start.try_into().unwrap();
+        for line in &hunk.lines {
+            match line {
+                Line::Context(_) => {
+                    lineno += 1;
+                }
+                Line::Add(_) => {
+                    if r.last().map_or(true, |last| *last < lineno) {
+                        r.push(lineno);
+                    }
+                    lineno += 1;
+                }
+                Line::Remove(_) => {
+                    if lineno > 1 && r.last().map_or(true, |last| *last < (lineno - 1)) {
+                        r.push(lineno - 1);
+                    }
+                    if lineno > 0 && r.last().map_or(true, |last| *last < lineno) {
+                        r.push(lineno);
+                    }
+                }
+            }
+        }
+    }
+    debug_assert!(
+        r.iter().tuple_windows().all(|(a, b)| a < b),
+        "remove_context: line numbers not sorted and unique: {r:?}"
+    );
+    r
 }
 
 #[cfg(test)]
