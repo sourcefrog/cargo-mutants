@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use camino::{Utf8Path, Utf8PathBuf};
 use console::{style, StyledObject};
 
+use nutmeg::Destination;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::prelude::*;
@@ -128,7 +129,7 @@ impl Console {
             );
         }
         s.push('\n');
-        self.view.message(&s);
+        self.message(&s);
     }
 
     /// Update that a test timeout was auto-set.
@@ -215,7 +216,11 @@ impl Console {
     }
 
     pub fn message(&self, message: &str) {
-        self.view.message(message)
+        // A workaround for nutmeg not being able to coordinate writes to both stdout and
+        // stderr...
+        // <https://github.com/sourcefrog/nutmeg/issues/11>
+        self.view.clear();
+        print!("{}", message);
     }
 
     pub fn tick(&self) {
@@ -563,7 +568,9 @@ impl nutmeg::Model for CopyModel {
 }
 
 fn nutmeg_options() -> nutmeg::Options {
-    nutmeg::Options::default().print_holdoff(Duration::from_millis(50))
+    nutmeg::Options::default()
+        .print_holdoff(Duration::from_millis(50))
+        .destination(Destination::Stderr)
 }
 
 /// Return a styled string reflecting the moral value of this outcome.
