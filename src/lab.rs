@@ -66,8 +66,6 @@ pub fn test_mutants(
             "cargo {} failed in an unmutated tree, so no mutants were tested",
             baseline_outcome.last_phase(),
         );
-        // TODO: Maybe should be Err, but it would need to be an error that can map to the right
-        // exit code.
         return Ok(output_mutex
             .into_inner()
             .expect("lock output_dir")
