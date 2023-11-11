@@ -2,6 +2,7 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::borrow::Borrow;
 use std::env;
 use std::fmt::Write;
 use std::fs::{self, read_dir};
@@ -95,6 +96,17 @@ fn redact_timestamps_sizes(s: &str) -> String {
     // TODO: Maybe match the number of digits?
     let s = DURATION_RE.replace_all(s, "x.xxxs");
     SIZE_RE.replace_all(&s, "xxx MB").to_string()
+}
+
+/// Assert that some bytes, when parsed as json, equal a json value.
+fn assert_bytes_eq_json<J: Borrow<serde_json::Value>>(actual: &[u8], expected: J) {
+    // The Borrow is so that you can pass either a value or a reference, for easier
+    // calling.
+    let actual_json = std::str::from_utf8(actual)
+        .expect("bytes are UTF-8")
+        .parse::<serde_json::Value>()
+        .expect("bytes can be parsed as JSON");
+    assert_eq!(&actual_json, expected.borrow());
 }
 
 #[test]

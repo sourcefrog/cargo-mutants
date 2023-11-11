@@ -6,8 +6,9 @@ use std::fs::{self, read_to_string};
 
 use indoc::indoc;
 use itertools::Itertools;
+use serde_json::json;
 
-use super::{copy_of_testdata, run};
+use super::{assert_bytes_eq_json, copy_of_testdata, run};
 
 #[test]
 fn list_warns_about_unmatched_packages() {
@@ -30,11 +31,15 @@ fn list_warns_about_unmatched_packages() {
 #[test]
 fn list_files_json_workspace() {
     // Demonstrates that we get package names in the json listing.
-    run()
+    let cmd = run()
         .args(["mutants", "--list-files", "--json"])
         .current_dir("testdata/tree/workspace")
         .assert()
-        .stdout(indoc! { r#"[
+        .success();
+    assert_bytes_eq_json(
+        &cmd.get_output().stdout,
+        json! {
+        [
           {
             "package": "cargo_mutants_testdata_workspace_utils",
             "path": "utils/src/lib.rs"
@@ -48,17 +53,20 @@ fn list_files_json_workspace() {
             "path": "main2/src/main.rs"
           }
         ]
-        "# })
-        .success();
+        },
+    );
 }
 
 #[test]
 fn list_files_as_json_in_workspace_subdir() {
-    run()
+    let cmd = run()
         .args(["mutants", "--list-files", "--json", "--workspace"])
         .current_dir("testdata/tree/workspace/main2")
         .assert()
-        .stdout(indoc! {r#"
+        .success();
+    assert_bytes_eq_json(
+        &cmd.get_output().stdout,
+        json! {
             [
               {
                 "package": "cargo_mutants_testdata_workspace_utils",
@@ -73,7 +81,8 @@ fn list_files_as_json_in_workspace_subdir() {
                 "path": "main2/src/main.rs"
               }
             ]
-        "#});
+        },
+    );
 }
 
 #[test]
