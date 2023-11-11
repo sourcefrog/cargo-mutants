@@ -325,8 +325,6 @@ src/visit.rs: replace path_is -> bool with true
 src/visit.rs: replace path_is -> bool with false
 src/visit.rs: replace attr_is_mutants_skip -> bool with true
 src/visit.rs: replace attr_is_mutants_skip -> bool with false
-src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Ok(Default::default())
-src/workspace.rs: replace <impl Debug for Workspace>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace PackageFilter::explicit -> PackageFilter with Default::default()
 src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Ok(Default::default())
 src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Err(::anyhow::anyhow!("mutated!"))

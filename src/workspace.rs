@@ -27,6 +27,7 @@ pub struct Workspace {
 }
 
 impl fmt::Debug for Workspace {
+    #[mutants::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Workspace")
             .field("dir", &self.dir)
