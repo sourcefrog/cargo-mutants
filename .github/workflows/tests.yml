@@ -3,7 +3,11 @@ name: Tests
 permissions:
   contents: read
 
-on: push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
 env:
