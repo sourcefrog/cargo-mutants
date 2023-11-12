@@ -52,9 +52,11 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Relative diff
         run: |
-          git diff --name-only $GITHUB_BASE_REF | tee git.diff
+          git diff ${{ github.base_ref }}..${{ github.head_ref }} | tee git.diff
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
