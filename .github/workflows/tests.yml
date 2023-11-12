@@ -57,7 +57,7 @@ jobs:
       - name: Relative diff
         run: |
           git branch -av
-          git diff ${{ github.base_ref }}..${{ github.head_ref }} | tee git.diff
+          git diff origin/${{ github.base_ref }}.. | tee git.diff
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
