@@ -108,9 +108,9 @@ src/diff_filter.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![])
 src/diff_filter.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
 src/diff_filter.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
 src/diff_filter.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
-src/diff_filter.rs: replace remove_context -> Vec<usize> with vec![]
-src/diff_filter.rs: replace remove_context -> Vec<usize> with vec![0]
-src/diff_filter.rs: replace remove_context -> Vec<usize> with vec![1]
+src/diff_filter.rs: replace affected_lines -> Vec<usize> with vec![]
+src/diff_filter.rs: replace affected_lines -> Vec<usize> with vec![0]
+src/diff_filter.rs: replace affected_lines -> Vec<usize> with vec![1]
 src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
 src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
