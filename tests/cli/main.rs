@@ -23,6 +23,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
 mod config;
+mod diff_filter;
 mod error_value;
 mod jobs;
 mod trace;

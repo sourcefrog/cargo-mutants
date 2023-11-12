@@ -48,6 +48,22 @@ src/lib.rs:1: replace factorial -> u32 with 0
 src/lib.rs:1: replace factorial -> u32 with 1
 ```
 
+## testdata/tree/diff0
+
+```
+src/lib.rs:1: replace one -> String with String::new()
+src/lib.rs:1: replace one -> String with "xyzzy".into()
+```
+
+## testdata/tree/diff1
+
+```
+src/lib.rs:1: replace one -> String with String::new()
+src/lib.rs:1: replace one -> String with "xyzzy".into()
+src/lib.rs:5: replace two -> String with String::new()
+src/lib.rs:5: replace two -> String with "xyzzy".into()
+```
+
 ## testdata/tree/error_value
 
 ```
