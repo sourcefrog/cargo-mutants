@@ -23,8 +23,8 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
 mod config;
-mod diff_filter;
 mod error_value;
+mod in_diff;
 mod jobs;
 mod trace;
 #[cfg(windows)]
@@ -94,7 +94,6 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
 
 /// Remove anything that looks like a duration or tree size, since they'll be unpredictable.
 fn redact_timestamps_sizes(s: &str) -> String {
-    // TODO: Maybe match the number of digits?
     let s = DURATION_RE.replace_all(s, "x.xxxs");
     SIZE_RE.replace_all(&s, "xxx MB").to_string()
 }
