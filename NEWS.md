@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.11.0
 
 - Changed: `cargo mutants` now tries to match the behavior of `cargo test` when run within a workspace. If run in a package directory, it tests only that package. If run in a workspace that is not a package (a "virtual workspace"), it tests the configured default packages, or otherwise all packages. This can all be overridden with the `--package` or `--workspace` options.
 
