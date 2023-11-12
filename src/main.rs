@@ -168,7 +168,7 @@ struct Args {
 
     /// include only mutants in code touched by this diff.
     #[arg(long, short = 'D')]
-    diff_filter: Option<Utf8PathBuf>,
+    in_diff: Option<Utf8PathBuf>,
 
     /// only test mutants from these packages.
     #[arg(id = "package", long, short = 'p')]
@@ -260,9 +260,11 @@ fn main() -> Result<()> {
         return Ok(());
     }
     let mut mutants = discovered.mutants;
-    if let Some(diff_path) = &args.diff_filter {
-        let diff = read_to_string(diff_path).context("Failed to read filter diff")?;
-        mutants = diff_filter(mutants, &diff)?;
+    if let Some(in_diff) = &args.in_diff {
+        mutants = diff_filter(
+            mutants,
+            &read_to_string(in_diff).context("Failed to read filter diff")?,
+        )?;
     }
     if args.list {
         list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
