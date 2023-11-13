@@ -132,6 +132,20 @@ src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with true
 src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with false
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with None
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with Some(&Default::default())
+src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![])
+src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
+src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
+src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Ok(())
+src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
+src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
+src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![0]
+src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![1]
+src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![]
+src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "")]
+src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "xyzzy")]
+src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, "")]
+src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, "xyzzy")]
 src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
@@ -288,6 +302,7 @@ src/scenario.rs: replace Scenario::log_file_name_base -> String with String::new
 src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".into()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::new()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with "xyzzy".into()
+src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
 src/textedit.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()

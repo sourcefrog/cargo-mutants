@@ -1,6 +1,6 @@
 // Copyright 2021-2023 Martin Pool
 
-//! `cargo-mutants`: Find inadequately-tested code that can be removed without any tests failing.
+//! `cargo-mutants`: Find test gaps by inserting bugs.
 
 mod build_dir;
 mod cargo;
@@ -8,6 +8,7 @@ mod config;
 mod console;
 mod exit_code;
 mod fnvalue;
+mod in_diff;
 mod interrupt;
 mod lab;
 mod list;
@@ -25,12 +26,14 @@ mod scenario;
 mod source;
 mod textedit;
 mod visit;
-pub mod workspace;
+mod workspace;
 
 use std::env;
+use std::fs::read_to_string;
 use std::io;
 use std::process::exit;
 
+use anyhow::Context;
 use anyhow::Result;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
@@ -40,9 +43,9 @@ use clap_complete::{generate, Shell};
 use path_slash::PathExt;
 use tracing::debug;
 
-// Imports of public names from this crate.
 use crate::build_dir::BuildDir;
 use crate::console::Console;
+use crate::in_diff::diff_filter;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
@@ -163,6 +166,10 @@ struct Args {
     #[arg(long, short = 'o')]
     output: Option<Utf8PathBuf>,
 
+    /// include only mutants in code touched by this diff.
+    #[arg(long, short = 'D')]
+    in_diff: Option<Utf8PathBuf>,
+
     /// only test mutants from these packages.
     #[arg(id = "package", long, short = 'p')]
     mutate_packages: Vec<String>,
@@ -247,14 +254,22 @@ fn main() -> Result<()> {
         PackageFilter::Auto(start_dir.to_owned())
     };
     let discovered = workspace.discover(&package_filter, &options, &console)?;
+    console.clear();
     if args.list_files {
-        console.clear();
-        list_files(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
-    } else if args.list {
-        console.clear();
-        list_mutants(FmtToIoWrite::new(io::stdout()), discovered, &options)?;
+        list_files(FmtToIoWrite::new(io::stdout()), &discovered.files, &options)?;
+        return Ok(());
+    }
+    let mut mutants = discovered.mutants;
+    if let Some(in_diff) = &args.in_diff {
+        mutants = diff_filter(
+            mutants,
+            &read_to_string(in_diff).context("Failed to read filter diff")?,
+        )?;
+    }
+    if args.list {
+        list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
     } else {
-        let lab_outcome = test_mutants(discovered.mutants, &workspace.dir, options, &console)?;
+        let lab_outcome = test_mutants(mutants, &workspace.dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

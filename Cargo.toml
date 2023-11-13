@@ -46,6 +46,7 @@ indoc = "2.0.0"
 itertools = "0.11"
 mutants = "0.0.3"
 nix = "0.27"
+patch = "0.7"
 path-slash = "0.2"
 quote = "1.0"
 serde_json = "1"
@@ -105,6 +106,8 @@ exclude = [
     "testdata/tree/cfg_attr_mutants_skip",
     "testdata/tree/cfg_attr_test_skip",
     "testdata/tree/dependency",
+    "testdata/tree/diff0",
+    "testdata/tree/diff1",
     "testdata/tree/error_value",
     "testdata/tree/everything_skipped",
     "testdata/tree/factorial",

@@ -3,7 +3,11 @@ name: Tests
 permissions:
   contents: read
 
-on: push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
 env:
@@ -43,9 +47,35 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
+  incremental-mutants:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Relative diff
+        run: |
+          git branch -av
+          git diff origin/${{ github.base_ref }}.. | tee git.diff
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install --path .
+      - name: Mutants
+        run: |
+          cargo mutants --no-shuffle --exclude console.rs -j 2 -vV --in-diff git.diff
+      - name: Archive mutants.out
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: mutants-incremental.out
+          path: mutants.out
+
   cargo-mutants:
     runs-on: ubuntu-latest
-    needs: build
+    # needs: [build, incremental-mutants]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master

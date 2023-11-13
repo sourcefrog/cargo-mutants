@@ -4,12 +4,14 @@
 
 use std::fmt;
 use std::io;
+use std::sync::Arc;
 
 use serde_json::{json, Value};
 
 use crate::console::style_mutant;
+use crate::mutate::Mutant;
 use crate::path::Utf8PathSlashes;
-use crate::visit::Discovered;
+use crate::source::SourceFile;
 use crate::{Options, Result};
 
 /// Convert `fmt::Write` to `io::Write`.
@@ -29,13 +31,13 @@ impl<W: io::Write> fmt::Write for FmtToIoWrite<W> {
 
 pub(crate) fn list_mutants<W: fmt::Write>(
     mut out: W,
-    discovered: Discovered,
+    mutants: &[Mutant],
     options: &Options,
 ) -> Result<()> {
     if options.emit_json {
         let mut list: Vec<serde_json::Value> = Vec::new();
-        for mutant in discovered.mutants {
-            let mut obj = serde_json::to_value(&mutant)?;
+        for mutant in mutants {
+            let mut obj = serde_json::to_value(mutant)?;
             if options.emit_diffs {
                 obj.as_object_mut()
                     .unwrap()
@@ -45,7 +47,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
         }
         out.write_str(&serde_json::to_string_pretty(&list)?)?;
     } else {
-        for mutant in &discovered.mutants {
+        for mutant in mutants {
             if options.colors {
                 writeln!(out, "{}", style_mutant(mutant))?;
             } else {
@@ -61,13 +63,12 @@ pub(crate) fn list_mutants<W: fmt::Write>(
 
 pub(crate) fn list_files<W: fmt::Write>(
     mut out: W,
-    discovered: Discovered,
+    source_files: &[Arc<SourceFile>],
     options: &Options,
 ) -> Result<()> {
     if options.emit_json {
         let json_list = Value::Array(
-            discovered
-                .files
+            source_files
                 .iter()
                 .map(|source_file| {
                     json!({
@@ -79,7 +80,7 @@ pub(crate) fn list_files<W: fmt::Write>(
         );
         writeln!(out, "{}", serde_json::to_string_pretty(&json_list)?)?;
     } else {
-        for file in discovered.files {
+        for file in source_files {
             writeln!(out, "{}", file.tree_relative_path.to_slash_path())?;
         }
     }

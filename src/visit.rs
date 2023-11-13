@@ -421,7 +421,7 @@ mod test {
         let discovered = workspace
             .discover(&PackageFilter::All, &options, &console)
             .expect("Discover mutants");
-        crate::list_mutants(&mut list_output, discovered, &options)
+        crate::list_mutants(&mut list_output, &discovered.mutants, &options)
             .expect("Discover mutants in own source tree");
 
         // Strip line numbers so this is not too brittle.

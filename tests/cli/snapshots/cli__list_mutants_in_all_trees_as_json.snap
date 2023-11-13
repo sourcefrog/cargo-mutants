@@ -149,6 +149,74 @@ expression: buf
 ]
 ```
 
+## testdata/tree/diff0
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": "one",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "diff0",
+    "replacement": "String::new()",
+    "return_type": "-> String"
+  },
+  {
+    "file": "src/lib.rs",
+    "function": "one",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "diff0",
+    "replacement": "\"xyzzy\".into()",
+    "return_type": "-> String"
+  }
+]
+```
+
+## testdata/tree/diff1
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": "one",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "diff1",
+    "replacement": "String::new()",
+    "return_type": "-> String"
+  },
+  {
+    "file": "src/lib.rs",
+    "function": "one",
+    "genre": "FnValue",
+    "line": 1,
+    "package": "diff1",
+    "replacement": "\"xyzzy\".into()",
+    "return_type": "-> String"
+  },
+  {
+    "file": "src/lib.rs",
+    "function": "two",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "diff1",
+    "replacement": "String::new()",
+    "return_type": "-> String"
+  },
+  {
+    "file": "src/lib.rs",
+    "function": "two",
+    "genre": "FnValue",
+    "line": 5,
+    "package": "diff1",
+    "replacement": "\"xyzzy\".into()",
+    "return_type": "-> String"
+  }
+]
+```
+
 ## testdata/tree/error_value
 
 ```json
