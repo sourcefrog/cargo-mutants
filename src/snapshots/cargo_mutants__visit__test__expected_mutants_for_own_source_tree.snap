@@ -104,13 +104,6 @@ src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Borrowed("
 src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Owned("xyzzy".to_owned())
 src/console.rs: replace plural -> String with String::new()
 src/console.rs: replace plural -> String with "xyzzy".into()
-src/diff_filter.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![])
-src/diff_filter.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
-src/diff_filter.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
-src/diff_filter.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
-src/diff_filter.rs: replace affected_lines -> Vec<usize> with vec![]
-src/diff_filter.rs: replace affected_lines -> Vec<usize> with vec![0]
-src/diff_filter.rs: replace affected_lines -> Vec<usize> with vec![1]
 src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
 src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
@@ -139,6 +132,13 @@ src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with true
 src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with false
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with None
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with Some(&Default::default())
+src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![])
+src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
+src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
+src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
+src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
+src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![0]
+src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![1]
 src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
