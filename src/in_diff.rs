@@ -3,18 +3,18 @@
 //! Filter mutants to those intersecting a diff on the file tree,
 //! for example from uncommitted or unmerged changes.
 
-#![allow(unused_imports)]
-
 use std::collections::HashMap;
+use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail};
 use camino::Utf8Path;
+use indoc::formatdoc;
 use itertools::Itertools;
-use patch::{Line, Patch, Range};
+use patch::{Line, Patch};
 use tracing::{trace, warn};
-use tracing_subscriber::field::debug;
 
 use crate::mutate::Mutant;
+use crate::source::SourceFile;
 use crate::Result;
 
 /// Return only mutants to functions whose source was touched by this diff.
@@ -22,6 +22,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
     // Flatten the error to a string because otherwise it references the diff, and can't be returned.
     let patches =
         Patch::from_multiple(diff_text).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
+    check_diff_new_text_matches(&patches, &mutants)?;
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
     for patch in &patches {
         let path = strip_patch_path(&patch.new.path);
@@ -58,6 +59,42 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
         }
     }
     Ok(matched)
+}
+
+/// Error if the new text from the diffs doesn't match the source files.
+fn check_diff_new_text_matches(patches: &[Patch], mutants: &[Mutant]) -> Result<()> {
+    let mut source_by_name: HashMap<&Utf8Path, Arc<SourceFile>> = HashMap::new();
+    for mutant in mutants {
+        source_by_name
+            .entry(mutant.source_file.path())
+            .or_insert_with(|| Arc::clone(&mutant.source_file));
+    }
+    for patch in patches {
+        let path = strip_patch_path(&patch.new.path);
+        if let Some(source_file) = source_by_name.get(&path) {
+            let reconstructed = partial_new_file(patch);
+            let lines = source_file.code.lines().collect_vec();
+            for (lineno, diff_content) in reconstructed {
+                let source_content = lines.get(lineno - 1).unwrap_or(&"");
+                if diff_content != *source_content {
+                    warn!(
+                        ?path,
+                        lineno,
+                        ?diff_content,
+                        ?source_content,
+                        "Diff content doesn't match source file"
+                    );
+                    bail!(formatdoc! { "\
+                        Diff content doesn't match source file: {path} line {lineno}
+                        diff has:   {diff_content:?}
+                        source has: {source_content:?}
+                        The diff might be out of date with this source tree.
+                    "});
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Remove the `b/` prefix commonly found in paths within diffs.
@@ -160,7 +197,6 @@ fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
 mod test_super {
     use std::fs::read_to_string;
 
-    use assert_cmd::assert;
     use pretty_assertions::assert_eq;
     use similar::TextDiff;
 
