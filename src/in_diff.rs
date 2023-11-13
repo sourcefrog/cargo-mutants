@@ -125,8 +125,41 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
     r
 }
 
+/// Recreate a partial view of the new file from a Patch.
+///
+/// This contains lines present as adedd or context. Typically not all context
+/// will be covered, so the output is a list of line numbers and their text.
+fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
+    let mut r: Vec<(usize, &'d str)> = Vec::new();
+    for hunk in &patch.hunks {
+        let mut lineno: usize = hunk.new_range.start.try_into().unwrap();
+        for line in &hunk.lines {
+            match line {
+                Line::Context(text) | Line::Add(text) => {
+                    debug_assert!(lineno >= 1, "{lineno}");
+                    debug_assert!(
+                        r.last().map_or(true, |last| last.0 < lineno),
+                        "{lineno} {r:?}"
+                    );
+                    r.push((lineno, text));
+                    lineno += 1;
+                }
+                Line::Remove(_) => {}
+            }
+        }
+        debug_assert_eq!(
+            lineno,
+            (hunk.new_range.start + hunk.new_range.count) as usize,
+            "Wrong number of resulting lines?"
+        );
+    }
+    r
+}
+
 #[cfg(test)]
 mod test_super {
+    use std::fs::read_to_string;
+
     use assert_cmd::assert;
     use pretty_assertions::assert_eq;
     use similar::TextDiff;
@@ -170,7 +203,7 @@ index eb42779..a0091b7 100644
         TextDiff::from_lines(old, new)
             .unified_diff()
             .context_radius(2)
-            .header("a/file", "b/file")
+            .header("a/file.rs", "b/file.rs")
             .to_string()
     }
 
@@ -261,6 +294,21 @@ index eb42779..a0091b7 100644
             } else {
                 assert_eq!(affected, &[i, i + 1]);
             }
+        }
+    }
+
+    #[test]
+    fn reconstruct_partial_new_file() {
+        let old = read_to_string("testdata/tree/diff0/src/lib.rs").unwrap();
+        let new = read_to_string("testdata/tree/diff1/src/lib.rs").unwrap();
+        let diff = make_diff(&old, &new);
+        let patch = Patch::from_single(&diff).unwrap();
+        let reconstructed = partial_new_file(&patch);
+        println!("{reconstructed:#?}");
+        assert_eq!(reconstructed.len(), 16);
+        let new_lines = new.lines().collect_vec();
+        for (lineno, text) in reconstructed {
+            assert_eq!(text, new_lines[lineno - 1]);
         }
     }
 }
