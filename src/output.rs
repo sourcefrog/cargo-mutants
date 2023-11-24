@@ -286,7 +286,6 @@ mod test {
             list_recursive(tmp.path()),
             &[
                 "",
-                "Cargo.lock",
                 "Cargo.toml",
                 "mutants.out",
                 "mutants.out/caught.txt",

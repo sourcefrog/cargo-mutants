@@ -113,6 +113,7 @@ impl Workspace {
         debug!(?cargo_toml_path, ?dir, "Find root files");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
+            .no_deps()
             .manifest_path(&cargo_toml_path)
             .exec()
             .context("run cargo metadata")?;
