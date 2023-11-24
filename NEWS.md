@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: Run `cargo metadata` with `--no-deps`, so that it doesn't download and compute dependency information, which can save time in some situations.
+
 ## 23.11.1
 
 - New `--in-diff FILE` option tests only mutants that are in the diff from the
