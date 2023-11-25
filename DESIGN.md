@@ -188,7 +188,7 @@ Cargo-mutants is primarily tested on its public interface, which is the command 
 
 ### `testdata` trees
 
-The primary means of testing is Rust source trees under `testdata/tree`: you can copy an existing tree and modify it to show the new behavior that you want to test.
+The primary means of testing is Rust source trees under `testdata`: you can copy an existing tree and modify it to show the new behavior that you want to test.
 
 A selection of test trees are available for testing different scenarios. If there is an existing suitable tree, please use it. If you need to test a situation that is not covered yet, please add a new tree.
 

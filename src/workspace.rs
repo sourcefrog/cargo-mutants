@@ -317,8 +317,8 @@ mod test {
 
     #[test]
     fn open_subdirectory_of_crate_opens_the_crate() {
-        let workspace = Workspace::open("testdata/tree/factorial/src")
-            .expect("open source tree from subdirectory");
+        let workspace =
+            Workspace::open("testdata/factorial/src").expect("open source tree from subdirectory");
         let root = &workspace.dir;
         assert!(root.is_dir());
         assert!(root.join("Cargo.toml").is_file());
@@ -328,7 +328,7 @@ mod test {
 
     #[test]
     fn find_root_from_subdirectory_of_workspace_finds_the_workspace_root() {
-        let root = Workspace::open("testdata/tree/workspace/main")
+        let root = Workspace::open("testdata/workspace/main")
             .expect("Find root from within workspace/main")
             .dir;
         assert_eq!(root.file_name(), Some("workspace"), "Wrong root: {root:?}");
@@ -336,8 +336,7 @@ mod test {
 
     #[test]
     fn find_top_source_files_from_subdirectory_of_workspace() {
-        let workspace =
-            Workspace::open("testdata/tree/workspace/main").expect("Find workspace root");
+        let workspace = Workspace::open("testdata/workspace/main").expect("Find workspace root");
         assert_eq!(
             workspace
                 .packages(&PackageFilter::All)
@@ -361,7 +360,7 @@ mod test {
 
     #[test]
     fn package_filter_all_from_subdir_gets_everything() {
-        let subdir_path = Utf8Path::new("testdata/tree/workspace/main");
+        let subdir_path = Utf8Path::new("testdata/workspace/main");
         let workspace = Workspace::open(subdir_path).expect("Find workspace root");
         let packages = workspace.packages(&PackageFilter::All).unwrap();
         assert_eq!(
@@ -372,7 +371,7 @@ mod test {
 
     #[test]
     fn auto_packages_in_workspace_subdir_finds_single_package() {
-        let subdir_path = Utf8Path::new("testdata/tree/workspace/main");
+        let subdir_path = Utf8Path::new("testdata/workspace/main");
         let workspace = Workspace::open(subdir_path).expect("Find workspace root");
         let packages = workspace
             .packages(&PackageFilter::Auto(subdir_path.to_owned()))
@@ -382,7 +381,7 @@ mod test {
 
     #[test]
     fn auto_packages_in_virtual_workspace_gets_everything() {
-        let path = Utf8Path::new("testdata/tree/workspace");
+        let path = Utf8Path::new("testdata/workspace");
         let workspace = Workspace::open(path).expect("Find workspace root");
         let packages = workspace
             .packages(&PackageFilter::Auto(path.to_owned()))
@@ -395,8 +394,7 @@ mod test {
 
     #[test]
     fn filter_by_single_package() {
-        let workspace =
-            Workspace::open("testdata/tree/workspace/main").expect("Find workspace root");
+        let workspace = Workspace::open("testdata/workspace/main").expect("Find workspace root");
         let root_dir = &workspace.dir;
         assert_eq!(
             root_dir.file_name(),
@@ -426,7 +424,7 @@ mod test {
 
     #[test]
     fn filter_by_multiple_packages() {
-        let workspace = Workspace::open("testdata/tree/workspace/main").unwrap();
+        let workspace = Workspace::open("testdata/workspace/main").unwrap();
         assert_eq!(
             workspace.dir.file_name(),
             Some("workspace"),

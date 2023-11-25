@@ -165,7 +165,7 @@ mod test {
 
     #[test]
     fn fix_path_absolute_unchanged() {
-        let dependency_abspath = Utf8Path::new("testdata/tree/dependency")
+        let dependency_abspath = Utf8Path::new("testdata/dependency")
             .canonicalize_utf8()
             .unwrap();
         assert_eq!(
@@ -181,13 +181,13 @@ mod test {
     fn fix_path_relative() {
         let fixed_path: Utf8PathBuf = super::fix_path(
             "../dependency",
-            Utf8Path::new("testdata/tree/relative_dependency"),
+            Utf8Path::new("testdata/relative_dependency"),
         )
         .expect("path was adjusted")
         .into();
         assert_eq!(
             &fixed_path,
-            Utf8Path::new("testdata/tree/relative_dependency/../dependency"),
+            Utf8Path::new("testdata/relative_dependency/../dependency"),
         );
     }
 

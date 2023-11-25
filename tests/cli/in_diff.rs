@@ -23,8 +23,8 @@ fn diff_trees_well_tested() {
 
 #[test]
 fn list_mutants_changed_in_diff1() {
-    let src0 = read_to_string("testdata/tree/diff0/src/lib.rs").unwrap();
-    let src1 = read_to_string("testdata/tree/diff1/src/lib.rs").unwrap();
+    let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+    let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
     let diff = TextDiff::from_lines(&src0, &src1)
         .unified_diff()
         .context_radius(2)
@@ -70,8 +70,8 @@ fn list_mutants_changed_in_diff1() {
 /// If the text in the diff doesn't look like the tree then error out.
 #[test]
 fn mismatched_diff_causes_error() {
-    let src0 = read_to_string("testdata/tree/diff0/src/lib.rs").unwrap();
-    let src1 = read_to_string("testdata/tree/diff1/src/lib.rs").unwrap();
+    let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+    let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
     let diff = TextDiff::from_lines(&src0, &src1)
         .unified_diff()
         .context_radius(2)

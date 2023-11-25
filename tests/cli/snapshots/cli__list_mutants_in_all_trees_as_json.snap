@@ -2,7 +2,7 @@
 source: tests/cli/main.rs
 expression: buf
 ---
-## testdata/tree/already_failing_doctests
+## testdata/already_failing_doctests
 
 ```json
 [
@@ -27,7 +27,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/already_failing_tests
+## testdata/already_failing_tests
 
 ```json
 [
@@ -52,7 +52,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/already_hangs
+## testdata/already_hangs
 
 ```json
 [
@@ -68,7 +68,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/cdylib
+## testdata/cdylib
 
 ```json
 [
@@ -93,13 +93,13 @@ expression: buf
 ]
 ```
 
-## testdata/tree/cfg_attr_mutants_skip
+## testdata/cfg_attr_mutants_skip
 
 ```json
 []
 ```
 
-## testdata/tree/cfg_attr_test_skip
+## testdata/cfg_attr_test_skip
 
 ```json
 [
@@ -124,7 +124,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/dependency
+## testdata/dependency
 
 ```json
 [
@@ -149,7 +149,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/diff0
+## testdata/diff0
 
 ```json
 [
@@ -174,7 +174,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/diff1
+## testdata/diff1
 
 ```json
 [
@@ -217,7 +217,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/error_value
+## testdata/error_value
 
 ```json
 [
@@ -251,13 +251,13 @@ expression: buf
 ]
 ```
 
-## testdata/tree/everything_skipped
+## testdata/everything_skipped
 
 ```json
 []
 ```
 
-## testdata/tree/factorial
+## testdata/factorial
 
 ```json
 [
@@ -291,7 +291,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/fails_without_feature
+## testdata/fails_without_feature
 
 ```json
 [
@@ -316,7 +316,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/hang_avoided_by_attr
+## testdata/hang_avoided_by_attr
 
 ```json
 [
@@ -332,7 +332,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/hang_when_mutated
+## testdata/hang_when_mutated
 
 ```json
 [
@@ -375,7 +375,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/insta
+## testdata/insta
 
 ```json
 [
@@ -400,7 +400,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/integration_tests
+## testdata/integration_tests
 
 ```json
 [
@@ -425,7 +425,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/missing_test
+## testdata/missing_test
 
 ```json
 [
@@ -450,7 +450,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/mut_ref
+## testdata/mut_ref
 
 ```json
 [
@@ -475,13 +475,13 @@ expression: buf
 ]
 ```
 
-## testdata/tree/never_type
+## testdata/never_type
 
 ```json
 []
 ```
 
-## testdata/tree/nightly_only
+## testdata/nightly_only
 
 ```json
 [
@@ -515,7 +515,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/override_dependency
+## testdata/override_dependency
 
 ```json
 [
@@ -540,7 +540,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/package_fails
+## testdata/package_fails
 
 ```json
 [
@@ -583,7 +583,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/patch_dependency
+## testdata/patch_dependency
 
 ```json
 [
@@ -608,7 +608,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/relative_dependency
+## testdata/relative_dependency
 
 ```json
 [
@@ -633,7 +633,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/replace_dependency
+## testdata/replace_dependency
 
 ```json
 [
@@ -658,7 +658,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/small_well_tested
+## testdata/small_well_tested
 
 ```json
 [
@@ -683,7 +683,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/strict_warnings
+## testdata/strict_warnings
 
 ```json
 [
@@ -708,7 +708,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/struct_with_no_default
+## testdata/struct_with_no_default
 
 ```json
 [
@@ -724,7 +724,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/typecheck_fails
+## testdata/typecheck_fails
 
 ```json
 [
@@ -749,7 +749,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/unapply
+## testdata/unapply
 
 ```json
 [
@@ -837,13 +837,13 @@ expression: buf
 ]
 ```
 
-## testdata/tree/unsafe
+## testdata/unsafe
 
 ```json
 []
 ```
 
-## testdata/tree/well_tested
+## testdata/well_tested
 
 ```json
 [
@@ -1192,7 +1192,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/with_child_directories
+## testdata/with_child_directories
 
 ```json
 [
@@ -1325,7 +1325,7 @@ expression: buf
 ]
 ```
 
-## testdata/tree/workspace
+## testdata/workspace
 
 ```json
 [
