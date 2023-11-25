@@ -17,7 +17,16 @@ use crate::Console;
 use crate::Result;
 
 /// Filenames excluded from being copied with the source.
-const SOURCE_EXCLUDE: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
+static SOURCE_EXCLUDE: &[&str] = &[
+    ".git",
+    ".hg",
+    ".bzr",
+    ".svn",
+    "_darcs",
+    ".pijul",
+    "mutants.out",
+    "mutants.out.old",
+];
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
 ///
