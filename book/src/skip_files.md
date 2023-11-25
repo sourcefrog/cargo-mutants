@@ -49,7 +49,7 @@ Exclusions in the config file may be particularly useful when there are modules 
 inherently hard to automatically test, and the project has made a decision to accept lower
 test coverage for them.
 
-If the command line options are used, then the corresponding config option is ignored.
+From cargo-mutants 23.11.2 onwards, if the command line options are given then the corresponding config file option is ignored.
 This allows you to use the config file to test files that are normally expected to pass, and then
 to use the command line to test files that are not yet passing.
 

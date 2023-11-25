@@ -114,10 +114,10 @@ impl Options {
             ),
             check_only: args.check,
             error_values: join_slices(&args.error, &config.error_values),
-            examine_names: RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
-                .context("Compiling examine_re regex")?,
-            exclude_names: RegexSet::new(args.exclude_re.iter().chain(config.exclude_re.iter()))
-                .context("Compiling exclude_re regex")?,
+            examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
+                .context("Failed to compile examine_re regex")?,
+            exclude_names: RegexSet::new(or_slices(&args.exclude_re, &config.exclude_re))
+                .context("Failed to compile exclude_re regex")?,
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             jobs: args.jobs,

@@ -28,7 +28,7 @@ it match the whole name.
 The regex syntax is defined by the [`regex`](https://docs.rs/regex/latest/regex/)
 crate.
 
-These filters are applied after filtering by filename, and `--re` is applied before
+These filters are applied after [filtering by filename](skip_files.md), and `--re` is applied before
 `--exclude-re`.
 
 Examples:
@@ -41,9 +41,13 @@ Examples:
 
 ## Configuring filters by name
 
-Mutants can be filtered by name in the `.cargo/mutants.toml` file. This can be helpful
+Mutants can be filtered by name in the `.cargo/mutants.toml` file. The `exclude_re` and `examine_re` keys are each a list of strings.
+
+This can be helpful
 if you want to systematically skip testing implementations of certain traits, or functions
 with certain names.
+
+From cargo-mutants 23.11.2 onwards, if the command line options are given then the corresponding config file option is ignored.
 
 For example:
 

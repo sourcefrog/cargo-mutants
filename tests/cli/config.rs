@@ -173,6 +173,33 @@ fn list_with_config_file_regexps() {
 }
 
 #[test]
+fn exclude_re_overrides_config() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"
+        exclude_re = [".*"]     # would exclude everything
+        "#,
+    );
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::is_empty());
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .args(["--exclude-re", " -> "])
+        .args(["-f", "src/simple_fns.rs"])
+        .assert()
+        .success()
+        .stdout(indoc! {"
+            src/simple_fns.rs:7: replace returns_unit with ()
+        "});
+}
+
+#[test]
 fn tree_fails_without_needed_feature() {
     // The point of this tree is to check that Cargo features can be turned on,
     // but let's make sure it does fail as intended if they're not.
