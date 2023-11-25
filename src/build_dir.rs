@@ -152,7 +152,7 @@ mod test {
     #[test]
     fn build_dir_debug_form() {
         let options = Options::default();
-        let workspace = Workspace::open("testdata/tree/factorial").unwrap();
+        let workspace = Workspace::open("testdata/factorial").unwrap();
         let build_dir = BuildDir::new(&workspace.dir, &options, &Console::new()).unwrap();
         let debug_form = format!("{build_dir:?}");
         assert!(

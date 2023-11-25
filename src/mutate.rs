@@ -208,7 +208,7 @@ mod test {
 
     #[test]
     fn discover_factorial_mutants() {
-        let tree_path = Utf8Path::new("testdata/tree/factorial");
+        let tree_path = Utf8Path::new("testdata/factorial");
         let workspace = Workspace::open(tree_path).unwrap();
         let options = Options::default();
         let mutants = workspace
@@ -262,7 +262,7 @@ mod test {
 
     #[test]
     fn filter_by_attributes() {
-        let mutants = Workspace::open(Utf8Path::new("testdata/tree/hang_avoided_by_attr"))
+        let mutants = Workspace::open(Utf8Path::new("testdata/hang_avoided_by_attr"))
             .unwrap()
             .mutants(&PackageFilter::All, &Options::default(), &Console::new())
             .unwrap();
@@ -275,7 +275,7 @@ mod test {
 
     #[test]
     fn mutate_factorial() -> Result<()> {
-        let tree_path = Utf8Path::new("testdata/tree/factorial");
+        let tree_path = Utf8Path::new("testdata/factorial");
         let mutants = Workspace::open(tree_path)?.mutants(
             &PackageFilter::All,
             &Options::default(),

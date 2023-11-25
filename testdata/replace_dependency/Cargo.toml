@@ -1,4 +1,4 @@
-# Tests that paths in the 'patch' section are rewritten.
+# Tests that paths in the 'replace' section are rewritten.
 #
 # This crate depends on the 'mutants' crate, but pulls it in from the
 # tree of the cargo-mutants repo, rather than crates.io. If the path
@@ -6,7 +6,7 @@
 # fail.
 
 [package]
-name = "cargo-mutants-testdata-patch-dependency"
+name = "cargo-mutants-testdata-replace-dependency"
 version = "0.0.0"
 edition = "2018"
 authors = ["Martin Pool"]
@@ -16,5 +16,5 @@ publish = false
 [dependencies]
 mutants = { version = "0" }
 
-[patch.crates-io]
-"mutants" = { path = "../../../mutants_attrs" }
+[replace]
+"mutants:0.0.3" = { path = "../../mutants_attrs" }

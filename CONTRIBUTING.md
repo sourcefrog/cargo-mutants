@@ -70,7 +70,7 @@ When the tests run, `cargo test` runs a test suite binary from `target`, which t
 
 As a result, attaching a debugger to the test binary will let you see the code that launches the subprocess and that inspects the output, but it won't let you step through cargo-mutants itself, which is probably the most interesting part.
 
-Probably the easiest path is to just make note of the command run by the test, and then run that command yourself, under a debugger, outside of the test suite. For example, `./target/debug/cargo-mutants -d ./testdata/tree/factorial --list`.
+Probably the easiest path is to just make note of the command run by the test, and then run that command yourself, under a debugger, outside of the test suite. For example, `./target/debug/cargo-mutants -d ./testdata/factorial --list`.
 
 You may wish to turn off the timeouts with `-t 0`.
 

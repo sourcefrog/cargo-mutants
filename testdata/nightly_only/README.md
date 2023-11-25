@@ -5,11 +5,11 @@ mutants` uses the corresponding `cargo` and `rustc` when building candidates.
 
 For example this should fail:
 
-    cargo +stable mutants -d ./testdata/tree/nightly_only/
+    cargo +stable mutants -d ./testdata/nightly_only/
 
 and this should succeed:
 
-    cargo +nightly mutants -d ./testdata/tree/nightly_only/
+    cargo +nightly mutants -d ./testdata/nightly_only/
 
 This isn't covered by an integration test because there's no guarantee the user
 has both toolchains installed...

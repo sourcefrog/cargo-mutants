@@ -335,8 +335,8 @@ index eb42779..a0091b7 100644
 
     #[test]
     fn reconstruct_partial_new_file() {
-        let old = read_to_string("testdata/tree/diff0/src/lib.rs").unwrap();
-        let new = read_to_string("testdata/tree/diff1/src/lib.rs").unwrap();
+        let old = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+        let new = read_to_string("testdata/diff1/src/lib.rs").unwrap();
         let diff = make_diff(&old, &new);
         let patch = Patch::from_single(&diff).unwrap();
         let reconstructed = partial_new_file(&patch);

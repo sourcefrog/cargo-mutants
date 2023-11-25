@@ -87,7 +87,7 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
                 .iter()
                 .all(|p| !path.starts_with(p)))
         })
-        .copy_tree(Path::new("testdata/tree").join(tree_name), &tmp_src_dir)
+        .copy_tree(Path::new("testdata").join(tree_name), &tmp_src_dir)
         .unwrap();
     tmp_src_dir
 }
@@ -168,7 +168,7 @@ fn list_diff_json_contains_diffs() {
             "--json",
             "--diff",
             "-d",
-            "testdata/tree/factorial",
+            "testdata/factorial",
         ])
         .assert()
         .success(); // needed for lifetime
@@ -187,7 +187,7 @@ fn list_diff_json_contains_diffs() {
 /// Return paths to all testdata trees, in order, excluding leftover git
 /// detritus with no Cargo.toml.
 fn all_testdata_tree_paths() -> Vec<PathBuf> {
-    let mut paths: Vec<PathBuf> = fs::read_dir("testdata/tree")
+    let mut paths: Vec<PathBuf> = fs::read_dir("testdata")
         .unwrap()
         .map(|r| r.unwrap())
         .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
@@ -245,7 +245,7 @@ fn list_mutants_in_factorial() {
     run()
         .arg("mutants")
         .arg("--list")
-        .current_dir("testdata/tree/factorial")
+        .current_dir("testdata/factorial")
         .assert_insta("list_mutants_in_factorial");
 }
 
@@ -255,7 +255,7 @@ fn list_mutants_in_factorial_json() {
         .arg("mutants")
         .arg("--list")
         .arg("--json")
-        .current_dir("testdata/tree/factorial")
+        .current_dir("testdata/factorial")
         .assert_insta("list_mutants_in_factorial_json");
 }
 
@@ -307,7 +307,7 @@ fn list_mutants_with_dir_option() {
         .arg("mutants")
         .arg("--list")
         .arg("--dir")
-        .arg("testdata/tree/factorial")
+        .arg("testdata/factorial")
         .assert_insta("list_mutants_with_dir_option");
 }
 
@@ -317,7 +317,7 @@ fn list_mutants_with_diffs_in_factorial() {
         .arg("mutants")
         .arg("--list")
         .arg("--diff")
-        .current_dir("testdata/tree/factorial")
+        .current_dir("testdata/factorial")
         .assert_insta("list_mutants_with_diffs_in_factorial");
 }
 
@@ -326,7 +326,7 @@ fn list_mutants_well_tested() {
     run()
         .arg("mutants")
         .arg("--list")
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert_insta("list_mutants_well_tested");
 }
 
@@ -335,7 +335,7 @@ fn list_mutants_well_tested_examine_name_filter() {
     run()
         .arg("mutants")
         .args(["--list", "--file", "nested_function.rs"])
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert_insta("list_mutants_well_tested_examine_name_filter");
 }
 
@@ -344,7 +344,7 @@ fn list_mutants_well_tested_exclude_name_filter() {
     run()
         .arg("mutants")
         .args(["--list", "--exclude", "simple_fns.rs"])
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert_insta("list_mutants_well_tested_exclude_name_filter");
 }
 
@@ -353,7 +353,7 @@ fn list_mutants_well_tested_exclude_folder_filter() {
     run()
         .arg("mutants")
         .args(["--list", "--exclude", "*/module/*"])
-        .current_dir("testdata/tree/with_child_directories")
+        .current_dir("testdata/with_child_directories")
         .assert_insta("list_mutants_well_tested_exclude_folder_filter");
 }
 
@@ -368,7 +368,7 @@ fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
             "--exclude",
             "nested_function.rs",
         ])
-        .current_dir("testdata/tree/with_child_directories")
+        .current_dir("testdata/with_child_directories")
         .assert_insta("list_mutants_well_tested_examine_and_exclude_name_filter_combined");
 }
 
@@ -378,7 +378,7 @@ fn list_mutants_regex_filters() {
         .arg("mutants")
         .args(["--list", "--re", "divisible"])
         .arg("-d")
-        .arg("testdata/tree/well_tested")
+        .arg("testdata/well_tested")
         .assert_insta("list_mutants_regex_filters");
 }
 
@@ -392,7 +392,7 @@ fn list_mutants_regex_anchored_matches_full_line() {
             r"^src/simple_fns.rs:\d+: replace returns_unit with \(\)$",
         ])
         .arg("-d")
-        .arg("testdata/tree/well_tested")
+        .arg("testdata/well_tested")
         .assert_insta("list_mutants_regex_anchored_matches_full_line");
 }
 
@@ -409,7 +409,7 @@ fn list_mutants_regex_filters_json() {
             "--json",
         ])
         .arg("-d")
-        .arg("testdata/tree/well_tested")
+        .arg("testdata/well_tested")
         .assert_insta("list_mutants_regex_filters_json");
 }
 
@@ -429,7 +429,7 @@ fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_
     run()
         .arg("mutants")
         .args(["--list", "--file", "module_methods.rs", "--file", "*/utils/*", "--exclude", "*/sub_utils/*", "--exclude", "nested_function.rs"])
-        .current_dir("testdata/tree/with_child_directories")
+        .current_dir("testdata/with_child_directories")
         .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
 }
 
@@ -439,7 +439,7 @@ fn list_mutants_json_well_tested() {
         .arg("mutants")
         .arg("--list")
         .arg("--json")
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert_insta("list_mutants_json_well_tested");
 }
 
@@ -448,7 +448,7 @@ fn list_files_text_well_tested() {
     run()
         .arg("mutants")
         .arg("--list-files")
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert_insta("list_files_text_well_tested");
 }
 
@@ -459,7 +459,7 @@ fn list_files_respects_file_filters() {
     run()
         .arg("mutants")
         .args(["--list-files", "--exclude", "lib.rs"])
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert()
         .success()
         .stdout(predicate::str::contains("methods.rs"))
@@ -472,7 +472,7 @@ fn list_files_json_well_tested() {
         .arg("mutants")
         .arg("--list-files")
         .arg("--json")
-        .current_dir("testdata/tree/well_tested")
+        .current_dir("testdata/well_tested")
         .assert_insta("list_files_json_well_tested");
 }
 #[test]
@@ -1164,7 +1164,7 @@ fn cargo_mutants_in_override_dependency_tree_passes() {
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/tree/override_dependency")
+        .arg("testdata/override_dependency")
         .assert()
         .success()
         .stdout(predicate::function(|stdout| {
@@ -1182,7 +1182,7 @@ fn cargo_mutants_in_relative_dependency_tree_passes() {
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/tree/relative_dependency")
+        .arg("testdata/relative_dependency")
         .assert()
         .success()
         .stdout(predicate::function(|stdout| {
@@ -1200,7 +1200,7 @@ fn cargo_mutants_in_replace_dependency_tree_passes() {
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/tree/replace_dependency")
+        .arg("testdata/replace_dependency")
         .assert()
         .success()
         .stdout(predicate::function(|stdout| {
@@ -1218,7 +1218,7 @@ fn cargo_mutants_in_patch_dependency_tree_passes() {
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/tree/patch_dependency")
+        .arg("testdata/patch_dependency")
         .assert()
         .success()
         .stdout(predicate::function(|stdout| {

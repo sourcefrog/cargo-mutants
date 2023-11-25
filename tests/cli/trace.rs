@@ -12,7 +12,7 @@ fn env_var_controls_trace() {
         .env("CARGO_MUTANTS_TRACE_LEVEL", "trace")
         .args(["mutants", "--list"])
         .arg("-d")
-        .arg("testdata/tree/never_type")
+        .arg("testdata/never_type")
         .assert()
         // This is a debug!() message; it should only be seen if the trace var
         // was wired correctly to stderr.
