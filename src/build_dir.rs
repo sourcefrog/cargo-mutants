@@ -184,8 +184,9 @@ fn copy_symlink(_ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Res
 #[cfg(windows)]
 #[mutants::skip] // Mutant tests run on Linux
 fn copy_symlink(ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Result<()> {
-    let link_target = std::fs::read_link(src_path)
-        .with_context(|| format!("read link {:?}", src_path.to_slash_lossy()))?;
+    use std::os::windows::fs::FileTypeExt;
+    let link_target =
+        std::fs::read_link(src_path).with_context(|| format!("read link {src_path:?}"))?;
     if ft.is_symlink_dir() {
         std::os::windows::fs::symlink_dir(link_target, dest_path)
             .with_context(|| format!("create symlink {dest_path:?}"))?;
@@ -193,7 +194,7 @@ fn copy_symlink(ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Resu
         std::os::windows::fs::symlink_file(link_target, dest_path)
             .with_context(|| format!("create symlink {dest_path:?}"))?;
     } else {
-        bail!("Unknown symlink type: {:?}", ft);
+        anyhow::bail!("Unknown symlink type: {:?}", ft);
     }
     Ok(())
 }
