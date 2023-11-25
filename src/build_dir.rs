@@ -186,24 +186,15 @@ fn copy_symlink(ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Resu
     let link_target = std::fs::read_link(src_path)
         .with_context(|| format!("read link {:?}", src_path.to_slash_lossy()))?;
     if ft.is_symlink_dir() {
-        std::os::windows::fs::symlink_dir(link_target, dest_path).with_context(|| {
-            format!(
-                "create symlink {:?} to {:?}",
-                dest_path.to_slash_lossy(),
-                link_target.to_slash_lossy()
-            )
-        })?;
+        std::os::windows::fs::symlink_dir(link_target, dest_path)
+            .with_context(|| format!("create symlink {dest_path:?}"))?;
     } else if ft.is_symlink_file() {
-        std::os::windows::fs::symlink_file(link_target, dest_path).with_context(|| {
-            format!(
-                "create symlink {:?} to {:?}",
-                dest_path.to_slash_lossy(),
-                link_target.to_slash_lossy()
-            )
-        })?;
+        std::os::windows::fs::symlink_file(link_target, dest_path)
+            .with_context(|| format!("create symlink {dest_path:?}"))?;
     } else {
         bail!("Unknown symlink type: {:?}", ft);
     }
+    Ok(())
 }
 
 #[cfg(test)]
