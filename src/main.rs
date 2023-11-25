@@ -33,6 +33,7 @@ use std::fs::read_to_string;
 use std::io;
 use std::process::exit;
 
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use camino::Utf8Path;
@@ -156,6 +157,10 @@ struct Args {
     #[arg(long)]
     list_files: bool,
 
+    /// path to Cargo.toml for the package to mutate.
+    #[arg(long)]
+    manifest_path: Option<Utf8PathBuf>,
+
     /// don't read .cargo/mutants.toml.
     #[arg(long)]
     no_config: bool,
@@ -240,10 +245,19 @@ fn main() -> Result<()> {
     console.setup_global_trace(args.level)?;
     interrupt::install_handler();
 
-    let start_dir: &Utf8Path = args.dir.as_deref().unwrap_or(Utf8Path::new("."));
+    let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
+        ensure!(manifest_path.is_file(), "Manifest path is not a file");
+        ensure!(
+            args.dir.is_none(),
+            "--dir and --manifest-path are mutually exclusive"
+        );
+        manifest_path.parent().expect("Manifest path has no parent")
+    } else if let Some(dir) = &args.dir {
+        dir
+    } else {
+        Utf8Path::new(".")
+    };
     let workspace = Workspace::open(start_dir)?;
-    // let discovered_workspace = discover_packages(start_dir, false, &args.mutate_packages)?;
-    // let workspace_dir = &discovered_workspace.workspace_dir;
     let config = if args.no_config {
         config::Config::default()
     } else {

@@ -8,6 +8,8 @@
 
 - Added: Alternative aliases for command line options, so you don't need to remember if it's "regex" or "re": `--regex`, `--examine-re`, `--examine-regex` (all for names to include) and `--exclude-regex`.
 
+- Added: Accept `--manifest-path` as an alternative to `-d`, for consistency with other cargo commands.
+
 ## 23.11.1
 
 - New `--in-diff FILE` option tests only mutants that are in the diff from the
