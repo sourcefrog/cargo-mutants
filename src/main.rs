@@ -6,6 +6,7 @@ mod build_dir;
 mod cargo;
 mod config;
 mod console;
+mod copy_tree;
 mod exit_code;
 mod fnvalue;
 mod in_diff;
@@ -38,10 +39,10 @@ use anyhow::Context;
 use anyhow::Result;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use clap::ArgAction;
 use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::{generate, Shell};
-use path_slash::PathExt;
 use tracing::debug;
 
 use crate::build_dir::BuildDir;
@@ -55,7 +56,6 @@ use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
 use crate::options::Options;
 use crate::outcome::{Phase, ScenarioOutcome};
-use crate::path::Utf8PathSlashes;
 use crate::scenario::Scenario;
 use crate::workspace::{PackageFilter, Workspace};
 
@@ -127,6 +127,10 @@ struct Args {
     /// slash match the entire path. If used together with `--exclude` argument, then the files to be examined are matched before the files to be excluded.
     #[arg(long, short = 'f')]
     file: Vec<String>,
+
+    /// don't copy files matching gitignore patterns.
+    #[arg(long, action = ArgAction::Set, default_value = "true")]
+    gitignore: bool,
 
     /// run this many cargo build/test jobs in parallel.
     #[arg(long, short = 'j', env = "CARGO_MUTANTS_JOBS")]

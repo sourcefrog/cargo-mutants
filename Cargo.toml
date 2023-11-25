@@ -42,6 +42,7 @@ ctrlc = { version = "3.2.1", features = ["termination"] }
 fastrand = "2"
 fs2 = "0.4"
 globset = "0.4.8"
+ignore = "0.4.20"
 indoc = "2.0.0"
 itertools = "0.11"
 mutants = "0.0.3"
@@ -60,9 +61,6 @@ tracing = "0.1"
 tracing-appender = "0.2"
 tracing-subscriber = "0.3"
 whoami = "1.2"
-
-[dependencies.cp_r]
-version = "0.5.1"
 
 [dependencies.nutmeg]
 version = "0.1.4"
@@ -83,6 +81,7 @@ features = ["full", "extra-traits", "visit"]
 
 [dev-dependencies]
 assert_cmd = "2.0"
+cp_r = "0.5.1"
 insta = "1.12"
 lazy_static = "1.4"
 predicates = "3"
@@ -125,6 +124,7 @@ exclude = [
     "testdata/small_well_tested",
     "testdata/strict_warnings",
     "testdata/struct_with_no_default",
+    "testdata/symlink",
     "testdata/unapply",
     "testdata/unsafe",
     "testdata/well_tested",

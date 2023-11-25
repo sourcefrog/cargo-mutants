@@ -22,6 +22,7 @@ use regex::Regex;
 use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
+mod build_dir;
 mod config;
 mod error_value;
 mod in_diff;

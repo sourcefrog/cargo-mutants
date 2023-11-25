@@ -22,6 +22,9 @@ pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
+    /// Don't copy files matching gitignore patterns to build directories.
+    pub gitignore: bool,
+
     /// Don't delete scratch directories.
     pub leak_dirs: bool,
 
@@ -120,6 +123,7 @@ impl Options {
                 .context("Failed to compile exclude_re regex")?,
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
+            gitignore: args.gitignore,
             jobs: args.jobs,
             leak_dirs: args.leak_dirs,
             output_in_dir: args.output.clone(),
