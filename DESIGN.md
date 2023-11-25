@@ -12,6 +12,8 @@ See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, 
 
 Actually running subprocesses is delegated to `process.rs`, so that we can later potentially run different build tools to Cargo.
 
+`build_dir.rs` -- Manage temporary build directories, including copying the source tree.
+
 `console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
 
@@ -98,6 +100,10 @@ rewritten to be absolute, so that they still work when cargo is run in the
 scratch directory.
 
 Currently, the whole workspace tree is copied. In future, possibly only the package to be mutated could be copied: this would require changes to the code that fixes up dependencies.
+
+Copies by default respect gitignore, but this can be turned off.
+
+Each parallel build dir is copied from the original source so that it sees any gitignore files in parent directories.
 
 (This current approach assumes that all the packages are under the workspace directory, which is common but not actually required.)
 

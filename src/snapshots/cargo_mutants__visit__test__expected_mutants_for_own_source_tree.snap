@@ -5,8 +5,6 @@ expression: list_output
 src/main.rs: replace main -> Result<()> with Ok(())
 src/main.rs: replace main -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace BuildDir::path -> &Utf8Path with &Default::default()
-src/build_dir.rs: replace BuildDir::copy -> Result<BuildDir> with Ok(Default::default())
-src/build_dir.rs: replace BuildDir::copy -> Result<BuildDir> with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Ok(Default::default())
 src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default())

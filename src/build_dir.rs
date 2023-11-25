@@ -16,29 +16,16 @@ use crate::manifest::fix_cargo_config;
 use crate::*;
 
 /// Filenames excluded from being copied with the source.
-const SOURCE_EXCLUDE: &[&str] = &[
-    ".git",
-    ".hg",
-    ".bzr",
-    ".svn",
-    "_darcs",
-    ".pijul",
-    "mutants.out",
-    "mutants.out.old",
-    "target",
-];
+const SOURCE_EXCLUDE: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
 
 /// A temporary directory initialized with a copy of the source, where mutations can be tested.
 pub struct BuildDir {
     /// The path of the root of the temporary directory.
     path: Utf8PathBuf,
-    /// A prefix for tempdir names, based on the name of the source directory.
-    name_base: String,
     /// Holds a reference to the temporary directory, so that it will be deleted when this
     /// object is dropped.
     #[allow(dead_code)]
     strategy: TempDirStrategy,
-    gitignore: bool,
 }
 
 enum TempDirStrategy {
@@ -66,28 +53,12 @@ impl BuildDir {
         } else {
             TempDirStrategy::Collect(temp_dir)
         };
-        let build_dir = BuildDir {
-            strategy,
-            name_base,
-            path,
-            gitignore: options.gitignore,
-        };
+        let build_dir = BuildDir { strategy, path };
         Ok(build_dir)
     }
 
     pub fn path(&self) -> &Utf8Path {
         self.path.as_path()
-    }
-
-    /// Make a copy of this build dir, including its target directory.
-    pub fn copy(&self, console: &Console) -> Result<BuildDir> {
-        let temp_dir = copy_tree(&self.path, &self.name_base, self.gitignore, console)?;
-        Ok(BuildDir {
-            path: temp_dir.path().to_owned().try_into().unwrap(),
-            strategy: TempDirStrategy::Collect(temp_dir),
-            name_base: self.name_base.clone(),
-            gitignore: self.gitignore,
-        })
     }
 }
 
@@ -122,6 +93,7 @@ fn copy_tree(
     for entry in WalkBuilder::new(from_path)
         .standard_filters(gitignore)
         .hidden(false)
+        .require_git(false)
         .filter_entry(|entry| {
             !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
         })

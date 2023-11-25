@@ -15,6 +15,7 @@
   - [Listing and previewing mutations](list.md)
   - [Workspaces and packages](workspaces.md)
   - [Passing options to Cargo](cargo-args.md)
+  - [Build directories](build-dirs.md)
 - [Generating mutants](mutants.md)
   - [Error values](error-values.md)
 - [Improving performance](performance.md)

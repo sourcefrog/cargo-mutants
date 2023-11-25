@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, Result};
 use itertools::Itertools;
 use tracing::warn;
 #[allow(unused)]
@@ -96,7 +96,7 @@ pub fn test_mutants(
     console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");
-        build_dirs.push(build_dirs[0].copy(console).context("copy build dir")?);
+        build_dirs.push(BuildDir::new(workspace_dir, &options, console)?);
     }
     console.build_dirs_finished();
     debug!(build_dirs = ?build_dirs);
