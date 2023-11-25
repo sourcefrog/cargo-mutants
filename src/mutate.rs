@@ -57,6 +57,9 @@ pub struct Function {
     ///
     /// Empty if the function has no return type (i.e. returns `()`).
     pub return_type: String,
+
+    /// The span (line/column range) of the entire function.
+    pub span: Span,
 }
 
 impl Mutant {
@@ -228,10 +231,21 @@ mod test {
         assert_eq!(mutants.len(), 3);
         assert_eq!(
             format!("{:#?}", mutants[0]),
-            indoc! { r#"Mutant {
+            indoc! {
+                r#"Mutant {
                     function: Function {
                         function_name: "main",
                         return_type: "",
+                        span: Span {
+                            start: LineColumn {
+                                line: 1,
+                                column: 1,
+                            },
+                            end: LineColumn {
+                                line: 5,
+                                column: 2,
+                            },
+                        },
                     },
                     replacement: "()",
                     genre: FnValue,
@@ -258,6 +272,16 @@ mod test {
                     function: Function {
                         function_name: "factorial",
                         return_type: "-> u32",
+                        span: Span {
+                            start: LineColumn {
+                                line: 7,
+                                column: 1,
+                            },
+                            end: LineColumn {
+                                line: 13,
+                                column: 2,
+                            },
+                        },
                     },
                     replacement: "0",
                     genre: FnValue,

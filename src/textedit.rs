@@ -52,6 +52,18 @@ impl From<&proc_macro2::Span> for Span {
     }
 }
 
+impl From<proc_macro2::extra::DelimSpan> for Span {
+    fn from(s: proc_macro2::extra::DelimSpan) -> Self {
+        // Get the span for the whole block from the start delimiter
+        // to the end.
+        let joined = s.join();
+        Span {
+            start: joined.start().into(),
+            end: joined.end().into(),
+        }
+    }
+}
+
 /// Replace a subregion of text.
 ///
 /// Returns a copy of `s` with the region between `start` and `end` inclusive replaced by

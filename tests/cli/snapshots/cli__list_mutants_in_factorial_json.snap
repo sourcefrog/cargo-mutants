@@ -7,7 +7,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "main",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 5
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -18,7 +28,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
     },
     "genre": "FnValue",
     "line": 7,
@@ -29,7 +49,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
     },
     "genre": "FnValue",
     "line": 7,

@@ -7,7 +7,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,
@@ -18,7 +28,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,

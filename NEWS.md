@@ -12,6 +12,8 @@
 
 - Added: Accept `--manifest-path` as an alternative to `-d`, for consistency with other cargo commands.
 
+- Changed: The json mutants format now includes a `function` sub-message, which includes the function name and return type, rather than them being direct attributes of the mutant, to better accomodate smaller-than-function mutants. Also, the `function` includes the line-column span of the entire function.
+
 ## 23.11.1
 
 - New `--in-diff FILE` option tests only mutants that are in the diff from the

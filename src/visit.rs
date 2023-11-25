@@ -13,6 +13,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use itertools::Itertools;
 use syn::ext::IdentExt;
+use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
@@ -21,6 +22,7 @@ use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
+use crate::textedit::Span;
 use crate::*;
 
 /// Mutants and files discovered in a source tree.
@@ -112,7 +114,8 @@ fn walk_file(
         external_mods: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
-        source_file: source_file.clone(),
+        fn_span_stack: Vec::new(),
+        source_file: Arc::clone(&source_file),
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.external_mods))
@@ -133,6 +136,9 @@ struct DiscoveryVisitor<'o> {
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
 
+    /// A stack of spans for functions we're inside.
+    fn_span_stack: Vec<Span>,
+
     /// The names from `mod foo;` statements that should be visited later.
     external_mods: Vec<String>,
 
@@ -146,6 +152,10 @@ impl<'o> DiscoveryVisitor<'o> {
         let function = Arc::new(Function {
             function_name,
             return_type: return_type.to_pretty_string(),
+            span: *self
+                .fn_span_stack
+                .last()
+                .expect("Function span stack should not be empty"),
         });
         let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
             .map(|rep| Mutant {
@@ -194,10 +204,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
+        let fn_span: Span = i.span().into();
+        self.fn_span_stack.push(fn_span);
         self.in_namespace(&function_name, |self_| {
             self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
             syn::visit::visit_item_fn(self_, i);
         });
+        assert_eq!(self.fn_span_stack.pop(), Some(fn_span));
     }
 
     /// Visit `fn foo()` within an `impl`.
@@ -218,10 +231,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         {
             return;
         }
+        let fn_span: Span = i.span().into();
+        self.fn_span_stack.push(fn_span);
         self.in_namespace(&function_name, |self_| {
             self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
             syn::visit::visit_impl_item_fn(self_, i)
         });
+        assert_eq!(self.fn_span_stack.pop(), Some(fn_span));
     }
 
     /// Visit `impl Foo { ...}` or `impl Debug for Foo { ... }`.

@@ -9,7 +9,17 @@ expression: mutants_json
     "line": 1,
     "function": {
       "function_name": "main",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 5,
+          "column": 2
+        }
+      }
     },
     "replacement": "()",
     "genre": "FnValue"
@@ -20,7 +30,17 @@ expression: mutants_json
     "line": 7,
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 13,
+          "column": 2
+        }
+      }
     },
     "replacement": "0",
     "genre": "FnValue"
@@ -31,7 +51,17 @@ expression: mutants_json
     "line": 7,
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 13,
+          "column": 2
+        }
+      }
     },
     "replacement": "1",
     "genre": "FnValue"

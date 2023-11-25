@@ -10,7 +10,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "takes_one_arg",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 11
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -21,7 +31,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "takes_one_arg",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 11
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -39,7 +59,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -50,7 +80,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -68,7 +108,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "infinite_loop",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 16
+        },
+        "start": {
+          "column": 1,
+          "line": 8
+        }
+      }
     },
     "genre": "FnValue",
     "line": 8,
@@ -86,7 +136,17 @@ expression: buf
     "file": "src/entry.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -97,7 +157,17 @@ expression: buf
     "file": "src/entry.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -121,7 +191,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,
@@ -132,7 +212,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,
@@ -150,7 +240,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -161,7 +261,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -179,7 +289,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -190,7 +310,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -208,7 +338,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -219,7 +359,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -230,7 +380,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "two",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -241,7 +401,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "two",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -259,7 +429,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "even_is_ok",
-      "return_type": "-> Result<u32, &'static str>"
+      "return_type": "-> Result<u32, &'static str>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -270,7 +450,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "even_is_ok",
-      "return_type": "-> Result<u32, &'static str>"
+      "return_type": "-> Result<u32, &'static str>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -281,7 +471,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "even_is_ok",
-      "return_type": "-> Result<u32, &'static str>"
+      "return_type": "-> Result<u32, &'static str>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -305,7 +505,17 @@ expression: buf
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "main",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 5
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -316,7 +526,17 @@ expression: buf
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
     },
     "genre": "FnValue",
     "line": 7,
@@ -327,7 +547,17 @@ expression: buf
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
     },
     "genre": "FnValue",
     "line": 7,
@@ -345,7 +575,17 @@ expression: buf
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 8
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -356,7 +596,17 @@ expression: buf
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 8
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -374,7 +624,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "controlled_loop",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 25
+        },
+        "start": {
+          "column": 1,
+          "line": 14
+        }
+      }
     },
     "genre": "FnValue",
     "line": 14,
@@ -392,7 +652,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "should_stop",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 18
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -403,7 +673,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "should_stop",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 18
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -414,7 +694,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "controlled_loop",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 38
+        },
+        "start": {
+          "column": 1,
+          "line": 20
+        }
+      }
     },
     "genre": "FnValue",
     "line": 25,
@@ -425,7 +715,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "controlled_loop",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 38
+        },
+        "start": {
+          "column": 1,
+          "line": 20
+        }
+      }
     },
     "genre": "FnValue",
     "line": 25,
@@ -443,7 +743,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "say_hello",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -454,7 +764,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "say_hello",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -472,7 +792,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -483,7 +813,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -501,7 +841,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_symlink",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -512,7 +862,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_symlink",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -530,7 +890,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "returns_mut_ref",
-      "return_type": "-> &mut u32"
+      "return_type": "-> &mut u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -541,7 +911,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "returns_mut_ref",
-      "return_type": "-> &mut u32"
+      "return_type": "-> &mut u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -565,7 +945,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "box_an_int",
-      "return_type": "-> Box<i32>"
+      "return_type": "-> Box<i32>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 4
+        },
+        "start": {
+          "column": 1,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -576,7 +966,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "box_an_int",
-      "return_type": "-> Box<i32>"
+      "return_type": "-> Box<i32>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 4
+        },
+        "start": {
+          "column": 1,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -587,7 +987,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "box_an_int",
-      "return_type": "-> Box<i32>"
+      "return_type": "-> Box<i32>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 4
+        },
+        "start": {
+          "column": 1,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -605,7 +1015,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_even",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
     },
     "genre": "FnValue",
     "line": 6,
@@ -616,7 +1036,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_even",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
     },
     "genre": "FnValue",
     "line": 6,
@@ -634,7 +1064,17 @@ expression: buf
     "file": "failing/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -645,7 +1085,17 @@ expression: buf
     "file": "failing/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -656,7 +1106,17 @@ expression: buf
     "file": "passing/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -667,7 +1127,17 @@ expression: buf
     "file": "passing/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -685,7 +1155,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_even",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
     },
     "genre": "FnValue",
     "line": 6,
@@ -696,7 +1176,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_even",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
     },
     "genre": "FnValue",
     "line": 6,
@@ -714,7 +1204,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "double_factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -725,7 +1225,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "double_factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -743,7 +1253,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_even",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
     },
     "genre": "FnValue",
     "line": 6,
@@ -754,7 +1274,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "is_even",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
     },
     "genre": "FnValue",
     "line": 6,
@@ -772,7 +1302,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
     },
     "genre": "FnValue",
     "line": 4,
@@ -783,7 +1323,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
     },
     "genre": "FnValue",
     "line": 4,
@@ -801,7 +1351,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "some_fn",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -812,7 +1372,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "some_fn",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -830,7 +1400,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "make_an_s",
-      "return_type": "-> S"
+      "return_type": "-> S",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 16
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 11,
@@ -873,7 +1453,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "try_value_coercion",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -884,7 +1474,17 @@ expression: buf
     "file": "src/lib.rs",
     "function": {
       "function_name": "try_value_coercion",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -902,7 +1502,17 @@ expression: buf
     "file": "src/a.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -913,7 +1523,17 @@ expression: buf
     "file": "src/a.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -924,7 +1544,17 @@ expression: buf
     "file": "src/a.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -935,7 +1565,17 @@ expression: buf
     "file": "src/b.rs",
     "function": {
       "function_name": "one_untested",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -946,7 +1586,17 @@ expression: buf
     "file": "src/b.rs",
     "function": {
       "function_name": "one_untested",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -957,7 +1607,17 @@ expression: buf
     "file": "src/b.rs",
     "function": {
       "function_name": "one_untested",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -968,7 +1628,17 @@ expression: buf
     "file": "src/c.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -979,7 +1649,17 @@ expression: buf
     "file": "src/c.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -990,7 +1670,17 @@ expression: buf
     "file": "src/c.rs",
     "function": {
       "function_name": "one",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1014,7 +1704,17 @@ expression: buf
     "file": "src/arc.rs",
     "function": {
       "function_name": "return_arc",
-      "return_type": "-> Arc<String>"
+      "return_type": "-> Arc<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 5
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1025,7 +1725,17 @@ expression: buf
     "file": "src/arc.rs",
     "function": {
       "function_name": "return_arc",
-      "return_type": "-> Arc<String>"
+      "return_type": "-> Arc<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 5
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1036,7 +1746,17 @@ expression: buf
     "file": "src/inside_mod.rs",
     "function": {
       "function_name": "outer::inner::name",
-      "return_type": "-> &'static str"
+      "return_type": "-> &'static str",
+      "span": {
+        "end": {
+          "column": 10,
+          "line": 5
+        },
+        "start": {
+          "column": 9,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1047,7 +1767,17 @@ expression: buf
     "file": "src/inside_mod.rs",
     "function": {
       "function_name": "outer::inner::name",
-      "return_type": "-> &'static str"
+      "return_type": "-> &'static str",
+      "span": {
+        "end": {
+          "column": 10,
+          "line": 5
+        },
+        "start": {
+          "column": 9,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1058,7 +1788,17 @@ expression: buf
     "file": "src/methods.rs",
     "function": {
       "function_name": "Foo::double",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 18
+        },
+        "start": {
+          "column": 5,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 16,
@@ -1069,7 +1809,17 @@ expression: buf
     "file": "src/methods.rs",
     "function": {
       "function_name": "<impl Display for Foo>::fmt",
-      "return_type": "-> fmt::Result"
+      "return_type": "-> fmt::Result",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 24
+        },
+        "start": {
+          "column": 5,
+          "line": 22
+        }
+      }
     },
     "genre": "FnValue",
     "line": 22,
@@ -1080,7 +1830,17 @@ expression: buf
     "file": "src/methods.rs",
     "function": {
       "function_name": "<impl Debug for &Foo>::fmt",
-      "return_type": "-> fmt::Result"
+      "return_type": "-> fmt::Result",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 30
+        },
+        "start": {
+          "column": 5,
+          "line": 28
+        }
+      }
     },
     "genre": "FnValue",
     "line": 28,
@@ -1091,7 +1851,17 @@ expression: buf
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1102,7 +1872,17 @@ expression: buf
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1113,7 +1893,17 @@ expression: buf
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 4
+        },
+        "start": {
+          "column": 5,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -1124,7 +1914,17 @@ expression: buf
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 4
+        },
+        "start": {
+          "column": 5,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -1135,7 +1935,17 @@ expression: buf
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
-      "return_type": "-> f32"
+      "return_type": "-> f32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1146,7 +1956,17 @@ expression: buf
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
-      "return_type": "-> f32"
+      "return_type": "-> f32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1157,7 +1977,17 @@ expression: buf
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
-      "return_type": "-> f32"
+      "return_type": "-> f32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1168,7 +1998,17 @@ expression: buf
     "file": "src/result.rs",
     "function": {
       "function_name": "simple_result",
-      "return_type": "-> Result<&'static str, ()>"
+      "return_type": "-> Result<&'static str, ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -1179,7 +2019,17 @@ expression: buf
     "file": "src/result.rs",
     "function": {
       "function_name": "simple_result",
-      "return_type": "-> Result<&'static str, ()>"
+      "return_type": "-> Result<&'static str, ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
     },
     "genre": "FnValue",
     "line": 5,
@@ -1190,7 +2040,17 @@ expression: buf
     "file": "src/result.rs",
     "function": {
       "function_name": "error_if_negative",
-      "return_type": "-> Result<(), ()>"
+      "return_type": "-> Result<(), ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -1201,7 +2061,17 @@ expression: buf
     "file": "src/result.rs",
     "function": {
       "function_name": "result_with_no_apparent_type_args",
-      "return_type": "-> std::fmt::Result"
+      "return_type": "-> std::fmt::Result",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 17
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,
@@ -1212,7 +2082,17 @@ expression: buf
     "file": "src/sets.rs",
     "function": {
       "function_name": "make_a_set",
-      "return_type": "-> BTreeSet<String>"
+      "return_type": "-> BTreeSet<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1223,7 +2103,17 @@ expression: buf
     "file": "src/sets.rs",
     "function": {
       "function_name": "make_a_set",
-      "return_type": "-> BTreeSet<String>"
+      "return_type": "-> BTreeSet<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1234,7 +2124,17 @@ expression: buf
     "file": "src/sets.rs",
     "function": {
       "function_name": "make_a_set",
-      "return_type": "-> BTreeSet<String>"
+      "return_type": "-> BTreeSet<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1245,7 +2145,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_unit",
-      "return_type": ""
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
     },
     "genre": "FnValue",
     "line": 7,
@@ -1256,7 +2166,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_42u32",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 14
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -1267,7 +2187,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_42u32",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 14
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -1278,7 +2208,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,
@@ -1289,7 +2229,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
-      "return_type": "-> bool"
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
     },
     "genre": "FnValue",
     "line": 17,
@@ -1300,7 +2250,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "double_string",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 30
+        },
+        "start": {
+          "column": 1,
+          "line": 21
+        }
+      }
     },
     "genre": "FnValue",
     "line": 26,
@@ -1311,7 +2271,17 @@ expression: buf
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "double_string",
-      "return_type": "-> String"
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 30
+        },
+        "start": {
+          "column": 1,
+          "line": 21
+        }
+      }
     },
     "genre": "FnValue",
     "line": 26,
@@ -1322,7 +2292,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
-      "return_type": "-> &'a[Cow<'static, str>]"
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1333,7 +2313,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
-      "return_type": "-> &'a[Cow<'static, str>]"
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1344,7 +2334,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
-      "return_type": "-> &'a[Cow<'static, str>]"
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1355,7 +2355,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
-      "return_type": "-> &'a[Cow<'static, str>]"
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1366,7 +2376,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
-      "return_type": "-> &'a[Cow<'static, str>]"
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1377,7 +2397,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
-      "return_type": "-> &mut[usize]"
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -1388,7 +2418,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
-      "return_type": "-> &mut[usize]"
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -1399,7 +2439,17 @@ expression: buf
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
-      "return_type": "-> &mut[usize]"
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
     },
     "genre": "FnValue",
     "line": 12,
@@ -1410,7 +2460,17 @@ expression: buf
     "file": "src/struct_with_lifetime.rs",
     "function": {
       "function_name": "Lex<'buf>::buf_len",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 16
+        },
+        "start": {
+          "column": 5,
+          "line": 14
+        }
+      }
     },
     "genre": "FnValue",
     "line": 14,
@@ -1421,7 +2481,17 @@ expression: buf
     "file": "src/struct_with_lifetime.rs",
     "function": {
       "function_name": "Lex<'buf>::buf_len",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 16
+        },
+        "start": {
+          "column": 5,
+          "line": 14
+        }
+      }
     },
     "genre": "FnValue",
     "line": 14,
@@ -1439,7 +2509,17 @@ expression: buf
     "file": "src/methods.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1450,7 +2530,17 @@ expression: buf
     "file": "src/methods.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1461,7 +2551,17 @@ expression: buf
     "file": "src/module/module_methods.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1472,7 +2572,17 @@ expression: buf
     "file": "src/module/module_methods.rs",
     "function": {
       "function_name": "double",
-      "return_type": "-> usize"
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1483,7 +2593,17 @@ expression: buf
     "file": "src/module/utils/inside_mod.rs",
     "function": {
       "function_name": "outer::inner::name",
-      "return_type": "-> &'static str"
+      "return_type": "-> &'static str",
+      "span": {
+        "end": {
+          "column": 10,
+          "line": 5
+        },
+        "start": {
+          "column": 9,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1494,7 +2614,17 @@ expression: buf
     "file": "src/module/utils/inside_mod.rs",
     "function": {
       "function_name": "outer::inner::name",
-      "return_type": "-> &'static str"
+      "return_type": "-> &'static str",
+      "span": {
+        "end": {
+          "column": 10,
+          "line": 5
+        },
+        "start": {
+          "column": 9,
+          "line": 3
+        }
+      }
     },
     "genre": "FnValue",
     "line": 3,
@@ -1505,7 +2635,17 @@ expression: buf
     "file": "src/module/utils/nested_function.rs",
     "function": {
       "function_name": "has_nested",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1516,7 +2656,17 @@ expression: buf
     "file": "src/module/utils/nested_function.rs",
     "function": {
       "function_name": "has_nested",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1527,7 +2677,17 @@ expression: buf
     "file": "src/module/utils/nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 4
+        },
+        "start": {
+          "column": 5,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -1538,7 +2698,17 @@ expression: buf
     "file": "src/module/utils/nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 4
+        },
+        "start": {
+          "column": 5,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -1549,7 +2719,17 @@ expression: buf
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
     "function": {
       "function_name": "has_nested",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1560,7 +2740,17 @@ expression: buf
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
     "function": {
       "function_name": "has_nested",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1571,7 +2761,17 @@ expression: buf
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 4
+        },
+        "start": {
+          "column": 5,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -1582,7 +2782,17 @@ expression: buf
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 4
+        },
+        "start": {
+          "column": 5,
+          "line": 2
+        }
+      }
     },
     "genre": "FnValue",
     "line": 2,
@@ -1600,7 +2810,17 @@ expression: buf
     "file": "utils/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1611,7 +2831,17 @@ expression: buf
     "file": "utils/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1622,7 +2852,17 @@ expression: buf
     "file": "utils/src/lib.rs",
     "function": {
       "function_name": "triple",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
     },
     "genre": "FnValue",
     "line": 1,
@@ -1633,7 +2873,17 @@ expression: buf
     "file": "main/src/main.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 11,
@@ -1644,7 +2894,17 @@ expression: buf
     "file": "main/src/main.rs",
     "function": {
       "function_name": "factorial",
-      "return_type": "-> u32"
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
     },
     "genre": "FnValue",
     "line": 11,
@@ -1655,7 +2915,17 @@ expression: buf
     "file": "main2/src/main.rs",
     "function": {
       "function_name": "triple_3",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 11
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -1666,7 +2936,17 @@ expression: buf
     "file": "main2/src/main.rs",
     "function": {
       "function_name": "triple_3",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 11
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
@@ -1677,7 +2957,17 @@ expression: buf
     "file": "main2/src/main.rs",
     "function": {
       "function_name": "triple_3",
-      "return_type": "-> i32"
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 11
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
     },
     "genre": "FnValue",
     "line": 9,
