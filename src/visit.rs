@@ -18,6 +18,7 @@ use syn::{Attribute, Expr, ItemFn, ReturnType};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
+use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
 use crate::*;
@@ -141,13 +142,15 @@ struct DiscoveryVisitor<'o> {
 
 impl<'o> DiscoveryVisitor<'o> {
     fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
-        let full_function_name = Arc::new(self.namespace_stack.join("::"));
-        let return_type_str = Arc::new(return_type.to_pretty_string());
+        let function_name = self.namespace_stack.join("::");
+        let function = Arc::new(Function {
+            function_name,
+            return_type: return_type.to_pretty_string(),
+        });
         let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
-                function_name: Arc::clone(&full_function_name),
-                return_type: Arc::clone(&return_type_str),
+                function: Arc::clone(&function),
                 replacement: rep.to_pretty_string(),
                 span: span.into(),
                 genre: Genre::FnValue,
@@ -155,8 +158,8 @@ impl<'o> DiscoveryVisitor<'o> {
             .collect_vec();
         if new_mutants.is_empty() {
             debug!(
-                ?full_function_name,
-                ?return_type_str,
+                function_name = function.function_name,
+                return_type = function.return_type,
                 "No mutants generated for this return type"
             );
         } else {

@@ -7,8 +7,10 @@ expression: mutants_json
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 1,
-    "function": "main",
-    "return_type": "",
+    "function": {
+      "function_name": "main",
+      "return_type": ""
+    },
     "replacement": "()",
     "genre": "FnValue"
   },
@@ -16,8 +18,10 @@ expression: mutants_json
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 7,
-    "function": "factorial",
-    "return_type": "-> u32",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "replacement": "0",
     "genre": "FnValue"
   },
@@ -25,8 +29,10 @@ expression: mutants_json
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "line": 7,
-    "function": "factorial",
-    "return_type": "-> u32",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "replacement": "1",
     "genre": "FnValue"
   }

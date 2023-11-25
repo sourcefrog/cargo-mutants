@@ -5,11 +5,13 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "file": "src/simple_fns.rs",
-    "function": "divisible_by_three",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   }
 ]

@@ -5,20 +5,24 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "file": "src/lib.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]

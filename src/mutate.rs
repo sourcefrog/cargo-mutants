@@ -33,10 +33,7 @@ pub struct Mutant {
     pub source_file: Arc<SourceFile>,
 
     /// The function that's being mutated.
-    pub function_name: Arc<String>,
-
-    /// The return type of the function, as a fragment of Rust syntax.
-    pub return_type: Arc<String>,
+    pub function: Arc<Function>,
 
     /// The mutated textual region.
     pub span: Span,
@@ -46,6 +43,18 @@ pub struct Mutant {
 
     /// What general category of mutant this is.
     pub genre: Genre,
+}
+
+/// The function containing a mutant.
+///
+/// This is used for both mutations of the whole function, and smaller mutations within it.
+#[derive(Eq, PartialEq, Debug, Serialize)]
+pub struct Function {
+    /// The function that's being mutated.
+    pub function_name: String,
+
+    /// The return type of the function, as a fragment of Rust syntax.
+    pub return_type: String,
 }
 
 impl Mutant {
@@ -65,22 +74,23 @@ impl Mutant {
     }
 
     pub fn return_type(&self) -> &str {
-        &self.return_type
+        &self.function.return_type
     }
 
     /// Describe the mutant briefly, not including the location.
     ///
     /// The result is like `replace factorial -> u32 with Default::default()`.
     pub fn describe_change(&self) -> String {
+        // This needs to be updated for smaller-than-function mutations.
         format!(
             "replace {name}{space}{type} with {replacement}",
-            name = self.function_name(),
-            space = if self.return_type.is_empty() {
+            name = self.function.function_name,
+            space = if self.function.return_type.is_empty() {
                 ""
             } else {
                 " "
             },
-            type = self.return_type(),
+            type = self.function.return_type,
             replacement = self.replacement
         )
     }
@@ -95,7 +105,7 @@ impl Mutant {
     /// Note that this will often not be unique: the same name can be reused
     /// in different modules, under different cfg guards, etc.
     pub fn function_name(&self) -> &str {
-        &self.function_name
+        &self.function.function_name
     }
 
     /// Return the cargo package name.
@@ -151,8 +161,7 @@ impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Custom implementation to show spans more concisely
         f.debug_struct("Mutant")
-            .field("function_name", &self.function_name())
-            .field("return_type", &self.return_type)
+            .field("function", &self.function)
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
             .field("start", &(self.span.start.line, self.span.start.column))
@@ -186,11 +195,11 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
+        let function: &Function = self.function.as_ref();
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("line", &self.span.start.line)?;
-        ss.serialize_field("function", &self.function_name.as_ref())?;
-        ss.serialize_field("return_type", &self.return_type.as_ref())?;
+        ss.serialize_field("function", function)?;
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
@@ -216,15 +225,25 @@ mod test {
             .unwrap();
         assert_eq!(mutants.len(), 3);
         assert_eq!(
-            format!("{:?}", mutants[0]),
-            "Mutant { \
-                function_name: \"main\", \
-                return_type: \"\", \
-                replacement: \"()\", \
-                genre: FnValue, \
-                start: (1, 11), end: (5, 2), \
-                package_name: \"cargo-mutants-testdata-factorial\" \
-            }"
+            format!("{:#?}", mutants[0]),
+            indoc! { r#"Mutant {
+                    function: Function {
+                        function_name: "main",
+                        return_type: "",
+                    },
+                    replacement: "()",
+                    genre: FnValue,
+                    start: (
+                        1,
+                        11,
+                    ),
+                    end: (
+                        5,
+                        2,
+                    ),
+                    package_name: "cargo-mutants-testdata-factorial",
+                }"#
+            }
         );
         assert_eq!(
             mutants[0].to_string(),
@@ -234,8 +253,10 @@ mod test {
             format!("{:#?}", mutants[1]),
             indoc! { r#"
                 Mutant {
-                    function_name: "factorial",
-                    return_type: "-> u32",
+                    function: Function {
+                        function_name: "factorial",
+                        return_type: "-> u32",
+                    },
                     replacement: "0",
                     genre: FnValue,
                     start: (

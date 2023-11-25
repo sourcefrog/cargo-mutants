@@ -8,21 +8,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "takes_one_arg",
+    "function": {
+      "function_name": "takes_one_arg",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "mutants-testdata-already-failing-doctests",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "takes_one_arg",
+    "function": {
+      "function_name": "takes_one_arg",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "mutants-testdata-already-failing-doctests",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]
 ```
@@ -33,21 +37,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "mutants-testdata-already-failing-tests",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "mutants-testdata-already-failing-tests",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -58,12 +66,14 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "infinite_loop",
+    "function": {
+      "function_name": "infinite_loop",
+      "return_type": ""
+    },
     "genre": "FnValue",
     "line": 8,
     "package": "cargo-mutants-testdata-already-hangs",
-    "replacement": "()",
-    "return_type": ""
+    "replacement": "()"
   }
 ]
 ```
@@ -74,21 +84,25 @@ expression: buf
 [
   {
     "file": "src/entry.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-cdylib",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/entry.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-cdylib",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -105,21 +119,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]
 ```
@@ -130,21 +148,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-dependency",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-dependency",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -155,21 +177,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "diff0",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/lib.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "diff0",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   }
 ]
 ```
@@ -180,39 +206,47 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "diff1",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/lib.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "diff1",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   },
   {
     "file": "src/lib.rs",
-    "function": "two",
+    "function": {
+      "function_name": "two",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "diff1",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/lib.rs",
-    "function": "two",
+    "function": {
+      "function_name": "two",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "diff1",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   }
 ]
 ```
@@ -223,30 +257,36 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "even_is_ok",
+    "function": {
+      "function_name": "even_is_ok",
+      "return_type": "-> Result<u32, &'static str>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-error-value",
-    "replacement": "Ok(0)",
-    "return_type": "-> Result<u32, &'static str>"
+    "replacement": "Ok(0)"
   },
   {
     "file": "src/lib.rs",
-    "function": "even_is_ok",
+    "function": {
+      "function_name": "even_is_ok",
+      "return_type": "-> Result<u32, &'static str>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-error-value",
-    "replacement": "Ok(1)",
-    "return_type": "-> Result<u32, &'static str>"
+    "replacement": "Ok(1)"
   },
   {
     "file": "src/lib.rs",
-    "function": "even_is_ok",
+    "function": {
+      "function_name": "even_is_ok",
+      "return_type": "-> Result<u32, &'static str>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-error-value",
-    "replacement": "Err(\"injected\")",
-    "return_type": "-> Result<u32, &'static str>"
+    "replacement": "Err(\"injected\")"
   }
 ]
 ```
@@ -263,30 +303,36 @@ expression: buf
 [
   {
     "file": "src/bin/factorial.rs",
-    "function": "main",
+    "function": {
+      "function_name": "main",
+      "return_type": ""
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "()",
-    "return_type": ""
+    "replacement": "()"
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -297,21 +343,25 @@ expression: buf
 [
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "cargo-mutants-testdata-fails-without-feature",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "cargo-mutants-testdata-fails-without-feature",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -322,12 +372,14 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "controlled_loop",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": ""
+    },
     "genre": "FnValue",
     "line": 14,
     "package": "cargo-mutants-testdata-hang-avoided-by-attr",
-    "replacement": "()",
-    "return_type": ""
+    "replacement": "()"
   }
 ]
 ```
@@ -338,39 +390,47 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "should_stop",
+    "function": {
+      "function_name": "should_stop",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "function": "should_stop",
+    "function": {
+      "function_name": "should_stop",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "false",
-    "return_type": "-> bool"
+    "replacement": "false"
   },
   {
     "file": "src/lib.rs",
-    "function": "controlled_loop",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 25,
     "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "controlled_loop",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 25,
     "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]
 ```
@@ -381,21 +441,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "say_hello",
+    "function": {
+      "function_name": "say_hello",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-insta",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/lib.rs",
-    "function": "say_hello",
+    "function": {
+      "function_name": "say_hello",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-insta",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   }
 ]
 ```
@@ -406,21 +470,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-integration-tests",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-integration-tests",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -431,21 +499,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "is_symlink",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-missing-test",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "function": "is_symlink",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-missing-test",
-    "replacement": "false",
-    "return_type": "-> bool"
+    "replacement": "false"
   }
 ]
 ```
@@ -456,21 +528,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "returns_mut_ref",
+    "function": {
+      "function_name": "returns_mut_ref",
+      "return_type": "-> &mut u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-mut-ref",
-    "replacement": "Box::leak(Box::new(0))",
-    "return_type": "-> &mut u32"
+    "replacement": "Box::leak(Box::new(0))"
   },
   {
     "file": "src/lib.rs",
-    "function": "returns_mut_ref",
+    "function": {
+      "function_name": "returns_mut_ref",
+      "return_type": "-> &mut u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-mut-ref",
-    "replacement": "Box::leak(Box::new(1))",
-    "return_type": "-> &mut u32"
+    "replacement": "Box::leak(Box::new(1))"
   }
 ]
 ```
@@ -487,30 +563,36 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "box_an_int",
+    "function": {
+      "function_name": "box_an_int",
+      "return_type": "-> Box<i32>"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "nightly_only",
-    "replacement": "Box::new(0)",
-    "return_type": "-> Box<i32>"
+    "replacement": "Box::new(0)"
   },
   {
     "file": "src/lib.rs",
-    "function": "box_an_int",
+    "function": {
+      "function_name": "box_an_int",
+      "return_type": "-> Box<i32>"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "nightly_only",
-    "replacement": "Box::new(1)",
-    "return_type": "-> Box<i32>"
+    "replacement": "Box::new(1)"
   },
   {
     "file": "src/lib.rs",
-    "function": "box_an_int",
+    "function": {
+      "function_name": "box_an_int",
+      "return_type": "-> Box<i32>"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "nightly_only",
-    "replacement": "Box::new(-1)",
-    "return_type": "-> Box<i32>"
+    "replacement": "Box::new(-1)"
   }
 ]
 ```
@@ -521,21 +603,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "is_even",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 6,
     "package": "cargo-mutants-testdata-override-dependency",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "function": "is_even",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 6,
     "package": "cargo-mutants-testdata-override-dependency",
-    "replacement": "false",
-    "return_type": "-> bool"
+    "replacement": "false"
   }
 ]
 ```
@@ -546,39 +632,47 @@ expression: buf
 [
   {
     "file": "failing/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-package-fails-failing",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "failing/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-package-fails-failing",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   },
   {
     "file": "passing/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-package-fails-passing",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "passing/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-package-fails-passing",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]
 ```
@@ -589,21 +683,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "is_even",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 6,
     "package": "cargo-mutants-testdata-patch-dependency",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "function": "is_even",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 6,
     "package": "cargo-mutants-testdata-patch-dependency",
-    "replacement": "false",
-    "return_type": "-> bool"
+    "replacement": "false"
   }
 ]
 ```
@@ -614,21 +712,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "double_factorial",
+    "function": {
+      "function_name": "double_factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "cargo-mutants-testdata-relative-dependency",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "double_factorial",
+    "function": {
+      "function_name": "double_factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "cargo-mutants-testdata-relative-dependency",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -639,21 +741,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "is_even",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 6,
     "package": "cargo-mutants-testdata-replace-dependency",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   },
   {
     "file": "src/lib.rs",
-    "function": "is_even",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 6,
     "package": "cargo-mutants-testdata-replace-dependency",
-    "replacement": "false",
-    "return_type": "-> bool"
+    "replacement": "false"
   }
 ]
 ```
@@ -664,21 +770,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 4,
     "package": "cargo-mutants-testdata-small-well-tested",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 4,
     "package": "cargo-mutants-testdata-small-well-tested",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -689,21 +799,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "some_fn",
+    "function": {
+      "function_name": "some_fn",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "cargo-mutants-testdata-strict-warnings",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/lib.rs",
-    "function": "some_fn",
+    "function": {
+      "function_name": "some_fn",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "cargo-mutants-testdata-strict-warnings",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]
 ```
@@ -714,12 +828,14 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "make_an_s",
+    "function": {
+      "function_name": "make_an_s",
+      "return_type": "-> S"
+    },
     "genre": "FnValue",
     "line": 11,
     "package": "cargo-mutants-testdata-struct-with-no-default",
-    "replacement": "Default::default()",
-    "return_type": "-> S"
+    "replacement": "Default::default()"
   }
 ]
 ```
@@ -755,21 +871,25 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "try_value_coercion",
+    "function": {
+      "function_name": "try_value_coercion",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "mutants-testdata-typecheck-fails",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/lib.rs",
-    "function": "try_value_coercion",
+    "function": {
+      "function_name": "try_value_coercion",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "mutants-testdata-typecheck-fails",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   }
 ]
 ```
@@ -780,84 +900,102 @@ expression: buf
 [
   {
     "file": "src/a.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "0",
-    "return_type": "-> i32"
+    "replacement": "0"
   },
   {
     "file": "src/a.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "1",
-    "return_type": "-> i32"
+    "replacement": "1"
   },
   {
     "file": "src/a.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "-1",
-    "return_type": "-> i32"
+    "replacement": "-1"
   },
   {
     "file": "src/b.rs",
-    "function": "one_untested",
+    "function": {
+      "function_name": "one_untested",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "0",
-    "return_type": "-> i32"
+    "replacement": "0"
   },
   {
     "file": "src/b.rs",
-    "function": "one_untested",
+    "function": {
+      "function_name": "one_untested",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "1",
-    "return_type": "-> i32"
+    "replacement": "1"
   },
   {
     "file": "src/b.rs",
-    "function": "one_untested",
+    "function": {
+      "function_name": "one_untested",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "-1",
-    "return_type": "-> i32"
+    "replacement": "-1"
   },
   {
     "file": "src/c.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "0",
-    "return_type": "-> i32"
+    "replacement": "0"
   },
   {
     "file": "src/c.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "1",
-    "return_type": "-> i32"
+    "replacement": "1"
   },
   {
     "file": "src/c.rs",
-    "function": "one",
+    "function": {
+      "function_name": "one",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "-1",
-    "return_type": "-> i32"
+    "replacement": "-1"
   }
 ]
 ```
@@ -874,345 +1012,421 @@ expression: buf
 [
   {
     "file": "src/arc.rs",
-    "function": "return_arc",
+    "function": {
+      "function_name": "return_arc",
+      "return_type": "-> Arc<String>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Arc::new(String::new())",
-    "return_type": "-> Arc<String>"
+    "replacement": "Arc::new(String::new())"
   },
   {
     "file": "src/arc.rs",
-    "function": "return_arc",
+    "function": {
+      "function_name": "return_arc",
+      "return_type": "-> Arc<String>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Arc::new(\"xyzzy\".into())",
-    "return_type": "-> Arc<String>"
+    "replacement": "Arc::new(\"xyzzy\".into())"
   },
   {
     "file": "src/inside_mod.rs",
-    "function": "outer::inner::name",
+    "function": {
+      "function_name": "outer::inner::name",
+      "return_type": "-> &'static str"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "\"\"",
-    "return_type": "-> &'static str"
+    "replacement": "\"\""
   },
   {
     "file": "src/inside_mod.rs",
-    "function": "outer::inner::name",
+    "function": {
+      "function_name": "outer::inner::name",
+      "return_type": "-> &'static str"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "\"xyzzy\"",
-    "return_type": "-> &'static str"
+    "replacement": "\"xyzzy\""
   },
   {
     "file": "src/methods.rs",
-    "function": "Foo::double",
+    "function": {
+      "function_name": "Foo::double",
+      "return_type": ""
+    },
     "genre": "FnValue",
     "line": 16,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "()",
-    "return_type": ""
+    "replacement": "()"
   },
   {
     "file": "src/methods.rs",
-    "function": "<impl Display for Foo>::fmt",
+    "function": {
+      "function_name": "<impl Display for Foo>::fmt",
+      "return_type": "-> fmt::Result"
+    },
     "genre": "FnValue",
     "line": 22,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Ok(Default::default())",
-    "return_type": "-> fmt::Result"
+    "replacement": "Ok(Default::default())"
   },
   {
     "file": "src/methods.rs",
-    "function": "<impl Debug for &Foo>::fmt",
+    "function": {
+      "function_name": "<impl Debug for &Foo>::fmt",
+      "return_type": "-> fmt::Result"
+    },
     "genre": "FnValue",
     "line": 28,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Ok(Default::default())",
-    "return_type": "-> fmt::Result"
+    "replacement": "Ok(Default::default())"
   },
   {
     "file": "src/nested_function.rs",
-    "function": "has_nested",
+    "function": {
+      "function_name": "has_nested",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/nested_function.rs",
-    "function": "has_nested",
+    "function": {
+      "function_name": "has_nested",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "src/nested_function.rs",
-    "function": "has_nested::inner",
+    "function": {
+      "function_name": "has_nested::inner",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/nested_function.rs",
-    "function": "has_nested::inner",
+    "function": {
+      "function_name": "has_nested::inner",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "src/numbers.rs",
-    "function": "double_float",
+    "function": {
+      "function_name": "double_float",
+      "return_type": "-> f32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "0.0",
-    "return_type": "-> f32"
+    "replacement": "0.0"
   },
   {
     "file": "src/numbers.rs",
-    "function": "double_float",
+    "function": {
+      "function_name": "double_float",
+      "return_type": "-> f32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "1.0",
-    "return_type": "-> f32"
+    "replacement": "1.0"
   },
   {
     "file": "src/numbers.rs",
-    "function": "double_float",
+    "function": {
+      "function_name": "double_float",
+      "return_type": "-> f32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "-1.0",
-    "return_type": "-> f32"
+    "replacement": "-1.0"
   },
   {
     "file": "src/result.rs",
-    "function": "simple_result",
+    "function": {
+      "function_name": "simple_result",
+      "return_type": "-> Result<&'static str, ()>"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Ok(\"\")",
-    "return_type": "-> Result<&'static str, ()>"
+    "replacement": "Ok(\"\")"
   },
   {
     "file": "src/result.rs",
-    "function": "simple_result",
+    "function": {
+      "function_name": "simple_result",
+      "return_type": "-> Result<&'static str, ()>"
+    },
     "genre": "FnValue",
     "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Ok(\"xyzzy\")",
-    "return_type": "-> Result<&'static str, ()>"
+    "replacement": "Ok(\"xyzzy\")"
   },
   {
     "file": "src/result.rs",
-    "function": "error_if_negative",
+    "function": {
+      "function_name": "error_if_negative",
+      "return_type": "-> Result<(), ()>"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Ok(())",
-    "return_type": "-> Result<(), ()>"
+    "replacement": "Ok(())"
   },
   {
     "file": "src/result.rs",
-    "function": "result_with_no_apparent_type_args",
+    "function": {
+      "function_name": "result_with_no_apparent_type_args",
+      "return_type": "-> std::fmt::Result"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Ok(Default::default())",
-    "return_type": "-> std::fmt::Result"
+    "replacement": "Ok(Default::default())"
   },
   {
     "file": "src/sets.rs",
-    "function": "make_a_set",
+    "function": {
+      "function_name": "make_a_set",
+      "return_type": "-> BTreeSet<String>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "BTreeSet::new()",
-    "return_type": "-> BTreeSet<String>"
+    "replacement": "BTreeSet::new()"
   },
   {
     "file": "src/sets.rs",
-    "function": "make_a_set",
+    "function": {
+      "function_name": "make_a_set",
+      "return_type": "-> BTreeSet<String>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "BTreeSet::from_iter([String::new()])",
-    "return_type": "-> BTreeSet<String>"
+    "replacement": "BTreeSet::from_iter([String::new()])"
   },
   {
     "file": "src/sets.rs",
-    "function": "make_a_set",
+    "function": {
+      "function_name": "make_a_set",
+      "return_type": "-> BTreeSet<String>"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
-    "return_type": "-> BTreeSet<String>"
+    "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "returns_unit",
+    "function": {
+      "function_name": "returns_unit",
+      "return_type": ""
+    },
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "()",
-    "return_type": ""
+    "replacement": "()"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "returns_42u32",
+    "function": {
+      "function_name": "returns_42u32",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "returns_42u32",
+    "function": {
+      "function_name": "returns_42u32",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "divisible_by_three",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "true",
-    "return_type": "-> bool"
+    "replacement": "true"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "divisible_by_three",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool"
+    },
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "false",
-    "return_type": "-> bool"
+    "replacement": "false"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "double_string",
+    "function": {
+      "function_name": "double_string",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 26,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/simple_fns.rs",
-    "function": "double_string",
+    "function": {
+      "function_name": "double_string",
+      "return_type": "-> String"
+    },
     "genre": "FnValue",
     "line": 26,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   },
   {
     "file": "src/slices.rs",
-    "function": "pad",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(Vec::new())",
-    "return_type": "-> &'a[Cow<'static, str>]"
+    "replacement": "Vec::leak(Vec::new())"
   },
   {
     "file": "src/slices.rs",
-    "function": "pad",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
-    "return_type": "-> &'a[Cow<'static, str>]"
+    "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])"
   },
   {
     "file": "src/slices.rs",
-    "function": "pad",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
-    "return_type": "-> &'a[Cow<'static, str>]"
+    "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])"
   },
   {
     "file": "src/slices.rs",
-    "function": "pad",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
-    "return_type": "-> &'a[Cow<'static, str>]"
+    "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])"
   },
   {
     "file": "src/slices.rs",
-    "function": "pad",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
-    "return_type": "-> &'a[Cow<'static, str>]"
+    "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])"
   },
   {
     "file": "src/slices.rs",
-    "function": "return_mut_slice",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(Vec::new())",
-    "return_type": "-> &mut[usize]"
+    "replacement": "Vec::leak(Vec::new())"
   },
   {
     "file": "src/slices.rs",
-    "function": "return_mut_slice",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(vec![0])",
-    "return_type": "-> &mut[usize]"
+    "replacement": "Vec::leak(vec![0])"
   },
   {
     "file": "src/slices.rs",
-    "function": "return_mut_slice",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]"
+    },
     "genre": "FnValue",
     "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "Vec::leak(vec![1])",
-    "return_type": "-> &mut[usize]"
+    "replacement": "Vec::leak(vec![1])"
   },
   {
     "file": "src/struct_with_lifetime.rs",
-    "function": "Lex<'buf>::buf_len",
+    "function": {
+      "function_name": "Lex<'buf>::buf_len",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 14,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/struct_with_lifetime.rs",
-    "function": "Lex<'buf>::buf_len",
+    "function": {
+      "function_name": "Lex<'buf>::buf_len",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 14,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   }
 ]
 ```
@@ -1223,129 +1437,157 @@ expression: buf
 [
   {
     "file": "src/methods.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/methods.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   },
   {
     "file": "src/module/module_methods.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "0",
-    "return_type": "-> usize"
+    "replacement": "0"
   },
   {
     "file": "src/module/module_methods.rs",
-    "function": "double",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "1",
-    "return_type": "-> usize"
+    "replacement": "1"
   },
   {
     "file": "src/module/utils/inside_mod.rs",
-    "function": "outer::inner::name",
+    "function": {
+      "function_name": "outer::inner::name",
+      "return_type": "-> &'static str"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "\"\"",
-    "return_type": "-> &'static str"
+    "replacement": "\"\""
   },
   {
     "file": "src/module/utils/inside_mod.rs",
-    "function": "outer::inner::name",
+    "function": {
+      "function_name": "outer::inner::name",
+      "return_type": "-> &'static str"
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "\"xyzzy\"",
-    "return_type": "-> &'static str"
+    "replacement": "\"xyzzy\""
   },
   {
     "file": "src/module/utils/nested_function.rs",
-    "function": "has_nested",
+    "function": {
+      "function_name": "has_nested",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/module/utils/nested_function.rs",
-    "function": "has_nested",
+    "function": {
+      "function_name": "has_nested",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "src/module/utils/nested_function.rs",
-    "function": "has_nested::inner",
+    "function": {
+      "function_name": "has_nested::inner",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/module/utils/nested_function.rs",
-    "function": "has_nested::inner",
+    "function": {
+      "function_name": "has_nested::inner",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "function": "has_nested",
+    "function": {
+      "function_name": "has_nested",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "function": "has_nested",
+    "function": {
+      "function_name": "has_nested",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "function": "has_nested::inner",
+    "function": {
+      "function_name": "has_nested::inner",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/module/utils/sub_utils/subutils_nested_function.rs",
-    "function": "has_nested::inner",
+    "function": {
+      "function_name": "has_nested::inner",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
 ```
@@ -1356,75 +1598,91 @@ expression: buf
 [
   {
     "file": "utils/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo_mutants_testdata_workspace_utils",
-    "replacement": "0",
-    "return_type": "-> i32"
+    "replacement": "0"
   },
   {
     "file": "utils/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo_mutants_testdata_workspace_utils",
-    "replacement": "1",
-    "return_type": "-> i32"
+    "replacement": "1"
   },
   {
     "file": "utils/src/lib.rs",
-    "function": "triple",
+    "function": {
+      "function_name": "triple",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo_mutants_testdata_workspace_utils",
-    "replacement": "-1",
-    "return_type": "-> i32"
+    "replacement": "-1"
   },
   {
     "file": "main/src/main.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 11,
     "package": "main",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "main/src/main.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 11,
     "package": "main",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   },
   {
     "file": "main2/src/main.rs",
-    "function": "triple_3",
+    "function": {
+      "function_name": "triple_3",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "main2",
-    "replacement": "0",
-    "return_type": "-> i32"
+    "replacement": "0"
   },
   {
     "file": "main2/src/main.rs",
-    "function": "triple_3",
+    "function": {
+      "function_name": "triple_3",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "main2",
-    "replacement": "1",
-    "return_type": "-> i32"
+    "replacement": "1"
   },
   {
     "file": "main2/src/main.rs",
-    "function": "triple_3",
+    "function": {
+      "function_name": "triple_3",
+      "return_type": "-> i32"
+    },
     "genre": "FnValue",
     "line": 9,
     "package": "main2",
-    "replacement": "-1",
-    "return_type": "-> i32"
+    "replacement": "-1"
   }
 ]
 ```

@@ -5,29 +5,35 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "file": "src/bin/factorial.rs",
-    "function": "main",
+    "function": {
+      "function_name": "main",
+      "return_type": ""
+    },
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "()",
-    "return_type": ""
+    "replacement": "()"
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "0",
-    "return_type": "-> u32"
+    "replacement": "0"
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32"
+    },
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "1",
-    "return_type": "-> u32"
+    "replacement": "1"
   }
 ]
