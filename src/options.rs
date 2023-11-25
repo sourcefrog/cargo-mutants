@@ -118,14 +118,12 @@ impl Options {
                 RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
                     .context("Compiling examine_re regex")?,
             ),
-            examine_globset: build_glob_set(args.file.iter().chain(config.examine_globs.iter()))?,
             exclude_names: Some(
                 RegexSet::new(args.exclude_re.iter().chain(config.exclude_re.iter()))
                     .context("Compiling exclude_re regex")?,
             ),
-            exclude_globset: build_glob_set(
-                args.exclude.iter().chain(config.exclude_globs.iter()),
-            )?,
+            examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
+            exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             jobs: args.jobs,
             leak_dirs: args.leak_dirs,
             output_in_dir: args.output.clone(),
@@ -149,6 +147,15 @@ impl Options {
             }
         });
         Ok(options)
+    }
+}
+
+/// If the first slices is non-empty, return that, otherwise the second.
+fn or_slices<'a: 'c, 'b: 'c, 'c, T>(a: &'a [T], b: &'b [T]) -> &'c [T] {
+    if a.is_empty() {
+        b
+    } else {
+        a
     }
 }
 

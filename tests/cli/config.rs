@@ -101,6 +101,57 @@ fn list_with_config_file_inclusion() {
 }
 
 #[test]
+fn file_argument_overrides_config_examine_globs_key() {
+    let testdata = copy_of_testdata("well_tested");
+    // This config key has no effect because the command line argument
+    // takes precedence.
+    write_config_file(
+        &testdata,
+        r#"examine_globs = ["src/*_mod.rs"]
+        "#,
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .args(["--file", "src/simple_fns.rs"])
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(indoc! { "\
+            src/simple_fns.rs
+        " }));
+}
+
+#[test]
+fn exclude_file_argument_overrides_config() {
+    let testdata = copy_of_testdata("well_tested");
+    // This config key has no effect because the command line argument
+    // takes precedence.
+    write_config_file(
+        &testdata,
+        indoc! { r#"
+            examine_globs = ["src/*_mod.rs"]
+            exclude_globs = ["src/inside_mod.rs"]
+        "#},
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .args(["--file", "src/*.rs"])
+        .args(["--exclude", "src/*_mod.rs"])
+        .args(["--exclude", "src/s*.rs"])
+        .args(["--exclude", "src/n*.rs"])
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(indoc! { "\
+            src/lib.rs
+            src/arc.rs
+            src/empty_fns.rs
+            src/methods.rs
+            src/result.rs
+        " }));
+}
+
+#[test]
 fn list_with_config_file_regexps() {
     let testdata = copy_of_testdata("well_tested");
     write_config_file(

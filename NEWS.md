@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: If `--file` or `--exclude` are set on the command line, then they replace the corresponding config file options. (Previously the values were combined.) This makes it easier to use the command line to test files that are normally not tested.
+
 - Improved: Run `cargo metadata` with `--no-deps`, so that it doesn't download and compute dependency information, which can save time in some situations.
 
 ## 23.11.1
