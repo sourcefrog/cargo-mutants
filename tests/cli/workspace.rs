@@ -11,6 +11,24 @@ use serde_json::json;
 use super::{assert_bytes_eq_json, copy_of_testdata, run};
 
 #[test]
+fn open_by_manifest_path() {
+    run()
+        .args([
+            "mutants",
+            "--list",
+            "--manifest-path",
+            "testdata/factorial/Cargo.toml",
+        ])
+        .assert()
+        .success()
+        .stdout(indoc! {"
+            src/bin/factorial.rs:1: replace main with ()
+            src/bin/factorial.rs:7: replace factorial -> u32 with 0
+            src/bin/factorial.rs:7: replace factorial -> u32 with 1
+        "});
+}
+
+#[test]
 fn list_warns_about_unmatched_packages() {
     run()
         .args([

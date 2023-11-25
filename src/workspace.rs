@@ -107,16 +107,18 @@ struct PackageTop {
 }
 
 impl Workspace {
+    /// Open the workspace containing a given directory.
     pub fn open<P: AsRef<Utf8Path>>(start_dir: P) -> Result<Self> {
         let dir = locate_project(start_dir.as_ref(), true)?;
-        let cargo_toml_path = dir.join("Cargo.toml");
-        debug!(?cargo_toml_path, ?dir, "Find root files");
+        let manifest_path = dir.join("Cargo.toml");
+        debug!(?manifest_path, ?dir, "Find root files");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .no_deps()
-            .manifest_path(&cargo_toml_path)
+            .manifest_path(&manifest_path)
             .exec()
-            .context("run cargo metadata")?;
+            .with_context(|| format!("Failed to run cargo metadata on {:?}", manifest_path))?;
+        debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
         Ok(Workspace { dir, metadata })
     }
 
