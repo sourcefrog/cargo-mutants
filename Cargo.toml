@@ -124,6 +124,7 @@ exclude = [
     "testdata/small_well_tested",
     "testdata/strict_warnings",
     "testdata/struct_with_no_default",
+    "testdata/symlink",
     "testdata/unapply",
     "testdata/unsafe",
     "testdata/well_tested",

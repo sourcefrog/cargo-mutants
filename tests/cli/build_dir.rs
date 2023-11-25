@@ -30,3 +30,15 @@ fn gitignore_can_be_turned_off() {
         .assert()
         .success();
 }
+
+/// A tree containing a symlink that must exist for the tests to pass works properly.
+///
+/// This runs in-place to avoid any complications from copying the testdata.
+#[test]
+fn tree_with_symlink() {
+    run()
+        .args(["mutants", "-d"])
+        .arg("testdata/symlink")
+        .assert()
+        .success();
+}

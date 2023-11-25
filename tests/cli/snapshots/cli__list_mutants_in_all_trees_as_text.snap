@@ -205,6 +205,13 @@ src/lib.rs:5: replace some_fn -> usize with 1
 src/lib.rs:11: replace make_an_s -> S with Default::default()
 ```
 
+## testdata/symlink
+
+```
+src/lib.rs:3: replace read_through_symlink -> String with String::new()
+src/lib.rs:3: replace read_through_symlink -> String with "xyzzy".into()
+```
+
 ## testdata/typecheck_fails
 
 ```

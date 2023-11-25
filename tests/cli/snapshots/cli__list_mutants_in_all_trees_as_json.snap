@@ -724,6 +724,31 @@ expression: buf
 ]
 ```
 
+## testdata/symlink
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": "read_through_symlink",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-symlink",
+    "replacement": "String::new()",
+    "return_type": "-> String"
+  },
+  {
+    "file": "src/lib.rs",
+    "function": "read_through_symlink",
+    "genre": "FnValue",
+    "line": 3,
+    "package": "cargo-mutants-testdata-symlink",
+    "replacement": "\"xyzzy\".into()",
+    "return_type": "-> String"
+  }
+]
+```
+
 ## testdata/typecheck_fails
 
 ```json
