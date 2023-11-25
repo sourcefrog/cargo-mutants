@@ -8,15 +8,6 @@ Two options (each with short and long names) control which files are mutated:
 
 These options may be repeated.
 
-Files may also be filtered with the `exclude_globs` and `examine_globs` options in `.cargo/mutants.toml`, for example:
-
-```toml
-exclude_globs = ["src/main.rs", "src/cache/*.rs"] # same as -e
-examine_globs = ["src/important/*.rs"] # same as -f, test *only* these files
-```
-
-Globs from the config file are appended to globs from the command line.
-
 If any `-f` options are given, only source files that match are
 considered; otherwise all files are considered. This list is then further
 reduced by exclusions.
@@ -25,9 +16,7 @@ If the glob contains `/` (or on Windows, `\`), then it matches against the path 
 tree. For example, `src/*/*.rs` will exclude all files in subdirectories of `src`.
 
 If the glob does not contain a path separator, it matches against filenames
-in any directory.
-
-`/` matches the path separator on both Unix and Windows.
+in any directory.  `/` matches the path separator on both Unix and Windows.
 
 Note that the glob must contain `.rs` (or a matching wildcard) to match
 source files with that suffix. For example, `-f network` will match
@@ -40,10 +29,6 @@ test mutants in other files referenced by `mod` statements in `main.rs`.
 
 Since Rust does not currently allow attributes such as `#[mutants::skip]` on `mod` statements or at module scope filtering by filename is the only way to skip an entire module.
 
-Exclusions in the config file may be particularly useful when there are modules that are
-inherently hard to automatically test, and the project has made a decision to accept lower
-test coverage for them.
-
 The results of filters can be previewed with the `--list-files` and `--list`
 options.
 
@@ -55,3 +40,22 @@ Examples:
 - `cargo mutants -e console.rs` -- test mutants in any file except `console.rs`.
 
 - `cargo mutants -f src/db/*.rs` -- test mutants in any file in this directory.
+
+## Configuring filters by filename
+
+Files may also be filtered with the `exclude_globs` and `examine_globs` options in `.cargo/mutants.toml`.
+
+Exclusions in the config file may be particularly useful when there are modules that are
+inherently hard to automatically test, and the project has made a decision to accept lower
+test coverage for them.
+
+From cargo-mutants 23.11.2 onwards, if the command line options are given then the corresponding config file option is ignored.
+This allows you to use the config file to test files that are normally expected to pass, and then
+to use the command line to test files that are not yet passing.
+
+For example:
+
+```toml
+exclude_globs = ["src/main.rs", "src/cache/*.rs"] # like -e
+examine_globs = ["src/important/*.rs"] # like -f: test *only* these files
+```

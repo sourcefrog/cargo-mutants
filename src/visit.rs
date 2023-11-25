@@ -81,15 +81,11 @@ pub fn walk_tree(
                 continue;
             }
         }
-        if let Some(examine_names) = &options.examine_names {
-            if !examine_names.is_empty() {
-                file_mutants.retain(|m| examine_names.is_match(&m.to_string()));
-            }
+        if !options.examine_names.is_empty() {
+            file_mutants.retain(|m| options.examine_names.is_match(&m.to_string()));
         }
-        if let Some(exclude_names) = &options.exclude_names {
-            if !exclude_names.is_empty() {
-                file_mutants.retain(|m| !exclude_names.is_match(&m.to_string()));
-            }
+        if !options.exclude_names.is_empty() {
+            file_mutants.retain(|m| !options.exclude_names.is_match(&m.to_string()));
         }
         mutants.append(&mut file_mutants);
         files.push(source_file);

@@ -217,6 +217,8 @@ src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S
 src/options.rs: replace join_slices -> Vec<String> with vec![]
 src/options.rs: replace join_slices -> Vec<String> with vec![String::new()]
 src/options.rs: replace join_slices -> Vec<String> with vec!["xyzzy".into()]
+src/options.rs: replace or_slices -> &'c[T] with Vec::leak(Vec::new())
+src/options.rs: replace or_slices -> &'c[T] with Vec::leak(vec![Default::default()])
 src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Ok(None)
 src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Ok(Some(Default::default()))
 src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Err(::anyhow::anyhow!("mutated!"))

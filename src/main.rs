@@ -104,7 +104,13 @@ struct Args {
     error: Vec<String>,
 
     /// regex for mutations to examine, matched against the names shown by `--list`.
-    #[arg(long = "re", short = 'F')]
+    #[arg(
+        long = "re",
+        short = 'F',
+        alias = "regex",
+        alias = "examine-regex",
+        alias = "examine-re"
+    )]
     examine_re: Vec<String>,
 
     /// glob for files to exclude; with no glob, all files are included; globs containing
@@ -113,7 +119,7 @@ struct Args {
     exclude: Vec<String>,
 
     /// regex for mutations to exclude, matched against the names shown by `--list`.
-    #[arg(long, short = 'E')]
+    #[arg(long, short = 'E', alias = "exclude-regex")]
     exclude_re: Vec<String>,
 
     /// glob for files to examine; with no glob, all files are examined; globs containing
