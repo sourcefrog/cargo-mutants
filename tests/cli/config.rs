@@ -187,10 +187,11 @@ fn exclude_re_overrides_config() {
         .assert()
         .success()
         .stdout(predicates::str::is_empty());
+    // Also tests that the alias --exclude-regex is accepted
     run()
         .args(["mutants", "--list", "-d"])
         .arg(testdata.path())
-        .args(["--exclude-re", " -> "])
+        .args(["--exclude-regex", " -> "])
         .args(["-f", "src/simple_fns.rs"])
         .assert()
         .success()

@@ -6,6 +6,8 @@
 
 - Improved: Run `cargo metadata` with `--no-deps`, so that it doesn't download and compute dependency information, which can save time in some situations.
 
+- Added: Alternative aliases for command line options, so you don't need to remember if it's "regex" or "re": `--regex`, `--examine-re`, `--examine-regex` (all for names to include) and `--exclude-regex`.
+
 ## 23.11.1
 
 - New `--in-diff FILE` option tests only mutants that are in the diff from the
