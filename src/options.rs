@@ -62,10 +62,10 @@ pub struct Options {
     pub exclude_globset: Option<GlobSet>,
 
     /// Mutants to examine, as a regexp matched against the full name.
-    pub examine_names: Option<RegexSet>,
+    pub examine_names: RegexSet,
 
     /// Mutants to skip, as a regexp matched against the full name.
-    pub exclude_names: Option<RegexSet>,
+    pub exclude_names: RegexSet,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
@@ -114,14 +114,10 @@ impl Options {
             ),
             check_only: args.check,
             error_values: join_slices(&args.error, &config.error_values),
-            examine_names: Some(
-                RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
-                    .context("Compiling examine_re regex")?,
-            ),
-            exclude_names: Some(
-                RegexSet::new(args.exclude_re.iter().chain(config.exclude_re.iter()))
-                    .context("Compiling exclude_re regex")?,
-            ),
+            examine_names: RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
+                .context("Compiling examine_re regex")?,
+            exclude_names: RegexSet::new(args.exclude_re.iter().chain(config.exclude_re.iter()))
+                .context("Compiling exclude_re regex")?,
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             jobs: args.jobs,
