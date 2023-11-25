@@ -1,11 +1,13 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Edit source code.
+
+use std::fmt;
 
 use serde::Serialize;
 
 /// A (line, column) position in a source file.
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Serialize)]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct LineColumn {
     /// 1-based line number.
     pub line: usize,
@@ -20,6 +22,12 @@ impl From<proc_macro2::LineColumn> for LineColumn {
             line: l.line,
             column: l.column + 1,
         }
+    }
+}
+
+impl fmt::Debug for LineColumn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "LineColumn({}, {})", self.line, self.column)
     }
 }
 

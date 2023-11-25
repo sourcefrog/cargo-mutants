@@ -306,6 +306,8 @@ src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with "xyzzy".into()
 src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
 src/textedit.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
+src/textedit.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Ok(Default::default())
+src/textedit.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()

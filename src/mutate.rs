@@ -169,8 +169,7 @@ impl fmt::Debug for Mutant {
             .field("function", &self.function)
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
-            .field("start", &(self.span.start.line, self.span.start.column))
-            .field("end", &(self.span.end.line, self.span.end.column))
+            .field("span", &self.span)
             .field("package_name", &self.package_name())
             .finish()
     }
@@ -237,26 +236,16 @@ mod test {
                         function_name: "main",
                         return_type: "",
                         span: Span {
-                            start: LineColumn {
-                                line: 1,
-                                column: 1,
-                            },
-                            end: LineColumn {
-                                line: 5,
-                                column: 2,
-                            },
+                            start: LineColumn(1, 1),
+                            end: LineColumn(5, 2),
                         },
                     },
                     replacement: "()",
                     genre: FnValue,
-                    start: (
-                        1,
-                        11,
-                    ),
-                    end: (
-                        5,
-                        2,
-                    ),
+                    span: Span {
+                        start: LineColumn(1, 11),
+                        end: LineColumn(5, 2),
+                    },
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }
@@ -273,26 +262,16 @@ mod test {
                         function_name: "factorial",
                         return_type: "-> u32",
                         span: Span {
-                            start: LineColumn {
-                                line: 7,
-                                column: 1,
-                            },
-                            end: LineColumn {
-                                line: 13,
-                                column: 2,
-                            },
+                            start: LineColumn(7, 1),
+                            end: LineColumn(13, 2),
                         },
                     },
                     replacement: "0",
                     genre: FnValue,
-                    start: (
-                        7,
-                        29,
-                    ),
-                    end: (
-                        13,
-                        2,
-                    ),
+                    span: Span {
+                        start: LineColumn(7, 29),
+                        end: LineColumn(13, 2),
+                    },
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }
