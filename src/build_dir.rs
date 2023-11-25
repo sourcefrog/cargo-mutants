@@ -38,6 +38,7 @@ pub struct BuildDir {
     /// object is dropped.
     #[allow(dead_code)]
     strategy: TempDirStrategy,
+    gitignore: bool,
 }
 
 enum TempDirStrategy {
@@ -54,9 +55,7 @@ impl BuildDir {
         let source_abs = source
             .canonicalize_utf8()
             .expect("canonicalize source path");
-        // TODO: Only exclude `target` in directories containing Cargo.toml?
-        // TODO: Pass down gitignore
-        let temp_dir = copy_tree(source, &name_base, true, console)?;
+        let temp_dir = copy_tree(source, &name_base, options.gitignore, console)?;
         let path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
@@ -71,6 +70,7 @@ impl BuildDir {
             strategy,
             name_base,
             path,
+            gitignore: options.gitignore,
         };
         Ok(build_dir)
     }
@@ -81,11 +81,12 @@ impl BuildDir {
 
     /// Make a copy of this build dir, including its target directory.
     pub fn copy(&self, console: &Console) -> Result<BuildDir> {
-        let temp_dir = copy_tree(&self.path, &self.name_base, true, console)?;
+        let temp_dir = copy_tree(&self.path, &self.name_base, self.gitignore, console)?;
         Ok(BuildDir {
             path: temp_dir.path().to_owned().try_into().unwrap(),
             strategy: TempDirStrategy::Collect(temp_dir),
             name_base: self.name_base.clone(),
+            gitignore: self.gitignore,
         })
     }
 }
