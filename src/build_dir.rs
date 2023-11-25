@@ -4,11 +4,13 @@
 
 use std::convert::TryInto;
 use std::fmt;
+use std::fs::FileType;
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
+use ignore::WalkBuilder;
 use tempfile::TempDir;
-use tracing::{debug, error, info, trace};
+use tracing::{info, warn};
 
 use crate::manifest::fix_cargo_config;
 use crate::*;
@@ -48,12 +50,13 @@ impl BuildDir {
     ///
     /// [SOURCE_EXCLUDE] is excluded.
     pub fn new(source: &Utf8Path, options: &Options, console: &Console) -> Result<BuildDir> {
-        let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or(""));
+        let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or("unnamed"));
         let source_abs = source
             .canonicalize_utf8()
             .expect("canonicalize source path");
         // TODO: Only exclude `target` in directories containing Cargo.toml?
-        let temp_dir = copy_tree(source, &name_base, SOURCE_EXCLUDE, console)?;
+        // TODO: Pass down gitignore
+        let temp_dir = copy_tree(source, &name_base, true, console)?;
         let path: Utf8PathBuf = temp_dir.path().to_owned().try_into().unwrap();
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
@@ -78,8 +81,7 @@ impl BuildDir {
 
     /// Make a copy of this build dir, including its target directory.
     pub fn copy(&self, console: &Console) -> Result<BuildDir> {
-        let temp_dir = copy_tree(&self.path, &self.name_base, &[], console)?;
-
+        let temp_dir = copy_tree(&self.path, &self.name_base, true, console)?;
         Ok(BuildDir {
             path: temp_dir.path().to_owned().try_into().unwrap(),
             strategy: TempDirStrategy::Collect(temp_dir),
@@ -96,51 +98,112 @@ impl fmt::Debug for BuildDir {
     }
 }
 
+/// Copy a source tree, with some exclusions, to a new temporary directory.
+///
+/// If `git` is true, ignore files that are excluded by all the various `.gitignore`
+/// files.
+///
+/// Regardless, anything matching [SOURCE_EXCLUDE] is excluded.
 fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,
-    exclude: &[&str],
+    gitignore: bool,
     console: &Console,
 ) -> Result<TempDir> {
+    console.start_copy();
+    let mut total_bytes = 0;
+    let mut total_files = 0;
     let temp_dir = tempfile::Builder::new()
         .prefix(name_base)
         .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
-    console.start_copy();
-    let copy_options = cp_r::CopyOptions::new()
-        .after_entry_copied(|path, _ft, stats| {
-            console.copy_progress(stats.file_bytes);
-            check_interrupted().map_err(|_| cp_r::Error::new(cp_r::ErrorKind::Interrupted, path))
+    for entry in WalkBuilder::new(from_path)
+        .standard_filters(gitignore)
+        .hidden(false)
+        .filter_entry(|entry| {
+            !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
         })
-        .filter(|path, _dir_entry| {
-            let excluded = exclude.iter().any(|ex| path.ends_with(ex));
-            if excluded {
-                trace!("Skip {path:?}");
-            } else {
-                trace!("Copy {path:?}");
-            }
-            Ok(!excluded)
-        });
-    match copy_options
-        .copy_tree(from_path, temp_dir.path())
-        .context("copy tree")
+        .build()
     {
-        Ok(stats) => {
-            debug!(files = stats.files, file_bytes = stats.file_bytes,);
-        }
-        Err(err) => {
-            error!(
-                "error copying {} to {}: {:?}",
-                &from_path.to_slash_path(),
-                &temp_dir.path().to_slash_lossy(),
-                err
-            );
-            return Err(err);
+        check_interrupted()?;
+        let entry = entry?;
+        let relative_path = entry
+            .path()
+            .strip_prefix(from_path)
+            .expect("entry path is in from_path");
+        let dest_path: Utf8PathBuf = temp_dir
+            .path()
+            .join(relative_path)
+            .try_into()
+            .context("Convert path to UTF-8")?;
+        let ft = entry
+            .file_type()
+            .with_context(|| format!("Expected file to have a file type: {:?}", entry.path()))?;
+        if ft.is_file() {
+            let bytes_copied = std::fs::copy(entry.path(), &dest_path).with_context(|| {
+                format!(
+                    "Failed to copy {:?} to {dest_path:?}",
+                    entry.path().to_slash_lossy(),
+                )
+            })?;
+            total_bytes += bytes_copied;
+            total_files += 1;
+            console.copy_progress(bytes_copied);
+        } else if ft.is_dir() {
+            std::fs::create_dir_all(&dest_path)
+                .with_context(|| format!("Failed to create directory {dest_path:?}"))?;
+        } else if ft.is_symlink() {
+            copy_symlink(
+                ft,
+                entry
+                    .path()
+                    .try_into()
+                    .context("Convert filename to UTF-8")?,
+                &dest_path,
+            )?;
+        } else {
+            warn!("Unexpected file type: {:?}", entry.path());
         }
     }
     console.finish_copy();
+    debug!(?total_bytes, ?total_files, "Copied source tree");
     Ok(temp_dir)
+}
+
+#[cfg(unix)]
+fn copy_symlink(_ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Result<()> {
+    let link_target = std::fs::read_link(src_path)
+        .with_context(|| format!("Failed to read link {src_path:?}"))?;
+    std::os::unix::fs::symlink(link_target, dest_path)
+        .with_context(|| format!("Failed to create symlink {dest_path:?}",))?;
+    Ok(())
+}
+
+#[cfg(windows)]
+#[mutants::skip] // Mutant tests run on Linux
+fn copy_symlink(ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Result<()> {
+    let link_target = std::fs::read_link(src_path)
+        .with_context(|| format!("read link {:?}", src_path.to_slash_lossy()))?;
+    if ft.is_symlink_dir() {
+        std::os::windows::fs::symlink_dir(link_target, dest_path).with_context(|| {
+            format!(
+                "create symlink {:?} to {:?}",
+                dest_path.to_slash_lossy(),
+                link_target.to_slash_lossy()
+            )
+        })?;
+    } else if ft.is_symlink_file() {
+        std::os::windows::fs::symlink_file(link_target, dest_path).with_context(|| {
+            format!(
+                "create symlink {:?} to {:?}",
+                dest_path.to_slash_lossy(),
+                link_target.to_slash_lossy()
+            )
+        })?;
+    } else {
+        bail!("Unknown symlink type: {:?}", ft);
+    }
 }
 
 #[cfg(test)]
