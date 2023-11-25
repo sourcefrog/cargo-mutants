@@ -12,10 +12,12 @@ See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, 
 
 Actually running subprocesses is delegated to `process.rs`, so that we can later potentially run different build tools to Cargo.
 
-`build_dir.rs` -- Manage temporary build directories, including copying the source tree.
+`build_dir.rs` -- Manage temporary build directories.
 
 `console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
+
+`copy_tree.rs` -- Copy a source file tree into a build dir, with gitignore and other exclusions.
 
 `interrupt.rs` -- Handle Ctrl-C signals by setting a global atomic flag, which
 is checked during long-running operations.

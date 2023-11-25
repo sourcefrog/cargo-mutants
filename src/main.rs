@@ -6,6 +6,7 @@ mod build_dir;
 mod cargo;
 mod config;
 mod console;
+mod copy_tree;
 mod exit_code;
 mod fnvalue;
 mod in_diff;
@@ -42,7 +43,6 @@ use clap::ArgAction;
 use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::{generate, Shell};
-use path_slash::PathExt;
 use tracing::debug;
 
 use crate::build_dir::BuildDir;
