@@ -1426,21 +1426,45 @@ expression: buf
 [
   {
     "file": "src/lib.rs",
-    "function": "read_through_symlink",
+    "function": {
+      "function_name": "read_through_symlink",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-symlink",
-    "replacement": "String::new()",
-    "return_type": "-> String"
+    "replacement": "String::new()"
   },
   {
     "file": "src/lib.rs",
-    "function": "read_through_symlink",
+    "function": {
+      "function_name": "read_through_symlink",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
     "genre": "FnValue",
     "line": 3,
     "package": "cargo-mutants-testdata-symlink",
-    "replacement": "\"xyzzy\".into()",
-    "return_type": "-> String"
+    "replacement": "\"xyzzy\".into()"
   }
 ]
 ```

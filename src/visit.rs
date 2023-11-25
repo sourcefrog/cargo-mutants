@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use itertools::Itertools;
+use proc_macro2::{Ident, TokenStream};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
@@ -114,7 +115,7 @@ fn walk_file(
         external_mods: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
-        fn_span_stack: Vec::new(),
+        fn_stack: Vec::new(),
         source_file: Arc::clone(&source_file),
     };
     visitor.visit_file(&syn_file);
@@ -136,8 +137,8 @@ struct DiscoveryVisitor<'o> {
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
 
-    /// A stack of spans for functions we're inside.
-    fn_span_stack: Vec<Span>,
+    /// The functions we're inside.
+    fn_stack: Vec<Arc<Function>>,
 
     /// The names from `mod foo;` statements that should be visited later.
     external_mods: Vec<String>,
@@ -147,16 +148,44 @@ struct DiscoveryVisitor<'o> {
 }
 
 impl<'o> DiscoveryVisitor<'o> {
-    fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
+    fn current_function(&self) -> Arc<Function> {
+        Arc::clone(
+            self.fn_stack
+                .last()
+                .expect("Function stack should not be empty"),
+        )
+    }
+
+    fn enter_function(
+        &mut self,
+        function_name: &Ident,
+        return_type: &ReturnType,
+        span: proc_macro2::Span,
+    ) -> Arc<Function> {
+        self.namespace_stack.push(function_name.to_string());
         let function_name = self.namespace_stack.join("::");
         let function = Arc::new(Function {
-            function_name,
+            function_name: function_name.to_owned(),
             return_type: return_type.to_pretty_string(),
-            span: *self
-                .fn_span_stack
-                .last()
-                .expect("Function span stack should not be empty"),
+            span: span.into(),
         });
+        self.fn_stack.push(Arc::clone(&function));
+        function
+    }
+
+    fn leave_function(&mut self, function: Arc<Function>) {
+        self.namespace_stack
+            .pop()
+            .expect("Namespace stack should not be empty");
+        assert_eq!(
+            self.fn_stack.pop(),
+            Some(function),
+            "Function stack mismatch"
+        );
+    }
+
+    fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
+        let function = self.current_function();
         let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
@@ -204,13 +233,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
-        let fn_span: Span = i.span().into();
-        self.fn_span_stack.push(fn_span);
-        self.in_namespace(&function_name, |self_| {
-            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
-            syn::visit::visit_item_fn(self_, i);
-        });
-        assert_eq!(self.fn_span_stack.pop(), Some(fn_span));
+        let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
+        self.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
+        syn::visit::visit_item_fn(self, i);
+        self.leave_function(function);
     }
 
     /// Visit `fn foo()` within an `impl`.
@@ -231,13 +257,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         {
             return;
         }
-        let fn_span: Span = i.span().into();
-        self.fn_span_stack.push(fn_span);
-        self.in_namespace(&function_name, |self_| {
-            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
-            syn::visit::visit_impl_item_fn(self_, i)
-        });
-        assert_eq!(self.fn_span_stack.pop(), Some(fn_span));
+        let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
+        self.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
+        syn::visit::visit_impl_item_fn(self, i);
+        self.leave_function(function);
     }
 
     /// Visit `impl Foo { ...}` or `impl Debug for Foo { ... }`.
@@ -275,7 +298,39 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
+
+    // /// Visit `a op b` expressions.
+    // fn visit_expr_binary(&mut self, i: &'ast syn::ExprBinary) {
+    //     let _span = trace_span!("binary", line = i.op.span().start().line).entered();
+    //     if attrs_excluded(&i.attrs) {
+    //         return;
+    //     }
+    //     let mut new_mutants = binary_operator_replacements(i.op)
+    //         .into_iter()
+    //         .map(|rep| Mutant {
+    //             source_file: Arc::clone(&self.source_file),
+    //             function: self.current_function(),
+    //             replacement: rep.to_pretty_string(),
+    //             span: i.span().into(),
+    //             genre: Genre::Eq,
+    //         })
+    //         .collect_vec();
+    //     if new_mutants.is_empty() {
+    //         debug!(
+    //             op = i.op.to_pretty_string(),
+    //             "No mutants generated for this binary operator"
+    //         );
+    //     } else {
+    //         self.mutants.append(&mut new_mutants);
+    //     }
+    //     syn::visit::visit_expr_binary(self, i);
+    // }
 }
+
+// fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
+//     // TODO!
+//     Vec::new()
+// }
 
 /// Find a new source file referenced by a `mod` statement.
 ///

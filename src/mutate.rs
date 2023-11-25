@@ -24,6 +24,8 @@ const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 pub enum Genre {
     /// Replace the body of a function with a fixed value.
     FnValue,
+    /// Replace `==` with `!=` and vice versa.
+    Eq,
 }
 
 /// A mutation applied to source code.
