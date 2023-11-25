@@ -32,7 +32,7 @@ pub struct Mutant {
     /// Which file is being mutated.
     pub source_file: Arc<SourceFile>,
 
-    /// The function that's being mutated.
+    /// The function that's being mutated: the nearest enclosing function, if they are nested.
     pub function: Arc<Function>,
 
     /// The mutated textual region.
@@ -53,7 +53,9 @@ pub struct Function {
     /// The function that's being mutated.
     pub function_name: String,
 
-    /// The return type of the function, as a fragment of Rust syntax.
+    /// The return type of the function, including a leading "-> ", as a fragment of Rust syntax.
+    ///
+    /// Empty if the function has no return type (i.e. returns `()`).
     pub return_type: String,
 }
 
