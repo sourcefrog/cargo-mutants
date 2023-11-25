@@ -198,7 +198,7 @@ impl Serialize for Mutant {
         S: Serializer,
     {
         // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Mutant", 7)?;
+        let mut ss = serializer.serialize_struct("Mutant", 6)?;
         let function: &Function = self.function.as_ref();
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
