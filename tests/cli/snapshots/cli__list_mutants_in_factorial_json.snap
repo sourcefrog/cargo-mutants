@@ -22,7 +22,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "FnValue",
     "line": 1,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "()"
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 4
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
   },
   {
     "file": "src/bin/factorial.rs",
@@ -43,7 +53,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "0"
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
   },
   {
     "file": "src/bin/factorial.rs",
@@ -64,6 +84,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "FnValue",
     "line": 7,
     "package": "cargo-mutants-testdata-factorial",
-    "replacement": "1"
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
   }
 ]

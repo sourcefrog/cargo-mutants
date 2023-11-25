@@ -22,6 +22,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
-    "replacement": "true"
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 18
+      },
+      "start": {
+        "column": 5,
+        "line": 18
+      }
+    }
   }
 ]

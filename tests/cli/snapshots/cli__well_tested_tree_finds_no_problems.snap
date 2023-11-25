@@ -2,7 +2,7 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 38 mutants to test
+Found 40 mutants to test
 Unmutated baseline ... ok
 src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new(String::new()) ... caught
 src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... caught
@@ -18,6 +18,8 @@ src/nested_function.rs:2: replace has_nested::inner -> u32 with 1 ... caught
 src/numbers.rs:1: replace double_float -> f32 with 0.0 ... caught
 src/numbers.rs:1: replace double_float -> f32 with 1.0 ... caught
 src/numbers.rs:1: replace double_float -> f32 with -1.0 ... caught
+src/numbers.rs:5: replace is_double -> bool with true ... caught
+src/numbers.rs:5: replace is_double -> bool with false ... caught
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("") ... caught
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy") ... caught
 src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(()) ... caught
@@ -42,5 +44,5 @@ src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0]
 src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1]) ... caught
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0 ... caught
 src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1 ... caught
-38 mutants tested: 38 caught
+40 mutants tested: 40 caught
 

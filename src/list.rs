@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use serde_json::{json, Value};
 
-use crate::console::style_mutant;
 use crate::mutate::Mutant;
 use crate::path::Utf8PathSlashes;
 use crate::source::SourceFile;
@@ -49,7 +48,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
     } else {
         for mutant in mutants {
             if options.colors {
-                writeln!(out, "{}", style_mutant(mutant))?;
+                writeln!(out, "{}", mutant.styled())?;
             } else {
                 writeln!(out, "{}", mutant)?;
             }

@@ -13,10 +13,11 @@ use std::sync::Arc;
 use anyhow::Context;
 use itertools::Itertools;
 use proc_macro2::{Ident, TokenStream};
+use quote::quote;
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Attribute, Expr, ItemFn, ReturnType};
+use syn::{Attribute, BinOp, Block, Expr, ItemFn, ReturnType, Signature};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
@@ -184,14 +185,16 @@ impl<'o> DiscoveryVisitor<'o> {
         );
     }
 
-    fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
+    fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
         let function = self.current_function();
-        let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
+        let body_span = function_body_span(block).expect("Empty function body");
+        let mut new_mutants = return_type_replacements(&sig.output, self.error_exprs)
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
                 function: Arc::clone(&function),
+                span: body_span,
                 replacement: rep.to_pretty_string(),
-                span: span.into(),
+                start_line: sig.span().start().line,
                 genre: Genre::FnValue,
             })
             .collect_vec();
@@ -234,7 +237,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
         let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
-        self.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
+        self.collect_fn_mutants(&i.sig, &i.block);
         syn::visit::visit_item_fn(self, i);
         self.leave_function(function);
     }
@@ -258,7 +261,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
         let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
-        self.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
+        self.collect_fn_mutants(&i.sig, &i.block);
         syn::visit::visit_impl_item_fn(self, i);
         self.leave_function(function);
     }
@@ -299,38 +302,59 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
 
-    // /// Visit `a op b` expressions.
-    // fn visit_expr_binary(&mut self, i: &'ast syn::ExprBinary) {
-    //     let _span = trace_span!("binary", line = i.op.span().start().line).entered();
-    //     if attrs_excluded(&i.attrs) {
-    //         return;
-    //     }
-    //     let mut new_mutants = binary_operator_replacements(i.op)
-    //         .into_iter()
-    //         .map(|rep| Mutant {
-    //             source_file: Arc::clone(&self.source_file),
-    //             function: self.current_function(),
-    //             replacement: rep.to_pretty_string(),
-    //             span: i.span().into(),
-    //             genre: Genre::Eq,
-    //         })
-    //         .collect_vec();
-    //     if new_mutants.is_empty() {
-    //         debug!(
-    //             op = i.op.to_pretty_string(),
-    //             "No mutants generated for this binary operator"
-    //         );
-    //     } else {
-    //         self.mutants.append(&mut new_mutants);
-    //     }
-    //     syn::visit::visit_expr_binary(self, i);
-    // }
+    /// Visit `a op b` expressions.
+    fn visit_expr_binary(&mut self, i: &'ast syn::ExprBinary) {
+        let _span = trace_span!("binary", line = i.op.span().start().line).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        let mut new_mutants = binary_operator_replacements(i.op)
+            .into_iter()
+            .map(|(rep, genre)| Mutant {
+                source_file: Arc::clone(&self.source_file),
+                function: self.current_function(),
+                replacement: rep.to_pretty_string(),
+                span: i.op.span().into(),
+                start_line: i.op.span().start().line,
+                genre,
+            })
+            .collect_vec();
+        if new_mutants.is_empty() {
+            debug!(
+                op = i.op.to_pretty_string(),
+                "No mutants generated for this binary operator"
+            );
+        } else {
+            self.mutants.append(&mut new_mutants);
+        }
+        syn::visit::visit_expr_binary(self, i);
+    }
 }
 
-// fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
-//     // TODO!
-//     Vec::new()
-// }
+// Get the span of the block excluding the braces, or None if it is empty.
+fn function_body_span(block: &Block) -> Option<Span> {
+    let start = block.stmts.first()?.span().start();
+    let end = block.stmts.last()?.span().end();
+    Some(Span {
+        start: start.into(),
+        end: end.into(),
+    })
+}
+
+fn binary_operator_replacements(op: syn::BinOp) -> Vec<(TokenStream, Genre)> {
+    match op {
+        // We don't generate `<=` from `==` because it can too easily go
+        // wrong with unsigned types compared to 0.
+        BinOp::Eq(_) => vec![
+            // (quote! { != }, Genre::BinaryOperator),
+            // (quote! { > }, Genre::BinaryOperator),
+            // (quote! { < }, Genre::BinaryOperator),
+            // (quote! { >= }, Genre::BinaryOperator),
+            // (quote! { <= }, Genre::BinaryOperator),
+        ],
+        _ => Vec::new(),
+    }
+}
 
 /// Find a new source file referenced by a `mod` statement.
 ///

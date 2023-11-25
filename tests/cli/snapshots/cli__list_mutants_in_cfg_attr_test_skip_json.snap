@@ -22,7 +22,17 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
-    "replacement": "0"
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 18
+      },
+      "start": {
+        "column": 5,
+        "line": 18
+      }
+    }
   },
   {
     "file": "src/lib.rs",
@@ -43,6 +53,16 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "FnValue",
     "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
-    "replacement": "1"
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 18
+      },
+      "start": {
+        "column": 5,
+        "line": 18
+      }
+    }
   }
 ]

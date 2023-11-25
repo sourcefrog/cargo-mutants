@@ -62,6 +62,9 @@ use crate::workspace::{PackageFilter, Workspace};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
 
+/// A comment marker inserted next to changes, so they can be easily found.
+static MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
+
 #[derive(Parser)]
 #[command(name = "cargo", bin_name = "cargo")]
 enum Cargo {

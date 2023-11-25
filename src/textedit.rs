@@ -76,13 +76,9 @@ impl From<proc_macro2::extra::DelimSpan> for Span {
 ///
 /// Returns a copy of `s` with the region between `start` and `end` inclusive replaced by
 /// `replacement`.
-pub(crate) fn replace_region(
-    s: &str,
-    start: &LineColumn,
-    end: &LineColumn,
-    replacement: &str,
-) -> String {
+pub fn replace_region(s: &str, start: &LineColumn, end: &LineColumn, replacement: &str) -> String {
     // dbg!(start, end);
+    // TODO: This is a bit inefficient.
     let mut r = String::with_capacity(s.len() + replacement.len());
     let mut line_no = 1;
     let mut col_no = 1;
@@ -95,6 +91,33 @@ pub(crate) fn replace_region(
             r.push(c);
         } else if line_no == start.line && col_no == start.column {
             r.push_str(replacement);
+        }
+        if c == '\n' {
+            line_no += 1;
+            col_no = 1;
+        } else if c == '\r' {
+            // counts as part of the last column, not a separate column
+        } else {
+            col_no += 1;
+        }
+    }
+    r
+}
+
+pub fn span_substr(s: &str, span: &Span) -> String {
+    // TODO: This is a bit inefficient perhaps; we could return a slice
+    // or keep the input in lines...
+    // TODO: Test me!
+    let mut r = String::new();
+    let mut line_no = 1;
+    let mut col_no = 1;
+    let start = span.start;
+    let end = span.end;
+    for c in s.chars() {
+        if ((line_no == start.line && col_no >= start.column) || line_no > start.line)
+            && (line_no < end.line || (line_no == end.line && col_no < end.column))
+        {
+            r.push(c);
         }
         if c == '\n' {
             line_no += 1;

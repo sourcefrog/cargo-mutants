@@ -75,8 +75,6 @@ src/console.rs: replace style_outcome -> StyledObject<&'static str> with StyledO
 src/console.rs: replace style_outcome -> StyledObject<&'static str> with StyledObject::from_iter(["xyzzy"])
 src/console.rs: replace style_outcome -> StyledObject<&'static str> with StyledObject::new("xyzzy")
 src/console.rs: replace style_outcome -> StyledObject<&'static str> with StyledObject::from("xyzzy")
-src/console.rs: replace style_mutant -> String with String::new()
-src/console.rs: replace style_mutant -> String with "xyzzy".into()
 src/console.rs: replace style_elapsed_secs -> String with String::new()
 src/console.rs: replace style_elapsed_secs -> String with "xyzzy".into()
 src/console.rs: replace style_secs -> String with String::new()
@@ -191,6 +189,10 @@ src/mutate.rs: replace Mutant::return_type -> &str with ""
 src/mutate.rs: replace Mutant::return_type -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::describe_change -> String with String::new()
 src/mutate.rs: replace Mutant::describe_change -> String with "xyzzy".into()
+src/mutate.rs: replace Mutant::styled -> String with String::new()
+src/mutate.rs: replace Mutant::styled -> String with "xyzzy".into()
+src/mutate.rs: replace Mutant::original_text -> String with String::new()
+src/mutate.rs: replace Mutant::original_text -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::replacement_text -> &str with ""
 src/mutate.rs: replace Mutant::replacement_text -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::function_name -> &str with ""
@@ -313,6 +315,8 @@ src/textedit.rs: replace <impl From for Span>::from -> Self with Default::defaul
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace replace_region -> String with String::new()
 src/textedit.rs: replace replace_region -> String with "xyzzy".into()
+src/textedit.rs: replace span_substr -> String with String::new()
+src/textedit.rs: replace span_substr -> String with "xyzzy".into()
 src/visit.rs: replace walk_tree -> Result<Discovered> with Ok(Default::default())
 src/visit.rs: replace walk_tree -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec![]))
@@ -331,6 +335,11 @@ src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn with 
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_mod with ()
+src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_expr_binary with ()
+src/visit.rs: replace function_body_span -> Option<Span> with None
+src/visit.rs: replace function_body_span -> Option<Span> with Some(Default::default())
+src/visit.rs: replace binary_operator_replacements -> Vec<(TokenStream, Genre)> with vec![]
+src/visit.rs: replace binary_operator_replacements -> Vec<(TokenStream, Genre)> with vec![(Default::default(), Default::default())]
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(None)
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(Some(Default::default()))
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))

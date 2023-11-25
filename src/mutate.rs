@@ -3,10 +3,12 @@
 //! Mutations to source files, and inference of interesting mutations to apply.
 
 use std::fmt;
+use std::fmt::Write;
 use std::fs;
 use std::sync::Arc;
 
 use anyhow::{ensure, Context, Result};
+use console::style;
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
@@ -14,18 +16,17 @@ use similar::TextDiff;
 use crate::build_dir::BuildDir;
 use crate::package::Package;
 use crate::source::SourceFile;
+use crate::textedit::span_substr;
 use crate::textedit::{replace_region, Span};
-
-/// A comment marker inserted next to changes, so they can be easily found.
-const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
+use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
 pub enum Genre {
     /// Replace the body of a function with a fixed value.
     FnValue,
-    /// Replace `==` with `!=` and vice versa.
-    Eq,
+    /// Replace `==` with `!=` and so on.
+    BinaryOperator,
 }
 
 /// A mutation applied to source code.
@@ -36,6 +37,12 @@ pub struct Mutant {
 
     /// The function that's being mutated: the nearest enclosing function, if they are nested.
     pub function: Arc<Function>,
+
+    /// The primary start line for this mutant.
+    ///
+    /// For a FnValue mutant, this is the line the function is declared, and the span is the body. Otherwise, this is the line where the mutant is
+    /// actually applied.
+    pub start_line: usize,
 
     /// The mutated textual region.
     pub span: Span,
@@ -71,7 +78,7 @@ impl Mutant {
             &self.source_file.code,
             &self.span.start,
             &self.span.end,
-            &format!("{{\n{} {}\n}}\n", self.replacement, MUTATION_MARKER_COMMENT),
+            &format!("{} {}", &self.replacement, MUTATION_MARKER_COMMENT),
         )
     }
 
@@ -88,18 +95,68 @@ impl Mutant {
     ///
     /// The result is like `replace factorial -> u32 with Default::default()`.
     pub fn describe_change(&self) -> String {
-        // This needs to be updated for smaller-than-function mutations.
-        format!(
-            "replace {name}{space}{type} with {replacement}",
-            name = self.function.function_name,
-            space = if self.function.return_type.is_empty() {
-                ""
-            } else {
-                " "
-            },
-            type = self.function.return_type,
-            replacement = self.replacement
+        // TODO: This needs to be updated for smaller-than-function mutations.
+        if self.genre == Genre::FnValue {
+            format!(
+                "replace {name}{space}{type} with {replacement}",
+                name = self.function.function_name,
+                space = if self.function.return_type.is_empty() {
+                    ""
+                } else {
+                    " "
+                },
+                type = self.function.return_type,
+                replacement = self.replacement,
+            )
+        } else {
+            format!(
+                "replace {original} with {replacement} in {name}{space}{type}",
+                original = self.original_text(),
+                replacement = self.replacement,
+                name = self.function.function_name,
+                space = if self.function.return_type.is_empty() {
+                    ""
+                } else {
+                    " "
+                },
+                type = self.function.return_type,
+            )
+        }
+    }
+
+    pub fn styled(&self) -> String {
+        // This is like `impl Display for Mutant`, but with colors.
+        // The text content should be the same.
+        let mut s = String::with_capacity(200);
+        write!(
+            &mut s,
+            "{}:{}",
+            self.source_file.tree_relative_slashes(),
+            self.start_line,
         )
+        .unwrap();
+        s.push_str(": replace ");
+        if self.genre != Genre::FnValue {
+            // TODO: colors
+            s.push_str(&self.original_text());
+            s.push_str(" with ");
+            s.push_str(&self.replacement);
+            s.push_str(" in ");
+        }
+        s.push_str(&style(self.function_name()).bright().magenta().to_string());
+        if !self.return_type().is_empty() {
+            s.push(' ');
+            s.push_str(&style(self.return_type()).magenta().to_string());
+        }
+        if self.genre == Genre::FnValue {
+            s.push_str(" with ");
+            s.push_str(&style(self.replacement_text()).yellow().to_string());
+        }
+        s
+    }
+
+    pub fn original_text(&self) -> String {
+        span_substr(&self.source_file.code, &self.span)
     }
 
     /// Return the text inserted for this mutation.
@@ -159,7 +216,7 @@ impl Mutant {
         format!(
             "{}_line_{}",
             self.source_file.tree_relative_slashes(),
-            self.span.start.line
+            self.start_line,
         )
     }
 }
@@ -168,6 +225,7 @@ impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Custom implementation to show spans more concisely
         f.debug_struct("Mutant")
+            .field("start_line", &self.start_line)
             .field("function", &self.function)
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
@@ -188,7 +246,7 @@ impl fmt::Display for Mutant {
             f,
             "{file}:{line}: {change}",
             file = self.source_file.tree_relative_slashes(),
-            line = self.span.start.line,
+            line = self.start_line,
             change = self.describe_change()
         )
     }
@@ -200,12 +258,13 @@ impl Serialize for Mutant {
         S: Serializer,
     {
         // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Mutant", 6)?;
+        let mut ss = serializer.serialize_struct("Mutant", 7)?;
         let function: &Function = self.function.as_ref();
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
-        ss.serialize_field("line", &self.span.start.line)?;
+        ss.serialize_field("line", &self.start_line)?;
         ss.serialize_field("function", function)?;
+        ss.serialize_field("span", &self.span)?;
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
@@ -234,6 +293,7 @@ mod test {
             format!("{:#?}", mutants[0]),
             indoc! {
                 r#"Mutant {
+                    start_line: 1,
                     function: Function {
                         function_name: "main",
                         return_type: "",
@@ -245,8 +305,8 @@ mod test {
                     replacement: "()",
                     genre: FnValue,
                     span: Span {
-                        start: LineColumn(1, 11),
-                        end: LineColumn(5, 2),
+                        start: LineColumn(2, 5),
+                        end: LineColumn(4, 6),
                     },
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
@@ -260,6 +320,7 @@ mod test {
             format!("{:#?}", mutants[1]),
             indoc! { r#"
                 Mutant {
+                    start_line: 7,
                     function: Function {
                         function_name: "factorial",
                         return_type: "-> u32",
@@ -271,8 +332,8 @@ mod test {
                     replacement: "0",
                     genre: FnValue,
                     span: Span {
-                        start: LineColumn(7, 29),
-                        end: LineColumn(13, 2),
+                        start: LineColumn(8, 5),
+                        end: LineColumn(12, 6),
                     },
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
@@ -318,8 +379,7 @@ mod test {
             mutated_code,
             indoc! { r#"
                 fn main() {
-                () /* ~ changed by cargo-mutants ~ */
-                }
+                    () /* ~ changed by cargo-mutants ~ */}
 
                 fn factorial(n: u32) -> u32 {
                     let mut a = 1;
@@ -351,8 +411,7 @@ mod test {
                 }
 
                 fn factorial(n: u32) -> u32 {
-                0 /* ~ changed by cargo-mutants ~ */
-                }
+                    0 /* ~ changed by cargo-mutants ~ */}
 
                 #[test]
                 fn test_factorial() {

@@ -1,5 +1,5 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: stdout
 ---
 Found 2 mutants to test

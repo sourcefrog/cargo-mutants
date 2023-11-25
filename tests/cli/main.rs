@@ -514,7 +514,7 @@ fn small_well_tested_tree_is_clean() {
             *** mutation diff:
             --- src/lib.rs
             +++ replace factorial -> u32 with 0
-            @@ -1,17 +1,13 @@
+            @@ -1,18 +1,13 @@
         "# }));
     assert!(log_content.contains(indoc! { r#"
              pub fn factorial(n: u32) -> u32 {
@@ -523,8 +523,8 @@ fn small_well_tested_tree_is_clean() {
             -        a *= i;
             -    }
             -    a
-            +0 /* ~ changed by cargo-mutants ~ */
-             }
+            -}
+            +    0 /* ~ changed by cargo-mutants ~ */}
             "# }));
     // Also, it should contain output from the failed tests with mutations applied.
     assert!(log_content.contains("test test::test_factorial ... FAILED"));
@@ -566,8 +566,8 @@ fn well_tested_tree_quiet() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
     println!("outcomes.json:\n{outcomes_json}");
     let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    assert_eq!(outcomes["total_mutants"], 38);
-    assert_eq!(outcomes["caught"], 38);
+    assert_eq!(outcomes["total_mutants"], 40);
+    assert_eq!(outcomes["caught"], 40);
     assert_eq!(outcomes["unviable"], 0);
     assert_eq!(outcomes["missed"], 0);
 }
