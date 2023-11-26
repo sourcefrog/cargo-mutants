@@ -180,6 +180,10 @@ struct Args {
     #[arg(long)]
     no_times: bool,
 
+    /// include line & column numbers in the mutation list.
+    #[arg(long, action = ArgAction::Set, default_value = "true")]
+    line_col: bool,
+
     /// create mutants.out within this directory.
     #[arg(long, short = 'o')]
     output: Option<Utf8PathBuf>,

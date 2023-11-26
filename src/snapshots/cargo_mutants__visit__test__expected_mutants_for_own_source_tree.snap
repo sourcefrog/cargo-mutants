@@ -213,8 +213,8 @@ src/mutate.rs: replace Mutant::return_type -> &str with ""
 src/mutate.rs: replace Mutant::return_type -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::describe_change -> String with String::new()
 src/mutate.rs: replace Mutant::describe_change -> String with "xyzzy".into()
-src/mutate.rs: replace Mutant::styled -> String with String::new()
-src/mutate.rs: replace Mutant::styled -> String with "xyzzy".into()
+src/mutate.rs: replace Mutant::name -> String with String::new()
+src/mutate.rs: replace Mutant::name -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::styled_parts -> Vec<StyledObject<String>> with vec![]
 src/mutate.rs: replace Mutant::styled_parts -> Vec<StyledObject<String>> with vec![StyledObject::new()]
 src/mutate.rs: replace Mutant::styled_parts -> Vec<StyledObject<String>> with vec![StyledObject::from_iter([String::new()])]
@@ -252,8 +252,6 @@ src/mutate.rs: replace Mutant::log_file_name_base -> String with String::new()
 src/mutate.rs: replace Mutant::log_file_name_base -> String with "xyzzy".into()
 src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Ok(Default::default())
 src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
-src/mutate.rs: replace <impl Display for Mutant>::fmt -> fmt::Result with Ok(Default::default())
-src/mutate.rs: replace <impl Display for Mutant>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
 src/options.rs: replace join_slices -> Vec<String> with vec![]

@@ -98,17 +98,24 @@ impl Mutant {
             .join("")
     }
 
-    pub fn styled(&self) -> String {
-        format!(
-            "{}:{}: {}",
-            self.source_file.tree_relative_slashes(),
-            self.primary_line,
-            self.styled_parts()
-                .into_iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join("")
-        )
+    pub fn name(&self, show_line_col: bool, styled: bool) -> String {
+        let mut v = Vec::new();
+        v.push(self.source_file.tree_relative_slashes());
+        if show_line_col {
+            v.push(format!(":{}", self.primary_line));
+        }
+        v.push(": ".to_owned());
+        let parts = self.styled_parts();
+        if styled {
+            v.extend(parts.into_iter().map(|x| x.to_string()));
+        } else {
+            v.extend(
+                parts
+                    .into_iter()
+                    .map(|x| x.force_styling(false).to_string()),
+            );
+        }
+        v.join("")
     }
 
     fn styled_parts(&self) -> Vec<StyledObject<String>> {
@@ -217,22 +224,22 @@ impl fmt::Debug for Mutant {
     }
 }
 
-impl fmt::Display for Mutant {
-    /// Describe this mutant like a compiler error message, starting with the file and line.
-    ///
-    /// The result is like `src/source.rs:123: replace source::SourceFile::new with Default::default()`.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // This is like `style_mutant`, but without colors.
-        // The text content should be the same.
-        write!(
-            f,
-            "{file}:{line}: {change}",
-            file = self.source_file.tree_relative_slashes(),
-            line = self.primary_line,
-            change = self.describe_change()
-        )
-    }
-}
+// impl fmt::Display for Mutant {
+//     /// Describe this mutant like a compiler error message, starting with the file and line.
+//     ///
+//     /// The result is like `src/source.rs:123: replace source::SourceFile::new with Default::default()`.
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         // This is like `style_mutant`, but without colors.
+//         // The text content should be the same.
+//         write!(
+//             f,
+//             "{file}:{line}: {change}",
+//             file = self.source_file.tree_relative_slashes(),
+//             line = self.primary_line,
+//             change = self.describe_change()
+//         )
+//     }
+// }
 
 impl Serialize for Mutant {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -295,7 +302,7 @@ mod test {
             }
         );
         assert_eq!(
-            mutants[0].to_string(),
+            mutants[0].name(true, false),
             "src/bin/factorial.rs:1: replace main with ()"
         );
         assert_eq!(
@@ -322,11 +329,15 @@ mod test {
             }
         );
         assert_eq!(
-            mutants[1].to_string(),
+            mutants[1].name(false, false),
+            "src/bin/factorial.rs: replace factorial -> u32 with 0"
+        );
+        assert_eq!(
+            mutants[1].name(true, false),
             "src/bin/factorial.rs:7: replace factorial -> u32 with 0"
         );
         assert_eq!(
-            mutants[2].to_string(),
+            mutants[2].name(true, false),
             "src/bin/factorial.rs:7: replace factorial -> u32 with 1"
         );
     }

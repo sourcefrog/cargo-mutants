@@ -101,7 +101,7 @@ impl Console {
         write!(
             s,
             "{} ... {}",
-            style_scenario(scenario),
+            style_scenario(scenario, true),
             style_outcome(outcome)
         )
         .unwrap();
@@ -493,7 +493,7 @@ impl ScenarioModel {
     fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> ScenarioModel {
         ScenarioModel {
             scenario: scenario.clone(),
-            name: style_scenario(scenario),
+            name: style_scenario(scenario, true),
             phase: None,
             phase_start: start,
             log_file,
@@ -618,10 +618,10 @@ fn style_mb(bytes: u64) -> StyledObject<String> {
     style(format_mb(bytes)).cyan()
 }
 
-pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
+pub fn style_scenario(scenario: &Scenario, line_col: bool) -> Cow<'static, str> {
     match scenario {
         Scenario::Baseline => "Unmutated baseline".into(),
-        Scenario::Mutant(mutant) => mutant.styled().into(),
+        Scenario::Mutant(mutant) => mutant.name(line_col, true).into(),
     }
 }
 

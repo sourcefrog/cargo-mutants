@@ -47,11 +47,11 @@ pub(crate) fn list_mutants<W: fmt::Write>(
         out.write_str(&serde_json::to_string_pretty(&list)?)?;
     } else {
         for mutant in mutants {
-            if options.colors {
-                writeln!(out, "{}", mutant.styled())?;
-            } else {
-                writeln!(out, "{}", mutant)?;
-            }
+            writeln!(
+                out,
+                "{}",
+                mutant.name(options.show_line_col, options.colors)
+            )?;
             if options.emit_diffs {
                 writeln!(out, "{}", mutant.diff())?;
             }

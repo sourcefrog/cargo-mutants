@@ -86,15 +86,14 @@ pub fn walk_tree(
                 continue;
             }
         }
-        if !options.examine_names.is_empty() {
-            file_mutants.retain(|m| options.examine_names.is_match(&m.to_string()));
-        }
-        if !options.exclude_names.is_empty() {
-            file_mutants.retain(|m| !options.exclude_names.is_match(&m.to_string()));
-        }
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
+    mutants.retain(|m| {
+        let name = m.name(true, false);
+        (options.examine_names.is_empty() || options.examine_names.is_match(&name))
+            && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
+    });
     console.walk_tree_done();
     Ok(Discovered { mutants, files })
 }
@@ -487,8 +486,6 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
-    use regex::Regex;
-
     use super::*;
 
     /// As a generic protection against regressions in discovery, the the mutants
@@ -502,6 +499,7 @@ mod test {
     fn expected_mutants_for_own_source_tree() {
         let options = Options {
             error_values: vec!["::anyhow::anyhow!(\"mutated!\")".to_owned()],
+            show_line_col: false,
             ..Default::default()
         };
         let mut list_output = String::new();
@@ -517,10 +515,6 @@ mod test {
             .expect("Discover mutants");
         crate::list_mutants(&mut list_output, &discovered.mutants, &options)
             .expect("Discover mutants in own source tree");
-
-        // Strip line numbers so this is not too brittle.
-        let line_re = Regex::new(r"(?m)^([^:]+:)\d+:( .*)$").unwrap();
-        let list_output = line_re.replace_all(&list_output, "$1$2");
         insta::assert_snapshot!(list_output);
     }
 }
