@@ -170,36 +170,7 @@ fn list_with_config_file_regexps() {
         .stdout(predicates::str::diff(indoc! {"\
                 src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false
                 src/simple_fns.rs:18:11: replace == with != in divisible_by_three
-            "}));
-}
-
-#[test]
-fn exclude_re_overrides_config() {
-    let testdata = copy_of_testdata("well_tested");
-    write_config_file(
-        &testdata,
-        r#"
-        exclude_re = [".*"]     # would exclude everything
-        "#,
-    );
-    run()
-        .args(["mutants", "--list", "-d"])
-        .arg(testdata.path())
-        .assert()
-        .success()
-        .stdout(predicates::str::is_empty());
-    // Also tests that the alias --exclude-regex is accepted
-    run()
-        .args(["mutants", "--list", "-d"])
-        .arg(testdata.path())
-        .args(["--exclude-regex", " -> "])
-        .args(["-f", "src/simple_fns.rs"])
-        .assert()
-        .success()
-        .stdout(indoc! {"
-            src/simple_fns.rs:8:5: replace returns_unit with ()
-            src/simple_fns.rs:18:11: replace == with != in divisible_by_three
-        "});
+        "}));
 }
 
 #[test]

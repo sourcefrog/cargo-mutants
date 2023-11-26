@@ -127,6 +127,7 @@ src/lib.rs:2:5: replace double -> u32 with 1
 ```
 src/lib.rs:2:5: replace is_symlink -> bool with true
 src/lib.rs:2:5: replace is_symlink -> bool with false
+src/lib.rs:2:26: replace != with == in is_symlink
 ```
 
 ## testdata/mut_ref

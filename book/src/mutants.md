@@ -63,3 +63,8 @@ like `a == 0`.
 | Operator | Replacements | Description |
 | -------- | ------------ | ----------- |
 | `==` | `!=` | Equality |
+| `!=` | `==` | Equality |
+
+Equality operators are not currently replaced with comparisons like `<` or `<=`
+because they are
+too prone to generate false positives, for example when unsigned integers are compared to 0.

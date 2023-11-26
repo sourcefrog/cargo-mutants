@@ -63,6 +63,7 @@ src/console.rs: replace <impl Model for LabModel>::render -> String with "xyzzy"
 src/console.rs: replace LabModel::find_scenario_mut -> &mut ScenarioModel with Box::leak(Box::new(Default::default()))
 src/console.rs: replace == with != in LabModel::find_scenario_mut
 src/console.rs: replace LabModel::remove_scenario with ()
+src/console.rs: replace != with == in LabModel::remove_scenario
 src/console.rs: replace <impl Model for WalkModel>::render -> String with String::new()
 src/console.rs: replace <impl Model for WalkModel>::render -> String with "xyzzy".into()
 src/console.rs: replace == with != in <impl Model for WalkModel>::render
@@ -153,6 +154,7 @@ src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default:
 src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
 src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Ok(())
 src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/in_diff.rs: replace != with == in check_diff_new_text_matches
 src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![0]
@@ -230,6 +232,7 @@ src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with Styl
 src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with StyledObject::from_iter(["xyzzy".into()])
 src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with StyledObject::new("xyzzy".into())
 src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with StyledObject::from("xyzzy".into())
+src/mutate.rs: replace != with == in Mutant::styled_parts
 src/mutate.rs: replace == with != in Mutant::styled_parts
 src/mutate.rs: replace Mutant::original_text -> String with String::new()
 src/mutate.rs: replace Mutant::original_text -> String with "xyzzy".into()
@@ -290,6 +293,7 @@ src/outcome.rs: replace ScenarioOutcome::has_timeout -> bool with true
 src/outcome.rs: replace ScenarioOutcome::has_timeout -> bool with false
 src/outcome.rs: replace ScenarioOutcome::check_or_build_failed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::check_or_build_failed -> bool with false
+src/outcome.rs: replace != with == in ScenarioOutcome::check_or_build_failed
 src/outcome.rs: replace == with != in ScenarioOutcome::check_or_build_failed
 src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with false
@@ -322,6 +326,7 @@ src/path.rs: replace ascent -> isize with 0
 src/path.rs: replace ascent -> isize with 1
 src/path.rs: replace ascent -> isize with -1
 src/path.rs: replace == with != in ascent
+src/path.rs: replace != with == in ascent
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with String::new()
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with "xyzzy".into()
 src/path.rs: replace == with != in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
@@ -338,6 +343,7 @@ src/process.rs: replace Process::terminate -> Result<()> with Ok(())
 src/process.rs: replace Process::terminate -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/process.rs: replace terminate_child_impl -> Result<()> with Ok(())
 src/process.rs: replace terminate_child_impl -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/process.rs: replace != with == in terminate_child_impl
 src/process.rs: replace ProcessStatus::success -> bool with true
 src/process.rs: replace ProcessStatus::success -> bool with false
 src/process.rs: replace == with != in ProcessStatus::success

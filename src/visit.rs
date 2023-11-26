@@ -342,13 +342,8 @@ fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
     match op {
         // We don't generate `<=` from `==` because it can too easily go
         // wrong with unsigned types compared to 0.
-        BinOp::Eq(_) => vec![
-            quote! { != },
-            // (quote! { > }, Genre::BinaryOperator),
-            // (quote! { < }, Genre::BinaryOperator),
-            // (quote! { >= }, Genre::BinaryOperator),
-            // (quote! { <= }, Genre::BinaryOperator),
-        ],
+        BinOp::Eq(_) => vec![quote! { != }],
+        BinOp::Ne(_) => vec![quote! { == }],
         _ => Vec::new(),
     }
 }

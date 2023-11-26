@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- New: Mutate `==` to `!=` in binary expressions.
+- New: Mutate `==` to `!=` and vice versa.
 
 - Changed: Include column numbers in text listings of mutants and output to disambiguate smaller-than-function mutants, for example if there are several operators that can be changed on one line. This also applies to the names used for regex matching, so may break some regexps that match the entire line (sorry).
 

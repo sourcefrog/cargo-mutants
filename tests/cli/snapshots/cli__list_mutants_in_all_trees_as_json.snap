@@ -1232,6 +1232,36 @@ expression: buf
         "line": 2
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-missing-test",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 2
+      },
+      "start": {
+        "column": 26,
+        "line": 2
+      }
+    }
   }
 ]
 ```
