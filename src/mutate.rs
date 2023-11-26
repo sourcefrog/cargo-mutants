@@ -3,12 +3,11 @@
 //! Mutations to source files, and inference of interesting mutations to apply.
 
 use std::fmt;
-use std::fmt::Write;
 use std::fs;
 use std::sync::Arc;
 
 use anyhow::{ensure, Context, Result};
-use console::style;
+use console::{style, StyledObject};
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
@@ -92,65 +91,50 @@ impl Mutant {
     ///
     /// The result is like `replace factorial -> u32 with Default::default()`.
     pub fn describe_change(&self) -> String {
-        // TODO: This needs to be updated for smaller-than-function mutations.
-        if self.genre == Genre::FnValue {
-            format!(
-                "replace {name}{space}{type} with {replacement}",
-                name = self.function.function_name,
-                space = if self.function.return_type.is_empty() {
-                    ""
-                } else {
-                    " "
-                },
-                type = self.function.return_type,
-                replacement = self.replacement,
-            )
-        } else {
-            format!(
-                "replace {original} with {replacement} in {name}{space}{type}",
-                original = self.original_text(),
-                replacement = self.replacement,
-                name = self.function.function_name,
-                space = if self.function.return_type.is_empty() {
-                    ""
-                } else {
-                    " "
-                },
-                type = self.function.return_type,
-            )
-        }
+        self.styled_parts()
+            .into_iter()
+            .map(|x| x.force_styling(false).to_string())
+            .collect::<Vec<_>>()
+            .join("")
     }
 
     pub fn styled(&self) -> String {
-        // This is like `impl Display for Mutant`, but with colors.
-        // The text content should be the same.
-        // TODO: implement Display by stripping out the styles.
-        let mut s = String::with_capacity(200);
-        write!(
-            &mut s,
-            "{}:{}",
+        format!(
+            "{}:{}: {}",
             self.source_file.tree_relative_slashes(),
             self.primary_line,
+            self.styled_parts()
+                .into_iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join("")
         )
-        .unwrap();
-        s.push_str(": replace ");
-        if self.genre != Genre::FnValue {
-            // TODO: colors
-            s.push_str(&self.original_text());
-            s.push_str(" with ");
-            s.push_str(&self.replacement);
-            s.push_str(" in ");
+    }
+
+    fn styled_parts(&self) -> Vec<StyledObject<String>> {
+        // This is like `impl Display for Mutant`, but with colors.
+        // The text content should be the same.
+        fn s<S: ToString>(s: S) -> StyledObject<String> {
+            style(s.to_string())
         }
-        s.push_str(&style(self.function_name()).bright().magenta().to_string());
+        let mut v: Vec<StyledObject<String>> = Vec::new();
+        v.push(s("replace "));
+        if self.genre != Genre::FnValue {
+            v.push(s(self.original_text()).yellow());
+            v.push(s(" with "));
+            v.push(s(&self.replacement).bright().yellow());
+            v.push(s(" in "));
+        }
+        v.push(s(self.function_name()).bright().magenta());
         if self.genre == Genre::FnValue {
             if !self.return_type().is_empty() {
-                s.push(' ');
-                s.push_str(&style(self.return_type()).magenta().to_string());
+                v.push(s(" "));
+                v.push(s(self.return_type()).magenta());
             }
-            s.push_str(" with ");
-            s.push_str(&style(self.replacement_text()).yellow().to_string());
+            v.push(s(" with "));
+            v.push(s(self.replacement_text()).yellow());
         }
-        s
+        v
     }
 
     pub fn original_text(&self) -> String {

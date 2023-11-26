@@ -198,6 +198,7 @@ fn exclude_re_overrides_config() {
         .success()
         .stdout(indoc! {"
             src/simple_fns.rs:7: replace returns_unit with ()
+            src/simple_fns.rs:18: replace == with != in divisible_by_three
         "});
 }
 
