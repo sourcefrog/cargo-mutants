@@ -33,5 +33,36 @@ expression: "String::from_utf8_lossy(&output.stdout)"
         "line": 18
       }
     }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 18,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 18
+      },
+      "start": {
+        "column": 11,
+        "line": 18
+      }
+    }
   }
 ]

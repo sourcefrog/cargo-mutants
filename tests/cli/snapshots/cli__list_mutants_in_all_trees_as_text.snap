@@ -70,6 +70,7 @@ src/lib.rs:5: replace two -> String with "xyzzy".into()
 src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Ok(0)
 src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Ok(1)
 src/lib.rs:3: replace even_is_ok -> Result<u32, &'static str> with Err("injected")
+src/lib.rs:4: replace == with != in even_is_ok
 ```
 
 ## testdata/everything_skipped
@@ -153,6 +154,7 @@ src/lib.rs:2: replace box_an_int -> Box<i32> with Box::new(-1)
 ```
 src/lib.rs:6: replace is_even -> bool with true
 src/lib.rs:6: replace is_even -> bool with false
+src/lib.rs:7: replace == with != in is_even
 ```
 
 ## testdata/package_fails
@@ -169,6 +171,7 @@ passing/src/lib.rs:1: replace triple -> usize with 1
 ```
 src/lib.rs:6: replace is_even -> bool with true
 src/lib.rs:6: replace is_even -> bool with false
+src/lib.rs:7: replace == with != in is_even
 ```
 
 ## testdata/relative_dependency
@@ -183,6 +186,7 @@ src/lib.rs:5: replace double_factorial -> u32 with 1
 ```
 src/lib.rs:6: replace is_even -> bool with true
 src/lib.rs:6: replace is_even -> bool with false
+src/lib.rs:7: replace == with != in is_even
 ```
 
 ## testdata/small_well_tested
@@ -257,6 +261,7 @@ src/numbers.rs:1: replace double_float -> f32 with 1.0
 src/numbers.rs:1: replace double_float -> f32 with -1.0
 src/numbers.rs:5: replace is_double -> bool with true
 src/numbers.rs:5: replace is_double -> bool with false
+src/numbers.rs:6: replace == with != in is_double
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(())
@@ -269,6 +274,7 @@ src/simple_fns.rs:12: replace returns_42u32 -> u32 with 0
 src/simple_fns.rs:12: replace returns_42u32 -> u32 with 1
 src/simple_fns.rs:17: replace divisible_by_three -> bool with true
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false
+src/simple_fns.rs:18: replace == with != in divisible_by_three
 src/simple_fns.rs:26: replace double_string -> String with String::new()
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into()
 src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new())

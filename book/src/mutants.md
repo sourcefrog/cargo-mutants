@@ -4,8 +4,12 @@ cargo mutants generates mutants by inspecting the existing
 source code and applying a set of rules to generate new code
 that is likely to compile but have different behavior.
 
-Mutants each have a "genre". In the current release, the only mutation genre is
-`FnValue`, where a function's body is replaced with a value of the same type.
+Mutants each have a "genre", each of which is described below.
+
+## Replace function body with value
+
+The `FnValue` genre of mutants replaces a function's body with a value that is guessed to be of the right type.
+
 This checks that the tests:
 
 1. Observe any side effects of the original function.
@@ -50,3 +54,12 @@ Some of these values may not be valid for all types: for example, returning
 `Default::default()` will work for many types, but not all. In this case the
 mutant is said to be "unviable": by default these are counted but not printed,
 although they can be shown with `--unviable`.
+
+## Binary operators
+
+Binary operators are replaced with other binary operators in expressions
+like `a == 0`.
+
+| Operator | Replacements | Description |
+| -------- | ------------ | ----------- |
+| `==` | `!=` | Equality |

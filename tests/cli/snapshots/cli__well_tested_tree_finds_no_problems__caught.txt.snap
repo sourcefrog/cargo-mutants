@@ -18,6 +18,7 @@ src/numbers.rs:1: replace double_float -> f32 with 1.0
 src/numbers.rs:1: replace double_float -> f32 with -1.0
 src/numbers.rs:5: replace is_double -> bool with true
 src/numbers.rs:5: replace is_double -> bool with false
+src/numbers.rs:6: replace == with != in is_double -> bool
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(())
@@ -30,6 +31,7 @@ src/simple_fns.rs:12: replace returns_42u32 -> u32 with 0
 src/simple_fns.rs:12: replace returns_42u32 -> u32 with 1
 src/simple_fns.rs:17: replace divisible_by_three -> bool with true
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false
+src/simple_fns.rs:18: replace == with != in divisible_by_three -> bool
 src/simple_fns.rs:26: replace double_string -> String with String::new()
 src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into()
 src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new())

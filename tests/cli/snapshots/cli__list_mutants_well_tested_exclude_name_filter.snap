@@ -18,6 +18,7 @@ src/numbers.rs:1: replace double_float -> f32 with 1.0
 src/numbers.rs:1: replace double_float -> f32 with -1.0
 src/numbers.rs:5: replace is_double -> bool with true
 src/numbers.rs:5: replace is_double -> bool with false
+src/numbers.rs:6: replace == with != in is_double
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(())

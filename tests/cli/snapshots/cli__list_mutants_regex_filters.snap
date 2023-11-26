@@ -1,7 +1,8 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 src/simple_fns.rs:17: replace divisible_by_three -> bool with true
 src/simple_fns.rs:17: replace divisible_by_three -> bool with false
+src/simple_fns.rs:18: replace == with != in divisible_by_three
 

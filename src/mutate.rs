@@ -127,6 +127,7 @@ impl Mutant {
     pub fn styled(&self) -> String {
         // This is like `impl Display for Mutant`, but with colors.
         // The text content should be the same.
+        // TODO: implement Display by stripping out the styles.
         let mut s = String::with_capacity(200);
         write!(
             &mut s,
@@ -144,11 +145,11 @@ impl Mutant {
             s.push_str(" in ");
         }
         s.push_str(&style(self.function_name()).bright().magenta().to_string());
-        if !self.return_type().is_empty() {
-            s.push(' ');
-            s.push_str(&style(self.return_type()).magenta().to_string());
-        }
         if self.genre == Genre::FnValue {
+            if !self.return_type().is_empty() {
+                s.push(' ');
+                s.push_str(&style(self.return_type()).magenta().to_string());
+            }
             s.push_str(" with ");
             s.push_str(&style(self.replacement_text()).yellow().to_string());
         }

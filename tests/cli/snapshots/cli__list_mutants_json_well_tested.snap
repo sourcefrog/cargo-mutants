@@ -500,6 +500,37 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "file": "src/numbers.rs",
+    "function": {
+      "function_name": "is_double",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 6,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 6
+      },
+      "start": {
+        "column": 7,
+        "line": 6
+      }
+    }
+  },
+  {
     "file": "src/result.rs",
     "function": {
       "function_name": "simple_result",
@@ -867,6 +898,37 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       },
       "start": {
         "column": 5,
+        "line": 18
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 18,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 18
+      },
+      "start": {
+        "column": 11,
         "line": 18
       }
     }

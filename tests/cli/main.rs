@@ -566,8 +566,8 @@ fn well_tested_tree_quiet() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
     println!("outcomes.json:\n{outcomes_json}");
     let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    assert_eq!(outcomes["total_mutants"], 40);
-    assert_eq!(outcomes["caught"], 40);
+    assert_eq!(outcomes["total_mutants"], 42);
+    assert_eq!(outcomes["caught"], 42);
     assert_eq!(outcomes["unviable"], 0);
     assert_eq!(outcomes["missed"], 0);
 }

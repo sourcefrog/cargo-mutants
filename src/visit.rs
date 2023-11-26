@@ -310,13 +310,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         let mut new_mutants = binary_operator_replacements(i.op)
             .into_iter()
-            .map(|(rep, genre)| Mutant {
+            .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
                 function: self.current_function(),
                 replacement: rep.to_pretty_string(),
                 span: i.op.span().into(),
                 start_line: i.op.span().start().line,
-                genre,
+                genre: Genre::BinaryOperator,
             })
             .collect_vec();
         if new_mutants.is_empty() {
@@ -341,12 +341,12 @@ fn function_body_span(block: &Block) -> Option<Span> {
     })
 }
 
-fn binary_operator_replacements(op: syn::BinOp) -> Vec<(TokenStream, Genre)> {
+fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
     match op {
         // We don't generate `<=` from `==` because it can too easily go
         // wrong with unsigned types compared to 0.
         BinOp::Eq(_) => vec![
-            // (quote! { != }, Genre::BinaryOperator),
+            quote! { != },
             // (quote! { > }, Genre::BinaryOperator),
             // (quote! { < }, Genre::BinaryOperator),
             // (quote! { >= }, Genre::BinaryOperator),

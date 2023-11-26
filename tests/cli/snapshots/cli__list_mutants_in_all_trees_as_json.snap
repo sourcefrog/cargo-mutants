@@ -687,6 +687,37 @@ expression: buf
         "line": 4
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "even_is_ok",
+      "return_type": "-> Result<u32, &'static str>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 4,
+    "package": "cargo-mutants-testdata-error-value",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 4
+      },
+      "start": {
+        "column": 14,
+        "line": 4
+      }
+    }
   }
 ]
 ```
@@ -1482,6 +1513,37 @@ expression: buf
         "line": 7
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 7,
+    "package": "cargo-mutants-testdata-override-dependency",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 7
+      },
+      "start": {
+        "column": 11,
+        "line": 7
+      }
+    }
   }
 ]
 ```
@@ -1682,6 +1744,37 @@ expression: buf
         "line": 7
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 7,
+    "package": "cargo-mutants-testdata-patch-dependency",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 7
+      },
+      "start": {
+        "column": 11,
+        "line": 7
+      }
+    }
   }
 ]
 ```
@@ -1817,6 +1910,37 @@ expression: buf
       },
       "start": {
         "column": 5,
+        "line": 7
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 8
+        },
+        "start": {
+          "column": 1,
+          "line": 6
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 7,
+    "package": "cargo-mutants-testdata-replace-dependency",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 7
+      },
+      "start": {
+        "column": 11,
         "line": 7
       }
     }
@@ -2931,6 +3055,37 @@ expression: buf
     }
   },
   {
+    "file": "src/numbers.rs",
+    "function": {
+      "function_name": "is_double",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 6,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 6
+      },
+      "start": {
+        "column": 7,
+        "line": 6
+      }
+    }
+  },
+  {
     "file": "src/result.rs",
     "function": {
       "function_name": "simple_result",
@@ -3298,6 +3453,37 @@ expression: buf
       },
       "start": {
         "column": 5,
+        "line": 18
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "Eq",
+    "line": 18,
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 18
+      },
+      "start": {
+        "column": 11,
         "line": 18
       }
     }

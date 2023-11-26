@@ -169,8 +169,8 @@ fn list_with_config_file_regexps() {
         .success()
         .stdout(predicates::str::diff(indoc! {"\
                 src/simple_fns.rs:17: replace divisible_by_three -> bool with false
+                src/simple_fns.rs:18: replace == with != in divisible_by_three
             "}));
-    // src/simple_fns.rs:18: replace == with != in divisible_by_three -> bool
 }
 
 #[test]

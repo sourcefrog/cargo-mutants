@@ -14,8 +14,12 @@ src/cargo.rs: replace cargo_bin -> String with "xyzzy".into()
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![String::new()]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec!["xyzzy".into()]
+src/cargo.rs: replace == with != in cargo_argv -> Vec<String>
+src/cargo.rs: replace == with != in cargo_argv -> Vec<String>
+src/cargo.rs: replace == with != in cargo_argv -> Vec<String>
 src/cargo.rs: replace rustflags -> String with String::new()
 src/cargo.rs: replace rustflags -> String with "xyzzy".into()
+src/cargo.rs: replace == with != in rustflags -> String
 src/config.rs: replace Config::read_file -> Result<Config> with Ok(Default::default())
 src/config.rs: replace Config::read_file -> Result<Config> with Err(::anyhow::anyhow!("mutated!"))
 src/config.rs: replace Config::read_tree_config -> Result<Config> with Ok(Default::default())
@@ -57,9 +61,11 @@ src/console.rs: replace <impl Write for DebugLogWriter>::flush -> io::Result<()>
 src/console.rs: replace <impl Model for LabModel>::render -> String with String::new()
 src/console.rs: replace <impl Model for LabModel>::render -> String with "xyzzy".into()
 src/console.rs: replace LabModel::find_scenario_mut -> &mut ScenarioModel with Box::leak(Box::new(Default::default()))
+src/console.rs: replace == with != in LabModel::find_scenario_mut -> &mut ScenarioModel
 src/console.rs: replace LabModel::remove_scenario with ()
 src/console.rs: replace <impl Model for WalkModel>::render -> String with String::new()
 src/console.rs: replace <impl Model for WalkModel>::render -> String with "xyzzy".into()
+src/console.rs: replace == with != in <impl Model for WalkModel>::render -> String
 src/console.rs: replace ScenarioModel::phase_started with ()
 src/console.rs: replace ScenarioModel::phase_finished with ()
 src/console.rs: replace <impl Model for ScenarioModel>::render -> String with String::new()
@@ -98,6 +104,7 @@ src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Borrowed("
 src/console.rs: replace style_scenario -> Cow<'static, str> with Cow::Owned("xyzzy".to_owned())
 src/console.rs: replace plural -> String with String::new()
 src/console.rs: replace plural -> String with "xyzzy".into()
+src/console.rs: replace == with != in plural -> String
 src/copy_tree.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default())
 src/copy_tree.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Ok(())
@@ -108,16 +115,26 @@ src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> w
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
 src/fnvalue.rs: replace path_ends_with -> bool with true
 src/fnvalue.rs: replace path_ends_with -> bool with false
+src/fnvalue.rs: replace == with != in path_ends_with -> bool
 src/fnvalue.rs: replace match_impl_iterator -> Option<&Type> with None
 src/fnvalue.rs: replace match_impl_iterator -> Option<&Type> with Some(&Default::default())
+src/fnvalue.rs: replace == with != in match_impl_iterator -> Option<&Type>
+src/fnvalue.rs: replace == with != in match_impl_iterator -> Option<&Type>
+src/fnvalue.rs: replace == with != in match_impl_iterator -> Option<&Type>
 src/fnvalue.rs: replace known_container -> Option<(&Ident, &Type)> with None
 src/fnvalue.rs: replace known_container -> Option<(&Ident, &Type)> with Some((&Default::default(), &Default::default()))
+src/fnvalue.rs: replace == with != in known_container -> Option<(&Ident, &Type)>
+src/fnvalue.rs: replace == with != in known_container -> Option<(&Ident, &Type)>
 src/fnvalue.rs: replace known_collection -> Option<(&Ident, &Type)> with None
 src/fnvalue.rs: replace known_collection -> Option<(&Ident, &Type)> with Some((&Default::default(), &Default::default()))
+src/fnvalue.rs: replace == with != in known_collection -> Option<(&Ident, &Type)>
+src/fnvalue.rs: replace == with != in known_collection -> Option<(&Ident, &Type)>
 src/fnvalue.rs: replace known_map -> Option<(&Ident, &Type, &Type)> with None
 src/fnvalue.rs: replace known_map -> Option<(&Ident, &Type, &Type)> with Some((&Default::default(), &Default::default(), &Default::default()))
+src/fnvalue.rs: replace == with != in known_map -> Option<(&Ident, &Type, &Type)>
 src/fnvalue.rs: replace maybe_collection_or_container -> Option<(&Ident, &Type)> with None
 src/fnvalue.rs: replace maybe_collection_or_container -> Option<(&Ident, &Type)> with Some((&Default::default(), &Default::default()))
+src/fnvalue.rs: replace == with != in maybe_collection_or_container -> Option<(&Ident, &Type)>
 src/fnvalue.rs: replace path_is_float -> bool with true
 src/fnvalue.rs: replace path_is_float -> bool with false
 src/fnvalue.rs: replace path_is_unsigned -> bool with true
@@ -130,6 +147,7 @@ src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with true
 src/fnvalue.rs: replace path_is_nonzero_unsigned -> bool with false
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with None
 src/fnvalue.rs: replace match_first_type_arg -> Option<&'p Type> with Some(&Default::default())
+src/fnvalue.rs: replace == with != in match_first_type_arg -> Option<&'p Type>
 src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![])
 src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default::default()])
 src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
@@ -147,8 +165,12 @@ src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, 
 src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
+src/lab.rs: replace == with != in test_mutants -> Result<LabOutcome>
+src/lab.rs: replace == with != in test_mutants -> Result<LabOutcome>
+src/lab.rs: replace == with != in test_mutants -> Result<LabOutcome>
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Err(::anyhow::anyhow!("mutated!"))
+src/lab.rs: replace == with != in test_scenario -> Result<ScenarioOutcome>
 src/list.rs: replace <impl Write for FmtToIoWrite<W>>::write_str -> Result<(), fmt::Error> with Ok(())
 src/list.rs: replace <impl Write for FmtToIoWrite<W>>::write_str -> Result<(), fmt::Error> with Err(::anyhow::anyhow!("mutated!"))
 src/list.rs: replace list_mutants -> Result<()> with Ok(())
@@ -157,6 +179,8 @@ src/list.rs: replace list_files -> Result<()> with Ok(())
 src/list.rs: replace list_files -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/log_file.rs: replace LogFile::create_in -> Result<LogFile> with Ok(Default::default())
 src/log_file.rs: replace LogFile::create_in -> Result<LogFile> with Err(::anyhow::anyhow!("mutated!"))
+src/log_file.rs: replace == with != in LogFile::create_in -> Result<LogFile>
+src/log_file.rs: replace == with != in LogFile::create_in -> Result<LogFile>
 src/log_file.rs: replace LogFile::open_append -> Result<File> with Ok(Default::default())
 src/log_file.rs: replace LogFile::open_append -> Result<File> with Err(::anyhow::anyhow!("mutated!"))
 src/log_file.rs: replace LogFile::message with ()
@@ -171,6 +195,7 @@ src/manifest.rs: replace fix_manifest -> Result<()> with Err(::anyhow::anyhow!("
 src/manifest.rs: replace fix_manifest_toml -> Result<Option<toml::Value>> with Ok(None)
 src/manifest.rs: replace fix_manifest_toml -> Result<Option<toml::Value>> with Ok(Some(Default::default()))
 src/manifest.rs: replace fix_manifest_toml -> Result<Option<toml::Value>> with Err(::anyhow::anyhow!("mutated!"))
+src/manifest.rs: replace == with != in fix_manifest_toml -> Result<Option<toml::Value>>
 src/manifest.rs: replace fix_dependency_table with ()
 src/manifest.rs: replace fix_cargo_config -> Result<()> with Ok(())
 src/manifest.rs: replace fix_cargo_config -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
@@ -181,6 +206,7 @@ src/manifest.rs: replace fix_cargo_config_toml -> Result<Option<String>> with Er
 src/manifest.rs: replace fix_path -> Option<String> with None
 src/manifest.rs: replace fix_path -> Option<String> with Some(String::new())
 src/manifest.rs: replace fix_path -> Option<String> with Some("xyzzy".into())
+src/manifest.rs: replace == with != in fix_path -> Option<String>
 src/mutate.rs: replace Mutant::mutated_code -> String with String::new()
 src/mutate.rs: replace Mutant::mutated_code -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::original_code -> &str with ""
@@ -189,8 +215,10 @@ src/mutate.rs: replace Mutant::return_type -> &str with ""
 src/mutate.rs: replace Mutant::return_type -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::describe_change -> String with String::new()
 src/mutate.rs: replace Mutant::describe_change -> String with "xyzzy".into()
+src/mutate.rs: replace == with != in Mutant::describe_change -> String
 src/mutate.rs: replace Mutant::styled -> String with String::new()
 src/mutate.rs: replace Mutant::styled -> String with "xyzzy".into()
+src/mutate.rs: replace == with != in Mutant::styled -> String
 src/mutate.rs: replace Mutant::original_text -> String with String::new()
 src/mutate.rs: replace Mutant::original_text -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::replacement_text -> &str with ""
@@ -252,10 +280,14 @@ src/outcome.rs: replace ScenarioOutcome::has_timeout -> bool with true
 src/outcome.rs: replace ScenarioOutcome::has_timeout -> bool with false
 src/outcome.rs: replace ScenarioOutcome::check_or_build_failed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::check_or_build_failed -> bool with false
+src/outcome.rs: replace == with != in ScenarioOutcome::check_or_build_failed -> bool
 src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with false
+src/outcome.rs: replace == with != in ScenarioOutcome::mutant_caught -> bool
+src/outcome.rs: replace == with != in ScenarioOutcome::mutant_caught -> bool
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with false
+src/outcome.rs: replace == with != in ScenarioOutcome::mutant_missed -> bool
 src/outcome.rs: replace ScenarioOutcome::summary -> SummaryOutcome with Default::default()
 src/outcome.rs: replace PhaseResult::is_success -> bool with true
 src/outcome.rs: replace PhaseResult::is_success -> bool with false
@@ -263,6 +295,7 @@ src/outcome.rs: replace <impl Serialize for PhaseResult>::serialize -> Result<S:
 src/outcome.rs: replace <impl Serialize for PhaseResult>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace LockFile::acquire_lock -> Result<File> with Ok(Default::default())
 src/output.rs: replace LockFile::acquire_lock -> Result<File> with Err(::anyhow::anyhow!("mutated!"))
+src/output.rs: replace == with != in LockFile::acquire_lock -> Result<File>
 src/output.rs: replace OutputDir::create_log -> Result<LogFile> with Ok(Default::default())
 src/output.rs: replace OutputDir::create_log -> Result<LogFile> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace OutputDir::path -> &Utf8Path with &Default::default()
@@ -278,10 +311,15 @@ src/output.rs: replace OutputDir::take_lab_outcome -> LabOutcome with Default::d
 src/path.rs: replace ascent -> isize with 0
 src/path.rs: replace ascent -> isize with 1
 src/path.rs: replace ascent -> isize with -1
+src/path.rs: replace == with != in ascent -> isize
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with String::new()
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with "xyzzy".into()
+src/path.rs: replace == with != in <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String
+src/path.rs: replace == with != in <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String
 src/pretty.rs: replace <impl ToPrettyString for T>::to_pretty_string -> String with String::new()
 src/pretty.rs: replace <impl ToPrettyString for T>::to_pretty_string -> String with "xyzzy".into()
+src/pretty.rs: replace == with != in <impl ToPrettyString for T>::to_pretty_string -> String
+src/pretty.rs: replace == with != in <impl ToPrettyString for T>::to_pretty_string -> String
 src/process.rs: replace Process::run -> Result<ProcessStatus> with Ok(Default::default())
 src/process.rs: replace Process::run -> Result<ProcessStatus> with Err(::anyhow::anyhow!("mutated!"))
 src/process.rs: replace Process::start -> Result<Process> with Ok(Default::default())
@@ -292,8 +330,10 @@ src/process.rs: replace terminate_child_impl -> Result<()> with Ok(())
 src/process.rs: replace terminate_child_impl -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/process.rs: replace ProcessStatus::success -> bool with true
 src/process.rs: replace ProcessStatus::success -> bool with false
+src/process.rs: replace == with != in ProcessStatus::success -> bool
 src/process.rs: replace ProcessStatus::timeout -> bool with true
 src/process.rs: replace ProcessStatus::timeout -> bool with false
+src/process.rs: replace == with != in ProcessStatus::timeout -> bool
 src/process.rs: replace setpgid_on_unix -> PopenConfig with Default::default()
 src/process.rs: replace get_command_output -> Result<String> with Ok(String::new())
 src/process.rs: replace get_command_output -> Result<String> with Ok("xyzzy".into())
@@ -315,8 +355,18 @@ src/textedit.rs: replace <impl From for Span>::from -> Self with Default::defaul
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace replace_region -> String with String::new()
 src/textedit.rs: replace replace_region -> String with "xyzzy".into()
+src/textedit.rs: replace == with != in replace_region -> String
+src/textedit.rs: replace == with != in replace_region -> String
+src/textedit.rs: replace == with != in replace_region -> String
+src/textedit.rs: replace == with != in replace_region -> String
+src/textedit.rs: replace == with != in replace_region -> String
+src/textedit.rs: replace == with != in replace_region -> String
 src/textedit.rs: replace span_substr -> String with String::new()
 src/textedit.rs: replace span_substr -> String with "xyzzy".into()
+src/textedit.rs: replace == with != in span_substr -> String
+src/textedit.rs: replace == with != in span_substr -> String
+src/textedit.rs: replace == with != in span_substr -> String
+src/textedit.rs: replace == with != in span_substr -> String
 src/visit.rs: replace walk_tree -> Result<Discovered> with Ok(Default::default())
 src/visit.rs: replace walk_tree -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec![]))
@@ -333,13 +383,15 @@ src/visit.rs: replace DiscoveryVisitor<'o>::collect_fn_mutants with ()
 src/visit.rs: replace DiscoveryVisitor<'o>::in_namespace -> T with Default::default()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn with ()
+src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl with ()
+src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_mod with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_expr_binary with ()
 src/visit.rs: replace function_body_span -> Option<Span> with None
 src/visit.rs: replace function_body_span -> Option<Span> with Some(Default::default())
-src/visit.rs: replace binary_operator_replacements -> Vec<(TokenStream, Genre)> with vec![]
-src/visit.rs: replace binary_operator_replacements -> Vec<(TokenStream, Genre)> with vec![(Default::default(), Default::default())]
+src/visit.rs: replace binary_operator_replacements -> Vec<TokenStream> with vec![]
+src/visit.rs: replace binary_operator_replacements -> Vec<TokenStream> with vec![Default::default()]
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(None)
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(Some(Default::default()))
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
@@ -360,6 +412,7 @@ src/visit.rs: replace attr_is_mutants_skip -> bool with false
 src/workspace.rs: replace PackageFilter::explicit -> PackageFilter with Default::default()
 src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Ok(Default::default())
 src/workspace.rs: replace PackageFilter::resolve_auto -> Result<PackageFilter> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace == with != in PackageFilter::resolve_auto -> Result<PackageFilter>
 src/workspace.rs: replace Workspace::open -> Result<Self> with Ok(Default::default())
 src/workspace.rs: replace Workspace::open -> Result<Self> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with Ok(vec![])
@@ -368,6 +421,7 @@ src/workspace.rs: replace Workspace::packages -> Result<Vec<Arc<Package>>> with 
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Ok(vec![])
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Ok(vec![Default::default()])
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace == with != in Workspace::package_tops -> Result<Vec<PackageTop>>
 src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
 src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
 src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
@@ -381,6 +435,7 @@ src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> wit
 src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace should_mutate_target -> bool with true
 src/workspace.rs: replace should_mutate_target -> bool with false
+src/workspace.rs: replace == with != in should_mutate_target -> bool
 src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Ok(Default::default())
 src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
 
