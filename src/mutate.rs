@@ -81,8 +81,7 @@ impl Mutant {
     pub fn mutated_code(&self) -> String {
         replace_region(
             &self.source_file.code,
-            &self.span.start,
-            &self.span.end,
+            &self.span,
             &format!("{} {} ", &self.replacement, MUTATION_MARKER_COMMENT),
         )
     }

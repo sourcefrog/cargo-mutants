@@ -76,7 +76,7 @@ impl From<proc_macro2::extra::DelimSpan> for Span {
 ///
 /// Returns a copy of `s` with the region between `start` and `end` inclusive replaced by
 /// `replacement`.
-pub fn replace_region(s: &str, start: &LineColumn, end: &LineColumn, replacement: &str) -> String {
+pub fn replace_region(s: &str, Span { start, end }: &Span, replacement: &str) -> String {
     // dbg!(start, end);
     // TODO: This is a bit inefficient.
     let mut r = String::with_capacity(s.len() + replacement.len());
@@ -144,11 +144,13 @@ mod test {
         assert_eq!(
             replace_region(
                 source,
-                &LineColumn {
-                    line: 1,
-                    column: 10
+                &Span {
+                    start: LineColumn {
+                        line: 1,
+                        column: 10
+                    },
+                    end: LineColumn { line: 3, column: 2 },
                 },
-                &LineColumn { line: 3, column: 2 },
                 "{}\r\n"
             ),
             "fn foo() {}\r\n//hey!\r\n"
@@ -169,11 +171,13 @@ mod test {
         // typical multi-line case
         let replaced = replace_region(
             source,
-            &LineColumn {
-                line: 2,
-                column: 10,
+            &Span {
+                start: LineColumn {
+                    line: 2,
+                    column: 10,
+                },
+                end: LineColumn { line: 5, column: 1 },
             },
-            &LineColumn { line: 5, column: 1 },
             "{ /* body deleted */ }",
         );
         assert_eq!(
@@ -189,13 +193,15 @@ mod test {
         // single-line case
         let replaced = replace_region(
             source,
-            &LineColumn {
-                line: 7,
-                column: 18,
-            },
-            &LineColumn {
-                line: 7,
-                column: 19,
+            &Span {
+                start: LineColumn {
+                    line: 7,
+                    column: 18,
+                },
+                end: LineColumn {
+                    line: 7,
+                    column: 19,
+                },
             },
             "69",
         );
