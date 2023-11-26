@@ -25,7 +25,7 @@ mod pretty;
 mod process;
 mod scenario;
 mod source;
-mod textedit;
+mod span;
 mod visit;
 mod workspace;
 

@@ -1,6 +1,10 @@
 // Copyright 2021-2023 Martin Pool
 
-//! Edit source code.
+//! Locations (line/column) and spans between them in source code.
+//!
+//! This is similar to, and can be automatically derived from,
+//! [proc_macro2::Span] and [proc_macro2::LineColumn], but is
+//! a bit more convenient for our purposes.
 
 use std::fmt;
 

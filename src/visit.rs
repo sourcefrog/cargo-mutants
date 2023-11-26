@@ -24,7 +24,7 @@ use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
-use crate::textedit::Span;
+use crate::span::Span;
 use crate::*;
 
 /// Mutants and files discovered in a source tree.

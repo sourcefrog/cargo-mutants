@@ -47,8 +47,8 @@ applied.
 `source.rs` -- A source tree and files within it, including visiting each source
 file to find mutations.
 
-`textedit.rs` -- A (line, column) addressing within a source file, and edits to
-the content based on those addresses.
+`span.rs` -- A (line, column) addressing within a source file, a range between
+two positions, and edits to the content based on those addresses.
 
 `visit.rs` -- Walk a source file's AST, and guess at likely-legal-but-wrong
 replacements. The interface to the `syn` parser is localized here, and also the

@@ -15,7 +15,7 @@ use similar::TextDiff;
 use crate::build_dir::BuildDir;
 use crate::package::Package;
 use crate::source::SourceFile;
-use crate::textedit::Span;
+use crate::span::Span;
 use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
