@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 23.11.2
 
 - Changed: If `--file` or `--exclude` are set on the command line, then they replace the corresponding config file options. Similarly, if `--re` is given then the `examine_re` config key is ignored, and if `--exclude-re` is given then `exclude_regex` is ignored. (Previously the values were combined.) This makes it easier to use the command line to test files or mutants that are normally not tested.
 
