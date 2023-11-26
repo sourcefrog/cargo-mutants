@@ -514,7 +514,7 @@ fn small_well_tested_tree_is_clean() {
             *** mutation diff:
             --- src/lib.rs
             +++ replace factorial -> u32 with 0
-            @@ -1,18 +1,13 @@
+            @@ -1,17 +1,13 @@
         "# }));
     assert!(log_content.contains(indoc! { r#"
              pub fn factorial(n: u32) -> u32 {
@@ -523,8 +523,8 @@ fn small_well_tested_tree_is_clean() {
             -        a *= i;
             -    }
             -    a
-            -}
-            +    0 /* ~ changed by cargo-mutants ~ */ }
+            +    0 /* ~ changed by cargo-mutants ~ */
+             }
             "# }));
     // Also, it should contain output from the failed tests with mutations applied.
     assert!(log_content.contains("test test::test_factorial ... FAILED"));

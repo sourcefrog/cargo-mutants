@@ -350,23 +350,24 @@ src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
 src/textedit.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
 src/textedit.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Ok(Default::default())
 src/textedit.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
+src/textedit.rs: replace Span::quad -> Self with Default::default()
+src/textedit.rs: replace Span::extract -> String with String::new()
+src/textedit.rs: replace Span::extract -> String with "xyzzy".into()
+src/textedit.rs: replace == with != in Span::extract -> String
+src/textedit.rs: replace == with != in Span::extract -> String
+src/textedit.rs: replace == with != in Span::extract -> String
+src/textedit.rs: replace == with != in Span::extract -> String
+src/textedit.rs: replace Span::replace -> String with String::new()
+src/textedit.rs: replace Span::replace -> String with "xyzzy".into()
+src/textedit.rs: replace == with != in Span::replace -> String
+src/textedit.rs: replace == with != in Span::replace -> String
+src/textedit.rs: replace == with != in Span::replace -> String
+src/textedit.rs: replace == with != in Span::replace -> String
+src/textedit.rs: replace == with != in Span::replace -> String
+src/textedit.rs: replace == with != in Span::replace -> String
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/textedit.rs: replace <impl From for Span>::from -> Self with Default::default()
-src/textedit.rs: replace replace_region -> String with String::new()
-src/textedit.rs: replace replace_region -> String with "xyzzy".into()
-src/textedit.rs: replace == with != in replace_region -> String
-src/textedit.rs: replace == with != in replace_region -> String
-src/textedit.rs: replace == with != in replace_region -> String
-src/textedit.rs: replace == with != in replace_region -> String
-src/textedit.rs: replace == with != in replace_region -> String
-src/textedit.rs: replace == with != in replace_region -> String
-src/textedit.rs: replace span_substr -> String with String::new()
-src/textedit.rs: replace span_substr -> String with "xyzzy".into()
-src/textedit.rs: replace == with != in span_substr -> String
-src/textedit.rs: replace == with != in span_substr -> String
-src/textedit.rs: replace == with != in span_substr -> String
-src/textedit.rs: replace == with != in span_substr -> String
 src/visit.rs: replace walk_tree -> Result<Discovered> with Ok(Default::default())
 src/visit.rs: replace walk_tree -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec![]))

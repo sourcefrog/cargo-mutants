@@ -16,8 +16,7 @@ use similar::TextDiff;
 use crate::build_dir::BuildDir;
 use crate::package::Package;
 use crate::source::SourceFile;
-use crate::textedit::span_substr;
-use crate::textedit::{replace_region, Span};
+use crate::textedit::Span;
 use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
@@ -79,10 +78,9 @@ pub struct Function {
 impl Mutant {
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
-        replace_region(
+        self.span.replace(
             &self.source_file.code,
-            &self.span,
-            &format!("{} {} ", &self.replacement, MUTATION_MARKER_COMMENT),
+            &format!("{} {}", &self.replacement, MUTATION_MARKER_COMMENT),
         )
     }
 
@@ -161,7 +159,7 @@ impl Mutant {
     }
 
     pub fn original_text(&self) -> String {
-        span_substr(&self.source_file.code, &self.span)
+        self.span.extract(&self.source_file.code)
     }
 
     /// Return the text inserted for this mutation.
@@ -377,14 +375,14 @@ mod test {
         )?;
         assert_eq!(mutants.len(), 3);
 
-        let mut mutated_code = mutants[0].mutated_code();
+        let mutated_code = mutants[0].mutated_code();
         assert_eq!(mutants[0].function_name(), "main");
-        mutated_code.retain(|c| c != '\r');
         assert_eq!(
-            mutated_code,
+            strip_trailing_space(&mutated_code),
             indoc! { r#"
                 fn main() {
-                    () /* ~ changed by cargo-mutants ~ */ }
+                    () /* ~ changed by cargo-mutants ~ */
+                }
 
                 fn factorial(n: u32) -> u32 {
                     let mut a = 1;
@@ -403,11 +401,10 @@ mod test {
             }
         );
 
-        let mut mutated_code = mutants[1].mutated_code();
+        let mutated_code = mutants[1].mutated_code();
         assert_eq!(mutants[1].function_name(), "factorial");
-        mutated_code.retain(|c| c != '\r');
         assert_eq!(
-            mutated_code,
+            strip_trailing_space(&mutated_code),
             indoc! { r#"
                 fn main() {
                     for i in 1..=6 {
@@ -416,7 +413,8 @@ mod test {
                 }
 
                 fn factorial(n: u32) -> u32 {
-                    0 /* ~ changed by cargo-mutants ~ */ }
+                    0 /* ~ changed by cargo-mutants ~ */
+                }
 
                 #[test]
                 fn test_factorial() {
@@ -427,5 +425,10 @@ mod test {
             }
         );
         Ok(())
+    }
+
+    fn strip_trailing_space(s: &str) -> String {
+        // Split on \n so that we retain empty lines etc
+        s.split('\n').map(|l| l.trim_end()).join("\n")
     }
 }
