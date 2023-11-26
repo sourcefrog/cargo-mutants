@@ -36,7 +36,7 @@ impl fmt::Debug for LineColumn {
 }
 
 /// A contiguous text span in a file.
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Serialize)]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct Span {
     /// The *inclusive* position where the span starts.
     pub start: LineColumn,
@@ -162,12 +162,29 @@ impl From<proc_macro2::extra::DelimSpan> for Span {
     }
 }
 
+impl fmt::Debug for Span {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // A concise form, similar to ::quad
+        write!(
+            f,
+            "Span({}, {}, {}, {})",
+            self.start.line, self.start.column, self.end.line, self.end.column
+        )
+    }
+}
+
 #[cfg(test)]
 mod test {
     use indoc::indoc;
     // use pretty_assertions::assert_eq;
 
     use super::*;
+
+    #[test]
+    fn span_debug_form() {
+        let span = Span::quad(1, 2, 3, 4);
+        assert_eq!(format!("{:?}", span), "Span(1, 2, 3, 4)");
+    }
 
     #[test]
     fn cut_before_crlf() {

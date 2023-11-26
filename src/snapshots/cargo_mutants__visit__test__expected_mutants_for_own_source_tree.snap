@@ -387,6 +387,8 @@ src/span.rs: replace == with != in Span::replace
 src/span.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/span.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/span.rs: replace <impl From for Span>::from -> Self with Default::default()
+src/span.rs: replace <impl Debug for Span>::fmt -> fmt::Result with Ok(Default::default())
+src/span.rs: replace <impl Debug for Span>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace walk_tree -> Result<Discovered> with Ok(Default::default())
 src/visit.rs: replace walk_tree -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec![]))

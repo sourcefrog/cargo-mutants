@@ -262,17 +262,11 @@ mod test {
                     function: Function {
                         function_name: "main",
                         return_type: "",
-                        span: Span {
-                            start: LineColumn(1, 1),
-                            end: LineColumn(5, 2),
-                        },
+                        span: Span(1, 1, 5, 2),
                     },
                     replacement: "()",
                     genre: FnValue,
-                    span: Span {
-                        start: LineColumn(2, 5),
-                        end: LineColumn(4, 6),
-                    },
+                    span: Span(2, 5, 4, 6),
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }
@@ -288,17 +282,11 @@ mod test {
                     function: Function {
                         function_name: "factorial",
                         return_type: "-> u32",
-                        span: Span {
-                            start: LineColumn(7, 1),
-                            end: LineColumn(13, 2),
-                        },
+                        span: Span(7, 1, 13, 2),
                     },
                     replacement: "0",
                     genre: FnValue,
-                    span: Span {
-                        start: LineColumn(8, 5),
-                        end: LineColumn(12, 6),
-                    },
+                    span: Span(8, 5, 12, 6),
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }
