@@ -62,9 +62,6 @@ impl Span {
 
     /// Return the region of a multi-line string that this span covers.
     pub fn extract(&self, s: &str) -> String {
-        // TODO: This is a bit inefficient perhaps; we could return a slice
-        // or keep the input in lines...
-        // TODO: Test me!
         let mut r = String::new();
         let mut line_no = 1;
         let mut col_no = 1;

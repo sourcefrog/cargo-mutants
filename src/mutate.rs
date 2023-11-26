@@ -84,11 +84,6 @@ impl Mutant {
         )
     }
 
-    /// Return the original code for the entire file affected by this mutation.
-    pub fn original_code(&self) -> &str {
-        &self.source_file.code
-    }
-
     pub fn return_type(&self) -> &str {
         &self.function.return_type
     }
@@ -189,7 +184,7 @@ impl Mutant {
         let old_label = self.source_file.tree_relative_slashes();
         // There shouldn't be any newlines, but just in case...
         let new_label = self.describe_change().replace('\n', " ");
-        TextDiff::from_lines(self.original_code(), &self.mutated_code())
+        TextDiff::from_lines(&self.source_file.code, &self.mutated_code())
             .unified_diff()
             .context_radius(8)
             .header(&old_label, &new_label)
@@ -202,7 +197,7 @@ impl Mutant {
     }
 
     pub fn unapply(&self, build_dir: &mut BuildDir) -> Result<()> {
-        self.write_in_dir(build_dir, self.original_code())
+        self.write_in_dir(build_dir, &self.source_file.code)
     }
 
     #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
