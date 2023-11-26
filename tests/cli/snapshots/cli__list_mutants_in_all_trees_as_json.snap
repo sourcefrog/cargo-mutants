@@ -704,7 +704,7 @@ expression: buf
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 4,
     "package": "cargo-mutants-testdata-error-value",
     "replacement": "!=",
@@ -1530,7 +1530,7 @@ expression: buf
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 7,
     "package": "cargo-mutants-testdata-override-dependency",
     "replacement": "!=",
@@ -1761,7 +1761,7 @@ expression: buf
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 7,
     "package": "cargo-mutants-testdata-patch-dependency",
     "replacement": "!=",
@@ -1930,7 +1930,7 @@ expression: buf
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 7,
     "package": "cargo-mutants-testdata-replace-dependency",
     "replacement": "!=",
@@ -3070,7 +3070,7 @@ expression: buf
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 6,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
@@ -3473,7 +3473,7 @@ expression: buf
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 18,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",

@@ -38,13 +38,18 @@ pub struct Mutant {
     /// The function that's being mutated: the nearest enclosing function, if they are nested.
     pub function: Arc<Function>,
 
-    /// The primary start line for this mutant.
+    /// The primary start line for this mutant, shown in single line output
+    /// like `src/foo.rs:123: replace foo with bar`.
     ///
-    /// For a FnValue mutant, this is the line the function is declared, and the span is the body. Otherwise, this is the line where the mutant is
-    /// actually applied.
-    pub start_line: usize,
+    /// This is the line that makes most sense for the user to visit to see
+    /// the mutated code. It might not overlap with the mutation span: specifically
+    /// for FnValue mutants this points to the line with the function ident,
+    /// not the body span.
+    pub primary_line: usize,
 
     /// The mutated textual region.
+    ///
+    /// This is deleted and replaced with the replacement text.
     pub span: Span,
 
     /// The replacement text.
@@ -133,7 +138,7 @@ impl Mutant {
             &mut s,
             "{}:{}",
             self.source_file.tree_relative_slashes(),
-            self.start_line,
+            self.primary_line,
         )
         .unwrap();
         s.push_str(": replace ");
@@ -217,7 +222,7 @@ impl Mutant {
         format!(
             "{}_line_{}",
             self.source_file.tree_relative_slashes(),
-            self.start_line,
+            self.primary_line,
         )
     }
 }
@@ -226,7 +231,7 @@ impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Custom implementation to show spans more concisely
         f.debug_struct("Mutant")
-            .field("start_line", &self.start_line)
+            .field("start_line", &self.primary_line)
             .field("function", &self.function)
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
@@ -247,7 +252,7 @@ impl fmt::Display for Mutant {
             f,
             "{file}:{line}: {change}",
             file = self.source_file.tree_relative_slashes(),
-            line = self.start_line,
+            line = self.primary_line,
             change = self.describe_change()
         )
     }
@@ -263,7 +268,7 @@ impl Serialize for Mutant {
         let function: &Function = self.function.as_ref();
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
-        ss.serialize_field("line", &self.start_line)?;
+        ss.serialize_field("line", &self.primary_line)?;
         ss.serialize_field("function", function)?;
         ss.serialize_field("span", &self.span)?;
         ss.serialize_field("replacement", &self.replacement)?;

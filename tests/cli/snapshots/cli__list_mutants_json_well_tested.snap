@@ -515,7 +515,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 6,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
@@ -918,7 +918,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
         }
       }
     },
-    "genre": "Eq",
+    "genre": "BinaryOperator",
     "line": 18,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",

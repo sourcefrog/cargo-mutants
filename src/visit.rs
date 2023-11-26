@@ -194,7 +194,7 @@ impl<'o> DiscoveryVisitor<'o> {
                 function: Arc::clone(&function),
                 span: body_span,
                 replacement: rep.to_pretty_string(),
-                start_line: sig.span().start().line,
+                primary_line: sig.span().start().line,
                 genre: Genre::FnValue,
             })
             .collect_vec();
@@ -315,7 +315,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 function: self.current_function(),
                 replacement: rep.to_pretty_string(),
                 span: i.op.span().into(),
-                start_line: i.op.span().start().line,
+                primary_line: i.op.span().start().line,
                 genre: Genre::BinaryOperator,
             })
             .collect_vec();
