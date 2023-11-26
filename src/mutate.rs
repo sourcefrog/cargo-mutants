@@ -83,7 +83,7 @@ impl Mutant {
             &self.source_file.code,
             &self.span.start,
             &self.span.end,
-            &format!("{} {}", &self.replacement, MUTATION_MARKER_COMMENT),
+            &format!("{} {} ", &self.replacement, MUTATION_MARKER_COMMENT),
         )
     }
 
@@ -385,7 +385,7 @@ mod test {
             mutated_code,
             indoc! { r#"
                 fn main() {
-                    () /* ~ changed by cargo-mutants ~ */}
+                    () /* ~ changed by cargo-mutants ~ */ }
 
                 fn factorial(n: u32) -> u32 {
                     let mut a = 1;
@@ -417,7 +417,7 @@ mod test {
                 }
 
                 fn factorial(n: u32) -> u32 {
-                    0 /* ~ changed by cargo-mutants ~ */}
+                    0 /* ~ changed by cargo-mutants ~ */ }
 
                 #[test]
                 fn test_factorial() {

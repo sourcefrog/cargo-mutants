@@ -524,7 +524,7 @@ fn small_well_tested_tree_is_clean() {
             -    }
             -    a
             -}
-            +    0 /* ~ changed by cargo-mutants ~ */}
+            +    0 /* ~ changed by cargo-mutants ~ */ }
             "# }));
     // Also, it should contain output from the failed tests with mutations applied.
     assert!(log_content.contains("test test::test_factorial ... FAILED"));
