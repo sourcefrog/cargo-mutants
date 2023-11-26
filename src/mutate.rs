@@ -34,6 +34,8 @@ pub struct Mutant {
     pub source_file: Arc<SourceFile>,
 
     /// The function that's being mutated: the nearest enclosing function, if they are nested.
+    ///
+    /// There may be none for mutants in e.g. top-level const expressions.
     pub function: Arc<Function>,
 
     /// The mutated textual region.

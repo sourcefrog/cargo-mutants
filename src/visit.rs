@@ -306,6 +306,15 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
+        if self.fn_stack.is_empty() {
+            // TODOT: Make the function optional.
+            warn!(
+                span = ?Span::from(i.op.span()),
+                file = self.source_file.tree_relative_slashes(),
+                "no function on stack",
+            );
+            return;
+        }
         let mut new_mutants = binary_operator_replacements(i.op)
             .into_iter()
             .map(|rep| Mutant {
