@@ -23,7 +23,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "mutants-testdata-already-failing-doctests",
     "replacement": "0",
     "span": {
@@ -54,7 +53,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "mutants-testdata-already-failing-doctests",
     "replacement": "1",
     "span": {
@@ -92,7 +90,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "mutants-testdata-already-failing-tests",
     "replacement": "0",
     "span": {
@@ -123,7 +120,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "mutants-testdata-already-failing-tests",
     "replacement": "1",
     "span": {
@@ -161,7 +157,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 8,
     "package": "cargo-mutants-testdata-already-hangs",
     "replacement": "()",
     "span": {
@@ -199,7 +194,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-cdylib",
     "replacement": "0",
     "span": {
@@ -230,7 +224,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-cdylib",
     "replacement": "1",
     "span": {
@@ -274,7 +267,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "0",
     "span": {
@@ -305,7 +297,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "1",
     "span": {
@@ -343,7 +334,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-dependency",
     "replacement": "0",
     "span": {
@@ -374,7 +364,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-dependency",
     "replacement": "1",
     "span": {
@@ -412,7 +401,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "diff0",
     "replacement": "String::new()",
     "span": {
@@ -443,7 +431,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "diff0",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -481,7 +468,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "diff1",
     "replacement": "String::new()",
     "span": {
@@ -512,7 +498,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "diff1",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -543,7 +528,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "diff1",
     "replacement": "String::new()",
     "span": {
@@ -574,7 +558,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "diff1",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -612,7 +595,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-error-value",
     "replacement": "Ok(0)",
     "span": {
@@ -643,7 +625,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-error-value",
     "replacement": "Ok(1)",
     "span": {
@@ -674,7 +655,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-error-value",
     "replacement": "Err(\"injected\")",
     "span": {
@@ -705,7 +685,6 @@ expression: buf
       }
     },
     "genre": "BinaryOperator",
-    "line": 4,
     "package": "cargo-mutants-testdata-error-value",
     "replacement": "!=",
     "span": {
@@ -749,7 +728,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "()",
     "span": {
@@ -780,7 +758,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "0",
     "span": {
@@ -811,7 +788,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "1",
     "span": {
@@ -849,7 +825,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "cargo-mutants-testdata-fails-without-feature",
     "replacement": "0",
     "span": {
@@ -880,7 +855,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "cargo-mutants-testdata-fails-without-feature",
     "replacement": "1",
     "span": {
@@ -918,7 +892,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 14,
     "package": "cargo-mutants-testdata-hang-avoided-by-attr",
     "replacement": "()",
     "span": {
@@ -956,7 +929,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "true",
     "span": {
@@ -987,7 +959,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "false",
     "span": {
@@ -1018,7 +989,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 25,
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "0",
     "span": {
@@ -1049,7 +1019,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 25,
     "package": "cargo-mutants-testdata-hang-when-mutated",
     "replacement": "1",
     "span": {
@@ -1087,7 +1056,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-insta",
     "replacement": "String::new()",
     "span": {
@@ -1118,7 +1086,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-insta",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -1156,7 +1123,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-integration-tests",
     "replacement": "0",
     "span": {
@@ -1187,7 +1153,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-integration-tests",
     "replacement": "1",
     "span": {
@@ -1225,7 +1190,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-missing-test",
     "replacement": "true",
     "span": {
@@ -1256,7 +1220,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-missing-test",
     "replacement": "false",
     "span": {
@@ -1294,7 +1257,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-mut-ref",
     "replacement": "Box::leak(Box::new(0))",
     "span": {
@@ -1325,7 +1287,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-mut-ref",
     "replacement": "Box::leak(Box::new(1))",
     "span": {
@@ -1369,7 +1330,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "nightly_only",
     "replacement": "Box::new(0)",
     "span": {
@@ -1400,7 +1360,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "nightly_only",
     "replacement": "Box::new(1)",
     "span": {
@@ -1431,7 +1390,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "nightly_only",
     "replacement": "Box::new(-1)",
     "span": {
@@ -1469,7 +1427,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 6,
     "package": "cargo-mutants-testdata-override-dependency",
     "replacement": "true",
     "span": {
@@ -1500,7 +1457,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 6,
     "package": "cargo-mutants-testdata-override-dependency",
     "replacement": "false",
     "span": {
@@ -1531,7 +1487,6 @@ expression: buf
       }
     },
     "genre": "BinaryOperator",
-    "line": 7,
     "package": "cargo-mutants-testdata-override-dependency",
     "replacement": "!=",
     "span": {
@@ -1569,7 +1524,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-package-fails-failing",
     "replacement": "0",
     "span": {
@@ -1600,7 +1554,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-package-fails-failing",
     "replacement": "1",
     "span": {
@@ -1631,7 +1584,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-package-fails-passing",
     "replacement": "0",
     "span": {
@@ -1662,7 +1614,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-package-fails-passing",
     "replacement": "1",
     "span": {
@@ -1700,7 +1651,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 6,
     "package": "cargo-mutants-testdata-patch-dependency",
     "replacement": "true",
     "span": {
@@ -1731,7 +1681,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 6,
     "package": "cargo-mutants-testdata-patch-dependency",
     "replacement": "false",
     "span": {
@@ -1762,7 +1711,6 @@ expression: buf
       }
     },
     "genre": "BinaryOperator",
-    "line": 7,
     "package": "cargo-mutants-testdata-patch-dependency",
     "replacement": "!=",
     "span": {
@@ -1800,7 +1748,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-relative-dependency",
     "replacement": "0",
     "span": {
@@ -1831,7 +1778,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-relative-dependency",
     "replacement": "1",
     "span": {
@@ -1869,7 +1815,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 6,
     "package": "cargo-mutants-testdata-replace-dependency",
     "replacement": "true",
     "span": {
@@ -1900,7 +1845,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 6,
     "package": "cargo-mutants-testdata-replace-dependency",
     "replacement": "false",
     "span": {
@@ -1931,7 +1875,6 @@ expression: buf
       }
     },
     "genre": "BinaryOperator",
-    "line": 7,
     "package": "cargo-mutants-testdata-replace-dependency",
     "replacement": "!=",
     "span": {
@@ -1969,7 +1912,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 4,
     "package": "cargo-mutants-testdata-small-well-tested",
     "replacement": "0",
     "span": {
@@ -2000,7 +1942,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 4,
     "package": "cargo-mutants-testdata-small-well-tested",
     "replacement": "1",
     "span": {
@@ -2038,7 +1979,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-strict-warnings",
     "replacement": "0",
     "span": {
@@ -2069,7 +2009,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-strict-warnings",
     "replacement": "1",
     "span": {
@@ -2107,7 +2046,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 11,
     "package": "cargo-mutants-testdata-struct-with-no-default",
     "replacement": "Default::default()",
     "span": {
@@ -2145,7 +2083,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-symlink",
     "replacement": "String::new()",
     "span": {
@@ -2176,7 +2113,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-symlink",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -2214,7 +2150,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "mutants-testdata-typecheck-fails",
     "replacement": "String::new()",
     "span": {
@@ -2245,7 +2180,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "mutants-testdata-typecheck-fails",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -2283,7 +2217,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
     "span": {
@@ -2314,7 +2247,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "1",
     "span": {
@@ -2345,7 +2277,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
     "span": {
@@ -2376,7 +2307,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
     "span": {
@@ -2407,7 +2337,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "1",
     "span": {
@@ -2438,7 +2367,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
     "span": {
@@ -2469,7 +2397,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
     "span": {
@@ -2500,7 +2427,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "1",
     "span": {
@@ -2531,7 +2457,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
     "span": {
@@ -2575,7 +2500,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(String::new())",
     "span": {
@@ -2606,7 +2530,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(\"xyzzy\".into())",
     "span": {
@@ -2637,7 +2560,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"\"",
     "span": {
@@ -2668,7 +2590,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\"",
     "span": {
@@ -2699,7 +2620,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 16,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
     "span": {
@@ -2730,7 +2650,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 22,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -2761,7 +2680,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 28,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -2792,7 +2710,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -2823,7 +2740,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -2854,7 +2770,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -2885,7 +2800,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -2916,7 +2830,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0.0",
     "span": {
@@ -2947,7 +2860,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1.0",
     "span": {
@@ -2978,7 +2890,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1.0",
     "span": {
@@ -3009,7 +2920,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -3040,7 +2950,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -3071,7 +2980,6 @@ expression: buf
       }
     },
     "genre": "BinaryOperator",
-    "line": 6,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -3102,7 +3010,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"\")",
     "span": {
@@ -3133,7 +3040,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"xyzzy\")",
     "span": {
@@ -3164,7 +3070,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(())",
     "span": {
@@ -3195,7 +3100,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -3226,7 +3130,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::new()",
     "span": {
@@ -3257,7 +3160,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([String::new()])",
     "span": {
@@ -3288,7 +3190,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
     "span": {
@@ -3319,7 +3220,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
     "span": {
@@ -3350,7 +3250,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -3381,7 +3280,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -3412,7 +3310,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -3443,7 +3340,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -3474,7 +3370,6 @@ expression: buf
       }
     },
     "genre": "BinaryOperator",
-    "line": 18,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -3505,7 +3400,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 26,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "String::new()",
     "span": {
@@ -3536,7 +3430,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 26,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -3567,7 +3460,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
     "span": {
@@ -3598,7 +3490,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
     "span": {
@@ -3629,7 +3520,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
     "span": {
@@ -3660,7 +3550,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
     "span": {
@@ -3691,7 +3580,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
     "span": {
@@ -3722,7 +3610,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
     "span": {
@@ -3753,7 +3640,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![0])",
     "span": {
@@ -3784,7 +3670,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![1])",
     "span": {
@@ -3815,7 +3700,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 14,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -3846,7 +3730,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 14,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -3884,7 +3767,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
     "span": {
@@ -3915,7 +3797,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
     "span": {
@@ -3946,7 +3827,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
     "span": {
@@ -3977,7 +3857,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
     "span": {
@@ -4008,7 +3887,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "\"\"",
     "span": {
@@ -4039,7 +3917,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "\"xyzzy\"",
     "span": {
@@ -4070,7 +3947,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
     "span": {
@@ -4101,7 +3977,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
     "span": {
@@ -4132,7 +4007,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
     "span": {
@@ -4163,7 +4037,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
     "span": {
@@ -4194,7 +4067,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
     "span": {
@@ -4225,7 +4097,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
     "span": {
@@ -4256,7 +4127,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "0",
     "span": {
@@ -4287,7 +4157,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-with-child-directories",
     "replacement": "1",
     "span": {
@@ -4325,7 +4194,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo_mutants_testdata_workspace_utils",
     "replacement": "0",
     "span": {
@@ -4356,7 +4224,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo_mutants_testdata_workspace_utils",
     "replacement": "1",
     "span": {
@@ -4387,7 +4254,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo_mutants_testdata_workspace_utils",
     "replacement": "-1",
     "span": {
@@ -4418,7 +4284,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 11,
     "package": "main",
     "replacement": "0",
     "span": {
@@ -4449,7 +4314,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 11,
     "package": "main",
     "replacement": "1",
     "span": {
@@ -4480,7 +4344,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "main2",
     "replacement": "0",
     "span": {
@@ -4511,7 +4374,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "main2",
     "replacement": "1",
     "span": {
@@ -4542,7 +4404,6 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "main2",
     "replacement": "-1",
     "span": {

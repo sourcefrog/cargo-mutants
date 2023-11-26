@@ -20,7 +20,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -51,7 +50,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
-    "line": 18,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {

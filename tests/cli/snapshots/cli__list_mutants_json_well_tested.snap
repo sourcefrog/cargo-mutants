@@ -20,7 +20,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(String::new())",
     "span": {
@@ -51,7 +50,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(\"xyzzy\".into())",
     "span": {
@@ -82,7 +80,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"\"",
     "span": {
@@ -113,7 +110,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\"",
     "span": {
@@ -144,7 +140,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 16,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
     "span": {
@@ -175,7 +170,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 22,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -206,7 +200,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 28,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -237,7 +230,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -268,7 +260,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -299,7 +290,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -330,7 +320,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 2,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -361,7 +350,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0.0",
     "span": {
@@ -392,7 +380,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1.0",
     "span": {
@@ -423,7 +410,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1.0",
     "span": {
@@ -454,7 +440,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -485,7 +470,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -516,7 +500,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
-    "line": 6,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -547,7 +530,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"\")",
     "span": {
@@ -578,7 +560,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 5,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"xyzzy\")",
     "span": {
@@ -609,7 +590,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 9,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(())",
     "span": {
@@ -640,7 +620,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -671,7 +650,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::new()",
     "span": {
@@ -702,7 +680,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([String::new()])",
     "span": {
@@ -733,7 +710,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
     "span": {
@@ -764,7 +740,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
     "span": {
@@ -795,7 +770,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -826,7 +800,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -857,7 +830,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -888,7 +860,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -919,7 +890,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
-    "line": 18,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -950,7 +920,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 26,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "String::new()",
     "span": {
@@ -981,7 +950,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 26,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -1012,7 +980,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
     "span": {
@@ -1043,7 +1010,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
     "span": {
@@ -1074,7 +1040,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
     "span": {
@@ -1105,7 +1070,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
     "span": {
@@ -1136,7 +1100,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 3,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
     "span": {
@@ -1167,7 +1130,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
     "span": {
@@ -1198,7 +1160,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![0])",
     "span": {
@@ -1229,7 +1190,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 12,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![1])",
     "span": {
@@ -1260,7 +1220,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 14,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -1291,7 +1250,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 14,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {

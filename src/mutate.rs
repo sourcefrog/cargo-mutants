@@ -36,15 +36,6 @@ pub struct Mutant {
     /// The function that's being mutated: the nearest enclosing function, if they are nested.
     pub function: Arc<Function>,
 
-    /// The primary start line for this mutant, shown in single line output
-    /// like `src/foo.rs:123: replace foo with bar`.
-    ///
-    /// This is the line that makes most sense for the user to visit to see
-    /// the mutated code. It might not overlap with the mutation span: specifically
-    /// for FnValue mutants this points to the line with the function ident,
-    /// not the body span.
-    pub primary_line: usize,
-
     /// The mutated textual region.
     ///
     /// This is deleted and replaced with the replacement text.
@@ -102,7 +93,10 @@ impl Mutant {
         let mut v = Vec::new();
         v.push(self.source_file.tree_relative_slashes());
         if show_line_col {
-            v.push(format!(":{}", self.primary_line));
+            v.push(format!(
+                ":{}:{}",
+                self.span.start.line, self.span.start.column
+            ));
         }
         v.push(": ".to_owned());
         let parts = self.styled_parts();
@@ -205,7 +199,7 @@ impl Mutant {
         format!(
             "{}_line_{}",
             self.source_file.tree_relative_slashes(),
-            self.primary_line,
+            self.span.start.line,
         )
     }
 }
@@ -214,7 +208,6 @@ impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Custom implementation to show spans more concisely
         f.debug_struct("Mutant")
-            .field("start_line", &self.primary_line)
             .field("function", &self.function)
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
@@ -223,23 +216,6 @@ impl fmt::Debug for Mutant {
             .finish()
     }
 }
-
-// impl fmt::Display for Mutant {
-//     /// Describe this mutant like a compiler error message, starting with the file and line.
-//     ///
-//     /// The result is like `src/source.rs:123: replace source::SourceFile::new with Default::default()`.
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         // This is like `style_mutant`, but without colors.
-//         // The text content should be the same.
-//         write!(
-//             f,
-//             "{file}:{line}: {change}",
-//             file = self.source_file.tree_relative_slashes(),
-//             line = self.primary_line,
-//             change = self.describe_change()
-//         )
-//     }
-// }
 
 impl Serialize for Mutant {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -251,7 +227,6 @@ impl Serialize for Mutant {
         let function: &Function = self.function.as_ref();
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
-        ss.serialize_field("line", &self.primary_line)?;
         ss.serialize_field("function", function)?;
         ss.serialize_field("span", &self.span)?;
         ss.serialize_field("replacement", &self.replacement)?;
@@ -282,7 +257,6 @@ mod test {
             format!("{:#?}", mutants[0]),
             indoc! {
                 r#"Mutant {
-                    start_line: 1,
                     function: Function {
                         function_name: "main",
                         return_type: "",
@@ -303,13 +277,12 @@ mod test {
         );
         assert_eq!(
             mutants[0].name(true, false),
-            "src/bin/factorial.rs:1: replace main with ()"
+            "src/bin/factorial.rs:2:5: replace main with ()"
         );
         assert_eq!(
             format!("{:#?}", mutants[1]),
             indoc! { r#"
                 Mutant {
-                    start_line: 7,
                     function: Function {
                         function_name: "factorial",
                         return_type: "-> u32",
@@ -334,11 +307,11 @@ mod test {
         );
         assert_eq!(
             mutants[1].name(true, false),
-            "src/bin/factorial.rs:7: replace factorial -> u32 with 0"
+            "src/bin/factorial.rs:8:5: replace factorial -> u32 with 0"
         );
         assert_eq!(
             mutants[2].name(true, false),
-            "src/bin/factorial.rs:7: replace factorial -> u32 with 1"
+            "src/bin/factorial.rs:8:5: replace factorial -> u32 with 1"
         );
     }
 

@@ -168,8 +168,8 @@ fn list_with_config_file_regexps() {
         .assert()
         .success()
         .stdout(predicates::str::diff(indoc! {"\
-                src/simple_fns.rs:17: replace divisible_by_three -> bool with false
-                src/simple_fns.rs:18: replace == with != in divisible_by_three
+                src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false
+                src/simple_fns.rs:18:11: replace == with != in divisible_by_three
             "}));
 }
 
@@ -197,8 +197,8 @@ fn exclude_re_overrides_config() {
         .assert()
         .success()
         .stdout(indoc! {"
-            src/simple_fns.rs:7: replace returns_unit with ()
-            src/simple_fns.rs:18: replace == with != in divisible_by_three
+            src/simple_fns.rs:8:5: replace returns_unit with ()
+            src/simple_fns.rs:18:11: replace == with != in divisible_by_three
         "});
 }
 

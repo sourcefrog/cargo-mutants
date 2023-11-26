@@ -4,7 +4,7 @@ expression: stdout
 ---
 Found 2 mutants to test
 Unmutated baseline ... ok
-src/entry.rs:1: replace factorial -> u32 with 0 ... caught
-src/entry.rs:1: replace factorial -> u32 with 1 ... caught
+src/entry.rs:2:5: replace factorial -> u32 with 0 ... caught
+src/entry.rs:2:5: replace factorial -> u32 with 1 ... caught
 2 mutants tested: 2 caught
 

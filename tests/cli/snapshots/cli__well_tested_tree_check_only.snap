@@ -4,47 +4,47 @@ expression: stdout
 ---
 Found 42 mutants to test
 Unmutated baseline ... ok
-src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new(String::new()) ... ok
-src/arc.rs:3: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... ok
-src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "" ... ok
-src/inside_mod.rs:3: replace outer::inner::name -> &'static str with "xyzzy" ... ok
-src/methods.rs:16: replace Foo::double with () ... ok
-src/methods.rs:22: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
-src/methods.rs:28: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
-src/nested_function.rs:1: replace has_nested -> u32 with 0 ... ok
-src/nested_function.rs:1: replace has_nested -> u32 with 1 ... ok
-src/nested_function.rs:2: replace has_nested::inner -> u32 with 0 ... ok
-src/nested_function.rs:2: replace has_nested::inner -> u32 with 1 ... ok
-src/numbers.rs:1: replace double_float -> f32 with 0.0 ... ok
-src/numbers.rs:1: replace double_float -> f32 with 1.0 ... ok
-src/numbers.rs:1: replace double_float -> f32 with -1.0 ... ok
-src/numbers.rs:5: replace is_double -> bool with true ... ok
-src/numbers.rs:5: replace is_double -> bool with false ... ok
-src/numbers.rs:6: replace == with != in is_double ... ok
-src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("") ... ok
-src/result.rs:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy") ... ok
-src/result.rs:9: replace error_if_negative -> Result<(), ()> with Ok(()) ... ok
-src/result.rs:17: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default()) ... ok
-src/sets.rs:3: replace make_a_set -> BTreeSet<String> with BTreeSet::new() ... ok
-src/sets.rs:3: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()]) ... ok
-src/sets.rs:3: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter(["xyzzy".into()]) ... ok
-src/simple_fns.rs:7: replace returns_unit with () ... ok
-src/simple_fns.rs:12: replace returns_42u32 -> u32 with 0 ... ok
-src/simple_fns.rs:12: replace returns_42u32 -> u32 with 1 ... ok
-src/simple_fns.rs:17: replace divisible_by_three -> bool with true ... ok
-src/simple_fns.rs:17: replace divisible_by_three -> bool with false ... ok
-src/simple_fns.rs:18: replace == with != in divisible_by_three ... ok
-src/simple_fns.rs:26: replace double_string -> String with String::new() ... ok
-src/simple_fns.rs:26: replace double_string -> String with "xyzzy".into() ... ok
-src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new()) ... ok
-src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("")]) ... ok
-src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("".to_owned())]) ... ok
-src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("xyzzy")]) ... ok
-src/slices.rs:3: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())]) ... ok
-src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new()) ... ok
-src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0]) ... ok
-src/slices.rs:12: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1]) ... ok
-src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 0 ... ok
-src/struct_with_lifetime.rs:14: replace Lex<'buf>::buf_len -> usize with 1 ... ok
+src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(String::new()) ... ok
+src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... ok
+src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "" ... ok
+src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy" ... ok
+src/methods.rs:17:9: replace Foo::double with () ... ok
+src/methods.rs:23:9: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
+src/methods.rs:29:9: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default()) ... ok
+src/nested_function.rs:2:5: replace has_nested -> u32 with 0 ... ok
+src/nested_function.rs:2:5: replace has_nested -> u32 with 1 ... ok
+src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 0 ... ok
+src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 1 ... ok
+src/numbers.rs:2:5: replace double_float -> f32 with 0.0 ... ok
+src/numbers.rs:2:5: replace double_float -> f32 with 1.0 ... ok
+src/numbers.rs:2:5: replace double_float -> f32 with -1.0 ... ok
+src/numbers.rs:6:5: replace is_double -> bool with true ... ok
+src/numbers.rs:6:5: replace is_double -> bool with false ... ok
+src/numbers.rs:6:7: replace == with != in is_double ... ok
+src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("") ... ok
+src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy") ... ok
+src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(()) ... ok
+src/result.rs:18:5: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default()) ... ok
+src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::new() ... ok
+src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()]) ... ok
+src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter(["xyzzy".into()]) ... ok
+src/simple_fns.rs:8:5: replace returns_unit with () ... ok
+src/simple_fns.rs:13:5: replace returns_42u32 -> u32 with 0 ... ok
+src/simple_fns.rs:13:5: replace returns_42u32 -> u32 with 1 ... ok
+src/simple_fns.rs:18:5: replace divisible_by_three -> bool with true ... ok
+src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false ... ok
+src/simple_fns.rs:18:11: replace == with != in divisible_by_three ... ok
+src/simple_fns.rs:27:5: replace double_string -> String with String::new() ... ok
+src/simple_fns.rs:27:5: replace double_string -> String with "xyzzy".into() ... ok
+src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new()) ... ok
+src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("")]) ... ok
+src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("".to_owned())]) ... ok
+src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("xyzzy")]) ... ok
+src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())]) ... ok
+src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new()) ... ok
+src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0]) ... ok
+src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1]) ... ok
+src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 0 ... ok
+src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 1 ... ok
 42 mutants tested: 42 succeeded
 

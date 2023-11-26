@@ -20,7 +20,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "()",
     "span": {
@@ -51,7 +50,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "0",
     "span": {
@@ -82,7 +80,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "1",
     "span": {

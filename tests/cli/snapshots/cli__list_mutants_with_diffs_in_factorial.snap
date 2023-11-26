@@ -2,7 +2,7 @@
 source: tests/cli/main.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
 ---
-src/bin/factorial.rs:1: replace main with ()
+src/bin/factorial.rs:2:5: replace main with ()
 --- src/bin/factorial.rs
 +++ replace main with ()
 @@ -1,12 +1,10 @@
@@ -20,7 +20,7 @@ src/bin/factorial.rs:1: replace main with ()
      }
      a
 
-src/bin/factorial.rs:7: replace factorial -> u32 with 0
+src/bin/factorial.rs:8:5: replace factorial -> u32 with 0
 --- src/bin/factorial.rs
 +++ replace factorial -> u32 with 0
 @@ -1,19 +1,15 @@
@@ -45,7 +45,7 @@ src/bin/factorial.rs:7: replace factorial -> u32 with 0
      assert_eq!(factorial(6), 720);
  }
 
-src/bin/factorial.rs:7: replace factorial -> u32 with 1
+src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
 --- src/bin/factorial.rs
 +++ replace factorial -> u32 with 1
 @@ -1,19 +1,15 @@
