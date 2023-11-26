@@ -76,14 +76,19 @@ impl Span {
             {
                 r.push(c);
             }
-            // TODO: We could exit early once we're past the end .
             if c == '\n' {
                 line_no += 1;
+                if line_no > end.line {
+                    break;
+                }
                 col_no = 1;
             } else if c == '\r' {
                 // counts as part of the last column, not a separate column
             } else {
                 col_no += 1;
+            }
+            if line_no == end.line && col_no >= end.column {
+                break;
             }
         }
         r
@@ -100,16 +105,16 @@ impl Span {
         let start = self.start;
         let end = self.end;
         for c in s.chars() {
+            if line_no == start.line && col_no == start.column {
+                r.push_str(replacement);
+            }
             if line_no < start.line
                 || line_no > end.line
                 || (line_no == start.line && col_no < start.column)
                 || (line_no == end.line && col_no >= end.column)
             {
                 r.push(c);
-            } else if line_no == start.line && col_no == start.column {
-                r.push_str(replacement);
             }
-            // TODO: We could stop early and copy the rest once we're past the end.
             if c == '\n' {
                 line_no += 1;
                 col_no = 1;
@@ -118,6 +123,9 @@ impl Span {
             } else {
                 col_no += 1;
             }
+        }
+        if line_no == start.line && col_no == start.column {
+            r.push_str(replacement);
         }
         r
     }
@@ -166,6 +174,27 @@ mod test {
         let span = Span::quad(1, 10, 3, 2);
         assert_eq!(span.extract(source), "{\r\n    wibble();\r\n}");
         assert_eq!(span.replace(source, "{}"), "fn foo() {}\r\n//hey!\r\n");
+    }
+
+    #[test]
+    fn empty_span_in_empty_string() {
+        let span = Span::quad(1, 1, 1, 1);
+        assert_eq!(span.extract(""), "");
+        assert_eq!(span.replace("", "x"), "x");
+    }
+
+    #[test]
+    fn empty_span_at_start_of_string() {
+        let span = Span::quad(1, 1, 1, 1);
+        assert_eq!(span.extract("hello"), "");
+        assert_eq!(span.replace("hello", "x"), "xhello");
+    }
+
+    #[test]
+    fn empty_span_at_end_of_string() {
+        let span = Span::quad(1, 6, 1, 6);
+        assert_eq!(span.extract("hello"), "");
+        assert_eq!(span.replace("hello", "x"), "hellox");
     }
 
     #[test]
