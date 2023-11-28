@@ -148,14 +148,6 @@ struct DiscoveryVisitor<'o> {
 }
 
 impl<'o> DiscoveryVisitor<'o> {
-    fn current_function(&self) -> Arc<Function> {
-        Arc::clone(
-            self.fn_stack
-                .last()
-                .expect("Function stack should not be empty"),
-        )
-    }
-
     fn enter_function(
         &mut self,
         function_name: &Ident,
@@ -185,25 +177,28 @@ impl<'o> DiscoveryVisitor<'o> {
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
-        let function = self.current_function();
-        let body_span = function_body_span(block).expect("Empty function body");
-        let mut new_mutants = return_type_replacements(&sig.output, self.error_exprs)
-            .map(|rep| Mutant {
-                source_file: Arc::clone(&self.source_file),
-                function: Arc::clone(&function),
-                span: body_span,
-                replacement: rep.to_pretty_string(),
-                genre: Genre::FnValue,
-            })
-            .collect_vec();
-        if new_mutants.is_empty() {
-            debug!(
-                function_name = function.function_name,
-                return_type = function.return_type,
-                "No mutants generated for this return type"
-            );
+        if let Some(function) = self.fn_stack.last() {
+            let body_span = function_body_span(block).expect("Empty function body");
+            let mut new_mutants = return_type_replacements(&sig.output, self.error_exprs)
+                .map(|rep| Mutant {
+                    source_file: Arc::clone(&self.source_file),
+                    function: Some(Arc::clone(function)),
+                    span: body_span,
+                    replacement: rep.to_pretty_string(),
+                    genre: Genre::FnValue,
+                })
+                .collect_vec();
+            if new_mutants.is_empty() {
+                debug!(
+                    function_name = function.function_name,
+                    return_type = function.return_type,
+                    "No mutants generated for this return type"
+                );
+            } else {
+                self.mutants.append(&mut new_mutants);
+            }
         } else {
-            self.mutants.append(&mut new_mutants);
+            warn!("collect_fn_mutants called while not in a function?");
         }
     }
 
@@ -306,20 +301,11 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        if self.fn_stack.is_empty() {
-            // TODOT: Make the function optional.
-            warn!(
-                span = ?Span::from(i.op.span()),
-                file = self.source_file.tree_relative_slashes(),
-                "no function on stack",
-            );
-            return;
-        }
         let mut new_mutants = binary_operator_replacements(i.op)
             .into_iter()
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
-                function: self.current_function(),
+                function: self.fn_stack.last().map(Arc::clone),
                 replacement: rep.to_pretty_string(),
                 span: i.op.span().into(),
                 genre: Genre::BinaryOperator,

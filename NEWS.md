@@ -2,9 +2,13 @@
 
 ## Unreleased
 
-- New: Mutate `==` to `!=` and vice versa.
+A big internal refactor to allow mutations smaller than a whole function. Only one pattern is added in this release, mutation of `==` operators, but many more are possible.
+
+- New: Mutate `==` to `!=`.
 
 - Changed: Include column numbers in text listings of mutants and output to disambiguate smaller-than-function mutants, for example if there are several operators that can be changed on one line. This also applies to the names used for regex matching, so may break some regexps that match the entire line (sorry). The new option `--line-col=false` turns them both off in `--list` output.
+
+## 23.11.2
 
 - Changed: If `--file` or `--exclude` are set on the command line, then they replace the corresponding config file options. Similarly, if `--re` is given then the `examine_re` config key is ignored, and if `--exclude-re` is given then `exclude_regex` is ignored. (Previously the values were combined.) This makes it easier to use the command line to test files or mutants that are normally not tested.
 

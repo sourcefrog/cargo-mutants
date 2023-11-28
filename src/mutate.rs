@@ -36,7 +36,7 @@ pub struct Mutant {
     /// The function that's being mutated: the nearest enclosing function, if they are nested.
     ///
     /// There may be none for mutants in e.g. top-level const expressions.
-    pub function: Arc<Function>,
+    pub function: Option<Arc<Function>>,
 
     /// The mutated textual region.
     ///
@@ -74,10 +74,6 @@ impl Mutant {
             &self.source_file.code,
             &format!("{} {}", &self.replacement, MUTATION_MARKER_COMMENT),
         )
-    }
-
-    pub fn return_type(&self) -> &str {
-        &self.function.return_type
     }
 
     /// Describe the mutant briefly, not including the location.
@@ -128,11 +124,17 @@ impl Mutant {
             v.push(s(&self.replacement).bright().yellow());
             v.push(s(" in "));
         }
-        v.push(s(self.function_name()).bright().magenta());
+        if let Some(function) = &self.function {
+            v.push(s(&function.function_name).bright().magenta());
+        } else {
+            v.push(s("module"));
+        }
         if self.genre == Genre::FnValue {
-            if !self.return_type().is_empty() {
-                v.push(s(" "));
-                v.push(s(self.return_type()).magenta());
+            if let Some(function) = &self.function {
+                if !function.return_type.is_empty() {
+                    v.push(s(" "));
+                    v.push(s(&function.return_type).magenta());
+                }
             }
             v.push(s(" with "));
             v.push(s(self.replacement_text()).yellow());
@@ -147,14 +149,6 @@ impl Mutant {
     /// Return the text inserted for this mutation.
     pub fn replacement_text(&self) -> &str {
         self.replacement.as_str()
-    }
-
-    /// Return the name of the function to be mutated.
-    ///
-    /// Note that this will often not be unique: the same name can be reused
-    /// in different modules, under different cfg guards, etc.
-    pub fn function_name(&self) -> &str {
-        &self.function.function_name
     }
 
     /// Return the cargo package name.
@@ -226,10 +220,9 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
-        let function: &Function = self.function.as_ref();
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
-        ss.serialize_field("function", function)?;
+        ss.serialize_field("function", &self.function.as_ref().map(|a| a.as_ref()))?;
         ss.serialize_field("span", &self.span)?;
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
@@ -259,11 +252,13 @@ mod test {
             format!("{:#?}", mutants[0]),
             indoc! {
                 r#"Mutant {
-                    function: Function {
-                        function_name: "main",
-                        return_type: "",
-                        span: Span(1, 1, 5, 2),
-                    },
+                    function: Some(
+                        Function {
+                            function_name: "main",
+                            return_type: "",
+                            span: Span(1, 1, 5, 2),
+                        },
+                    ),
                     replacement: "()",
                     genre: FnValue,
                     span: Span(2, 5, 4, 6),
@@ -279,11 +274,13 @@ mod test {
             format!("{:#?}", mutants[1]),
             indoc! { r#"
                 Mutant {
-                    function: Function {
-                        function_name: "factorial",
-                        return_type: "-> u32",
-                        span: Span(7, 1, 13, 2),
-                    },
+                    function: Some(
+                        Function {
+                            function_name: "factorial",
+                            return_type: "-> u32",
+                            span: Span(7, 1, 13, 2),
+                        },
+                    ),
                     replacement: "0",
                     genre: FnValue,
                     span: Span(8, 5, 12, 6),
@@ -329,7 +326,7 @@ mod test {
         assert_eq!(mutants.len(), 3);
 
         let mutated_code = mutants[0].mutated_code();
-        assert_eq!(mutants[0].function_name(), "main");
+        assert_eq!(mutants[0].function.as_ref().unwrap().function_name, "main");
         assert_eq!(
             strip_trailing_space(&mutated_code),
             indoc! { r#"
@@ -355,7 +352,10 @@ mod test {
         );
 
         let mutated_code = mutants[1].mutated_code();
-        assert_eq!(mutants[1].function_name(), "factorial");
+        assert_eq!(
+            mutants[1].function.as_ref().unwrap().function_name,
+            "factorial"
+        );
         assert_eq!(
             strip_trailing_space(&mutated_code),
             indoc! { r#"

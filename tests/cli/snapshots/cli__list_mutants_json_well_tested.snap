@@ -1204,6 +1204,23 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "file": "src/static_item.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 1
+      },
+      "start": {
+        "column": 33,
+        "line": 1
+      }
+    }
+  },
+  {
     "file": "src/struct_with_lifetime.rs",
     "function": {
       "function_name": "Lex<'buf>::buf_len",

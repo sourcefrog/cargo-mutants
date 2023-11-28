@@ -211,8 +211,6 @@ src/manifest.rs: replace fix_path -> Option<String> with Some("xyzzy".into())
 src/manifest.rs: replace == with != in fix_path
 src/mutate.rs: replace Mutant::mutated_code -> String with String::new()
 src/mutate.rs: replace Mutant::mutated_code -> String with "xyzzy".into()
-src/mutate.rs: replace Mutant::return_type -> &str with ""
-src/mutate.rs: replace Mutant::return_type -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::describe_change -> String with String::new()
 src/mutate.rs: replace Mutant::describe_change -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::name -> String with String::new()
@@ -238,8 +236,6 @@ src/mutate.rs: replace Mutant::original_text -> String with String::new()
 src/mutate.rs: replace Mutant::original_text -> String with "xyzzy".into()
 src/mutate.rs: replace Mutant::replacement_text -> &str with ""
 src/mutate.rs: replace Mutant::replacement_text -> &str with "xyzzy"
-src/mutate.rs: replace Mutant::function_name -> &str with ""
-src/mutate.rs: replace Mutant::function_name -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::package_name -> &str with ""
 src/mutate.rs: replace Mutant::package_name -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::package -> &Package with &Default::default()
@@ -398,7 +394,6 @@ src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((v
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![Default::default()], vec![String::new()]))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![Default::default()], vec!["xyzzy".into()]))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Err(::anyhow::anyhow!("mutated!"))
-src/visit.rs: replace DiscoveryVisitor<'o>::current_function -> Arc<Function> with Arc::new(Default::default())
 src/visit.rs: replace DiscoveryVisitor<'o>::enter_function -> Arc<Function> with Arc::new(Default::default())
 src/visit.rs: replace DiscoveryVisitor<'o>::leave_function with ()
 src/visit.rs: replace DiscoveryVisitor<'o>::collect_fn_mutants with ()
