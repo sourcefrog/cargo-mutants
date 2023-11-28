@@ -1,4 +1,4 @@
-// Copyright 2022 Martin Pool.
+// Copyright 2022, 2023 Martin Pool.
 
 //! Test handling of `mutants.toml` configuration.
 
@@ -163,14 +163,43 @@ fn list_with_config_file_regexps() {
         "#,
     );
     run()
-        .args(["mutants", "--list", "-d"])
+        .args(["mutants", "--list", "--line-col=false", "-d"])
         .arg(testdata.path())
         .assert()
         .success()
         .stdout(predicates::str::diff(indoc! {"\
-                src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false
-                src/simple_fns.rs:18:11: replace == with != in divisible_by_three
+                src/simple_fns.rs: replace divisible_by_three -> bool with false
+                src/simple_fns.rs: replace == with != in divisible_by_three
         "}));
+}
+
+#[test]
+fn exclude_re_overrides_config() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"
+exclude_re = [".*"]     # would exclude everything
+"#,
+    );
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::is_empty());
+    // Also tests that the alias --exclude-regex is accepted
+    run()
+        .args(["mutants", "--list", "--line-col=false", "-d"])
+        .arg(testdata.path())
+        .args(["--exclude-regex", " -> "])
+        .args(["-f", "src/simple_fns.rs"])
+        .assert()
+        .success()
+        .stdout(indoc! {"
+            src/simple_fns.rs: replace returns_unit with ()
+            src/simple_fns.rs: replace == with != in divisible_by_three
+        "});
 }
 
 #[test]
