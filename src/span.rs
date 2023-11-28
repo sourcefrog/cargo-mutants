@@ -181,6 +181,12 @@ mod test {
     use super::*;
 
     #[test]
+    fn linecolumn_debug_form() {
+        let lc = LineColumn { line: 1, column: 2 };
+        assert_eq!(format!("{:?}", lc), "LineColumn(1, 2)");
+    }
+
+    #[test]
     fn span_debug_form() {
         let span = Span::quad(1, 2, 3, 4);
         assert_eq!(format!("{:?}", span), "Span(1, 2, 3, 4)");
