@@ -164,6 +164,15 @@ src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, 
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "xyzzy")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, "")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, "xyzzy")]
+src/incremental.rs: replace filter_by_last_positive_outcomes -> (Option<Vec<PositiveOutcome>>, Vec<Mutant>) with (None, vec![])
+src/incremental.rs: replace filter_by_last_positive_outcomes -> (Option<Vec<PositiveOutcome>>, Vec<Mutant>) with (None, vec![Default::default()])
+src/incremental.rs: replace filter_by_last_positive_outcomes -> (Option<Vec<PositiveOutcome>>, Vec<Mutant>) with (Some(vec![]), vec![])
+src/incremental.rs: replace filter_by_last_positive_outcomes -> (Option<Vec<PositiveOutcome>>, Vec<Mutant>) with (Some(vec![]), vec![Default::default()])
+src/incremental.rs: replace filter_by_last_positive_outcomes -> (Option<Vec<PositiveOutcome>>, Vec<Mutant>) with (Some(vec![Default::default()]), vec![])
+src/incremental.rs: replace filter_by_last_positive_outcomes -> (Option<Vec<PositiveOutcome>>, Vec<Mutant>) with (Some(vec![Default::default()]), vec![Default::default()])
+src/incremental.rs: replace read_last_positive_outcomes -> Result<Vec<PositiveOutcome>> with Ok(vec![])
+src/incremental.rs: replace read_last_positive_outcomes -> Result<Vec<PositiveOutcome>> with Ok(vec![Default::default()])
+src/incremental.rs: replace read_last_positive_outcomes -> Result<Vec<PositiveOutcome>> with Err(::anyhow::anyhow!("mutated!"))
 src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
@@ -248,6 +257,7 @@ src/mutate.rs: replace Mutant::write_in_dir -> Result<()> with Ok(())
 src/mutate.rs: replace Mutant::write_in_dir -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace Mutant::log_file_name_base -> String with String::new()
 src/mutate.rs: replace Mutant::log_file_name_base -> String with "xyzzy".into()
+src/mutate.rs: replace Mutant::calculate_hash -> MutantHash with Default::default()
 src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Ok(Default::default())
 src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
@@ -308,6 +318,8 @@ src/output.rs: replace == with != in LockFile::acquire_lock
 src/output.rs: replace OutputDir::create_log -> Result<LogFile> with Ok(Default::default())
 src/output.rs: replace OutputDir::create_log -> Result<LogFile> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace OutputDir::path -> &Utf8Path with &Default::default()
+src/output.rs: replace OutputDir::maybe_write_positive_outcomes -> Result<()> with Ok(())
+src/output.rs: replace OutputDir::maybe_write_positive_outcomes -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace OutputDir::write_lab_outcome -> Result<()> with Ok(())
 src/output.rs: replace OutputDir::write_lab_outcome -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace OutputDir::add_scenario_outcome -> Result<()> with Ok(())
@@ -317,6 +329,9 @@ src/output.rs: replace OutputDir::open_debug_log -> Result<File> with Err(::anyh
 src/output.rs: replace OutputDir::write_mutants_list -> Result<()> with Ok(())
 src/output.rs: replace OutputDir::write_mutants_list -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/output.rs: replace OutputDir::take_lab_outcome -> LabOutcome with Default::default()
+src/output.rs: replace PositiveOutcome::mutant_hash -> MutantHash with Default::default()
+src/output.rs: replace <impl TryFrom for PositiveOutcome>::try_from -> Result<Self> with Ok(Default::default())
+src/output.rs: replace <impl TryFrom for PositiveOutcome>::try_from -> Result<Self> with Err(::anyhow::anyhow!("mutated!"))
 src/path.rs: replace ascent -> isize with 0
 src/path.rs: replace ascent -> isize with 1
 src/path.rs: replace ascent -> isize with -1

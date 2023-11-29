@@ -4,6 +4,9 @@
 
 use std::fmt;
 use std::fs;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::hash::SipHasher;
 use std::sync::Arc;
 
 use anyhow::{ensure, Context, Result};
@@ -19,7 +22,7 @@ use crate::span::Span;
 use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
-#[derive(Clone, Eq, PartialEq, Debug, Serialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Serialize, Hash)]
 pub enum Genre {
     /// Replace the body of a function with a fixed value.
     FnValue,
@@ -28,7 +31,7 @@ pub enum Genre {
 }
 
 /// A mutation applied to source code.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct Mutant {
     /// Which file is being mutated.
     pub source_file: Arc<SourceFile>,
@@ -53,7 +56,7 @@ pub struct Mutant {
 /// The function containing a mutant.
 ///
 /// This is used for both mutations of the whole function, and smaller mutations within it.
-#[derive(Eq, PartialEq, Debug, Serialize)]
+#[derive(Eq, PartialEq, Debug, Hash, Serialize)]
 pub struct Function {
     /// The function that's being mutated.
     pub function_name: String,
@@ -198,7 +201,18 @@ impl Mutant {
             self.span.start.line,
         )
     }
+
+    pub fn calculate_hash(&self) -> MutantHash {
+        // We need the hashes to be stable across restarts, so that they can be serialized
+        // consistently.
+        let mut s = SipHasher::new();
+        self.hash(&mut s);
+        s.finish()
+    }
 }
+
+/// A hash of a mutant, used to identify it across runs.
+pub type MutantHash = u64;
 
 impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

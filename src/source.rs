@@ -19,7 +19,7 @@ use crate::path::Utf8PathSlashes;
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct SourceFile {
     /// Package within the workspace.
     pub package: Arc<Package>,
