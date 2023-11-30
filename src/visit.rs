@@ -12,14 +12,19 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use itertools::Itertools;
+use proc_macro2::{Ident, TokenStream};
+use quote::quote;
 use syn::ext::IdentExt;
+use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Attribute, Expr, ItemFn, ReturnType};
+use syn::{Attribute, BinOp, Block, Expr, ItemFn, ReturnType, Signature};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
+use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
+use crate::span::Span;
 use crate::*;
 
 /// Mutants and files discovered in a source tree.
@@ -81,15 +86,14 @@ pub fn walk_tree(
                 continue;
             }
         }
-        if !options.examine_names.is_empty() {
-            file_mutants.retain(|m| options.examine_names.is_match(&m.to_string()));
-        }
-        if !options.exclude_names.is_empty() {
-            file_mutants.retain(|m| !options.exclude_names.is_match(&m.to_string()));
-        }
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
+    mutants.retain(|m| {
+        let name = m.name(true, false);
+        (options.examine_names.is_empty() || options.examine_names.is_match(&name))
+            && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
+    });
     console.walk_tree_done();
     Ok(Discovered { mutants, files })
 }
@@ -111,7 +115,8 @@ fn walk_file(
         external_mods: Vec::new(),
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
-        source_file: source_file.clone(),
+        fn_stack: Vec::new(),
+        source_file: Arc::clone(&source_file),
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.external_mods))
@@ -132,6 +137,9 @@ struct DiscoveryVisitor<'o> {
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
 
+    /// The functions we're inside.
+    fn_stack: Vec<Arc<Function>>,
+
     /// The names from `mod foo;` statements that should be visited later.
     external_mods: Vec<String>,
 
@@ -140,27 +148,57 @@ struct DiscoveryVisitor<'o> {
 }
 
 impl<'o> DiscoveryVisitor<'o> {
-    fn collect_fn_mutants(&mut self, return_type: &ReturnType, span: &proc_macro2::Span) {
-        let full_function_name = Arc::new(self.namespace_stack.join("::"));
-        let return_type_str = Arc::new(return_type.to_pretty_string());
-        let mut new_mutants = return_type_replacements(return_type, self.error_exprs)
-            .map(|rep| Mutant {
-                source_file: Arc::clone(&self.source_file),
-                function_name: Arc::clone(&full_function_name),
-                return_type: Arc::clone(&return_type_str),
-                replacement: rep.to_pretty_string(),
-                span: span.into(),
-                genre: Genre::FnValue,
-            })
-            .collect_vec();
-        if new_mutants.is_empty() {
-            debug!(
-                ?full_function_name,
-                ?return_type_str,
-                "No mutants generated for this return type"
-            );
+    fn enter_function(
+        &mut self,
+        function_name: &Ident,
+        return_type: &ReturnType,
+        span: proc_macro2::Span,
+    ) -> Arc<Function> {
+        self.namespace_stack.push(function_name.to_string());
+        let function_name = self.namespace_stack.join("::");
+        let function = Arc::new(Function {
+            function_name: function_name.to_owned(),
+            return_type: return_type.to_pretty_string(),
+            span: span.into(),
+        });
+        self.fn_stack.push(Arc::clone(&function));
+        function
+    }
+
+    fn leave_function(&mut self, function: Arc<Function>) {
+        self.namespace_stack
+            .pop()
+            .expect("Namespace stack should not be empty");
+        assert_eq!(
+            self.fn_stack.pop(),
+            Some(function),
+            "Function stack mismatch"
+        );
+    }
+
+    fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
+        if let Some(function) = self.fn_stack.last() {
+            let body_span = function_body_span(block).expect("Empty function body");
+            let mut new_mutants = return_type_replacements(&sig.output, self.error_exprs)
+                .map(|rep| Mutant {
+                    source_file: Arc::clone(&self.source_file),
+                    function: Some(Arc::clone(function)),
+                    span: body_span,
+                    replacement: rep.to_pretty_string(),
+                    genre: Genre::FnValue,
+                })
+                .collect_vec();
+            if new_mutants.is_empty() {
+                debug!(
+                    function_name = function.function_name,
+                    return_type = function.return_type,
+                    "No mutants generated for this return type"
+                );
+            } else {
+                self.mutants.append(&mut new_mutants);
+            }
         } else {
-            self.mutants.append(&mut new_mutants);
+            warn!("collect_fn_mutants called while not in a function?");
         }
     }
 
@@ -191,10 +229,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
-        self.in_namespace(&function_name, |self_| {
-            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
-            syn::visit::visit_item_fn(self_, i);
-        });
+        let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
+        self.collect_fn_mutants(&i.sig, &i.block);
+        syn::visit::visit_item_fn(self, i);
+        self.leave_function(function);
     }
 
     /// Visit `fn foo()` within an `impl`.
@@ -215,10 +253,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         {
             return;
         }
-        self.in_namespace(&function_name, |self_| {
-            self_.collect_fn_mutants(&i.sig.output, &i.block.brace_token.span.join());
-            syn::visit::visit_impl_item_fn(self_, i)
-        });
+        let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
+        self.collect_fn_mutants(&i.sig, &i.block);
+        syn::visit::visit_impl_item_fn(self, i);
+        self.leave_function(function);
     }
 
     /// Visit `impl Foo { ...}` or `impl Debug for Foo { ... }`.
@@ -255,6 +293,53 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             self.external_mods.push(mod_name.to_owned());
         }
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
+    }
+
+    /// Visit `a op b` expressions.
+    fn visit_expr_binary(&mut self, i: &'ast syn::ExprBinary) {
+        let _span = trace_span!("binary", line = i.op.span().start().line).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        let mut new_mutants = binary_operator_replacements(i.op)
+            .into_iter()
+            .map(|rep| Mutant {
+                source_file: Arc::clone(&self.source_file),
+                function: self.fn_stack.last().map(Arc::clone),
+                replacement: rep.to_pretty_string(),
+                span: i.op.span().into(),
+                genre: Genre::BinaryOperator,
+            })
+            .collect_vec();
+        if new_mutants.is_empty() {
+            debug!(
+                op = i.op.to_pretty_string(),
+                "No mutants generated for this binary operator"
+            );
+        } else {
+            self.mutants.append(&mut new_mutants);
+        }
+        syn::visit::visit_expr_binary(self, i);
+    }
+}
+
+// Get the span of the block excluding the braces, or None if it is empty.
+fn function_body_span(block: &Block) -> Option<Span> {
+    let start = block.stmts.first()?.span().start();
+    let end = block.stmts.last()?.span().end();
+    Some(Span {
+        start: start.into(),
+        end: end.into(),
+    })
+}
+
+fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
+    match op {
+        // We don't generate `<=` from `==` because it can too easily go
+        // wrong with unsigned types compared to 0.
+        BinOp::Eq(_) => vec![quote! { != }],
+        BinOp::Ne(_) => vec![quote! { == }],
+        _ => Vec::new(),
     }
 }
 
@@ -389,8 +474,6 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
-    use regex::Regex;
-
     use super::*;
 
     /// As a generic protection against regressions in discovery, the the mutants
@@ -404,6 +487,7 @@ mod test {
     fn expected_mutants_for_own_source_tree() {
         let options = Options {
             error_values: vec!["::anyhow::anyhow!(\"mutated!\")".to_owned()],
+            show_line_col: false,
             ..Default::default()
         };
         let mut list_output = String::new();
@@ -419,10 +503,6 @@ mod test {
             .expect("Discover mutants");
         crate::list_mutants(&mut list_output, &discovered.mutants, &options)
             .expect("Discover mutants in own source tree");
-
-        // Strip line numbers so this is not too brittle.
-        let line_re = Regex::new(r"(?m)^([^:]+:)\d+:( .*)$").unwrap();
-        let list_output = line_re.replace_all(&list_output, "$1$2");
         insta::assert_snapshot!(list_output);
     }
 }

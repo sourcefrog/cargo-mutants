@@ -2,6 +2,16 @@
 
 ## 23.11.2
 
+A big internal refactor to allow mutations smaller than a whole function. Only one pattern is added in this release, mutation of `==` operators, but many more are possible.
+
+- New: Mutate `==` to `!=` and vice versa.
+
+- Changed: Include column numbers in text listings of mutants and output to disambiguate smaller-than-function mutants, for example if there are several operators that can be changed on one line. This also applies to the names used for regex matching, so may break some regexps that match the entire line (sorry). The new option `--line-col=false` turns them both off in `--list` output.
+
+- Changed: Replaced the `function`, `line`, and `return_type` fields in the mutants json message with a `function` submessage (including the name and return type) and a `span` indicating the entire replaced region.
+
+## 23.11.2
+
 - Changed: If `--file` or `--exclude` are set on the command line, then they replace the corresponding config file options. Similarly, if `--re` is given then the `examine_re` config key is ignored, and if `--exclude-re` is given then `exclude_regex` is ignored. (Previously the values were combined.) This makes it easier to use the command line to test files or mutants that are normally not tested.
 
 - Improved: By default, files matching gitignore patterns (including in parent directories, per-user configuration, and `info/exclude`) are excluded from copying to temporary build directories. This should improve performance in some large trees with many files that are not part of the build. This behavior can be turned off with `--gitignore=false`.
@@ -11,6 +21,8 @@
 - Added: Alternative aliases for command line options, so you don't need to remember if it's "regex" or "re": `--regex`, `--examine-re`, `--examine-regex` (all for names to include) and `--exclude-regex`.
 
 - Added: Accept `--manifest-path` as an alternative to `-d`, for consistency with other cargo commands.
+
+- Changed: The json mutants format now includes a `function` sub-message, which includes the function name and return type, rather than them being direct attributes of the mutant, to better accomodate smaller-than-function mutants. Also, the `function` includes the line-column span of the entire function.
 
 ## 23.11.1
 

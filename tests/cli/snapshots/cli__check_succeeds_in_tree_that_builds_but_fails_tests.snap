@@ -4,7 +4,7 @@ expression: stdout
 ---
 Found 2 mutants to test
 Unmutated baseline ... ok
-src/lib.rs:1: replace factorial -> u32 with 0 ... ok
-src/lib.rs:1: replace factorial -> u32 with 1 ... ok
+src/lib.rs:2:5: replace factorial -> u32 with 0 ... ok
+src/lib.rs:2:5: replace factorial -> u32 with 1 ... ok
 2 mutants tested: 2 succeeded
 

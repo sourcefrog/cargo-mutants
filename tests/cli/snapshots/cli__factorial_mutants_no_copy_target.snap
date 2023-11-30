@@ -4,6 +4,6 @@ expression: stdout
 ---
 Found 3 mutants to test
 Unmutated baseline ... ok
-src/bin/factorial.rs:1: replace main with () ... NOT CAUGHT
+src/bin/factorial.rs:2:5: replace main with () ... NOT CAUGHT
 3 mutants tested: 1 missed, 2 caught
 

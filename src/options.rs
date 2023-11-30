@@ -46,6 +46,9 @@ pub struct Options {
     /// Show logs even from mutants that were caught, or source/unmutated builds.
     pub show_all_logs: bool,
 
+    /// List mutants with line and column numbers.
+    pub show_line_col: bool,
+
     /// Test mutants in random order.
     ///
     /// This is now the default, so that repeated partial runs are more likely to find
@@ -130,6 +133,7 @@ impl Options {
             print_caught: args.caught,
             print_unviable: args.unviable,
             shuffle: !args.no_shuffle,
+            show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),

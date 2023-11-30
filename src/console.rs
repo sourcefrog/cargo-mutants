@@ -101,7 +101,7 @@ impl Console {
         write!(
             s,
             "{} ... {}",
-            style_scenario(scenario),
+            style_scenario(scenario, true),
             style_outcome(outcome)
         )
         .unwrap();
@@ -493,7 +493,7 @@ impl ScenarioModel {
     fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> ScenarioModel {
         ScenarioModel {
             scenario: scenario.clone(),
-            name: style_scenario(scenario),
+            name: style_scenario(scenario, true),
             phase: None,
             phase_start: start,
             log_file,
@@ -591,28 +591,6 @@ pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
     }
 }
 
-pub(crate) fn style_mutant(mutant: &Mutant) -> String {
-    // This is like `impl Display for Mutant`, but with colors.
-    // The text content should be the same.
-    let mut s = String::with_capacity(200);
-    write!(
-        &mut s,
-        "{}:{}",
-        mutant.source_file.tree_relative_slashes(),
-        mutant.span.start.line,
-    )
-    .unwrap();
-    s.push_str(": replace ");
-    s.push_str(&style(mutant.function_name()).bright().magenta().to_string());
-    if !mutant.return_type().is_empty() {
-        s.push(' ');
-        s.push_str(&style(mutant.return_type()).magenta().to_string());
-    }
-    s.push_str(" with ");
-    s.push_str(&style(mutant.replacement_text()).yellow().to_string());
-    s
-}
-
 fn style_elapsed_secs(since: Instant) -> String {
     style_secs(since.elapsed())
 }
@@ -640,10 +618,10 @@ fn style_mb(bytes: u64) -> StyledObject<String> {
     style(format_mb(bytes)).cyan()
 }
 
-pub fn style_scenario(scenario: &Scenario) -> Cow<'static, str> {
+pub fn style_scenario(scenario: &Scenario, line_col: bool) -> Cow<'static, str> {
     match scenario {
         Scenario::Baseline => "Unmutated baseline".into(),
-        Scenario::Mutant(mutant) => style_mutant(mutant).into(),
+        Scenario::Mutant(mutant) => mutant.name(line_col, true).into(),
     }
 }
 

@@ -96,11 +96,11 @@ fn warn_if_error_value_starts_with_err() {
             "error_value option gives the value of the error, and probably should not start with Err(: got Err(anyhow!(\"mutant\"))"
         ))
         .stdout(indoc! { "\
-            src/lib.rs:3: replace even_is_ok -> Result<u32, &\'static str> with Ok(0)
-            src/lib.rs:3: replace even_is_ok -> Result<u32, &\'static str> with Ok(1)
-            src/lib.rs:3: replace even_is_ok -> Result<u32, &\'static str> with Err(Err(anyhow!(\"mutant\")))
-        "
-        });
+            src/lib.rs:4:5: replace even_is_ok -> Result<u32, &\'static str> with Ok(0)
+            src/lib.rs:4:5: replace even_is_ok -> Result<u32, &\'static str> with Ok(1)
+            src/lib.rs:4:5: replace even_is_ok -> Result<u32, &\'static str> with Err(Err(anyhow!(\"mutant\")))
+            src/lib.rs:4:14: replace == with != in even_is_ok
+        " });
 }
 
 #[test]

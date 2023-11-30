@@ -16,15 +16,16 @@ fn open_by_manifest_path() {
         .args([
             "mutants",
             "--list",
+            "--line-col=false",
             "--manifest-path",
             "testdata/factorial/Cargo.toml",
         ])
         .assert()
         .success()
         .stdout(indoc! {"
-            src/bin/factorial.rs:1: replace main with ()
-            src/bin/factorial.rs:7: replace factorial -> u32 with 0
-            src/bin/factorial.rs:7: replace factorial -> u32 with 1
+            src/bin/factorial.rs: replace main with ()
+            src/bin/factorial.rs: replace factorial -> u32 with 0
+            src/bin/factorial.rs: replace factorial -> u32 with 1
         "});
 }
 
@@ -202,8 +203,8 @@ fn in_workspace_only_relevant_packages_included_in_baseline_tests_by_file_filter
     assert_eq!(
         read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
         indoc! { "\
-            passing/src/lib.rs:1: replace triple -> usize with 0
-            passing/src/lib.rs:1: replace triple -> usize with 1
+            passing/src/lib.rs:2:5: replace triple -> usize with 0
+            passing/src/lib.rs:2:5: replace triple -> usize with 1
             "}
     );
     assert_eq!(
@@ -239,8 +240,8 @@ fn baseline_test_respects_package_options() {
     assert_eq!(
         read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
         indoc! { "\
-            passing/src/lib.rs:1: replace triple -> usize with 0
-            passing/src/lib.rs:1: replace triple -> usize with 1
+            passing/src/lib.rs:2:5: replace triple -> usize with 0
+            passing/src/lib.rs:2:5: replace triple -> usize with 1
             "}
     );
     assert_eq!(

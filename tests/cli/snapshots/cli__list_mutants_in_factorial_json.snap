@@ -5,29 +5,92 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "file": "src/bin/factorial.rs",
-    "function": "main",
+    "function": {
+      "function_name": "main",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 5
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
     "genre": "FnValue",
-    "line": 1,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "()",
-    "return_type": ""
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 4
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "0",
-    "return_type": "-> u32"
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
   },
   {
     "file": "src/bin/factorial.rs",
-    "function": "factorial",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
     "genre": "FnValue",
-    "line": 7,
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "1",
-    "return_type": "-> u32"
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
   }
 ]

@@ -2,6 +2,6 @@
 source: tests/cli/main.rs
 expression: content
 ---
-src/bin/factorial.rs:7: replace factorial -> u32 with 0
-src/bin/factorial.rs:7: replace factorial -> u32 with 1
+src/bin/factorial.rs:8:5: replace factorial -> u32 with 0
+src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
 

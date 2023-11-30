@@ -25,7 +25,7 @@ mod pretty;
 mod process;
 mod scenario;
 mod source;
-mod textedit;
+mod span;
 mod visit;
 mod workspace;
 
@@ -61,6 +61,9 @@ use crate::workspace::{PackageFilter, Workspace};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
+
+/// A comment marker inserted next to changes, so they can be easily found.
+static MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
 #[derive(Parser)]
 #[command(name = "cargo", bin_name = "cargo")]
@@ -176,6 +179,10 @@ struct Args {
     /// don't print times or tree sizes, to make output deterministic.
     #[arg(long)]
     no_times: bool,
+
+    /// include line & column numbers in the mutation list.
+    #[arg(long, action = ArgAction::Set, default_value = "true")]
+    line_col: bool,
 
     /// create mutants.out within this directory.
     #[arg(long, short = 'o')]

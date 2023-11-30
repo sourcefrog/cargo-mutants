@@ -1,9 +1,9 @@
 ---
-source: tests/cli.rs
+source: tests/cli/main.rs
 expression: stdout
 ---
 Found 1 mutant to test
 Unmutated baseline ... ok
-src/lib.rs:14: replace controlled_loop with () ... ok
+src/lib.rs:15:5: replace controlled_loop with () ... ok
 1 mutant tested: 1 succeeded
 

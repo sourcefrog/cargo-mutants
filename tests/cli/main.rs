@@ -390,11 +390,13 @@ fn list_mutants_regex_anchored_matches_full_line() {
         .args([
             "--list",
             "--re",
-            r"^src/simple_fns.rs:\d+: replace returns_unit with \(\)$",
+            r"^src/simple_fns.rs:\d+:\d+: replace returns_unit with \(\)$",
         ])
         .arg("-d")
         .arg("testdata/well_tested")
-        .assert_insta("list_mutants_regex_anchored_matches_full_line");
+        .assert()
+        .success()
+        .stdout("src/simple_fns.rs:8:5: replace returns_unit with ()\n");
 }
 
 #[test]
@@ -504,7 +506,7 @@ fn small_well_tested_tree_is_clean() {
     let log_content = fs::read_to_string(
         tmp_src_dir
             .path()
-            .join("mutants.out/log/src__lib.rs_line_4.log"),
+            .join("mutants.out/log/src__lib.rs_line_5.log"),
     )
     .unwrap()
     .replace('\r', "");
@@ -523,7 +525,7 @@ fn small_well_tested_tree_is_clean() {
             -        a *= i;
             -    }
             -    a
-            +0 /* ~ changed by cargo-mutants ~ */
+            +    0 /* ~ changed by cargo-mutants ~ */
              }
             "# }));
     // Also, it should contain output from the failed tests with mutations applied.
@@ -566,8 +568,8 @@ fn well_tested_tree_quiet() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
     println!("outcomes.json:\n{outcomes_json}");
     let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    assert_eq!(outcomes["total_mutants"], 38);
-    assert_eq!(outcomes["caught"], 38);
+    assert_eq!(outcomes["total_mutants"], 43);
+    assert_eq!(outcomes["caught"], 43);
     assert_eq!(outcomes["unviable"], 0);
     assert_eq!(outcomes["missed"], 0);
 }
@@ -623,14 +625,21 @@ fn well_tested_tree_check_only_shuffled() {
 fn unviable_mutation_of_struct_with_no_default() {
     let tmp_src_dir = copy_of_testdata("struct_with_no_default");
     run()
-        .args(["mutants", "--no-times", "--no-shuffle", "-v", "-V"])
+        .args([
+            "mutants",
+            "--line-col=false",
+            "--no-times",
+            "--no-shuffle",
+            "-v",
+            "-V",
+        ])
         .arg("-d")
         .arg(tmp_src_dir.path())
         .assert()
         .success()
         .stdout(
             predicate::str::is_match(
-                r"src/lib.rs:\d+: replace make_an_s -> S with Default::default\(\) \.\.\. unviable",
+                r"src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\) \.\.\. unviable",
             )
             .unwrap(),
         );
@@ -725,10 +734,10 @@ fn factorial_mutants_with_all_logs() {
 r"Unmutated baseline \.\.\. ok in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:1: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\ds"
+r"src/bin/factorial\.rs:\d+:\d+: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:7: replace factorial -> u32 with 0 \.\.\. caught in \d+\.\ds"
+r"src/bin/factorial\.rs:\d+:\d+: replace factorial -> u32 with 0 \.\.\. caught in \d+\.\ds"
         ).unwrap());
 }
 

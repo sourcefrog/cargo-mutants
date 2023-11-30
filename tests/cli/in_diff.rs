@@ -50,8 +50,8 @@ fn list_mutants_changed_in_diff1() {
     assert_eq!(
         read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
         indoc! { "\
-            src/lib.rs:5: replace two -> String with String::new()
-            src/lib.rs:5: replace two -> String with \"xyzzy\".into()
+            src/lib.rs:6:5: replace two -> String with String::new()
+            src/lib.rs:6:5: replace two -> String with \"xyzzy\".into()
         "}
     );
 

@@ -49,8 +49,8 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
                     trace!(
                         ?path,
                         line,
-                        %mutant,
-                    "diff matched mutant"
+                        mutant = mutant.name(true, false),
+                        "diff matched mutant"
                     );
                     matched.push(mutant);
                     continue 'mutant;

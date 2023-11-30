@@ -5,11 +5,62 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 [
   {
     "file": "src/simple_fns.rs",
-    "function": "divisible_by_three",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
     "genre": "FnValue",
-    "line": 17,
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
-    "return_type": "-> bool"
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 18
+      },
+      "start": {
+        "column": 5,
+        "line": 18
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
+      "function_name": "divisible_by_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 18
+      },
+      "start": {
+        "column": 11,
+        "line": 18
+      }
+    }
   }
 ]

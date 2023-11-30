@@ -2,6 +2,6 @@
 source: tests/cli/main.rs
 expression: content
 ---
-src/lib.rs:1: replace double -> u32 with 0
-src/lib.rs:1: replace double -> u32 with 1
+src/lib.rs:2:5: replace double -> u32 with 0
+src/lib.rs:2:5: replace double -> u32 with 1
 

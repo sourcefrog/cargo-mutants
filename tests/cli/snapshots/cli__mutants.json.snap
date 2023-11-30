@@ -6,27 +6,90 @@ expression: mutants_json
   {
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
-    "line": 1,
-    "function": "main",
-    "return_type": "",
+    "function": {
+      "function_name": "main",
+      "return_type": "",
+      "span": {
+        "start": {
+          "line": 1,
+          "column": 1
+        },
+        "end": {
+          "line": 5,
+          "column": 2
+        }
+      }
+    },
+    "span": {
+      "start": {
+        "line": 2,
+        "column": 5
+      },
+      "end": {
+        "line": 4,
+        "column": 6
+      }
+    },
     "replacement": "()",
     "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
-    "line": 7,
-    "function": "factorial",
-    "return_type": "-> u32",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 13,
+          "column": 2
+        }
+      }
+    },
+    "span": {
+      "start": {
+        "line": 8,
+        "column": 5
+      },
+      "end": {
+        "line": 12,
+        "column": 6
+      }
+    },
     "replacement": "0",
     "genre": "FnValue"
   },
   {
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
-    "line": 7,
-    "function": "factorial",
-    "return_type": "-> u32",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 13,
+          "column": 2
+        }
+      }
+    },
+    "span": {
+      "start": {
+        "line": 8,
+        "column": 5
+      },
+      "end": {
+        "line": 12,
+        "column": 6
+      }
+    },
     "replacement": "1",
     "genre": "FnValue"
   }

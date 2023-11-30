@@ -7,6 +7,7 @@ use std::fs;
 use std::sync::Arc;
 
 use anyhow::{ensure, Context, Result};
+use console::{style, StyledObject};
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
@@ -14,16 +15,16 @@ use similar::TextDiff;
 use crate::build_dir::BuildDir;
 use crate::package::Package;
 use crate::source::SourceFile;
-use crate::textedit::{replace_region, Span};
-
-/// A comment marker inserted next to changes, so they can be easily found.
-const MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
+use crate::span::Span;
+use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
 pub enum Genre {
     /// Replace the body of a function with a fixed value.
     FnValue,
+    /// Replace `==` with `!=` and so on.
+    BinaryOperator,
 }
 
 /// A mutation applied to source code.
@@ -32,13 +33,14 @@ pub struct Mutant {
     /// Which file is being mutated.
     pub source_file: Arc<SourceFile>,
 
-    /// The function that's being mutated.
-    pub function_name: Arc<String>,
-
-    /// The return type of the function, as a fragment of Rust syntax.
-    pub return_type: Arc<String>,
+    /// The function that's being mutated: the nearest enclosing function, if they are nested.
+    ///
+    /// There may be none for mutants in e.g. top-level const expressions.
+    pub function: Option<Arc<Function>>,
 
     /// The mutated textual region.
+    ///
+    /// This is deleted and replaced with the replacement text.
     pub span: Span,
 
     /// The replacement text.
@@ -48,54 +50,105 @@ pub struct Mutant {
     pub genre: Genre,
 }
 
+/// The function containing a mutant.
+///
+/// This is used for both mutations of the whole function, and smaller mutations within it.
+#[derive(Eq, PartialEq, Debug, Serialize)]
+pub struct Function {
+    /// The function that's being mutated.
+    pub function_name: String,
+
+    /// The return type of the function, including a leading "-> ", as a fragment of Rust syntax.
+    ///
+    /// Empty if the function has no return type (i.e. returns `()`).
+    pub return_type: String,
+
+    /// The span (line/column range) of the entire function.
+    pub span: Span,
+}
+
 impl Mutant {
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
-        replace_region(
+        self.span.replace(
             &self.source_file.code,
-            &self.span.start,
-            &self.span.end,
-            &format!("{{\n{} {}\n}}\n", self.replacement, MUTATION_MARKER_COMMENT),
+            &format!("{} {}", &self.replacement, MUTATION_MARKER_COMMENT),
         )
-    }
-
-    /// Return the original code for the entire file affected by this mutation.
-    pub fn original_code(&self) -> &str {
-        &self.source_file.code
-    }
-
-    pub fn return_type(&self) -> &str {
-        &self.return_type
     }
 
     /// Describe the mutant briefly, not including the location.
     ///
     /// The result is like `replace factorial -> u32 with Default::default()`.
     pub fn describe_change(&self) -> String {
-        format!(
-            "replace {name}{space}{type} with {replacement}",
-            name = self.function_name(),
-            space = if self.return_type.is_empty() {
-                ""
-            } else {
-                " "
-            },
-            type = self.return_type(),
-            replacement = self.replacement
-        )
+        self.styled_parts()
+            .into_iter()
+            .map(|x| x.force_styling(false).to_string())
+            .collect::<Vec<_>>()
+            .join("")
+    }
+
+    pub fn name(&self, show_line_col: bool, styled: bool) -> String {
+        let mut v = Vec::new();
+        v.push(self.source_file.tree_relative_slashes());
+        if show_line_col {
+            v.push(format!(
+                ":{}:{}",
+                self.span.start.line, self.span.start.column
+            ));
+        }
+        v.push(": ".to_owned());
+        let parts = self.styled_parts();
+        if styled {
+            v.extend(parts.into_iter().map(|x| x.to_string()));
+        } else {
+            v.extend(
+                parts
+                    .into_iter()
+                    .map(|x| x.force_styling(false).to_string()),
+            );
+        }
+        v.join("")
+    }
+
+    fn styled_parts(&self) -> Vec<StyledObject<String>> {
+        // This is like `impl Display for Mutant`, but with colors.
+        // The text content should be the same.
+        fn s<S: ToString>(s: S) -> StyledObject<String> {
+            style(s.to_string())
+        }
+        let mut v: Vec<StyledObject<String>> = Vec::new();
+        v.push(s("replace "));
+        if self.genre != Genre::FnValue {
+            v.push(s(self.original_text()).yellow());
+            v.push(s(" with "));
+            v.push(s(&self.replacement).bright().yellow());
+            v.push(s(" in "));
+        }
+        if let Some(function) = &self.function {
+            v.push(s(&function.function_name).bright().magenta());
+        } else {
+            v.push(s("module"));
+        }
+        if self.genre == Genre::FnValue {
+            if let Some(function) = &self.function {
+                if !function.return_type.is_empty() {
+                    v.push(s(" "));
+                    v.push(s(&function.return_type).magenta());
+                }
+            }
+            v.push(s(" with "));
+            v.push(s(self.replacement_text()).yellow());
+        }
+        v
+    }
+
+    pub fn original_text(&self) -> String {
+        self.span.extract(&self.source_file.code)
     }
 
     /// Return the text inserted for this mutation.
     pub fn replacement_text(&self) -> &str {
         self.replacement.as_str()
-    }
-
-    /// Return the name of the function to be mutated.
-    ///
-    /// Note that this will often not be unique: the same name can be reused
-    /// in different modules, under different cfg guards, etc.
-    pub fn function_name(&self) -> &str {
-        &self.function_name
     }
 
     /// Return the cargo package name.
@@ -112,7 +165,7 @@ impl Mutant {
         let old_label = self.source_file.tree_relative_slashes();
         // There shouldn't be any newlines, but just in case...
         let new_label = self.describe_change().replace('\n', " ");
-        TextDiff::from_lines(self.original_code(), &self.mutated_code())
+        TextDiff::from_lines(&self.source_file.code, &self.mutated_code())
             .unified_diff()
             .context_radius(8)
             .header(&old_label, &new_label)
@@ -125,7 +178,7 @@ impl Mutant {
     }
 
     pub fn unapply(&self, build_dir: &mut BuildDir) -> Result<()> {
-        self.write_in_dir(build_dir, self.original_code())
+        self.write_in_dir(build_dir, &self.source_file.code)
     }
 
     #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
@@ -142,7 +195,7 @@ impl Mutant {
         format!(
             "{}_line_{}",
             self.source_file.tree_relative_slashes(),
-            self.span.start.line
+            self.span.start.line,
         )
     }
 }
@@ -151,31 +204,12 @@ impl fmt::Debug for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Custom implementation to show spans more concisely
         f.debug_struct("Mutant")
-            .field("function_name", &self.function_name())
-            .field("return_type", &self.return_type)
+            .field("function", &self.function)
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
-            .field("start", &(self.span.start.line, self.span.start.column))
-            .field("end", &(self.span.end.line, self.span.end.column))
+            .field("span", &self.span)
             .field("package_name", &self.package_name())
             .finish()
-    }
-}
-
-impl fmt::Display for Mutant {
-    /// Describe this mutant like a compiler error message, starting with the file and line.
-    ///
-    /// The result is like `src/source.rs:123: replace source::SourceFile::new with Default::default()`.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // This is like `style_mutant`, but without colors.
-        // The text content should be the same.
-        write!(
-            f,
-            "{file}:{line}: {change}",
-            file = self.source_file.tree_relative_slashes(),
-            line = self.span.start.line,
-            change = self.describe_change()
-        )
     }
 }
 
@@ -188,9 +222,8 @@ impl Serialize for Mutant {
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
         ss.serialize_field("package", &self.package_name())?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
-        ss.serialize_field("line", &self.span.start.line)?;
-        ss.serialize_field("function", &self.function_name.as_ref())?;
-        ss.serialize_field("return_type", &self.return_type.as_ref())?;
+        ss.serialize_field("function", &self.function.as_ref().map(|a| a.as_ref()))?;
+        ss.serialize_field("span", &self.span)?;
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
@@ -216,47 +249,56 @@ mod test {
             .unwrap();
         assert_eq!(mutants.len(), 3);
         assert_eq!(
-            format!("{:?}", mutants[0]),
-            "Mutant { \
-                function_name: \"main\", \
-                return_type: \"\", \
-                replacement: \"()\", \
-                genre: FnValue, \
-                start: (1, 11), end: (5, 2), \
-                package_name: \"cargo-mutants-testdata-factorial\" \
-            }"
-        );
-        assert_eq!(
-            mutants[0].to_string(),
-            "src/bin/factorial.rs:1: replace main with ()"
-        );
-        assert_eq!(
-            format!("{:#?}", mutants[1]),
-            indoc! { r#"
-                Mutant {
-                    function_name: "factorial",
-                    return_type: "-> u32",
-                    replacement: "0",
+            format!("{:#?}", mutants[0]),
+            indoc! {
+                r#"Mutant {
+                    function: Some(
+                        Function {
+                            function_name: "main",
+                            return_type: "",
+                            span: Span(1, 1, 5, 2),
+                        },
+                    ),
+                    replacement: "()",
                     genre: FnValue,
-                    start: (
-                        7,
-                        29,
-                    ),
-                    end: (
-                        13,
-                        2,
-                    ),
+                    span: Span(2, 5, 4, 6),
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }
         );
         assert_eq!(
-            mutants[1].to_string(),
-            "src/bin/factorial.rs:7: replace factorial -> u32 with 0"
+            mutants[0].name(true, false),
+            "src/bin/factorial.rs:2:5: replace main with ()"
         );
         assert_eq!(
-            mutants[2].to_string(),
-            "src/bin/factorial.rs:7: replace factorial -> u32 with 1"
+            format!("{:#?}", mutants[1]),
+            indoc! { r#"
+                Mutant {
+                    function: Some(
+                        Function {
+                            function_name: "factorial",
+                            return_type: "-> u32",
+                            span: Span(7, 1, 13, 2),
+                        },
+                    ),
+                    replacement: "0",
+                    genre: FnValue,
+                    span: Span(8, 5, 12, 6),
+                    package_name: "cargo-mutants-testdata-factorial",
+                }"#
+            }
+        );
+        assert_eq!(
+            mutants[1].name(false, false),
+            "src/bin/factorial.rs: replace factorial -> u32 with 0"
+        );
+        assert_eq!(
+            mutants[1].name(true, false),
+            "src/bin/factorial.rs:8:5: replace factorial -> u32 with 0"
+        );
+        assert_eq!(
+            mutants[2].name(true, false),
+            "src/bin/factorial.rs:8:5: replace factorial -> u32 with 1"
         );
     }
 
@@ -283,14 +325,13 @@ mod test {
         )?;
         assert_eq!(mutants.len(), 3);
 
-        let mut mutated_code = mutants[0].mutated_code();
-        assert_eq!(mutants[0].function_name(), "main");
-        mutated_code.retain(|c| c != '\r');
+        let mutated_code = mutants[0].mutated_code();
+        assert_eq!(mutants[0].function.as_ref().unwrap().function_name, "main");
         assert_eq!(
-            mutated_code,
+            strip_trailing_space(&mutated_code),
             indoc! { r#"
                 fn main() {
-                () /* ~ changed by cargo-mutants ~ */
+                    () /* ~ changed by cargo-mutants ~ */
                 }
 
                 fn factorial(n: u32) -> u32 {
@@ -310,11 +351,13 @@ mod test {
             }
         );
 
-        let mut mutated_code = mutants[1].mutated_code();
-        assert_eq!(mutants[1].function_name(), "factorial");
-        mutated_code.retain(|c| c != '\r');
+        let mutated_code = mutants[1].mutated_code();
         assert_eq!(
-            mutated_code,
+            mutants[1].function.as_ref().unwrap().function_name,
+            "factorial"
+        );
+        assert_eq!(
+            strip_trailing_space(&mutated_code),
             indoc! { r#"
                 fn main() {
                     for i in 1..=6 {
@@ -323,7 +366,7 @@ mod test {
                 }
 
                 fn factorial(n: u32) -> u32 {
-                0 /* ~ changed by cargo-mutants ~ */
+                    0 /* ~ changed by cargo-mutants ~ */
                 }
 
                 #[test]
@@ -335,5 +378,10 @@ mod test {
             }
         );
         Ok(())
+    }
+
+    fn strip_trailing_space(s: &str) -> String {
+        // Split on \n so that we retain empty lines etc
+        s.split('\n').map(|l| l.trim_end()).join("\n")
     }
 }
