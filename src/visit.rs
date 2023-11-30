@@ -302,6 +302,16 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
     }
 
+    /// Visit `trait Foo { ... }`
+    fn visit_item_trait(&mut self, i: &'ast syn::ItemTrait) {
+        let name = i.ident.to_pretty_string();
+        let _span = trace_span!("trait", line = i.span().start().line, name).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        self.in_namespace(&name, |v| syn::visit::visit_item_trait(v, i));
+    }
+
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
         let mod_name = &node.ident.unraw().to_string();

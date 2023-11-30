@@ -404,6 +404,7 @@ src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl with ()
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl
+src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_trait with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_mod with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_expr_binary with ()
 src/visit.rs: replace function_body_span -> Option<Span> with None

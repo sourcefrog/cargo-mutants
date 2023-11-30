@@ -3793,7 +3793,7 @@ expression: buf
   {
     "file": "src/traits.rs",
     "function": {
-      "function_name": "is_three",
+      "function_name": "Something::is_three",
       "return_type": "-> bool",
       "span": {
         "end": {
@@ -3823,7 +3823,7 @@ expression: buf
   {
     "file": "src/traits.rs",
     "function": {
-      "function_name": "is_three",
+      "function_name": "Something::is_three",
       "return_type": "-> bool",
       "span": {
         "end": {
@@ -3853,7 +3853,7 @@ expression: buf
   {
     "file": "src/traits.rs",
     "function": {
-      "function_name": "is_three",
+      "function_name": "Something::is_three",
       "return_type": "-> bool",
       "span": {
         "end": {
