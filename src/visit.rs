@@ -226,6 +226,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             name = function_name
         )
         .entered();
+        trace!("visit fn");
         if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
@@ -257,6 +258,29 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         self.collect_fn_mutants(&i.sig, &i.block);
         syn::visit::visit_impl_item_fn(self, i);
         self.leave_function(function);
+    }
+
+    /// Visit `fn foo() { ... }` within a trait, i.e. a default implementation of a function.
+    fn visit_trait_item_fn(&mut self, i: &'ast syn::TraitItemFn) {
+        let function_name = i.sig.ident.to_pretty_string();
+        let _span = trace_span!(
+            "fn",
+            line = i.sig.fn_token.span.start().line,
+            name = function_name
+        )
+        .entered();
+        if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || i.sig.ident == "new" {
+            return;
+        }
+        if let Some(block) = &i.default {
+            if block_is_empty(block) {
+                return;
+            }
+            let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
+            self.collect_fn_mutants(&i.sig, block);
+            syn::visit::visit_trait_item_fn(self, i);
+            self.leave_function(function);
+        }
     }
 
     /// Visit `impl Foo { ...}` or `impl Debug for Foo { ... }`.
@@ -298,6 +322,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     /// Visit `a op b` expressions.
     fn visit_expr_binary(&mut self, i: &'ast syn::ExprBinary) {
         let _span = trace_span!("binary", line = i.op.span().start().line).entered();
+        trace!("visit binary operator");
         if attrs_excluded(&i.attrs) {
             return;
         }

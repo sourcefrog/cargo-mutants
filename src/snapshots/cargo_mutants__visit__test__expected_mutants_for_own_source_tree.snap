@@ -230,7 +230,6 @@ src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with Styl
 src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with StyledObject::from_iter(["xyzzy".into()])
 src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with StyledObject::new("xyzzy".into())
 src/mutate.rs: replace Mutant::styled_parts::s -> StyledObject<String> with StyledObject::from("xyzzy".into())
-src/mutate.rs: replace != with == in Mutant::styled_parts
 src/mutate.rs: replace == with != in Mutant::styled_parts
 src/mutate.rs: replace Mutant::original_text -> String with String::new()
 src/mutate.rs: replace Mutant::original_text -> String with "xyzzy".into()
@@ -401,6 +400,8 @@ src/visit.rs: replace DiscoveryVisitor<'o>::in_namespace -> T with Default::defa
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn with ()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn with ()
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
+src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn with ()
+src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl with ()
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_mod with ()

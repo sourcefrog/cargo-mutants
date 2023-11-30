@@ -21,3 +21,4 @@ pub mod simple_fns;
 mod slices;
 mod static_item;
 mod struct_with_lifetime;
+mod traits;

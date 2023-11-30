@@ -3789,6 +3789,96 @@ expression: buf
         "line": 15
       }
     }
+  },
+  {
+    "file": "src/traits.rs",
+    "function": {
+      "function_name": "is_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 6
+        },
+        "start": {
+          "column": 5,
+          "line": 4
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 5
+      },
+      "start": {
+        "column": 9,
+        "line": 5
+      }
+    }
+  },
+  {
+    "file": "src/traits.rs",
+    "function": {
+      "function_name": "is_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 6
+        },
+        "start": {
+          "column": 5,
+          "line": 4
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 5
+      },
+      "start": {
+        "column": 9,
+        "line": 5
+      }
+    }
+  },
+  {
+    "file": "src/traits.rs",
+    "function": {
+      "function_name": "is_three",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 6
+        },
+        "start": {
+          "column": 5,
+          "line": 4
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 5
+      },
+      "start": {
+        "column": 11,
+        "line": 5
+      }
+    }
   }
 ]
 ```

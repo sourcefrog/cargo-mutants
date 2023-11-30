@@ -34,7 +34,10 @@ src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])
-src/static_item.rs:1:33: replace == with != in module
+src/static_item.rs:1:33: replace == with !=
 src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 0
 src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 1
+src/traits.rs:5:9: replace is_three -> bool with true
+src/traits.rs:5:9: replace is_three -> bool with false
+src/traits.rs:5:11: replace == with != in is_three
 
