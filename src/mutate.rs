@@ -118,26 +118,26 @@ impl Mutant {
         }
         let mut v: Vec<StyledObject<String>> = Vec::new();
         v.push(s("replace "));
-        if self.genre != Genre::FnValue {
-            v.push(s(self.original_text()).yellow());
-            v.push(s(" with "));
-            v.push(s(&self.replacement).bright().yellow());
-            v.push(s(" in "));
-        }
-        if let Some(function) = &self.function {
-            v.push(s(&function.function_name).bright().magenta());
-        } else {
-            v.push(s("module"));
-        }
         if self.genre == Genre::FnValue {
-            if let Some(function) = &self.function {
-                if !function.return_type.is_empty() {
-                    v.push(s(" "));
-                    v.push(s(&function.return_type).magenta());
-                }
+            let function = self
+                .function
+                .as_ref()
+                .expect("FnValue mutant should have a function");
+            v.push(s(&function.function_name).bright().magenta());
+            if !function.return_type.is_empty() {
+                v.push(s(" "));
+                v.push(s(&function.return_type).magenta());
             }
             v.push(s(" with "));
             v.push(s(self.replacement_text()).yellow());
+        } else {
+            v.push(s(self.original_text()).yellow());
+            v.push(s(" with "));
+            v.push(s(&self.replacement).bright().yellow());
+            if let Some(function) = &self.function {
+                v.push(s(" in "));
+                v.push(s(&function.function_name).bright().magenta());
+            }
         }
         v
     }

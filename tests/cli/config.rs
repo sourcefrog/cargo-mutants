@@ -148,6 +148,7 @@ fn exclude_file_argument_overrides_config() {
             src/empty_fns.rs
             src/methods.rs
             src/result.rs
+            src/traits.rs
         " }));
 }
 

@@ -16,4 +16,5 @@ src/simple_fns.rs
 src/slices.rs
 src/static_item.rs
 src/struct_with_lifetime.rs
+src/traits.rs
 
