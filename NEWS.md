@@ -4,7 +4,7 @@
 
 A big internal refactor to allow mutations smaller than a whole function. Only one pattern is added in this release, mutation of `==` operators, but many more are possible.
 
-- New: Mutate `==` to `!=` and vice versa.
+- New: Mutate `==` to `!=` and vice versa; and `&&` to `||` and vice versa.
 
 - Changed: Include column numbers in text listings of mutants and output to disambiguate smaller-than-function mutants, for example if there are several operators that can be changed on one line. This also applies to the names used for regex matching, so may break some regexps that match the entire line (sorry). The new option `--line-col=false` turns them both off in `--list` output.
 

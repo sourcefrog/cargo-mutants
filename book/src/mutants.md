@@ -62,8 +62,10 @@ like `a == 0`.
 
 | Operator | Replacements | Description |
 | -------- | ------------ | ----------- |
-| `==` | `!=` | Equality |
-| `!=` | `==` | Equality |
+| `==`     | `!=` |  |
+| `!=`     | `==` |  |
+| `&&`     | `\|\|` |                     |
+| `\|\|`     | `&&` |                     |
 
 Equality operators are not currently replaced with comparisons like `<` or `<=`
 because they are

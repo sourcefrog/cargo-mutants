@@ -374,6 +374,8 @@ fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
         // wrong with unsigned types compared to 0.
         BinOp::Eq(_) => vec![quote! { != }],
         BinOp::Ne(_) => vec![quote! { == }],
+        BinOp::And(_) => vec![quote! { || }],
+        BinOp::Or(_) => vec![quote! { && }],
         _ => Vec::new(),
     }
 }
