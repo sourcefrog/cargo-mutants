@@ -446,6 +446,8 @@ src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn with ()
+src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
+src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl with ()
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl
@@ -454,8 +456,6 @@ src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_mod with
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_expr_binary with ()
 src/visit.rs: replace function_body_span -> Option<Span> with None
 src/visit.rs: replace function_body_span -> Option<Span> with Some(Default::default())
-src/visit.rs: replace binary_operator_replacements -> Vec<TokenStream> with vec![]
-src/visit.rs: replace binary_operator_replacements -> Vec<TokenStream> with vec![Default::default()]
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(None)
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(Some(Default::default()))
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))

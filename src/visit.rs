@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use itertools::Itertools;
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::Ident;
 use quote::quote;
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
@@ -336,7 +336,16 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        let mut new_mutants = binary_operator_replacements(i.op)
+        let replacements = match i.op {
+            // We don't generate `<=` from `==` because it can too easily go
+            // wrong with unsigned types compared to 0.
+            BinOp::Eq(_) => vec![quote! { != }],
+            BinOp::Ne(_) => vec![quote! { == }],
+            BinOp::And(_) => vec![quote! { || }],
+            BinOp::Or(_) => vec![quote! { && }],
+            _ => Vec::new(),
+        };
+        let mut new_mutants = replacements
             .into_iter()
             .map(|rep| Mutant {
                 source_file: Arc::clone(&self.source_file),
@@ -366,18 +375,6 @@ fn function_body_span(block: &Block) -> Option<Span> {
         start: start.into(),
         end: end.into(),
     })
-}
-
-fn binary_operator_replacements(op: syn::BinOp) -> Vec<TokenStream> {
-    match op {
-        // We don't generate `<=` from `==` because it can too easily go
-        // wrong with unsigned types compared to 0.
-        BinOp::Eq(_) => vec![quote! { != }],
-        BinOp::Ne(_) => vec![quote! { == }],
-        BinOp::And(_) => vec![quote! { || }],
-        BinOp::Or(_) => vec![quote! { && }],
-        _ => Vec::new(),
-    }
 }
 
 /// Find a new source file referenced by a `mod` statement.
