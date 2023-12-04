@@ -2,7 +2,7 @@
 
 ## 23.12.0
 
-A big internal refactor to allow mutations smaller than a whole function. Only one pattern is added in this release, mutation of `==` operators, but many more are possible.
+An exciting step forward: cargo-mutants can now generate mutations smaller than a whole function. To start with, several binary operators are mutated.
 
 - New: Mutate `==` to `!=` and vice versa.
 
