@@ -47,7 +47,7 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
-  incremental-mutants:
+  pr-mutants:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
