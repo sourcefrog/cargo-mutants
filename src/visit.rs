@@ -339,10 +339,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         let replacements = match i.op {
             // We don't generate `<=` from `==` because it can too easily go
             // wrong with unsigned types compared to 0.
+
+            // We try replacing logical ops with == and !=, which are effectively
+            // XNOR and XOR when applied to booleans. However, they're often unviable
+            // because they require parenthesis for disambiguation in many expressions.
             BinOp::Eq(_) => vec![quote! { != }],
             BinOp::Ne(_) => vec![quote! { == }],
-            BinOp::And(_) => vec![quote! { || }],
-            BinOp::Or(_) => vec![quote! { && }],
+            BinOp::And(_) => vec![quote! { || }, quote! {==}, quote! {!=}],
+            BinOp::Or(_) => vec![quote! { && }, quote! {==}, quote! {!=}],
             _ => Vec::new(),
         };
         let mut new_mutants = replacements
