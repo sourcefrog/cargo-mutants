@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## 23.11.2
+## Unreleased
 
 A big internal refactor to allow mutations smaller than a whole function. Only one pattern is added in this release, mutation of `==` operators, but many more are possible.
 
