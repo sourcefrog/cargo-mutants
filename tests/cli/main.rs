@@ -657,15 +657,17 @@ fn integration_test_source_is_not_mutated() {
     check_text_list_output(tmp_src_dir.path(), "integration_test_source_is_not_mutated");
 }
 #[test]
-fn error_when_no_mutants_found() {
+fn warning_when_no_mutants_found() {
     let tmp_src_dir = copy_of_testdata("everything_skipped");
     run()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
         .assert()
-        .stderr(predicate::str::contains("Error: No mutants found"))
+        .stderr(predicate::str::contains(
+            "No mutants found under the active filters",
+        ))
         .stdout(predicate::str::contains("Found 0 mutants to test"))
-        .failure();
+        .success(); // It's arguable, but better if CI doesn't fail in this case.
 }
 
 #[test]

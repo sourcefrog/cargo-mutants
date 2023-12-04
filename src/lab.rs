@@ -7,7 +7,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use itertools::Itertools;
 use tracing::warn;
 #[allow(unused)]
@@ -21,6 +21,9 @@ use crate::package::Package;
 use crate::*;
 
 /// Run all possible mutation experiments.
+///
+/// This is called after all filtering is complete, so all the mutants here will be tested
+/// or checked.
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
@@ -43,7 +46,10 @@ pub fn test_mutants(
     }
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
-    ensure!(!mutants.is_empty(), "No mutants found");
+    if mutants.is_empty() {
+        warn!("No mutants found under the active filters");
+        return Ok(LabOutcome::default());
+    }
     let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
     debug!(?all_packages);
 

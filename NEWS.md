@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Changed: If no mutants are generated then `cargo mutants` now exits successfully, showing a warning. (Previously it would exit with an error.) This works better with `--in-diff` in CI, where it's normal that some changes may not have any mutants.
+
 ## 23.11.2
 
 - Changed: If `--file` or `--exclude` are set on the command line, then they replace the corresponding config file options. Similarly, if `--re` is given then the `examine_re` config key is ignored, and if `--exclude-re` is given then `exclude_regex` is ignored. (Previously the values were combined.) This makes it easier to use the command line to test files or mutants that are normally not tested.
