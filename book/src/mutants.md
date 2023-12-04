@@ -60,11 +60,16 @@ although they can be shown with `--unviable`.
 Binary operators are replaced with other binary operators in expressions
 like `a == 0`.
 
-| Operator | Replacements | Description |
-| -------- | ------------ | ----------- |
-| `==` | `!=` | Equality |
-| `!=` | `==` | Equality |
+| Operator | Replacements       |
+| -------- | ------------------ |
+| `==`     | `!=`               |
+| `!=`     | `==`               |
+| `&&`     | `\|\|`, `==`, `!=` |
+| `\|\|`   | `&&`, `==`, `!=`   |
 
 Equality operators are not currently replaced with comparisons like `<` or `<=`
 because they are
 too prone to generate false positives, for example when unsigned integers are compared to 0.
+
+Logical `&&` and `||` are replaced with `==` and `!=` which function as XNOR and XOR respectively,
+although they are fairly often unviable due to needing parenthesis when the original operator does not.
