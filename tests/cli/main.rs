@@ -506,7 +506,7 @@ fn small_well_tested_tree_is_clean() {
     let log_content = fs::read_to_string(
         tmp_src_dir
             .path()
-            .join("mutants.out/log/src__lib.rs_line_5.log"),
+            .join("mutants.out/log/src__lib.rs_line_5_col_5.log"),
     )
     .unwrap()
     .replace('\r', "");

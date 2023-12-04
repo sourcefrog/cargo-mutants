@@ -191,11 +191,14 @@ impl Mutant {
             .with_context(|| format!("failed to write mutated code to {path:?}"))
     }
 
+    /// Return a string describing this mutant that's suitable for building a log file name,
+    /// but can contain slashes.
     pub fn log_file_name_base(&self) -> String {
         format!(
-            "{}_line_{}",
-            self.source_file.tree_relative_slashes(),
-            self.span.start.line,
+            "{filename}_line_{line}_col_{col}",
+            filename = self.source_file.tree_relative_slashes(),
+            line = self.span.start.line,
+            col = self.span.start.column,
         )
     }
 }
