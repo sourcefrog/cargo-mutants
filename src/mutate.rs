@@ -311,7 +311,11 @@ mod test {
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
-            @"replace controlled_loop with ()"
+            @r###"
+        replace controlled_loop with ()
+        replace > with == in controlled_loop
+        replace > with < in controlled_loop
+        "###
         );
     }
 

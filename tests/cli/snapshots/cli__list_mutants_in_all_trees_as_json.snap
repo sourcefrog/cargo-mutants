@@ -904,6 +904,66 @@ expression: buf
         "line": 15
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 25
+        },
+        "start": {
+          "column": 1,
+          "line": 14
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-hang-avoided-by-attr",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 21
+      },
+      "start": {
+        "column": 28,
+        "line": 21
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 25
+        },
+        "start": {
+          "column": 1,
+          "line": 14
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-hang-avoided-by-attr",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 21
+      },
+      "start": {
+        "column": 28,
+        "line": 21
+      }
+    }
   }
 ]
 ```
@@ -1029,6 +1089,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 26
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 38
+        },
+        "start": {
+          "column": 1,
+          "line": 20
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-hang-when-mutated",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 33
+      },
+      "start": {
+        "column": 28,
+        "line": 33
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "controlled_loop",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 38
+        },
+        "start": {
+          "column": 1,
+          "line": 20
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-hang-when-mutated",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 33
+      },
+      "start": {
+        "column": 28,
+        "line": 33
       }
     }
   }
@@ -1817,6 +1937,66 @@ expression: buf
       },
       "start": {
         "column": 5,
+        "line": 6
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "double_factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-relative-dependency",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 6
+      },
+      "start": {
+        "column": 10,
+        "line": 6
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "double_factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-relative-dependency",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 6
+      },
+      "start": {
+        "column": 10,
         "line": 6
       }
     }
@@ -3116,6 +3296,66 @@ expression: buf
   {
     "file": "src/result.rs",
     "function": {
+      "function_name": "error_if_negative",
+      "return_type": "-> Result<(), ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 10
+      },
+      "start": {
+        "column": 10,
+        "line": 10
+      }
+    }
+  },
+  {
+    "file": "src/result.rs",
+    "function": {
+      "function_name": "error_if_negative",
+      "return_type": "-> Result<(), ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 10
+      },
+      "start": {
+        "column": 10,
+        "line": 10
+      }
+    }
+  },
+  {
+    "file": "src/result.rs",
+    "function": {
       "function_name": "result_with_no_apparent_type_args",
       "return_type": "-> std::fmt::Result",
       "span": {
@@ -3620,6 +3860,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 4
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 5
+      },
+      "start": {
+        "column": 20,
+        "line": 5
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 5
+      },
+      "start": {
+        "column": 20,
+        "line": 5
       }
     }
   },

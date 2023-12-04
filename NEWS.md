@@ -8,6 +8,8 @@ A big internal refactor to allow mutations smaller than a whole function. Only o
 
 - New: Mutate `&&` to `||` and vice versa, and mutate both of them to `==` and `!=`.
 
+- New: Mutate `<`, `<=`, `>`, `>=`.
+
 - Changed: If no mutants are generated then `cargo mutants` now exits successfully, showing a warning. (Previously it would exit with an error.) This works better with `--in-diff` in CI, where it's normal that some changes may not have any mutants.
 
 - Changed: Include column numbers in text listings of mutants and output to disambiguate smaller-than-function mutants, for example if there are several operators that can be changed on one line. This also applies to the names used for regex matching, so may break some regexps that match the entire line (sorry). The new option `--line-col=false` turns them both off in `--list` output.

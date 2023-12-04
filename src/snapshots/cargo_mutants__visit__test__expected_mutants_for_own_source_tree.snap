@@ -78,6 +78,18 @@ src/console.rs: replace <impl Write for DebugLogWriter>::flush -> io::Result<()>
 src/console.rs: replace <impl Write for DebugLogWriter>::flush -> io::Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/console.rs: replace <impl Model for LabModel>::render -> String with String::new()
 src/console.rs: replace <impl Model for LabModel>::render -> String with "xyzzy".into()
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace LabModel::find_scenario_mut -> &mut ScenarioModel with Box::leak(Box::new(Default::default()))
 src/console.rs: replace == with != in LabModel::find_scenario_mut
 src/console.rs: replace LabModel::remove_scenario with ()
@@ -180,9 +192,15 @@ src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![0]
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![1]
+src/in_diff.rs: replace < with == in affected_lines
+src/in_diff.rs: replace < with > in affected_lines
 src/in_diff.rs: replace && with || in affected_lines
 src/in_diff.rs: replace && with == in affected_lines
 src/in_diff.rs: replace && with != in affected_lines
+src/in_diff.rs: replace > with == in affected_lines
+src/in_diff.rs: replace > with < in affected_lines
+src/in_diff.rs: replace < with == in affected_lines
+src/in_diff.rs: replace < with > in affected_lines
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "xyzzy")]
@@ -307,8 +325,24 @@ src/outcome.rs: replace LabOutcome::exit_code -> i32 with -1
 src/outcome.rs: replace && with || in LabOutcome::exit_code
 src/outcome.rs: replace && with == in LabOutcome::exit_code
 src/outcome.rs: replace && with != in LabOutcome::exit_code
+src/outcome.rs: replace > with == in LabOutcome::exit_code
+src/outcome.rs: replace > with < in LabOutcome::exit_code
+src/outcome.rs: replace > with == in LabOutcome::exit_code
+src/outcome.rs: replace > with < in LabOutcome::exit_code
 src/outcome.rs: replace LabOutcome::summary_string -> String with String::new()
 src/outcome.rs: replace LabOutcome::summary_string -> String with "xyzzy".into()
+src/outcome.rs: replace > with == in LabOutcome::summary_string
+src/outcome.rs: replace > with < in LabOutcome::summary_string
+src/outcome.rs: replace > with == in LabOutcome::summary_string
+src/outcome.rs: replace > with < in LabOutcome::summary_string
+src/outcome.rs: replace > with == in LabOutcome::summary_string
+src/outcome.rs: replace > with < in LabOutcome::summary_string
+src/outcome.rs: replace > with == in LabOutcome::summary_string
+src/outcome.rs: replace > with < in LabOutcome::summary_string
+src/outcome.rs: replace > with == in LabOutcome::summary_string
+src/outcome.rs: replace > with < in LabOutcome::summary_string
+src/outcome.rs: replace > with == in LabOutcome::summary_string
+src/outcome.rs: replace > with < in LabOutcome::summary_string
 src/outcome.rs: replace <impl Serialize for ScenarioOutcome>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
 src/outcome.rs: replace <impl Serialize for ScenarioOutcome>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
 src/outcome.rs: replace ScenarioOutcome::add_phase_result with ()
@@ -379,6 +413,8 @@ src/path.rs: replace ascent -> isize with 1
 src/path.rs: replace ascent -> isize with -1
 src/path.rs: replace == with != in ascent
 src/path.rs: replace != with == in ascent
+src/path.rs: replace > with == in ascent
+src/path.rs: replace > with < in ascent
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with String::new()
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with "xyzzy".into()
 src/path.rs: replace || with && in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
@@ -446,19 +482,29 @@ src/span.rs: replace && with || in Span::extract
 src/span.rs: replace && with == in Span::extract
 src/span.rs: replace && with != in Span::extract
 src/span.rs: replace == with != in Span::extract
+src/span.rs: replace >= with < in Span::extract
+src/span.rs: replace > with == in Span::extract
+src/span.rs: replace > with < in Span::extract
 src/span.rs: replace || with && in Span::extract
 src/span.rs: replace || with == in Span::extract
 src/span.rs: replace || with != in Span::extract
+src/span.rs: replace < with == in Span::extract
+src/span.rs: replace < with > in Span::extract
 src/span.rs: replace && with || in Span::extract
 src/span.rs: replace && with == in Span::extract
 src/span.rs: replace && with != in Span::extract
 src/span.rs: replace == with != in Span::extract
+src/span.rs: replace < with == in Span::extract
+src/span.rs: replace < with > in Span::extract
 src/span.rs: replace == with != in Span::extract
+src/span.rs: replace > with == in Span::extract
+src/span.rs: replace > with < in Span::extract
 src/span.rs: replace == with != in Span::extract
 src/span.rs: replace && with || in Span::extract
 src/span.rs: replace && with == in Span::extract
 src/span.rs: replace && with != in Span::extract
 src/span.rs: replace == with != in Span::extract
+src/span.rs: replace >= with < in Span::extract
 src/span.rs: replace Span::replace -> String with String::new()
 src/span.rs: replace Span::replace -> String with "xyzzy".into()
 src/span.rs: replace && with || in Span::replace
@@ -475,14 +521,21 @@ src/span.rs: replace || with != in Span::replace
 src/span.rs: replace || with && in Span::replace
 src/span.rs: replace || with == in Span::replace
 src/span.rs: replace || with != in Span::replace
+src/span.rs: replace < with == in Span::replace
+src/span.rs: replace < with > in Span::replace
+src/span.rs: replace > with == in Span::replace
+src/span.rs: replace > with < in Span::replace
 src/span.rs: replace && with || in Span::replace
 src/span.rs: replace && with == in Span::replace
 src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
+src/span.rs: replace < with == in Span::replace
+src/span.rs: replace < with > in Span::replace
 src/span.rs: replace && with || in Span::replace
 src/span.rs: replace && with == in Span::replace
 src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
+src/span.rs: replace >= with < in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace && with || in Span::replace

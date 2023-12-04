@@ -2,7 +2,7 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 46 mutants to test
+Found 50 mutants to test
 Unmutated baseline ... ok
 src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(String::new()) ... caught
 src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into()) ... caught
@@ -24,6 +24,8 @@ src/numbers.rs:6:7: replace == with != in is_double ... caught
 src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("") ... caught
 src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy") ... caught
 src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(()) ... caught
+src/result.rs:10:10: replace < with == in error_if_negative ... caught
+src/result.rs:10:10: replace < with > in error_if_negative ... caught
 src/result.rs:18:5: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default()) ... caught
 src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::new() ... caught
 src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()]) ... caught
@@ -41,6 +43,8 @@ src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow
 src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("".to_owned())]) ... caught
 src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed("xyzzy")]) ... caught
 src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())]) ... caught
+src/slices.rs:5:20: replace < with == in pad ... caught
+src/slices.rs:5:20: replace < with > in pad ... caught
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new()) ... caught
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0]) ... caught
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1]) ... caught
@@ -50,5 +54,5 @@ src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 1 ...
 src/traits.rs:5:9: replace Something::is_three -> bool with true ... caught
 src/traits.rs:5:9: replace Something::is_three -> bool with false ... caught
 src/traits.rs:5:11: replace == with != in Something::is_three ... caught
-46 mutants tested: 46 caught
+50 mutants tested: 50 caught
 

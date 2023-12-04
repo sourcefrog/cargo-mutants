@@ -346,6 +346,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Ne(_) => vec![quote! { == }],
             BinOp::And(_) => vec![quote! { || }, quote! {==}, quote! {!=}],
             BinOp::Or(_) => vec![quote! { && }, quote! {==}, quote! {!=}],
+            BinOp::Lt(_) => vec![quote! { == }, quote! {>}],
+            BinOp::Gt(_) => vec![quote! { == }, quote! {<}],
+            BinOp::Le(_) => vec![quote! {>}],
+            BinOp::Ge(_) => vec![quote! {<}],
             _ => Vec::new(),
         };
         let mut new_mutants = replacements

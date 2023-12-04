@@ -2,8 +2,10 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 1 mutant to test
+Found 3 mutants to test
 Unmutated baseline ... ok
 src/lib.rs:15:5: replace controlled_loop with () ... ok
-1 mutant tested: 1 succeeded
+src/lib.rs:21:28: replace > with == in controlled_loop ... ok
+src/lib.rs:21:28: replace > with < in controlled_loop ... ok
+3 mutants tested: 3 succeeded
 
