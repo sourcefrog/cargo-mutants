@@ -46,7 +46,6 @@ pub fn walk_tree(
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
-    // TODO: Lift up parsing the error expressions...
     let error_exprs = options
         .error_values
         .iter()

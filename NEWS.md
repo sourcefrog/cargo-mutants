@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Changed: If no mutants are generated then `cargo mutants` now exits successfully, showing a warning. (Previously it would exit with an error.) This works better with `--in-diff` in CI, where it's normal that some changes may not have any mutants.
+
 ## 23.11.2
 
 A big internal refactor to allow mutations smaller than a whole function. Only one pattern is added in this release, mutation of `==` operators, but many more are possible.
