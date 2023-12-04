@@ -40,6 +40,21 @@ cargo-mutants does not yet understand conditional compilation, such as
 `#[cfg(target_os = "linux")]`. It will report functions for other platforms as
 missed, when it should know to skip them.
 
+### Support for other build tools
+
+cargo-mutants currently only works with Cargo, but could in principle be extended to work with other build tools such as Bazel.
+
+cargo-mutants contains two main categories of code, which are mostly independent:
+
+1. Code for reading Rust source code, parsing it, and mutating it: this is not
+   specific to Cargo.
+
+2. Code for finding the modules to mutate and their source files, finding the tree to copy, adjusting paths after it is copied, and finally running builds and tests. This is very Cargo-specific, but should not be too hard to generalize.
+
+The main precondition for supporting Bazel is a realistc test case: preferably an open source Rust tree built with Bazel, or at least a contributor with a Bazel-based Rust tree who is willing to help test and debug and to produce some test cases.
+
+(See <https://github.com/sourcefrog/cargo-mutants/issues/77> for more discussion.)
+
 ## Caution on side effects
 
 cargo-mutants builds and runs code with machine-generated modifications. This is
