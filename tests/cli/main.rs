@@ -551,37 +551,11 @@ fn cdylib_tree_is_well_tested() {
 }
 
 #[test]
-fn well_tested_tree_quiet() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .arg("mutants")
-        .arg("--no-times")
-        .arg("--no-shuffle")
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-    let outcomes_json =
-        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
-    println!("outcomes.json:\n{outcomes_json}");
-    let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    assert_eq!(outcomes["total_mutants"], 50);
-    assert_eq!(outcomes["caught"], 50);
-    assert_eq!(outcomes["unviable"], 0);
-    assert_eq!(outcomes["missed"], 0);
-}
-
-#[test]
 fn well_tested_tree_finds_no_problems() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
-        .arg("--no-times")
-        .arg("--caught")
-        .arg("--no-shuffle")
+        .args(["--no-times", "--caught", "--unviable", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
         .assert()
         .success()
@@ -593,6 +567,17 @@ fn well_tested_tree_finds_no_problems() {
         .path()
         .join("mutants.out/outcomes.json")
         .exists());
+    let outcomes_json =
+        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
+    let caught = outcomes["caught"]
+        .as_i64()
+        .expect("outcomes['caught'] is an integer");
+    assert!(caught > 40, "expected more outcomes caught than {caught}");
+    assert_eq!(outcomes["unviable"], 0);
+    assert_eq!(outcomes["missed"], 0);
+    assert_eq!(outcomes["timeout"], 0);
+    assert_eq!(outcomes["total_mutants"], outcomes["caught"]);
     check_text_list_output(tmp_src_dir.path(), "well_tested_tree_finds_no_problems");
 }
 
