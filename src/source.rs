@@ -29,6 +29,10 @@ pub struct SourceFile {
 
     /// Full copy of the source.
     pub code: String,
+
+    /// True if this is the top source file for its target: typically but
+    /// not always `lib.rs` or `main.rs`.
+    pub is_top: bool,
 }
 
 impl SourceFile {
@@ -39,6 +43,7 @@ impl SourceFile {
         tree_path: &Utf8Path,
         tree_relative_path: Utf8PathBuf,
         package: &Arc<Package>,
+        is_top: bool,
     ) -> Result<SourceFile> {
         let full_path = tree_path.join(&tree_relative_path);
         let code = std::fs::read_to_string(&full_path)
@@ -48,6 +53,7 @@ impl SourceFile {
             tree_relative_path,
             code,
             package: Arc::clone(package),
+            is_top,
         })
     }
 
@@ -87,6 +93,7 @@ mod test {
                 name: "imaginary-package".to_owned(),
                 relative_manifest_path: "whatever/Cargo.toml".into(),
             }),
+            true,
         )
         .unwrap();
         assert_eq!(source_file.code, "fn main() {\n    640 << 10;\n}\n");

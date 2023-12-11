@@ -69,6 +69,7 @@ pub fn walk_tree(
                     workspace_dir,
                     mod_path,
                     &source_file.package,
+                    false,
                 )?))
             }
         }
@@ -393,33 +394,34 @@ fn find_mod_source(
     parent: &SourceFile,
     mod_name: &str,
 ) -> Result<Option<Utf8PathBuf>> {
-    // Both the current module and the included sub-module can be in
-    // either style: `.../foo.rs` or `.../foo/mod.rs`.
+    // First, work out whether the mod will be a sibling in the same directory, or
+    // in a child directory.
     //
-    // If the current file ends with `/mod.rs`, then sub-modules
-    // will be in the same directory as this file. Otherwise, this is
-    // `/foo.rs` and sub-modules will be in `foo/`.
+    // 1. The parent is "src/foo.rs" and `mod bar` means "src/foo/bar.rs".
     //
-    // Having determined the directory then we can look for either
+    // 2. The parent is "src/lib.rs" (a target top file) and `mod bar` means "src/bar.rs".
+    //
+    // 3. The parent is "src/foo/mod.rs" and so `mod bar` means "src/foo/bar.rs".
+    //
+    // Having determined the right directory then we can look for either
     // `foo.rs` or `foo/mod.rs`.
+
+    // TODO: Beyond #115, we should probably remove all special handling of
+    // `mod.rs` here by remembering how we found this file, and whether it
+    // is above or inside the directory corresponding to its module?
+
     let parent_path = &parent.tree_relative_path;
-    // TODO: Maybe matching on the name here is not the right approach and
-    // we should instead remember how this file was found? This might go wrong
-    // with unusually-named files.
-    let dir = if parent_path.ends_with("mod.rs")
-        || parent_path.ends_with("lib.rs")
-        || parent_path.ends_with("main.rs")
-    {
+    let search_dir = if parent.is_top || parent_path.ends_with("mod.rs") {
         parent_path
             .parent()
             .expect("mod path has no parent")
-            .to_owned()
+            .to_owned() // src/lib.rs -> src/
     } else {
-        parent_path.with_extension("")
+        parent_path.with_extension("") // foo.rs -> foo/
     };
     let mut tried_paths = Vec::new();
     for &tail in &[".rs", "/mod.rs"] {
-        let relative_path = dir.join(mod_name.to_owned() + tail);
+        let relative_path = search_dir.join(mod_name.to_owned() + tail);
         let full_path = tree_root.join(&relative_path);
         if full_path.is_file() {
             trace!("found submodule in {full_path}");

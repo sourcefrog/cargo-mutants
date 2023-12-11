@@ -194,6 +194,7 @@ impl Workspace {
                     &self.dir,
                     source_path.to_owned(),
                     &package,
+                    true,
                 )?));
             }
         }

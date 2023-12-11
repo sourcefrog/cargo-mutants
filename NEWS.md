@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Fixed: Correctly traverse `mod` statements within package top source files that are not named `lib.rs` or `main.rs`.
+
 ## 23.12.0
 
 An exciting step forward: cargo-mutants can now generate mutations smaller than a whole function. To start with, several binary operators are mutated.
