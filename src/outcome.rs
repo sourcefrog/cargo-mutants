@@ -9,6 +9,7 @@ use std::time::Instant;
 
 use anyhow::Context;
 use serde::ser::SerializeStruct;
+use serde::Deserialize;
 use serde::Serialize;
 use serde::Serializer;
 
@@ -294,7 +295,7 @@ impl Serialize for PhaseResult {
 }
 
 /// Overall summary outcome for one mutant.
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Hash)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize, Hash)]
 pub enum SummaryOutcome {
     Success,
     CaughtMutant,

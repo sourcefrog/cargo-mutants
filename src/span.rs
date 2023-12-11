@@ -11,7 +11,7 @@ use std::fmt;
 use serde::Serialize;
 
 /// A (line, column) position in a source file.
-#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
 pub struct LineColumn {
     /// 1-based line number.
     pub line: usize,
@@ -36,7 +36,7 @@ impl fmt::Debug for LineColumn {
 }
 
 /// A contiguous text span in a file.
-#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
 pub struct Span {
     /// The *inclusive* position where the span starts.
     pub start: LineColumn,

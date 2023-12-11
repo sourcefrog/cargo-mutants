@@ -12,16 +12,19 @@ use anyhow::{Context, Result};
 use camino::Utf8Path;
 use fs2::FileExt;
 use path_slash::PathExt;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 use tracing::info;
 
+use crate::mutate::MutantHash;
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::*;
 
-const OUTDIR_NAME: &str = "mutants.out";
-const ROTATED_NAME: &str = "mutants.out.old";
+pub const OUTDIR_NAME: &str = "mutants.out";
+pub const ROTATED_NAME: &str = "mutants.out.old";
+pub const OUTCOMES_FILE: &str = "outcomes.json";
+pub const POSITIVE_OUTCOMES_FILE: &str = "positive_outcomes.json";
 const LOCK_JSON: &str = "lock.json";
 const LOCK_POLL: Duration = Duration::from_millis(100);
 
@@ -98,6 +101,7 @@ pub struct OutputDir {
     /// A file holding a list of mutants where testing timed out, as text, one per line.
     timeout_list: File,
     unviable_list: File,
+    last_positive_outcomes: Option<Vec<PositiveOutcome>>,
     /// The accumulated overall lab outcome.
     pub lab_outcome: LabOutcome,
 }
@@ -113,7 +117,10 @@ impl OutputDir {
     ///
     /// If the directory already exists and `lock.json` exists and is locked, this waits for
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
-    pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
+    pub fn new(
+        in_dir: &Utf8Path,
+        last_positive_outcomes: Option<Vec<PositiveOutcome>>,
+    ) -> Result<OutputDir> {
         if !in_dir.exists() {
             fs::create_dir(in_dir).context("create output parent directory {in_dir:?}")?;
         }
@@ -161,6 +168,7 @@ impl OutputDir {
             caught_list,
             timeout_list,
             unviable_list,
+            last_positive_outcomes,
         })
     }
 
@@ -178,21 +186,45 @@ impl OutputDir {
         &self.path
     }
 
+    /// Save positive outcomes for incremental runs
+    ///
+    /// Called multiple times as the lab runs.
+    pub fn maybe_write_positive_outcomes(&self) -> Result<()> {
+        if let Some(last_positive_outcomes) = &self.last_positive_outcomes {
+            let positive_outcomes = self
+                .lab_outcome
+                .outcomes
+                .iter()
+                .filter_map(|o: &ScenarioOutcome| PositiveOutcome::try_from(o).ok())
+                .chain(last_positive_outcomes.iter().cloned())
+                .collect::<Vec<PositiveOutcome>>();
+
+            serde_json::to_writer_pretty(
+                BufWriter::new(File::create(self.path.join(POSITIVE_OUTCOMES_FILE))?),
+                &positive_outcomes,
+            )
+            .context(format!("write {}", POSITIVE_OUTCOMES_FILE))
+        } else {
+            Ok(())
+        }
+    }
+
     /// Update the state of the overall lab.
     ///
     /// Called multiple times as the lab runs.
     pub fn write_lab_outcome(&self) -> Result<()> {
         serde_json::to_writer_pretty(
-            BufWriter::new(File::create(self.path.join("outcomes.json"))?),
+            BufWriter::new(File::create(self.path.join(OUTCOMES_FILE))?),
             &self.lab_outcome,
         )
-        .context("write outcomes.json")
+        .context(format!("write {}", OUTCOMES_FILE))
     }
 
     /// Add the result of testing one scenario.
     pub fn add_scenario_outcome(&mut self, scenario_outcome: &ScenarioOutcome) -> Result<()> {
         self.lab_outcome.add(scenario_outcome.to_owned());
         self.write_lab_outcome()?;
+        self.maybe_write_positive_outcomes()?;
         let scenario = &scenario_outcome.scenario;
         if let Scenario::Mutant(mutant) = scenario {
             let file = match scenario_outcome.summary() {
@@ -281,7 +313,7 @@ mod test {
         let tmp = minimal_source_tree();
         let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
         let workspace = Workspace::open(tmp_path).unwrap();
-        let output_dir = OutputDir::new(&workspace.dir).unwrap();
+        let output_dir = OutputDir::new(&workspace.dir, None).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
             &[
@@ -309,7 +341,7 @@ mod test {
         let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
-        let output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path, None).unwrap();
         output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
@@ -318,7 +350,7 @@ mod test {
         drop(output_dir); // release the lock.
 
         // The second time we create it in the same directory, the old one is moved away.
-        let output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path, None).unwrap();
         output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
@@ -331,7 +363,7 @@ mod test {
         drop(output_dir);
 
         // The third time (and later), the .old directory is removed.
-        let output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path, None).unwrap();
         output_dir.create_log(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
@@ -345,5 +377,49 @@ mod test {
             .path()
             .join("mutants.out.old/log/baseline.log")
             .is_file());
+    }
+}
+
+/// Caught and unviable scenario outcome
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+pub struct PositiveOutcome {
+    pub mutant_hash: MutantHash,
+    /// This is always `Unviable` or `Caught`, because other outcomes aren’t psotive outcomes
+    pub summary: SummaryOutcome,
+}
+
+impl PositiveOutcome {
+    fn new(mutant: &Mutant, summary: SummaryOutcome) -> Result<Self> {
+        match summary {
+            SummaryOutcome::CaughtMutant | SummaryOutcome::Unviable => Ok(Self {
+                mutant_hash: mutant.calculate_hash(),
+                summary,
+            }),
+            _ => Err(anyhow::anyhow!(
+                "outcome {:?} isn’t a positive outcome",
+                summary
+            )),
+        }
+    }
+
+    /// Gets the hash of the associated mutant
+    pub fn mutant_hash(&self) -> MutantHash {
+        self.mutant_hash
+    }
+}
+
+impl TryFrom<&ScenarioOutcome> for PositiveOutcome {
+    type Error = anyhow::Error;
+
+    fn try_from(scenario_outcome: &ScenarioOutcome) -> Result<Self> {
+        let mutant = match &scenario_outcome.scenario {
+            Scenario::Mutant(mutant) => mutant,
+            Scenario::Baseline => {
+                return Err(anyhow::anyhow!(
+                    "baseline can’t be converted to positive outcome"
+                ))
+            }
+        };
+        Self::new(mutant, scenario_outcome.summary())
     }
 }
