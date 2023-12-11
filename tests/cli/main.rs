@@ -5,7 +5,7 @@
 use std::borrow::Borrow;
 use std::env;
 use std::fmt::Write;
-use std::fs::{self, read_dir};
+use std::fs::{self, read_dir, read_to_string};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::thread::sleep;
@@ -1114,7 +1114,18 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         .stdout(contains(
             "replace controlled_loop -> usize with 0 ... caught",
         ));
-    // TODO: Inspect outcomes.json.
+    let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
+        .expect("read timeout.txt");
+    assert!(
+        timeout_txt.contains("replace should_stop"),
+        "expected text not found in:\n{timeout_txt}"
+    );
+    let outcomes_json: serde_json::Value =
+        read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json"))
+            .expect("read outcomes.json")
+            .parse()
+            .expect("parse outcomes.json");
+    assert_eq!(outcomes_json["timeout"], 1);
 }
 
 #[test]
