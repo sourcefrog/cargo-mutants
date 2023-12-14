@@ -172,6 +172,13 @@ impl<'o> DiscoveryVisitor<'o> {
         );
     }
 
+    // /// Record that we generated some mutants.
+    // fn record_mutant(&mut self, span: &Span, replacement: String, genre: Genre) {
+    //     self.mutants.push(Mutant {
+    //         source_file: self.source_file.clone(),
+    //         function: Some(Arc::clone(se
+    // }
+
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
         if let Some(function) = self.fn_stack.last() {
             let body_span = function_body_span(block).expect("Empty function body");
@@ -347,7 +354,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Gt(_) => vec![quote! { == }, quote! {<}],
             BinOp::Le(_) => vec![quote! {>}],
             BinOp::Ge(_) => vec![quote! {<}],
-            _ => Vec::new(),
+            _ => {
+                trace!(
+                    op = i.op.to_pretty_string(),
+                    "No mutants generated for this binary operator"
+                );
+                Vec::new()
+            }
         };
         let mut new_mutants = replacements
             .into_iter()
@@ -359,14 +372,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 genre: Genre::BinaryOperator,
             })
             .collect_vec();
-        if new_mutants.is_empty() {
-            debug!(
-                op = i.op.to_pretty_string(),
-                "No mutants generated for this binary operator"
-            );
-        } else {
-            self.mutants.append(&mut new_mutants);
-        }
+        self.mutants.append(&mut new_mutants);
         syn::visit::visit_expr_binary(self, i);
     }
 }
