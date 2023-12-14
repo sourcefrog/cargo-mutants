@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Print messages and progress bars on the terminal.
 
@@ -22,6 +22,8 @@ use crate::scenario::Scenario;
 use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
 
 static COPY_MESSAGE: &str = "Copy source to scratch directory";
+
+static SPINNER: &[char] = &['-', '/', '|', '\\'];
 
 /// An interface to the console for the rest of cargo-mutants.
 ///
@@ -356,6 +358,7 @@ struct LabModel {
     timeouts: usize,
     successes: usize,
     failures: usize,
+    spin: usize,
 }
 
 impl nutmeg::Model for LabModel {
@@ -383,12 +386,14 @@ impl nutmeg::Model for LabModel {
             };
             write!(
                 s,
-                "{}/{} mutants tested, {}% done",
+                "{} {}/{} mutants tested, {}% done",
+                SPINNER[self.spin],
                 style(self.mutants_done).cyan(),
                 style(self.n_mutants).cyan(),
                 style(percent).cyan(),
             )
             .unwrap();
+            self.spin = (self.spin + 1) % SPINNER.len();
             if self.mutants_missed > 0 {
                 write!(
                     s,
@@ -516,23 +521,22 @@ impl ScenarioModel {
 
 impl nutmeg::Model for ScenarioModel {
     fn render(&mut self, _width: usize) -> String {
-        let mut s = String::with_capacity(100);
-        write!(s, "{} ... ", self.name).unwrap();
-        let mut prs = self
+        let mut parts = Vec::new();
+        if let Some(phase) = self.phase {
+            parts.push(style(format!("{phase:10}")).bold().cyan().to_string());
+        }
+        parts.push(self.name.to_string());
+        parts.push("...".to_string());
+        parts.push(style_secs(self.phase_start.elapsed()).to_string());
+        let prs = self
             .previous_phase_durations
             .iter()
             .map(|(phase, duration)| format!("{} {}", style_secs(*duration), style(phase).dim()))
             .collect::<Vec<_>>();
-        if let Some(phase) = self.phase {
-            prs.push(format!(
-                "{} {}",
-                style_secs(self.phase_start.elapsed()),
-                style(phase).dim()
-            ));
-        }
-        write!(s, "{}", prs.join(" + ")).unwrap();
+        parts.push(prs.join(" + "));
+        let mut s = parts.join(" ");
         if let Ok(last_line) = last_line(&self.log_file) {
-            write!(s, "\n    {}", style(last_line).dim()).unwrap();
+            write!(s, "\n{}    {}", style("└").cyan(), style(last_line).dim()).unwrap();
         }
         s
     }
