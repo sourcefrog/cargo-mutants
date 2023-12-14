@@ -83,8 +83,8 @@ pub fn last_line(path: &Utf8Path) -> Result<String> {
 }
 
 fn clean_filename(s: &str) -> String {
-    let s = s.replace('/', "__");
-    s.chars()
+    s.replace('/', "__")
+        .chars()
         .map(|c| match c {
             '\\' | ' ' | ':' | '<' | '>' | '?' | '*' | '|' | '"' => '_',
             c => c,
