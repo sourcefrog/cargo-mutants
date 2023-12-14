@@ -102,9 +102,9 @@ impl Console {
         let mut s = String::with_capacity(100);
         write!(
             s,
-            "{} ... {}",
+            "{:10} {}",
+            style_outcome(outcome),
             style_scenario(scenario, true),
-            style_outcome(outcome)
         )
         .unwrap();
         if options.show_times {
