@@ -4,7 +4,6 @@
 
 use std::fmt;
 use std::io;
-use std::sync::Arc;
 
 use serde_json::{json, Value};
 
@@ -62,7 +61,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
 
 pub(crate) fn list_files<W: fmt::Write>(
     mut out: W,
-    source_files: &[Arc<SourceFile>],
+    source_files: &[SourceFile],
     options: &Options,
 ) -> Result<()> {
     if options.emit_json {

@@ -33,7 +33,7 @@ use crate::*;
 /// were visited but that produced no mutants.
 pub struct Discovered {
     pub mutants: Vec<Mutant>,
-    pub files: Vec<Arc<SourceFile>>,
+    pub files: Vec<SourceFile>,
 }
 
 /// Discover all mutants and all source files.
@@ -42,7 +42,7 @@ pub struct Discovered {
 ///
 pub fn walk_tree(
     workspace_dir: &Utf8Path,
-    top_source_files: &[Arc<SourceFile>],
+    top_source_files: &[SourceFile],
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
@@ -52,24 +52,24 @@ pub fn walk_tree(
         .map(|e| syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}")))
         .collect::<Result<Vec<Expr>>>()?;
     console.walk_tree_start();
-    let mut file_queue: VecDeque<Arc<SourceFile>> = top_source_files.iter().cloned().collect();
+    let mut file_queue: VecDeque<SourceFile> = top_source_files.iter().cloned().collect();
     let mut mutants = Vec::new();
-    let mut files: Vec<Arc<SourceFile>> = Vec::new();
+    let mut files: Vec<SourceFile> = Vec::new();
     while let Some(source_file) = file_queue.pop_front() {
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
-        let (mut file_mutants, external_mods) = walk_file(Arc::clone(&source_file), &error_exprs)?;
+        let (mut file_mutants, external_mods) = walk_file(&source_file, &error_exprs)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
         for mod_name in &external_mods {
             if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_name)? {
-                file_queue.push_back(Arc::new(SourceFile::new(
+                file_queue.push_back(SourceFile::new(
                     workspace_dir,
                     mod_path,
                     &source_file.package,
-                )?))
+                )?)
             }
         }
         let path = &source_file.tree_relative_path;
@@ -101,13 +101,10 @@ pub fn walk_tree(
 ///
 /// Returns the mutants found, and the names of modules referenced by `mod` statements
 /// that should be visited later.
-fn walk_file(
-    source_file: Arc<SourceFile>,
-    error_exprs: &[Expr],
-) -> Result<(Vec<Mutant>, Vec<String>)> {
+fn walk_file(source_file: &SourceFile, error_exprs: &[Expr]) -> Result<(Vec<Mutant>, Vec<String>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
-    let syn_file = syn::parse_str::<syn::File>(&source_file.code)
+    let syn_file = syn::parse_str::<syn::File>(source_file.code())
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
         error_exprs,
@@ -115,7 +112,7 @@ fn walk_file(
         mutants: Vec::new(),
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
-        source_file: Arc::clone(&source_file),
+        source_file: source_file.clone(),
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.external_mods))
@@ -131,7 +128,7 @@ struct DiscoveryVisitor<'o> {
     mutants: Vec<Mutant>,
 
     /// The file being visited.
-    source_file: Arc<SourceFile>,
+    source_file: SourceFile,
 
     /// The stack of namespaces we're currently inside.
     namespace_stack: Vec<String>,
@@ -180,7 +177,7 @@ impl<'o> DiscoveryVisitor<'o> {
             let body_span = function_body_span(block).expect("Empty function body");
             let mut new_mutants = return_type_replacements(&sig.output, self.error_exprs)
                 .map(|rep| Mutant {
-                    source_file: Arc::clone(&self.source_file),
+                    source_file: self.source_file.clone(),
                     function: Some(Arc::clone(function)),
                     span: body_span,
                     replacement: rep.to_pretty_string(),
@@ -355,7 +352,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         let mut new_mutants = replacements
             .into_iter()
             .map(|rep| Mutant {
-                source_file: Arc::clone(&self.source_file),
+                source_file: self.source_file.clone(),
                 function: self.fn_stack.last().map(Arc::clone),
                 replacement: rep.to_pretty_string(),
                 span: i.op.span().into(),
