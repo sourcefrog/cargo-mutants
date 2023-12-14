@@ -31,7 +31,7 @@ pub enum Genre {
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mutant {
     /// Which file is being mutated.
-    pub source_file: Arc<SourceFile>,
+    pub source_file: SourceFile,
 
     /// The function that's being mutated: the nearest enclosing function, if they are nested.
     ///
@@ -71,7 +71,7 @@ impl Mutant {
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         self.span.replace(
-            &self.source_file.code,
+            self.source_file.code(),
             &format!("{} {}", &self.replacement, MUTATION_MARKER_COMMENT),
         )
     }
@@ -143,7 +143,7 @@ impl Mutant {
     }
 
     pub fn original_text(&self) -> String {
-        self.span.extract(&self.source_file.code)
+        self.span.extract(self.source_file.code())
     }
 
     /// Return the text inserted for this mutation.
@@ -165,7 +165,7 @@ impl Mutant {
         let old_label = self.source_file.tree_relative_slashes();
         // There shouldn't be any newlines, but just in case...
         let new_label = self.describe_change().replace('\n', " ");
-        TextDiff::from_lines(&self.source_file.code, &self.mutated_code())
+        TextDiff::from_lines(self.source_file.code(), &self.mutated_code())
             .unified_diff()
             .context_radius(8)
             .header(&old_label, &new_label)
@@ -178,7 +178,7 @@ impl Mutant {
     }
 
     pub fn unapply(&self, build_dir: &mut BuildDir) -> Result<()> {
-        self.write_in_dir(build_dir, &self.source_file.code)
+        self.write_in_dir(build_dir, self.source_file.code())
     }
 
     #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]

@@ -466,6 +466,8 @@ src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".int
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::new()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with "xyzzy".into()
 src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
+src/source.rs: replace SourceFile::code -> &str with ""
+src/source.rs: replace SourceFile::code -> &str with "xyzzy"
 src/span.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
 src/span.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Ok(Default::default())
 src/span.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
@@ -645,9 +647,9 @@ src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> wit
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Ok(vec![Default::default()])
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace == with != in Workspace::package_tops
-src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
-src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
-src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<SourceFile>> with Ok(vec![])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<SourceFile>> with Ok(vec![Default::default()])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<SourceFile>> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Ok(Default::default())
 src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![])
