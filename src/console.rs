@@ -587,7 +587,7 @@ fn nutmeg_options() -> nutmeg::Options {
 pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
     match outcome.summary() {
         SummaryOutcome::CaughtMutant => style("caught").green(),
-        SummaryOutcome::MissedMutant => style("NOT CAUGHT").red().bold(),
+        SummaryOutcome::MissedMutant => style("MISSED").red().bold(),
         SummaryOutcome::Failure => style("FAILED").red().bold(),
         SummaryOutcome::Success => style("ok").green(),
         SummaryOutcome::Unviable => style("unviable").blue(),
