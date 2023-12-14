@@ -1,9 +1,9 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Manage per-scenario log files, which contain the output from cargo
 //! and test cases, mixed with commentary from cargo-mutants.
 
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
 
 use anyhow::Context;
@@ -67,21 +67,6 @@ impl LogFile {
     }
 }
 
-/// Return the last non-empty line from a file, if it has any content.
-pub fn last_line(path: &Utf8Path) -> Result<String> {
-    // This is somewhat inefficient: we could potentially remember how long
-    // the file was last time, seek to that point, and deal with incomplete
-    // lines. However, probably these files will never get so colossal that
-    // reading them is a big problem; they are almost certainly in cache;
-    // and this should only be called a few times per second...
-    Ok(fs::read_to_string(path)?
-        .lines()
-        .filter(|s| !s.trim().is_empty())
-        .last()
-        .unwrap_or_default()
-        .to_owned())
-}
-
 fn clean_filename(s: &str) -> String {
     let s = s.replace('/', "__");
     s.chars()
@@ -101,39 +86,6 @@ mod test {
         assert_eq!(
             clean_filename("1/2\\3:4<5>6?7*8|9\"0"),
             "1__2_3_4_5_6_7_8_9_0"
-        );
-    }
-
-    #[test]
-    fn last_line_of_file() {
-        let mut tempfile = tempfile::NamedTempFile::new().unwrap();
-        let path: Utf8PathBuf = tempfile.path().to_owned().try_into().unwrap();
-
-        assert_eq!(
-            last_line(&path).unwrap(),
-            "",
-            "empty file has an empty last line"
-        );
-
-        tempfile.write_all(b"hello").unwrap();
-        assert_eq!(
-            last_line(&path).unwrap(),
-            "hello",
-            "single line file with no terminator has that line as last line"
-        );
-
-        tempfile.write_all(b"\n\n\n").unwrap();
-        assert_eq!(
-            last_line(&path).unwrap(),
-            "hello",
-            "trailing blank lines are ignored"
-        );
-
-        tempfile.write_all(b"that's all folks!\n").unwrap();
-        assert_eq!(
-            last_line(&path).unwrap(),
-            "that's all folks!",
-            "newline terminated last line is returned"
         );
     }
 }

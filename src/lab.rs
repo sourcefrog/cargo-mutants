@@ -185,7 +185,7 @@ fn test_scenario(
         log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
         mutant.apply(build_dir)?;
     }
-    console.scenario_started(scenario, log_file.path());
+    console.scenario_started(scenario, log_file.path())?;
 
     let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
     let phases: &[Phase] = if options.check_only {
