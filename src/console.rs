@@ -370,6 +370,10 @@ impl nutmeg::Model for LabModel {
         if !s.is_empty() {
             s.push('\n')
         }
+        for sm in self.scenario_models.iter_mut() {
+            s.push_str(&sm.render(width));
+            s.push('\n');
+        }
         if let Some(lab_start_time) = self.lab_start_time {
             let elapsed = lab_start_time.elapsed();
             let percent = if self.n_mutants > 0 {
@@ -431,10 +435,6 @@ impl nutmeg::Model for LabModel {
                 .unwrap();
             }
             writeln!(s).unwrap();
-        }
-        for sm in self.scenario_models.iter_mut() {
-            s.push_str(&sm.render(width));
-            s.push('\n');
         }
         while s.ends_with('\n') {
             s.pop();
