@@ -21,8 +21,6 @@ use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
 
-static COPY_MESSAGE: &str = "Copy source to scratch directory";
-
 static SPINNER: &[char] = &['-', '/', '|', '\\'];
 
 /// An interface to the console for the rest of cargo-mutants.
@@ -569,10 +567,10 @@ impl CopyModel {
 impl nutmeg::Model for CopyModel {
     fn render(&mut self, _width: usize) -> String {
         format!(
-            "{} ... {} in {}",
-            COPY_MESSAGE,
+            "{:10} {} in {}",
+            style("copy").cyan(),
             style_mb(self.bytes_copied),
-            style_elapsed_secs(self.start),
+            style_secs(self.start.elapsed()),
         )
     }
 }
@@ -593,10 +591,6 @@ pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
         SummaryOutcome::Unviable => style("unviable").blue(),
         SummaryOutcome::Timeout => style("TIMEOUT").red().bold(),
     }
-}
-
-fn style_elapsed_secs(since: Instant) -> String {
-    style_secs(since.elapsed())
 }
 
 fn style_secs(duration: Duration) -> String {
