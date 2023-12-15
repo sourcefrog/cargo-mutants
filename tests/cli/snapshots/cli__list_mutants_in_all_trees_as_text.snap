@@ -234,13 +234,10 @@ src/lib.rs:6:5: replace try_value_coercion -> String with "xyzzy".into()
 
 ```
 src/a.rs:2:5: replace one -> i32 with 0
-src/a.rs:2:5: replace one -> i32 with 1
 src/a.rs:2:5: replace one -> i32 with -1
 src/b.rs:2:5: replace one_untested -> i32 with 0
-src/b.rs:2:5: replace one_untested -> i32 with 1
 src/b.rs:2:5: replace one_untested -> i32 with -1
 src/c.rs:2:5: replace one -> i32 with 0
-src/c.rs:2:5: replace one -> i32 with 1
 src/c.rs:2:5: replace one -> i32 with -1
 ```
 
