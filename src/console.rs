@@ -21,7 +21,10 @@ use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
 
-static SPINNER: &[char] = &['-', '/', '|', '\\'];
+// From <https://antofthy.gitlab.io/info/ascii/Spinners.txt>
+static SPINNER: &[char] = &[
+    '■', '◤', '◸', '◤', '■', '◥', '◹', '◥', '■', '◢', '◿', '◢', '■', '◣', '◺', '◣', 
+];
 
 /// An interface to the console for the rest of cargo-mutants.
 ///
