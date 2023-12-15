@@ -9,7 +9,8 @@ use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use camino::{Utf8Path, Utf8PathBuf};
+use anyhow::Context;
+use camino::Utf8Path;
 use console::{style, StyledObject};
 
 use nutmeg::Destination;
@@ -19,7 +20,8 @@ use tracing_subscriber::prelude::*;
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
-use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
+use crate::tail_file::TailFile;
+use crate::{Mutant, Options, Phase, Result, ScenarioOutcome};
 
 static COPY_MESSAGE: &str = "Copy source to scratch directory";
 
@@ -61,12 +63,13 @@ impl Console {
     }
 
     /// Update that a cargo task is starting.
-    pub fn scenario_started(&self, scenario: &Scenario, log_file: &Utf8Path) {
+    pub fn scenario_started(&self, scenario: &Scenario, log_file: &Utf8Path) -> Result<()> {
         let start = Instant::now();
-        let scenario_model = ScenarioModel::new(scenario, start, log_file.to_owned());
+        let scenario_model = ScenarioModel::new(scenario, start, log_file)?;
         self.view.update(|model| {
             model.scenario_models.push(scenario_model);
         });
+        Ok(())
     }
 
     /// Update that cargo finished.
@@ -486,19 +489,20 @@ struct ScenarioModel {
     phase: Option<Phase>,
     /// Previously-executed phases and durations.
     previous_phase_durations: Vec<(Phase, Duration)>,
-    log_file: Utf8PathBuf,
+    log_tail: TailFile,
 }
 
 impl ScenarioModel {
-    fn new(scenario: &Scenario, start: Instant, log_file: Utf8PathBuf) -> ScenarioModel {
-        ScenarioModel {
+    fn new(scenario: &Scenario, start: Instant, log_file: &Utf8Path) -> Result<ScenarioModel> {
+        let log_tail = TailFile::new(log_file).context("Failed to open log file")?;
+        Ok(ScenarioModel {
             scenario: scenario.clone(),
             name: style_scenario(scenario, true),
             phase: None,
             phase_start: start,
-            log_file,
+            log_tail,
             previous_phase_durations: Vec::new(),
-        }
+        })
     }
 
     fn phase_started(&mut self, phase: Phase) {
@@ -531,7 +535,7 @@ impl nutmeg::Model for ScenarioModel {
             ));
         }
         write!(s, "{}", prs.join(" + ")).unwrap();
-        if let Ok(last_line) = last_line(&self.log_file) {
+        if let Ok(last_line) = self.log_tail.last_line() {
             write!(s, "\n    {}", style(last_line).dim()).unwrap();
         }
         s
