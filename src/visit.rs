@@ -204,7 +204,7 @@ impl<'o> DiscoveryVisitor<'o> {
                     // The original block has braces and the replacements don't, so put
                     // them back for the comparison...
                     let new_block = quote!( { #rep } ).to_token_stream().to_pretty_string();
-                    dbg!(&orig_block, &new_block);
+                    // dbg!(&orig_block, &new_block);
                     if orig_block == new_block {
                         debug!("Replacement is the same as the function body; skipping");
                     } else {
