@@ -3,11 +3,11 @@ source: tests/cli/main.rs
 expression: stdout
 ---
 Found 9 mutants to test
-Unmutated baseline ... ok
-src/a.rs:2:5: replace one -> i32 with 1 ... NOT CAUGHT
-src/b.rs:2:5: replace one_untested -> i32 with 0 ... NOT CAUGHT
-src/b.rs:2:5: replace one_untested -> i32 with 1 ... NOT CAUGHT
-src/b.rs:2:5: replace one_untested -> i32 with -1 ... NOT CAUGHT
-src/c.rs:2:5: replace one -> i32 with 1 ... NOT CAUGHT
+ok         Unmutated baseline
+MISSED     src/a.rs:2:5: replace one -> i32 with 1
+MISSED     src/b.rs:2:5: replace one_untested -> i32 with 0
+MISSED     src/b.rs:2:5: replace one_untested -> i32 with 1
+MISSED     src/b.rs:2:5: replace one_untested -> i32 with -1
+MISSED     src/c.rs:2:5: replace one -> i32 with 1
 9 mutants tested: 5 missed, 4 caught
 

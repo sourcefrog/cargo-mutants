@@ -3,8 +3,8 @@ source: tests/cli/main.rs
 expression: stdout
 ---
 Found 2 mutants to test
-Unmutated baseline ... ok
-src/lib.rs:5:5: replace factorial -> u32 with 0 ... caught
-src/lib.rs:5:5: replace factorial -> u32 with 1 ... caught
+ok         Unmutated baseline
+caught     src/lib.rs:5:5: replace factorial -> u32 with 0
+caught     src/lib.rs:5:5: replace factorial -> u32 with 1
 2 mutants tested: 2 caught
 
