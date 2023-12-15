@@ -68,7 +68,6 @@ src/console.rs: replace <impl MakeWriter for TerminalWriter>::make_writer -> Sel
 src/console.rs: replace <impl Write for TerminalWriter>::write -> std::io::Result<usize> with Ok(0)
 src/console.rs: replace <impl Write for TerminalWriter>::write -> std::io::Result<usize> with Ok(1)
 src/console.rs: replace <impl Write for TerminalWriter>::write -> std::io::Result<usize> with Err(::anyhow::anyhow!("mutated!"))
-src/console.rs: replace <impl Write for TerminalWriter>::flush -> std::io::Result<()> with Ok(())
 src/console.rs: replace <impl Write for TerminalWriter>::flush -> std::io::Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/console.rs: replace <impl MakeWriter for DebugLogWriter>::make_writer -> Self::Writer with Default::default()
 src/console.rs: replace <impl Write for DebugLogWriter>::write -> io::Result<usize> with Ok(0)
@@ -572,6 +571,7 @@ src/visit.rs: replace DiscoveryVisitor<'o>::enter_function -> Arc<Function> with
 src/visit.rs: replace DiscoveryVisitor<'o>::leave_function with ()
 src/visit.rs: replace DiscoveryVisitor<'o>::collect_mutant with ()
 src/visit.rs: replace DiscoveryVisitor<'o>::collect_fn_mutants with ()
+src/visit.rs: replace == with != in DiscoveryVisitor<'o>::collect_fn_mutants
 src/visit.rs: replace DiscoveryVisitor<'o>::in_namespace -> T with Default::default()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn with ()
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn

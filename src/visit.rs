@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use proc_macro2::{Ident, TokenStream};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
@@ -193,9 +193,24 @@ impl<'o> DiscoveryVisitor<'o> {
                     "No mutants generated for this return type"
                 );
             } else {
-                repls.into_iter().for_each(|replacement| {
-                    self.collect_mutant(body_span, replacement, Genre::FnValue)
-                })
+                let orig_block = block.to_token_stream().to_pretty_string();
+                for rep in repls {
+                    // Comparing strings is a kludge for proc_macro2 not (yet) apparently
+                    // exposing any way to compare token streams...
+                    //
+                    // TODO: Maybe this should move into collect_mutant, but at the moment
+                    // FnValue is the only genre that seems able to generate no-ops.
+                    //
+                    // The original block has braces and the replacements don't, so put
+                    // them back for the comparison...
+                    let new_block = quote!( { #rep } ).to_token_stream().to_pretty_string();
+                    dbg!(&orig_block, &new_block);
+                    if orig_block == new_block {
+                        debug!("Replacement is the same as the function body; skipping");
+                    } else {
+                        self.collect_mutant(body_span, rep, Genre::FnValue);
+                    }
+                }
             }
         } else {
             warn!("collect_fn_mutants called while not in a function?");
@@ -368,11 +383,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
 // Get the span of the block excluding the braces, or None if it is empty.
 fn function_body_span(block: &Block) -> Option<Span> {
-    let start = block.stmts.first()?.span().start();
-    let end = block.stmts.last()?.span().end();
     Some(Span {
-        start: start.into(),
-        end: end.into(),
+        start: block.stmts.first()?.span().start().into(),
+        end: block.stmts.last()?.span().end().into(),
     })
 }
 
@@ -507,7 +520,37 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
+    use indoc::indoc;
+    use itertools::Itertools;
+
     use super::*;
+    use crate::package::Package;
+    use crate::source::SourceFile;
+
+    /// We should not generate mutants that produce the same tokens as the
+    /// source.
+    #[test]
+    fn no_mutants_equivalent_to_source() {
+        let code = indoc! { "
+            fn always_true() -> bool { true }
+        "};
+        let source_file = SourceFile {
+            code: Arc::new(code.to_owned()),
+            package: Arc::new(Package {
+                name: "unimportant".to_owned(),
+                relative_manifest_path: "Cargo.toml".into(),
+            }),
+            tree_relative_path: Utf8PathBuf::from("src/lib.rs"),
+        };
+        let (mutants, _files) = walk_file(&source_file, &[]).expect("walk_file");
+        let mutant_names = mutants.iter().map(|m| m.name(false, false)).collect_vec();
+        // It would be good to suggest replacing this with 'false', breaking a key behavior,
+        // but bad to replace it with 'true', changing nothing.
+        assert_eq!(
+            mutant_names,
+            ["src/lib.rs: replace always_true -> bool with false"]
+        );
+    }
 
     /// As a generic protection against regressions in discovery, the the mutants
     /// generated from `cargo-mutants` own tree against a checked-in list.

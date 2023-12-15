@@ -31,7 +31,7 @@ pub struct SourceFile {
     ///
     /// This is held in an [Arc] so that SourceFiles can be cloned without using excessive
     /// amounts of memory.
-    code: Arc<String>,
+    pub code: Arc<String>,
 }
 
 impl SourceFile {

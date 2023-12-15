@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Improved: Don't generate function mutants that have the same AST as the code they're replacing.
+
 ## 23.12.0
 
 An exciting step forward: cargo-mutants can now generate mutations smaller than a whole function. To start with, several binary operators are mutated.
