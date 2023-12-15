@@ -11,8 +11,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 
 use anyhow::Context;
-use itertools::Itertools;
-use proc_macro2::Ident;
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
@@ -172,33 +171,31 @@ impl<'o> DiscoveryVisitor<'o> {
         );
     }
 
-    // /// Record that we generated some mutants.
-    // fn record_mutant(&mut self, span: &Span, replacement: String, genre: Genre) {
-    //     self.mutants.push(Mutant {
-    //         source_file: self.source_file.clone(),
-    //         function: Some(Arc::clone(se
-    // }
+    /// Record that we generated some mutants.
+    fn collect_mutant(&mut self, span: Span, replacement: TokenStream, genre: Genre) {
+        self.mutants.push(Mutant {
+            source_file: self.source_file.clone(),
+            function: self.fn_stack.last().map(Arc::clone),
+            span,
+            replacement: replacement.to_pretty_string(),
+            genre,
+        })
+    }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
-        if let Some(function) = self.fn_stack.last() {
+        if let Some(function) = self.fn_stack.last().map(Arc::clone) {
             let body_span = function_body_span(block).expect("Empty function body");
-            let mut new_mutants = return_type_replacements(&sig.output, self.error_exprs)
-                .map(|rep| Mutant {
-                    source_file: self.source_file.clone(),
-                    function: Some(Arc::clone(function)),
-                    span: body_span,
-                    replacement: rep.to_pretty_string(),
-                    genre: Genre::FnValue,
-                })
-                .collect_vec();
-            if new_mutants.is_empty() {
+            let repls = return_type_replacements(&sig.output, self.error_exprs);
+            if repls.is_empty() {
                 debug!(
                     function_name = function.function_name,
                     return_type = function.return_type,
                     "No mutants generated for this return type"
                 );
             } else {
-                self.mutants.append(&mut new_mutants);
+                repls.into_iter().for_each(|replacement| {
+                    self.collect_mutant(body_span, replacement, Genre::FnValue)
+                })
             }
         } else {
             warn!("collect_fn_mutants called while not in a function?");
@@ -362,17 +359,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 Vec::new()
             }
         };
-        let mut new_mutants = replacements
+        replacements
             .into_iter()
-            .map(|rep| Mutant {
-                source_file: self.source_file.clone(),
-                function: self.fn_stack.last().map(Arc::clone),
-                replacement: rep.to_pretty_string(),
-                span: i.op.span().into(),
-                genre: Genre::BinaryOperator,
-            })
-            .collect_vec();
-        self.mutants.append(&mut new_mutants);
+            .for_each(|rep| self.collect_mutant(i.op.span().into(), rep, Genre::BinaryOperator));
         syn::visit::visit_expr_binary(self, i);
     }
 }
