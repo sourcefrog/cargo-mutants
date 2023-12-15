@@ -68,7 +68,6 @@ src/console.rs: replace <impl MakeWriter for TerminalWriter>::make_writer -> Sel
 src/console.rs: replace <impl Write for TerminalWriter>::write -> std::io::Result<usize> with Ok(0)
 src/console.rs: replace <impl Write for TerminalWriter>::write -> std::io::Result<usize> with Ok(1)
 src/console.rs: replace <impl Write for TerminalWriter>::write -> std::io::Result<usize> with Err(::anyhow::anyhow!("mutated!"))
-src/console.rs: replace <impl Write for TerminalWriter>::flush -> std::io::Result<()> with Ok(())
 src/console.rs: replace <impl Write for TerminalWriter>::flush -> std::io::Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/console.rs: replace <impl MakeWriter for DebugLogWriter>::make_writer -> Self::Writer with Default::default()
 src/console.rs: replace <impl Write for DebugLogWriter>::write -> io::Result<usize> with Ok(0)
@@ -140,8 +139,8 @@ src/copy_tree.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default(
 src/copy_tree.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Ok(())
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
-src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
-src/fnvalue.rs: replace return_type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
+src/fnvalue.rs: replace return_type_replacements -> Vec<TokenStream> with vec![]
+src/fnvalue.rs: replace return_type_replacements -> Vec<TokenStream> with vec![Default::default()]
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::once(Default::default())
 src/fnvalue.rs: replace path_ends_with -> bool with true
@@ -466,6 +465,8 @@ src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".int
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::new()
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with "xyzzy".into()
 src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
+src/source.rs: replace SourceFile::code -> &str with ""
+src/source.rs: replace SourceFile::code -> &str with "xyzzy"
 src/span.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
 src/span.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Ok(Default::default())
 src/span.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
@@ -568,7 +569,9 @@ src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((v
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace DiscoveryVisitor<'o>::enter_function -> Arc<Function> with Arc::new(Default::default())
 src/visit.rs: replace DiscoveryVisitor<'o>::leave_function with ()
+src/visit.rs: replace DiscoveryVisitor<'o>::collect_mutant with ()
 src/visit.rs: replace DiscoveryVisitor<'o>::collect_fn_mutants with ()
+src/visit.rs: replace == with != in DiscoveryVisitor<'o>::collect_fn_mutants
 src/visit.rs: replace DiscoveryVisitor<'o>::in_namespace -> T with Default::default()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn with ()
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
@@ -645,9 +648,9 @@ src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> wit
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Ok(vec![Default::default()])
 src/workspace.rs: replace Workspace::package_tops -> Result<Vec<PackageTop>> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace == with != in Workspace::package_tops
-src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![])
-src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Ok(vec![Arc::new(Default::default())])
-src/workspace.rs: replace Workspace::top_sources -> Result<Vec<Arc<SourceFile>>> with Err(::anyhow::anyhow!("mutated!"))
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<SourceFile>> with Ok(vec![])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<SourceFile>> with Ok(vec![Default::default()])
+src/workspace.rs: replace Workspace::top_sources -> Result<Vec<SourceFile>> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Ok(Default::default())
 src/workspace.rs: replace Workspace::discover -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/workspace.rs: replace Workspace::mutants -> Result<Vec<Mutant>> with Ok(vec![])

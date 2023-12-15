@@ -19,7 +19,7 @@ use crate::path::Utf8PathSlashes;
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SourceFile {
     /// Package within the workspace.
     pub package: Arc<Package>,
@@ -27,8 +27,11 @@ pub struct SourceFile {
     /// Path of this source file relative to workspace.
     pub tree_relative_path: Utf8PathBuf,
 
-    /// Full copy of the source.
-    pub code: String,
+    /// Full copy of the unmodified source.
+    ///
+    /// This is held in an [Arc] so that SourceFiles can be cloned without using excessive
+    /// amounts of memory.
+    pub code: Arc<String>,
 }
 
 impl SourceFile {
@@ -41,9 +44,11 @@ impl SourceFile {
         package: &Arc<Package>,
     ) -> Result<SourceFile> {
         let full_path = tree_path.join(&tree_relative_path);
-        let code = std::fs::read_to_string(&full_path)
-            .with_context(|| format!("failed to read source of {full_path:?}"))?
-            .replace("\r\n", "\n");
+        let code = Arc::new(
+            std::fs::read_to_string(&full_path)
+                .with_context(|| format!("failed to read source of {full_path:?}"))?
+                .replace("\r\n", "\n"),
+        );
         Ok(SourceFile {
             tree_relative_path,
             code,
@@ -58,6 +63,10 @@ impl SourceFile {
 
     pub fn path(&self) -> &Utf8Path {
         self.tree_relative_path.as_path()
+    }
+
+    pub fn code(&self) -> &str {
+        self.code.as_str()
     }
 }
 
@@ -89,6 +98,6 @@ mod test {
             }),
         )
         .unwrap();
-        assert_eq!(source_file.code, "fn main() {\n    640 << 10;\n}\n");
+        assert_eq!(source_file.code(), "fn main() {\n    640 << 10;\n}\n");
     }
 }

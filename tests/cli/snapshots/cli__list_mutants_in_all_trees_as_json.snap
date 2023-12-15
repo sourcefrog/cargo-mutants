@@ -2458,36 +2458,6 @@ expression: buf
     },
     "genre": "FnValue",
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "1",
-    "span": {
-      "end": {
-        "column": 6,
-        "line": 2
-      },
-      "start": {
-        "column": 5,
-        "line": 2
-      }
-    }
-  },
-  {
-    "file": "src/a.rs",
-    "function": {
-      "function_name": "one",
-      "return_type": "-> i32",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 3
-        },
-        "start": {
-          "column": 1,
-          "line": 1
-        }
-      }
-    },
-    "genre": "FnValue",
-    "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
     "span": {
       "end": {
@@ -2548,36 +2518,6 @@ expression: buf
     },
     "genre": "FnValue",
     "package": "cargo-mutants-testdata-unapply",
-    "replacement": "1",
-    "span": {
-      "end": {
-        "column": 6,
-        "line": 2
-      },
-      "start": {
-        "column": 5,
-        "line": 2
-      }
-    }
-  },
-  {
-    "file": "src/b.rs",
-    "function": {
-      "function_name": "one_untested",
-      "return_type": "-> i32",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 3
-        },
-        "start": {
-          "column": 1,
-          "line": 1
-        }
-      }
-    },
-    "genre": "FnValue",
-    "package": "cargo-mutants-testdata-unapply",
     "replacement": "-1",
     "span": {
       "end": {
@@ -2609,36 +2549,6 @@ expression: buf
     "genre": "FnValue",
     "package": "cargo-mutants-testdata-unapply",
     "replacement": "0",
-    "span": {
-      "end": {
-        "column": 6,
-        "line": 2
-      },
-      "start": {
-        "column": 5,
-        "line": 2
-      }
-    }
-  },
-  {
-    "file": "src/c.rs",
-    "function": {
-      "function_name": "one",
-      "return_type": "-> i32",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 3
-        },
-        "start": {
-          "column": 1,
-          "line": 1
-        }
-      }
-    },
-    "genre": "FnValue",
-    "package": "cargo-mutants-testdata-unapply",
-    "replacement": "1",
     "span": {
       "end": {
         "column": 6,
