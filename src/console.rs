@@ -23,7 +23,7 @@ use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
 
 // From <https://antofthy.gitlab.io/info/ascii/Spinners.txt>
 static SPINNER: &[char] = &[
-    '■', '◤', '◸', '◤', '■', '◥', '◹', '◥', '■', '◢', '◿', '◢', '■', '◣', '◺', '◣', 
+    '■', '◤', '◸', '◤', '■', '◥', '◹', '◥', '■', '◢', '◿', '◢', '■', '◣', '◺', '◣',
 ];
 
 /// An interface to the console for the rest of cargo-mutants.
@@ -537,7 +537,7 @@ impl nutmeg::Model for ScenarioModel {
         parts.push(prs.join(" + "));
         let mut s = parts.join(" ");
         if let Ok(last_line) = last_line(&self.log_file) {
-            write!(s, "\n{}    {}", style("└").cyan(), style(last_line).dim()).unwrap();
+            write!(s, "\n{:10} {}", style("└").cyan(), style(last_line).dim()).unwrap();
         }
         s
     }
