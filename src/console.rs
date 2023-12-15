@@ -529,12 +529,15 @@ impl nutmeg::Model for ScenarioModel {
         parts.push(self.name.to_string());
         parts.push("...".to_string());
         parts.push(style_secs(self.phase_start.elapsed()).to_string());
-        let prs = self
-            .previous_phase_durations
-            .iter()
-            .map(|(phase, duration)| format!("{} {}", style_secs(*duration), style(phase).dim()))
-            .collect::<Vec<_>>();
-        parts.push(prs.join(" + "));
+        // let mut prs = self
+        //     .previous_phase_durations
+        //     .iter()
+        //     .map(|(phase, duration)| format!("{} {}", style_secs(*duration), style(phase).dim()))
+        //     .collect::<Vec<_>>();
+        // if prs.len() > 1 {
+        //     prs.insert(0, String::new())
+        // }
+        // parts.push(prs.join(" + "));
         let mut s = parts.join(" ");
         if let Ok(last_line) = last_line(&self.log_file) {
             write!(s, "\n{:10} {}", style("└").cyan(), style(last_line).dim()).unwrap();
