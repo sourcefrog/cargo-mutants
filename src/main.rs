@@ -35,14 +35,9 @@ use std::fs::read_to_string;
 use std::io;
 use std::process::exit;
 
-use anyhow::ensure;
-use anyhow::Context;
-use anyhow::Result;
-use camino::Utf8Path;
-use camino::Utf8PathBuf;
-use clap::ArgAction;
-use clap::CommandFactory;
-use clap::Parser;
+use anyhow::{anyhow, ensure, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
+use clap::{ArgAction, CommandFactory, Parser};
 use clap_complete::{generate, Shell};
 use tracing::debug;
 
@@ -100,7 +95,7 @@ struct Args {
     diff: bool,
 
     /// rust crate directory to examine.
-    #[arg(long, short = 'd')]
+    #[arg(long, short = 'd', conflicts_with = "manifest_path")]
     dir: Option<Utf8PathBuf>,
 
     /// return this error values from functions returning Result:
@@ -259,11 +254,9 @@ fn main() -> Result<()> {
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
         ensure!(manifest_path.is_file(), "Manifest path is not a file");
-        ensure!(
-            args.dir.is_none(),
-            "--dir and --manifest-path are mutually exclusive"
-        );
-        manifest_path.parent().expect("Manifest path has no parent")
+        manifest_path
+            .parent()
+            .ok_or(anyhow!("Manifest path has no parent"))?
     } else if let Some(dir) = &args.dir {
         dir
     } else {
