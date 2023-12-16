@@ -87,6 +87,8 @@ src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace > with == in <impl Model for LabModel>::render
+src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace LabModel::find_scenario_mut -> &mut ScenarioModel with Box::leak(Box::new(Default::default()))
 src/console.rs: replace == with != in LabModel::find_scenario_mut
 src/console.rs: replace LabModel::remove_scenario with ()
@@ -111,10 +113,8 @@ src/console.rs: replace style_outcome -> StyledObject<&'static str> with StyledO
 src/console.rs: replace style_outcome -> StyledObject<&'static str> with StyledObject::from("xyzzy")
 src/console.rs: replace style_secs -> String with String::new()
 src/console.rs: replace style_secs -> String with "xyzzy".into()
-src/console.rs: replace style_minutes_seconds -> String with String::new()
-src/console.rs: replace style_minutes_seconds -> String with "xyzzy".into()
-src/console.rs: replace duration_minutes_seconds -> String with String::new()
-src/console.rs: replace duration_minutes_seconds -> String with "xyzzy".into()
+src/console.rs: replace style_duration -> String with String::new()
+src/console.rs: replace style_duration -> String with "xyzzy".into()
 src/console.rs: replace format_mb -> String with String::new()
 src/console.rs: replace format_mb -> String with "xyzzy".into()
 src/console.rs: replace style_mb -> StyledObject<String> with StyledObject::new()

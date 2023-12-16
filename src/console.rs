@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use console::{style, StyledObject};
-
+use humantime::format_duration;
 use nutmeg::Destination;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
@@ -134,7 +134,7 @@ impl Console {
     pub fn autoset_timeout(&self, timeout: Duration) {
         self.message(&format!(
             "Auto-set test timeout to {}\n",
-            style_secs(timeout)
+            style_duration(timeout)
         ));
     }
 
@@ -412,17 +412,18 @@ impl nutmeg::Model for LabModel {
             // if self.failures > 0 {
             //     write!(s, ", {} failures", self.failures).unwrap();
             // }
-            write!(s, ", {} elapsed", style_minutes_seconds(elapsed)).unwrap();
+            write!(s, ", {} elapsed", style_duration(elapsed)).unwrap();
             if self.mutants_done > 2 {
+                let done = self.mutants_done as u64;
+                let remain = self.n_mutants as u64 - done;
+                let mut remaining_secs = lab_start_time.elapsed().as_secs() * remain / done;
+                if remaining_secs > 300 {
+                    remaining_secs = (remaining_secs + 30) / 60 * 60;
+                }
                 write!(
                     s,
                     ", about {} remaining",
-                    style(nutmeg::estimate_remaining(
-                        &self.mutants_start_time.unwrap(),
-                        self.mutants_done,
-                        self.n_mutants
-                    ))
-                    .cyan()
+                    style_duration(Duration::from_secs(remaining_secs))
                 )
                 .unwrap();
             }
@@ -591,13 +592,12 @@ fn style_secs(duration: Duration) -> String {
         .to_string()
 }
 
-fn style_minutes_seconds(duration: Duration) -> String {
-    style(duration_minutes_seconds(duration)).cyan().to_string()
-}
-
-pub fn duration_minutes_seconds(duration: Duration) -> String {
-    let secs = duration.as_secs();
-    format!("{}:{:02}", secs / 60, secs % 60)
+fn style_duration(duration: Duration) -> String {
+    // We don't want silly precision.
+    let duration = Duration::from_secs(duration.as_secs());
+    style(format_duration(duration).to_string())
+        .cyan()
+        .to_string()
 }
 
 fn format_mb(bytes: u64) -> String {
@@ -620,22 +620,5 @@ pub fn plural(n: usize, noun: &str) -> String {
         format!("{n} {noun}")
     } else {
         format!("{n} {noun}s")
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::time::Duration;
-
-    #[test]
-    fn test_duration_minutes_seconds() {
-        assert_eq!(duration_minutes_seconds(Duration::ZERO), "0:00");
-        assert_eq!(duration_minutes_seconds(Duration::from_secs(3)), "0:03");
-        assert_eq!(duration_minutes_seconds(Duration::from_secs(73)), "1:13");
-        assert_eq!(
-            duration_minutes_seconds(Duration::from_secs(6003)),
-            "100:03"
-        );
     }
 }

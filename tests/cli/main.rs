@@ -18,7 +18,6 @@ use path_slash::PathBufExt;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
-use regex::Regex;
 use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
@@ -40,8 +39,6 @@ const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
-    static ref DURATION_RE: Regex = Regex::new(r"(\d+\.\d{1,3}s|\d+:\d{2})").unwrap();
-    static ref SIZE_RE: Regex = Regex::new(r"\d+ MB").unwrap();
 }
 
 fn run() -> assert_cmd::Command {
@@ -91,12 +88,6 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
         .copy_tree(Path::new("testdata").join(tree_name), &tmp_src_dir)
         .unwrap();
     tmp_src_dir
-}
-
-/// Remove anything that looks like a duration or tree size, since they'll be unpredictable.
-fn redact_timestamps_sizes(s: &str) -> String {
-    let s = DURATION_RE.replace_all(s, "x.xxxs");
-    SIZE_RE.replace_all(&s, "xxx MB").to_string()
 }
 
 /// Assert that some bytes, when parsed as json, equal a json value.
@@ -671,13 +662,14 @@ fn uncaught_mutant_in_factorial() {
     run()
         .arg("mutants")
         .arg("--no-shuffle")
+        .arg("--no-times")
         .arg("-d")
         .arg(tmp_src_dir.path())
         .assert()
         .code(2)
         .stderr("")
         .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(redact_timestamps_sizes(stdout));
+            insta::assert_snapshot!(stdout);
             true
         }));
 
@@ -966,7 +958,7 @@ fn minimum_test_timeout_from_env() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Auto-set test timeout to 1234.0s"));
+        .stdout(predicate::str::contains("Auto-set test timeout to 20m 34s"));
 }
 
 /// In this tree, as the name suggests, tests will hang in a clean tree.
