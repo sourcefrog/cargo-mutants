@@ -32,6 +32,10 @@ pub struct SourceFile {
     /// This is held in an [Arc] so that SourceFiles can be cloned without using excessive
     /// amounts of memory.
     pub code: Arc<String>,
+
+    /// True if this is the top source file for its target: typically but
+    /// not always `lib.rs` or `main.rs`.
+    pub is_top: bool,
 }
 
 impl SourceFile {
@@ -42,6 +46,7 @@ impl SourceFile {
         tree_path: &Utf8Path,
         tree_relative_path: Utf8PathBuf,
         package: &Arc<Package>,
+        is_top: bool,
     ) -> Result<SourceFile> {
         let full_path = tree_path.join(&tree_relative_path);
         let code = Arc::new(
@@ -53,6 +58,7 @@ impl SourceFile {
             tree_relative_path,
             code,
             package: Arc::clone(package),
+            is_top,
         })
     }
 
@@ -96,6 +102,7 @@ mod test {
                 name: "imaginary-package".to_owned(),
                 relative_manifest_path: "whatever/Cargo.toml".into(),
             }),
+            true,
         )
         .unwrap();
         assert_eq!(source_file.code(), "fn main() {\n    640 << 10;\n}\n");

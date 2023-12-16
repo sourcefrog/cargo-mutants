@@ -103,6 +103,7 @@ exclude = [
     "testdata/cdylib",
     "testdata/cfg_attr_mutants_skip",
     "testdata/cfg_attr_test_skip",
+    "testdata/custom_top_file",
     "testdata/dependency",
     "testdata/diff0",
     "testdata/diff1",

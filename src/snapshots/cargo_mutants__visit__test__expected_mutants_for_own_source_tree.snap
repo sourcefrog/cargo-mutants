@@ -30,7 +30,8 @@ src/config.rs: replace Config::read_tree_config -> Result<Config> with Err(::any
 src/console.rs: replace Console::walk_tree_start with ()
 src/console.rs: replace Console::walk_tree_update with ()
 src/console.rs: replace Console::walk_tree_done with ()
-src/console.rs: replace Console::scenario_started with ()
+src/console.rs: replace Console::scenario_started -> Result<()> with Ok(())
+src/console.rs: replace Console::scenario_started -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/console.rs: replace Console::scenario_finished with ()
 src/console.rs: replace || with && in Console::scenario_finished
 src/console.rs: replace || with == in Console::scenario_finished
@@ -230,9 +231,6 @@ src/log_file.rs: replace LogFile::open_append -> Result<File> with Ok(Default::d
 src/log_file.rs: replace LogFile::open_append -> Result<File> with Err(::anyhow::anyhow!("mutated!"))
 src/log_file.rs: replace LogFile::message with ()
 src/log_file.rs: replace LogFile::path -> &Utf8Path with &Default::default()
-src/log_file.rs: replace last_line -> Result<String> with Ok(String::new())
-src/log_file.rs: replace last_line -> Result<String> with Ok("xyzzy".into())
-src/log_file.rs: replace last_line -> Result<String> with Err(::anyhow::anyhow!("mutated!"))
 src/log_file.rs: replace clean_filename -> String with String::new()
 src/log_file.rs: replace clean_filename -> String with "xyzzy".into()
 src/manifest.rs: replace fix_manifest -> Result<()> with Ok(())
@@ -545,6 +543,11 @@ src/span.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/span.rs: replace <impl From for Span>::from -> Self with Default::default()
 src/span.rs: replace <impl Debug for Span>::fmt -> fmt::Result with Ok(Default::default())
 src/span.rs: replace <impl Debug for Span>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
+src/tail_file.rs: replace TailFile::last_line -> Result<&str> with Ok("")
+src/tail_file.rs: replace TailFile::last_line -> Result<&str> with Ok("xyzzy")
+src/tail_file.rs: replace TailFile::last_line -> Result<&str> with Err(::anyhow::anyhow!("mutated!"))
+src/tail_file.rs: replace > with == in TailFile::last_line
+src/tail_file.rs: replace > with < in TailFile::last_line
 src/visit.rs: replace walk_tree -> Result<Discovered> with Ok(Default::default())
 src/visit.rs: replace walk_tree -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace && with || in walk_tree
@@ -605,9 +608,6 @@ src/visit.rs: replace function_body_span -> Option<Span> with Some(Default::defa
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(None)
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(Some(Default::default()))
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
-src/visit.rs: replace || with && in find_mod_source
-src/visit.rs: replace || with == in find_mod_source
-src/visit.rs: replace || with != in find_mod_source
 src/visit.rs: replace || with && in find_mod_source
 src/visit.rs: replace || with == in find_mod_source
 src/visit.rs: replace || with != in find_mod_source

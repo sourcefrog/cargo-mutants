@@ -26,6 +26,7 @@ mod process;
 mod scenario;
 mod source;
 mod span;
+mod tail_file;
 mod visit;
 mod workspace;
 
@@ -51,7 +52,7 @@ use crate::in_diff::diff_filter;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
-use crate::log_file::{last_line, LogFile};
+use crate::log_file::LogFile;
 use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
 use crate::options::Options;

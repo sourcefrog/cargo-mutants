@@ -4,6 +4,8 @@
 
 - Improved progress bars and console output, including putting the outcome of each mutant on the left, and the overall progress bar at the bottom. Improved display of estimated remaining time, and other times.
 
+- Fixed: Correctly traverse `mod` statements within package top source files that are not named `lib.rs` or `main.rs`, by following the `path` setting of each target within the manifest.
+
 - Improved: Don't generate function mutants that have the same AST as the code they're replacing.
 
 ## 23.12.0
