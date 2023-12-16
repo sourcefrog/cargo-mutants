@@ -44,9 +44,9 @@ src/lib.rs:18:5: replace double -> usize with 1
 ## testdata/custom_top_file
 
 ```
-src/custom_top.rs:5:5: replace is_even -> bool with true
-src/custom_top.rs:5:5: replace is_even -> bool with false
-src/custom_top.rs:5:11: replace == with != in is_even
+src/custom_top.rs:2:5: replace is_even -> bool with true
+src/custom_top.rs:2:5: replace is_even -> bool with false
+src/custom_top.rs:2:11: replace == with != in is_even
 ```
 
 ## testdata/dependency
@@ -242,13 +242,10 @@ src/lib.rs:6:5: replace try_value_coercion -> String with "xyzzy".into()
 
 ```
 src/a.rs:2:5: replace one -> i32 with 0
-src/a.rs:2:5: replace one -> i32 with 1
 src/a.rs:2:5: replace one -> i32 with -1
 src/b.rs:2:5: replace one_untested -> i32 with 0
-src/b.rs:2:5: replace one_untested -> i32 with 1
 src/b.rs:2:5: replace one_untested -> i32 with -1
 src/c.rs:2:5: replace one -> i32 with 0
-src/c.rs:2:5: replace one -> i32 with 1
 src/c.rs:2:5: replace one -> i32 with -1
 ```
 

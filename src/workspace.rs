@@ -182,7 +182,7 @@ impl Workspace {
     }
 
     /// Find all the top source files for selected packages.
-    fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<SourceFile>>> {
+    fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<SourceFile>> {
         let mut sources = Vec::new();
         for PackageTop {
             package,
@@ -190,12 +190,12 @@ impl Workspace {
         } in self.package_tops(package_filter)?
         {
             for source_path in top_sources {
-                sources.push(Arc::new(SourceFile::new(
+                sources.push(SourceFile::new(
                     &self.dir,
                     source_path.to_owned(),
                     &package,
                     true,
-                )?));
+                )?);
             }
         }
         Ok(sources)

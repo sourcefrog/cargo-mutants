@@ -17,12 +17,11 @@ use tracing::trace;
 pub(crate) fn return_type_replacements(
     return_type: &ReturnType,
     error_exprs: &[Expr],
-) -> impl Iterator<Item = TokenStream> {
+) -> Vec<TokenStream> {
     match return_type {
         ReturnType::Default => vec![quote! { () }],
         ReturnType::Type(_rarrow, type_) => type_replacements(type_, error_exprs).collect_vec(),
     }
-    .into_iter()
 }
 
 /// Generate some values that we hope are reasonable replacements for a type.
@@ -696,6 +695,7 @@ mod test {
     fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {
         assert_eq!(
             return_type_replacements(&return_type, error_exprs)
+                .into_iter()
                 .map(|t| t.to_pretty_string())
                 .collect_vec(),
             expected

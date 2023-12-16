@@ -4,7 +4,6 @@
 //! for example from uncommitted or unmerged changes.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use anyhow::{anyhow, bail};
 use camino::Utf8Path;
@@ -63,17 +62,17 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
 
 /// Error if the new text from the diffs doesn't match the source files.
 fn check_diff_new_text_matches(patches: &[Patch], mutants: &[Mutant]) -> Result<()> {
-    let mut source_by_name: HashMap<&Utf8Path, Arc<SourceFile>> = HashMap::new();
+    let mut source_by_name: HashMap<&Utf8Path, &SourceFile> = HashMap::new();
     for mutant in mutants {
         source_by_name
             .entry(mutant.source_file.path())
-            .or_insert_with(|| Arc::clone(&mutant.source_file));
+            .or_insert_with(|| &mutant.source_file);
     }
     for patch in patches {
         let path = strip_patch_path(&patch.new.path);
         if let Some(source_file) = source_by_name.get(&path) {
             let reconstructed = partial_new_file(patch);
-            let lines = source_file.code.lines().collect_vec();
+            let lines = source_file.code().lines().collect_vec();
             for (lineno, diff_content) in reconstructed {
                 let source_content = lines.get(lineno - 1).unwrap_or(&"");
                 if diff_content != *source_content {
