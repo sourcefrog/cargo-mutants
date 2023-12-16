@@ -75,4 +75,12 @@ mod tests {
             "shard k must be less than n"
         );
     }
+
+    #[test]
+    fn shard_select() {
+        assert_eq!(
+            Shard::from_str("1/4").unwrap().select(0..10).as_slice(),
+            &[1, 5, 9]
+        );
+    }
 }
