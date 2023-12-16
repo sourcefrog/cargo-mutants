@@ -21,11 +21,6 @@ use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::{last_line, Mutant, Options, Phase, Result, ScenarioOutcome};
 
-// From <https://antofthy.gitlab.io/info/ascii/Spinners.txt>
-static SPINNER: &[char] = &[
-    '■', '◤', '◸', '◤', '■', '◥', '◹', '◥', '■', '◢', '◿', '◢', '■', '◣', '◺', '◣',
-];
-
 /// An interface to the console for the rest of cargo-mutants.
 ///
 /// This wraps the Nutmeg view and model.
@@ -103,7 +98,7 @@ impl Console {
         let mut s = String::with_capacity(100);
         write!(
             s,
-            "{:10} {}",
+            "{:8} {}",
             style_outcome(outcome),
             style_scenario(scenario, true),
         )
@@ -359,7 +354,6 @@ struct LabModel {
     timeouts: usize,
     successes: usize,
     failures: usize,
-    spin: usize,
 }
 
 impl nutmeg::Model for LabModel {
@@ -380,27 +374,19 @@ impl nutmeg::Model for LabModel {
         }
         if let Some(lab_start_time) = self.lab_start_time {
             let elapsed = lab_start_time.elapsed();
-            let percent = if self.n_mutants > 0 {
-                ((self.mutants_done as f64) / (self.n_mutants as f64) * 100.0).round()
-            } else {
-                0.0
-            };
             write!(
                 s,
-                "{} {}/{} mutants tested, {}% done",
-                SPINNER[self.spin],
+                "{}/{} mutants tested",
                 style(self.mutants_done).cyan(),
                 style(self.n_mutants).cyan(),
-                style(percent).cyan(),
             )
             .unwrap();
-            self.spin = (self.spin + 1) % SPINNER.len();
             if self.mutants_missed > 0 {
                 write!(
                     s,
                     ", {} {}",
                     style(self.mutants_missed).cyan(),
-                    style("missed").red()
+                    style("MISSED").red()
                 )
                 .unwrap();
             }
@@ -524,7 +510,7 @@ impl nutmeg::Model for ScenarioModel {
     fn render(&mut self, _width: usize) -> String {
         let mut parts = Vec::new();
         if let Some(phase) = self.phase {
-            parts.push(style(format!("{phase:10}")).bold().cyan().to_string());
+            parts.push(style(format!("{phase:8}")).bold().cyan().to_string());
         }
         parts.push(self.name.to_string());
         parts.push("...".to_string());
@@ -540,7 +526,7 @@ impl nutmeg::Model for ScenarioModel {
         // parts.push(prs.join(" + "));
         let mut s = parts.join(" ");
         if let Ok(last_line) = last_line(&self.log_file) {
-            write!(s, "\n{:10} {}", style("└").cyan(), style(last_line).dim()).unwrap();
+            write!(s, "\n{:8} {}", style("└").cyan(), style(last_line).dim()).unwrap();
         }
         s
     }
@@ -573,7 +559,7 @@ impl CopyModel {
 impl nutmeg::Model for CopyModel {
     fn render(&mut self, _width: usize) -> String {
         format!(
-            "{:10} {} in {}",
+            "{:8} {} in {}",
             style("copy").cyan(),
             style_mb(self.bytes_copied),
             style_secs(self.start.elapsed()),

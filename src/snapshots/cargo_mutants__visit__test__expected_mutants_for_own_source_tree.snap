@@ -87,8 +87,6 @@ src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
-src/console.rs: replace > with == in <impl Model for LabModel>::render
-src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace LabModel::find_scenario_mut -> &mut ScenarioModel with Box::leak(Box::new(Default::default()))
 src/console.rs: replace == with != in LabModel::find_scenario_mut
 src/console.rs: replace LabModel::remove_scenario with ()

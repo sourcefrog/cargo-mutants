@@ -3,9 +3,9 @@ source: tests/cli/main.rs
 expression: stdout
 ---
 Found 3 mutants to test
-ok         Unmutated baseline
-ok         src/lib.rs:15:5: replace controlled_loop with ()
-ok         src/lib.rs:21:28: replace > with == in controlled_loop
-ok         src/lib.rs:21:28: replace > with < in controlled_loop
+ok       Unmutated baseline
+ok       src/lib.rs:15:5: replace controlled_loop with ()
+ok       src/lib.rs:21:28: replace > with == in controlled_loop
+ok       src/lib.rs:21:28: replace > with < in controlled_loop
 3 mutants tested: 3 succeeded
 

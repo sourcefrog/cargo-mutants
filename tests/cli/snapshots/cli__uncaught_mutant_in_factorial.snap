@@ -3,8 +3,8 @@ source: tests/cli/main.rs
 expression: redact_timestamps_sizes(stdout)
 ---
 Found 3 mutants to test
-ok         Unmutated baseline in x.xxxs build + x.xxxs test
+ok       Unmutated baseline in x.xxxs build + x.xxxs test
 Auto-set test timeout to x.xxxs
-MISSED     src/bin/factorial.rs:2:5: replace main with () in x.xxxs build + x.xxxs test
+MISSED   src/bin/factorial.rs:2:5: replace main with () in x.xxxs build + x.xxxs test
 3 mutants tested in x.xxxs: 1 missed, 2 caught
 

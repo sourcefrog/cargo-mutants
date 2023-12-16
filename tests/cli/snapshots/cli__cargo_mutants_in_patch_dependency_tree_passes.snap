@@ -3,6 +3,6 @@ source: tests/cli/main.rs
 expression: stdout
 ---
 Found 3 mutants to test
-ok         Unmutated baseline
+ok       Unmutated baseline
 3 mutants tested: 3 caught
 
