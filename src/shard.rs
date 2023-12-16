@@ -6,8 +6,7 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, ensure, Context, Error};
 
-use crate::Mutant;
-
+/// Select mutants for a particular shard of the total list.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Shard {
     /// Index modulo n.
@@ -46,15 +45,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_shard_from_str_valid_input() {
-        let shard_str = "2/5";
-        let shard = Shard::from_str(shard_str).unwrap();
+    fn shard_from_str_valid_input() {
+        let shard = Shard::from_str("2/5").unwrap();
         assert_eq!(shard.k, 2);
         assert_eq!(shard.n, 5);
+        assert_eq!(shard, Shard { k: 2, n: 5 });
     }
 
     #[test]
-    fn test_shard_from_str_invalid_input() {
+    fn shard_from_str_invalid_input() {
         assert_eq!(
             Shard::from_str("").unwrap_err().to_string(),
             "shard must be k/n"
