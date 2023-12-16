@@ -18,7 +18,6 @@ use path_slash::PathBufExt;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
-use regex::Regex;
 use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
@@ -40,8 +39,6 @@ const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
 
 lazy_static! {
     static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
-    static ref DURATION_RE: Regex = Regex::new(r"(\d+\.\d{1,3}s|\d+:\d{2})").unwrap();
-    static ref SIZE_RE: Regex = Regex::new(r"\d+ MB").unwrap();
 }
 
 fn run() -> assert_cmd::Command {
@@ -91,12 +88,6 @@ fn copy_of_testdata(tree_name: &str) -> TempDir {
         .copy_tree(Path::new("testdata").join(tree_name), &tmp_src_dir)
         .unwrap();
     tmp_src_dir
-}
-
-/// Remove anything that looks like a duration or tree size, since they'll be unpredictable.
-fn redact_timestamps_sizes(s: &str) -> String {
-    let s = DURATION_RE.replace_all(s, "x.xxxs");
-    SIZE_RE.replace_all(&s, "xxx MB").to_string()
 }
 
 /// Assert that some bytes, when parsed as json, equal a json value.
@@ -624,7 +615,7 @@ fn unviable_mutation_of_struct_with_no_default() {
         .success()
         .stdout(
             predicate::str::is_match(
-                r"src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\) \.\.\. unviable",
+                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
             )
             .unwrap(),
         );
@@ -671,13 +662,14 @@ fn uncaught_mutant_in_factorial() {
     run()
         .arg("mutants")
         .arg("--no-shuffle")
+        .arg("--no-times")
         .arg("-d")
         .arg(tmp_src_dir.path())
         .assert()
         .code(2)
         .stderr("")
         .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(redact_timestamps_sizes(stdout));
+            insta::assert_snapshot!(stdout);
             true
         }));
 
@@ -718,13 +710,13 @@ fn factorial_mutants_with_all_logs() {
         .code(2)
         .stderr("")
         .stdout(is_match(
-r"Unmutated baseline \.\.\. ok in \d+\.\ds"
+    r"ok *Unmutated baseline in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:\d+:\d+: replace main with \(\) \.\.\. NOT CAUGHT in \d+\.\ds"
+    r"MISSED *src/bin/factorial\.rs:\d+:\d+: replace main with \(\) in \d+\.\ds"
         ).unwrap())
         .stdout(is_match(
-r"src/bin/factorial\.rs:\d+:\d+: replace factorial -> u32 with 0 \.\.\. caught in \d+\.\ds"
+    r"caught *src/bin/factorial\.rs:\d+:\d+: replace factorial -> u32 with 0 in \d+\.\ds"
         ).unwrap());
 }
 
@@ -941,7 +933,7 @@ fn source_tree_typecheck_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"Unmutated baseline \.\.\. FAILED in \d+\.\ds").unwrap())
+        .stdout(is_match(r"FAILED *Unmutated baseline in \d+\.\ds").unwrap())
         .stdout(
             contains(r#""1" + 2 // Doesn't work in Rust: just as well!"#)
                 .name("The problem source line"),
@@ -966,7 +958,7 @@ fn minimum_test_timeout_from_env() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Auto-set test timeout to 1234.0s"));
+        .stdout(predicate::str::contains("Auto-set test timeout to 20m 34s"));
 }
 
 /// In this tree, as the name suggests, tests will hang in a clean tree.
@@ -988,7 +980,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
-        .stdout(is_match(r"Unmutated baseline \.\.\. TIMEOUT in \d+\.\ds").unwrap())
+        .stdout(is_match(r"TIMEOUT *Unmutated baseline in \d+\.\ds").unwrap())
         .stderr(contains("timeout"))
         .stderr(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
@@ -1101,24 +1093,35 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     // Also test that it accepts decimal seconds
     run()
         .arg("mutants")
-        .args(["-t", "8.1", "-v", "--", "--", "--nocapture"])
+        .args([
+            "-t",
+            "8.1",
+            "-v",
+            "--line-col=false",
+            "--",
+            "--",
+            "--nocapture",
+        ])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
         .assert()
         .code(3) // exit_code::TIMEOUT
-        .stdout(contains(
-            "replace should_stop -> bool with false ... TIMEOUT",
-        ))
-        .stdout(contains("replace should_stop -> bool with true ... caught"))
-        .stdout(contains(
-            "replace controlled_loop -> usize with 0 ... caught",
-        ));
+        ;
     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
         .expect("read timeout.txt");
     assert!(
-        timeout_txt.contains("replace should_stop"),
+        timeout_txt.contains("replace should_stop -> bool with false"),
         "expected text not found in:\n{timeout_txt}"
+    );
+    let caught_txt = read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt")).unwrap();
+    assert!(
+        caught_txt.contains("replace should_stop -> bool with true"),
+        "expected text not found in:\n{caught_txt}"
+    );
+    assert!(
+        caught_txt.contains("replace controlled_loop -> usize with 0"),
+        "expected text not found in:\n{caught_txt}"
     );
     let outcomes_json: serde_json::Value =
         read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json"))

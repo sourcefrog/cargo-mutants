@@ -3,10 +3,10 @@ source: tests/cli/error_value.rs
 expression: stdout
 ---
 Found 4 mutants to test
-Unmutated baseline ... ok
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(0) ... caught
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(1) ... caught
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Err("injected") ... NOT CAUGHT
-src/lib.rs:4:14: replace == with != in even_is_ok ... caught
+ok       Unmutated baseline
+caught   src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(0)
+caught   src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(1)
+MISSED   src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Err("injected")
+caught   src/lib.rs:4:14: replace == with != in even_is_ok
 4 mutants tested: 1 missed, 3 caught
 

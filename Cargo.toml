@@ -42,6 +42,7 @@ ctrlc = { version = "3.2.1", features = ["termination"] }
 fastrand = "2"
 fs2 = "0.4"
 globset = "0.4.8"
+humantime = "2.1.0"
 ignore = "0.4.20"
 indoc = "2.0.0"
 itertools = "0.11"

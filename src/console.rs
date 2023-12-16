@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Print messages and progress bars on the terminal.
 
@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 use anyhow::Context;
 use camino::Utf8Path;
 use console::{style, StyledObject};
-
+use humantime::format_duration;
 use nutmeg::Destination;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
@@ -22,8 +22,6 @@ use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::tail_file::TailFile;
 use crate::{Mutant, Options, Phase, Result, ScenarioOutcome};
-
-static COPY_MESSAGE: &str = "Copy source to scratch directory";
 
 /// An interface to the console for the rest of cargo-mutants.
 ///
@@ -103,9 +101,9 @@ impl Console {
         let mut s = String::with_capacity(100);
         write!(
             s,
-            "{} ... {}",
+            "{:8} {}",
+            style_outcome(outcome),
             style_scenario(scenario, true),
-            style_outcome(outcome)
         )
         .unwrap();
         if options.show_times {
@@ -139,7 +137,7 @@ impl Console {
     pub fn autoset_timeout(&self, timeout: Duration) {
         self.message(&format!(
             "Auto-set test timeout to {}\n",
-            style_secs(timeout)
+            style_duration(timeout)
         ));
     }
 
@@ -373,19 +371,17 @@ impl nutmeg::Model for LabModel {
         if !s.is_empty() {
             s.push('\n')
         }
+        for sm in self.scenario_models.iter_mut() {
+            s.push_str(&sm.render(width));
+            s.push('\n');
+        }
         if let Some(lab_start_time) = self.lab_start_time {
             let elapsed = lab_start_time.elapsed();
-            let percent = if self.n_mutants > 0 {
-                ((self.mutants_done as f64) / (self.n_mutants as f64) * 100.0).round()
-            } else {
-                0.0
-            };
             write!(
                 s,
-                "{}/{} mutants tested, {}% done",
+                "{}/{} mutants tested",
                 style(self.mutants_done).cyan(),
                 style(self.n_mutants).cyan(),
-                style(percent).cyan(),
             )
             .unwrap();
             if self.mutants_missed > 0 {
@@ -393,7 +389,7 @@ impl nutmeg::Model for LabModel {
                     s,
                     ", {} {}",
                     style(self.mutants_missed).cyan(),
-                    style("missed").red()
+                    style("MISSED").red()
                 )
                 .unwrap();
             }
@@ -419,25 +415,22 @@ impl nutmeg::Model for LabModel {
             // if self.failures > 0 {
             //     write!(s, ", {} failures", self.failures).unwrap();
             // }
-            write!(s, ", {} elapsed", style_minutes_seconds(elapsed)).unwrap();
+            write!(s, ", {} elapsed", style_duration(elapsed)).unwrap();
             if self.mutants_done > 2 {
+                let done = self.mutants_done as u64;
+                let remain = self.n_mutants as u64 - done;
+                let mut remaining_secs = lab_start_time.elapsed().as_secs() * remain / done;
+                if remaining_secs > 300 {
+                    remaining_secs = (remaining_secs + 30) / 60 * 60;
+                }
                 write!(
                     s,
                     ", about {} remaining",
-                    style(nutmeg::estimate_remaining(
-                        &self.mutants_start_time.unwrap(),
-                        self.mutants_done,
-                        self.n_mutants
-                    ))
-                    .cyan()
+                    style_duration(Duration::from_secs(remaining_secs))
                 )
                 .unwrap();
             }
             writeln!(s).unwrap();
-        }
-        for sm in self.scenario_models.iter_mut() {
-            s.push_str(&sm.render(width));
-            s.push('\n');
         }
         while s.ends_with('\n') {
             s.pop();
@@ -520,23 +513,25 @@ impl ScenarioModel {
 
 impl nutmeg::Model for ScenarioModel {
     fn render(&mut self, _width: usize) -> String {
-        let mut s = String::with_capacity(100);
-        write!(s, "{} ... ", self.name).unwrap();
-        let mut prs = self
-            .previous_phase_durations
-            .iter()
-            .map(|(phase, duration)| format!("{} {}", style_secs(*duration), style(phase).dim()))
-            .collect::<Vec<_>>();
+        let mut parts = Vec::new();
         if let Some(phase) = self.phase {
-            prs.push(format!(
-                "{} {}",
-                style_secs(self.phase_start.elapsed()),
-                style(phase).dim()
-            ));
+            parts.push(style(format!("{phase:8}")).bold().cyan().to_string());
         }
-        write!(s, "{}", prs.join(" + ")).unwrap();
+        parts.push(self.name.to_string());
+        parts.push("...".to_string());
+        parts.push(style_secs(self.phase_start.elapsed()).to_string());
+        // let mut prs = self
+        //     .previous_phase_durations
+        //     .iter()
+        //     .map(|(phase, duration)| format!("{} {}", style_secs(*duration), style(phase).dim()))
+        //     .collect::<Vec<_>>();
+        // if prs.len() > 1 {
+        //     prs.insert(0, String::new())
+        // }
+        // parts.push(prs.join(" + "));
+        let mut s = parts.join(" ");
         if let Ok(last_line) = self.log_tail.last_line() {
-            write!(s, "\n    {}", style(last_line).dim()).unwrap();
+            write!(s, "\n{:8} {}", style("└").cyan(), style(last_line).dim()).unwrap();
         }
         s
     }
@@ -569,10 +564,10 @@ impl CopyModel {
 impl nutmeg::Model for CopyModel {
     fn render(&mut self, _width: usize) -> String {
         format!(
-            "{} ... {} in {}",
-            COPY_MESSAGE,
+            "{:8} {} in {}",
+            style("copy").cyan(),
             style_mb(self.bytes_copied),
-            style_elapsed_secs(self.start),
+            style_secs(self.start.elapsed()),
         )
     }
 }
@@ -587,16 +582,12 @@ fn nutmeg_options() -> nutmeg::Options {
 pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
     match outcome.summary() {
         SummaryOutcome::CaughtMutant => style("caught").green(),
-        SummaryOutcome::MissedMutant => style("NOT CAUGHT").red().bold(),
+        SummaryOutcome::MissedMutant => style("MISSED").red().bold(),
         SummaryOutcome::Failure => style("FAILED").red().bold(),
         SummaryOutcome::Success => style("ok").green(),
         SummaryOutcome::Unviable => style("unviable").blue(),
         SummaryOutcome::Timeout => style("TIMEOUT").red().bold(),
     }
-}
-
-fn style_elapsed_secs(since: Instant) -> String {
-    style_secs(since.elapsed())
 }
 
 fn style_secs(duration: Duration) -> String {
@@ -605,13 +596,12 @@ fn style_secs(duration: Duration) -> String {
         .to_string()
 }
 
-fn style_minutes_seconds(duration: Duration) -> String {
-    style(duration_minutes_seconds(duration)).cyan().to_string()
-}
-
-pub fn duration_minutes_seconds(duration: Duration) -> String {
-    let secs = duration.as_secs();
-    format!("{}:{:02}", secs / 60, secs % 60)
+fn style_duration(duration: Duration) -> String {
+    // We don't want silly precision.
+    let duration = Duration::from_secs(duration.as_secs());
+    style(format_duration(duration).to_string())
+        .cyan()
+        .to_string()
 }
 
 fn format_mb(bytes: u64) -> String {
@@ -634,22 +624,5 @@ pub fn plural(n: usize, noun: &str) -> String {
         format!("{n} {noun}")
     } else {
         format!("{n} {noun}s")
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::time::Duration;
-
-    #[test]
-    fn test_duration_minutes_seconds() {
-        assert_eq!(duration_minutes_seconds(Duration::ZERO), "0:00");
-        assert_eq!(duration_minutes_seconds(Duration::from_secs(3)), "0:03");
-        assert_eq!(duration_minutes_seconds(Duration::from_secs(73)), "1:13");
-        assert_eq!(
-            duration_minutes_seconds(Duration::from_secs(6003)),
-            "100:03"
-        );
     }
 }

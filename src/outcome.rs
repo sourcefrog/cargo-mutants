@@ -8,11 +8,12 @@ use std::time::Duration;
 use std::time::Instant;
 
 use anyhow::Context;
+use humantime::format_duration;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
 
-use crate::console::{duration_minutes_seconds, plural};
+use crate::console::plural;
 use crate::exit_code;
 use crate::log_file::LogFile;
 use crate::process::ProcessStatus;
@@ -48,7 +49,7 @@ impl Phase {
 
 impl fmt::Display for Phase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.name())
+        f.pad(self.name())
     }
 }
 
@@ -107,33 +108,36 @@ impl LabOutcome {
 
     /// Return an overall summary, to show at the end of the program.
     pub fn summary_string(&self, start_time: Instant, options: &Options) -> String {
-        let mut s = format!("{} tested", plural(self.total_mutants, "mutant"),);
+        let mut s = Vec::new();
+        s.push(format!("{} tested", plural(self.total_mutants, "mutant")));
         if options.show_times {
-            s.push_str(" in ");
-            s.push_str(&duration_minutes_seconds(start_time.elapsed()));
+            s.push(format!(
+                " in {}",
+                format_duration(Duration::from_secs(start_time.elapsed().as_secs()))
+            ));
         }
-        s.push_str(": ");
-        let mut parts: Vec<String> = Vec::new();
+        s.push(": ".into());
+        let mut by_outcome: Vec<String> = Vec::new();
         if self.missed > 0 {
-            parts.push(format!("{} missed", self.missed));
+            by_outcome.push(format!("{} missed", self.missed));
         }
         if self.caught > 0 {
-            parts.push(format!("{} caught", self.caught));
+            by_outcome.push(format!("{} caught", self.caught));
         }
         if self.unviable > 0 {
-            parts.push(format!("{} unviable", self.unviable));
+            by_outcome.push(format!("{} unviable", self.unviable));
         }
         if self.timeout > 0 {
-            parts.push(format!("{} timeouts", self.timeout));
+            by_outcome.push(format!("{} timeouts", self.timeout));
         }
         if self.success > 0 {
-            parts.push(format!("{} succeeded", self.success));
+            by_outcome.push(format!("{} succeeded", self.success));
         }
         if self.failure > 0 {
-            parts.push(format!("{} failed", self.failure));
+            by_outcome.push(format!("{} failed", self.failure));
         }
-        s.push_str(&parts.join(", "));
-        s
+        s.push(by_outcome.join(", "));
+        s.join("")
     }
 }
 
