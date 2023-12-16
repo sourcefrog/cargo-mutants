@@ -41,6 +41,14 @@ src/lib.rs:18:5: replace double -> usize with 0
 src/lib.rs:18:5: replace double -> usize with 1
 ```
 
+## testdata/custom_top_file
+
+```
+src/custom_top.rs:5:5: replace is_even -> bool with true
+src/custom_top.rs:5:5: replace is_even -> bool with false
+src/custom_top.rs:5:11: replace == with != in is_even
+```
+
 ## testdata/dependency
 
 ```

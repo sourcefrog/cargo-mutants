@@ -313,6 +313,103 @@ expression: buf
 ]
 ```
 
+## testdata/custom_top_file
+
+```json
+[
+  {
+    "file": "src/custom_top.rs",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-custom-top-file",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 5
+      },
+      "start": {
+        "column": 5,
+        "line": 5
+      }
+    }
+  },
+  {
+    "file": "src/custom_top.rs",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-custom-top-file",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 15,
+        "line": 5
+      },
+      "start": {
+        "column": 5,
+        "line": 5
+      }
+    }
+  },
+  {
+    "file": "src/custom_top.rs",
+    "function": {
+      "function_name": "is_even",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 6
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-custom-top-file",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 5
+      },
+      "start": {
+        "column": 11,
+        "line": 5
+      }
+    }
+  }
+]
+```
+
 ## testdata/dependency
 
 ```json

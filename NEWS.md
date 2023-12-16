@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fixed: Correctly traverse `mod` statements within package top source files that are not named `lib.rs` or `main.rs`.
+- Fixed: Correctly traverse `mod` statements within package top source files that are not named `lib.rs` or `main.rs`, by following the `path` setting of each target within the manifest.
 
 ## 23.12.0
 
