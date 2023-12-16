@@ -615,9 +615,6 @@ src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::
 src/visit.rs: replace || with && in find_mod_source
 src/visit.rs: replace || with == in find_mod_source
 src/visit.rs: replace || with != in find_mod_source
-src/visit.rs: replace || with && in find_mod_source
-src/visit.rs: replace || with == in find_mod_source
-src/visit.rs: replace || with != in find_mod_source
 src/visit.rs: replace fn_sig_excluded -> bool with true
 src/visit.rs: replace fn_sig_excluded -> bool with false
 src/visit.rs: replace attrs_excluded -> bool with true
