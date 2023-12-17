@@ -49,9 +49,6 @@ jobs:
 
   pr-mutants:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        shard: [0, 1, 2]
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
@@ -68,7 +65,7 @@ jobs:
       - run: cargo install --path .
       - name: Mutants
         run: |
-          cargo mutants --no-shuffle --exclude console.rs -vV --in-diff git.diff --shard ${{ matrix.shard }}/3
+          cargo mutants --no-shuffle --exclude console.rs -vV --in-diff git.diff
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()
