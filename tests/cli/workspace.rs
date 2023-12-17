@@ -5,6 +5,7 @@
 use std::fs::{self, read_to_string};
 
 use indoc::indoc;
+use insta::assert_snapshot;
 use itertools::Itertools;
 use serde_json::json;
 
@@ -117,8 +118,9 @@ fn workspace_tree_is_well_tested() {
         fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
     println!("outcomes.json:\n{json_str}");
     let json: serde_json::Value = json_str.parse().unwrap();
-    assert_eq!(json["total_mutants"].as_u64().unwrap(), 8);
-    assert_eq!(json["caught"].as_u64().unwrap(), 8);
+    let total = json["total_mutants"].as_u64().unwrap();
+    assert!(total > 8);
+    assert_eq!(json["caught"].as_u64().unwrap(), total);
     assert_eq!(json["missed"].as_u64().unwrap(), 0);
     assert_eq!(json["timeout"].as_u64().unwrap(), 0);
     let outcomes = json["outcomes"].as_array().unwrap();
@@ -148,7 +150,7 @@ fn workspace_tree_is_well_tested() {
         );
     }
 
-    assert_eq!(outcomes.len(), 9);
+    assert!(outcomes.len() > 9);
     for outcome in &outcomes[1..] {
         let mutant = &outcome["scenario"]["Mutant"];
         let package_name = mutant["package"].as_str().unwrap();
@@ -200,13 +202,14 @@ fn in_workspace_only_relevant_packages_included_in_baseline_tests_by_file_filter
         .arg(tmp.path())
         .assert()
         .success();
-    assert_eq!(
+    assert_snapshot!(
         read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
-        indoc! { "\
-            passing/src/lib.rs:2:5: replace triple -> usize with 0
-            passing/src/lib.rs:2:5: replace triple -> usize with 1
-            "}
-    );
+        @r###"
+    passing/src/lib.rs:2:5: replace triple -> usize with 0
+    passing/src/lib.rs:2:5: replace triple -> usize with 1
+    passing/src/lib.rs:2:7: replace * with + in triple
+    passing/src/lib.rs:2:7: replace * with / in triple
+    "###);
     assert_eq!(
         read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
         ""
@@ -237,12 +240,14 @@ fn baseline_test_respects_package_options() {
         .arg(tmp.path())
         .assert()
         .success();
-    assert_eq!(
+    assert_snapshot!(
         read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
-        indoc! { "\
-            passing/src/lib.rs:2:5: replace triple -> usize with 0
-            passing/src/lib.rs:2:5: replace triple -> usize with 1
-            "}
+        @r###"
+    passing/src/lib.rs:2:5: replace triple -> usize with 0
+    passing/src/lib.rs:2:5: replace triple -> usize with 1
+    passing/src/lib.rs:2:7: replace * with + in triple
+    passing/src/lib.rs:2:7: replace * with / in triple
+    "###
     );
     assert_eq!(
         read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),

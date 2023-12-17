@@ -318,6 +318,8 @@ mod test {
         replace controlled_loop with ()
         replace > with == in controlled_loop
         replace > with < in controlled_loop
+        replace * with + in controlled_loop
+        replace * with / in controlled_loop
         "###
         );
     }
