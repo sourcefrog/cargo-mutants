@@ -2,9 +2,11 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 2 mutants to test
+Found 4 mutants to test
 ok       Unmutated baseline
 caught   src/lib.rs:5:5: replace factorial -> u32 with 0
 caught   src/lib.rs:5:5: replace factorial -> u32 with 1
-2 mutants tested: 2 caught
+caught   src/lib.rs:7:11: replace *= with += in factorial
+caught   src/lib.rs:7:11: replace *= with /= in factorial
+4 mutants tested: 4 caught
 

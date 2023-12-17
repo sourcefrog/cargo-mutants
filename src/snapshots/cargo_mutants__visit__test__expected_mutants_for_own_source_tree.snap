@@ -33,6 +33,20 @@ src/console.rs: replace Console::walk_tree_done with ()
 src/console.rs: replace Console::scenario_started -> Result<()> with Ok(())
 src/console.rs: replace Console::scenario_started -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/console.rs: replace Console::scenario_finished with ()
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
+src/console.rs: replace += with -= in Console::scenario_finished
+src/console.rs: replace += with *= in Console::scenario_finished
 src/console.rs: replace || with && in Console::scenario_finished
 src/console.rs: replace || with == in Console::scenario_finished
 src/console.rs: replace || with != in Console::scenario_finished
@@ -78,6 +92,8 @@ src/console.rs: replace <impl Write for DebugLogWriter>::flush -> io::Result<()>
 src/console.rs: replace <impl Write for DebugLogWriter>::flush -> io::Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/console.rs: replace <impl Model for LabModel>::render -> String with String::new()
 src/console.rs: replace <impl Model for LabModel>::render -> String with "xyzzy".into()
+src/console.rs: replace += with -= in <impl Model for LabModel>::render
+src/console.rs: replace += with *= in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
@@ -146,6 +162,10 @@ src/console.rs: replace plural -> String with "xyzzy".into()
 src/console.rs: replace == with != in plural
 src/copy_tree.rs: replace copy_tree -> Result<TempDir> with Ok(Default::default())
 src/copy_tree.rs: replace copy_tree -> Result<TempDir> with Err(::anyhow::anyhow!("mutated!"))
+src/copy_tree.rs: replace += with -= in copy_tree
+src/copy_tree.rs: replace += with *= in copy_tree
+src/copy_tree.rs: replace += with -= in copy_tree
+src/copy_tree.rs: replace += with *= in copy_tree
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Ok(())
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/fnvalue.rs: replace return_type_replacements -> Vec<TokenStream> with vec![]
@@ -202,8 +222,12 @@ src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![0]
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![1]
+src/in_diff.rs: replace += with -= in affected_lines
+src/in_diff.rs: replace += with *= in affected_lines
 src/in_diff.rs: replace < with == in affected_lines
 src/in_diff.rs: replace < with > in affected_lines
+src/in_diff.rs: replace += with -= in affected_lines
+src/in_diff.rs: replace += with *= in affected_lines
 src/in_diff.rs: replace && with || in affected_lines
 src/in_diff.rs: replace && with == in affected_lines
 src/in_diff.rs: replace && with != in affected_lines
@@ -220,6 +244,8 @@ src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, 
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "xyzzy")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, "")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(1, "xyzzy")]
+src/in_diff.rs: replace += with -= in partial_new_file
+src/in_diff.rs: replace += with *= in partial_new_file
 src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
@@ -334,6 +360,20 @@ src/outcome.rs: replace Phase::name -> &'static str with "xyzzy"
 src/outcome.rs: replace <impl Display for Phase>::fmt -> fmt::Result with Ok(Default::default())
 src/outcome.rs: replace <impl Display for Phase>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/outcome.rs: replace LabOutcome::add with ()
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
+src/outcome.rs: replace += with -= in LabOutcome::add
+src/outcome.rs: replace += with *= in LabOutcome::add
 src/outcome.rs: replace LabOutcome::exit_code -> i32 with 0
 src/outcome.rs: replace LabOutcome::exit_code -> i32 with 1
 src/outcome.rs: replace LabOutcome::exit_code -> i32 with -1
@@ -427,7 +467,11 @@ src/path.rs: replace ascent -> isize with 0
 src/path.rs: replace ascent -> isize with 1
 src/path.rs: replace ascent -> isize with -1
 src/path.rs: replace == with != in ascent
+src/path.rs: replace += with -= in ascent
+src/path.rs: replace += with *= in ascent
 src/path.rs: replace != with == in ascent
+src/path.rs: replace -= with += in ascent
+src/path.rs: replace -= with /= in ascent
 src/path.rs: replace > with == in ascent
 src/path.rs: replace > with < in ascent
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with String::new()
@@ -453,6 +497,8 @@ src/pretty.rs: replace == with != in <impl ToPrettyString for T>::to_pretty_stri
 src/pretty.rs: replace || with && in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace || with == in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace || with != in <impl ToPrettyString for T>::to_pretty_string
+src/pretty.rs: replace += with -= in <impl ToPrettyString for T>::to_pretty_string
+src/pretty.rs: replace += with *= in <impl ToPrettyString for T>::to_pretty_string
 src/process.rs: replace Process::run -> Result<ProcessStatus> with Ok(Default::default())
 src/process.rs: replace Process::run -> Result<ProcessStatus> with Err(::anyhow::anyhow!("mutated!"))
 src/process.rs: replace Process::start -> Result<Process> with Ok(Default::default())
@@ -523,9 +569,13 @@ src/span.rs: replace == with != in Span::extract
 src/span.rs: replace < with == in Span::extract
 src/span.rs: replace < with > in Span::extract
 src/span.rs: replace == with != in Span::extract
+src/span.rs: replace += with -= in Span::extract
+src/span.rs: replace += with *= in Span::extract
 src/span.rs: replace > with == in Span::extract
 src/span.rs: replace > with < in Span::extract
 src/span.rs: replace == with != in Span::extract
+src/span.rs: replace += with -= in Span::extract
+src/span.rs: replace += with *= in Span::extract
 src/span.rs: replace && with || in Span::extract
 src/span.rs: replace && with == in Span::extract
 src/span.rs: replace && with != in Span::extract
@@ -565,7 +615,11 @@ src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace >= with < in Span::replace
 src/span.rs: replace == with != in Span::replace
+src/span.rs: replace += with -= in Span::replace
+src/span.rs: replace += with *= in Span::replace
 src/span.rs: replace == with != in Span::replace
+src/span.rs: replace += with -= in Span::replace
+src/span.rs: replace += with *= in Span::replace
 src/span.rs: replace && with || in Span::replace
 src/span.rs: replace && with == in Span::replace
 src/span.rs: replace && with != in Span::replace

@@ -92,5 +92,65 @@ expression: mutants_json
     },
     "replacement": "1",
     "genre": "FnValue"
+  },
+  {
+    "package": "cargo-mutants-testdata-factorial",
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 13,
+          "column": 2
+        }
+      }
+    },
+    "span": {
+      "start": {
+        "line": 10,
+        "column": 11
+      },
+      "end": {
+        "line": 10,
+        "column": 13
+      }
+    },
+    "replacement": "+=",
+    "genre": "BinaryOperator"
+  },
+  {
+    "package": "cargo-mutants-testdata-factorial",
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "start": {
+          "line": 7,
+          "column": 1
+        },
+        "end": {
+          "line": 13,
+          "column": 2
+        }
+      }
+    },
+    "span": {
+      "start": {
+        "line": 10,
+        "column": 11
+      },
+      "end": {
+        "line": 10,
+        "column": 13
+      }
+    },
+    "replacement": "/=",
+    "genre": "BinaryOperator"
   }
 ]

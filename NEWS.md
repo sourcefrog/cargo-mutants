@@ -6,7 +6,7 @@
 
 - Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
 
-- Mutate `+, -, *, /, %` binary ops.
+- New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
 
 ## 23.12.1
 

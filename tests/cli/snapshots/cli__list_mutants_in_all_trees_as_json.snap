@@ -192,6 +192,66 @@ expression: buf
         "line": 2
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "mutants-testdata-already-failing-tests",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 4
+      },
+      "start": {
+        "column": 11,
+        "line": 4
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "mutants-testdata-already-failing-tests",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 4
+      },
+      "start": {
+        "column": 11,
+        "line": 4
+      }
+    }
   }
 ]
 ```
@@ -294,6 +354,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/entry.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-cdylib",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 4
+      },
+      "start": {
+        "column": 11,
+        "line": 4
+      }
+    }
+  },
+  {
+    "file": "src/entry.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-cdylib",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 4
+      },
+      "start": {
+        "column": 11,
+        "line": 4
       }
     }
   }
@@ -651,6 +771,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-dependency",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 4
+      },
+      "start": {
+        "column": 11,
+        "line": 4
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 7
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-dependency",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 4
+      },
+      "start": {
+        "column": 11,
+        "line": 4
       }
     }
   }
@@ -1077,6 +1257,66 @@ expression: buf
         "line": 8
       }
     }
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-factorial",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 10
+      },
+      "start": {
+        "column": 11,
+        "line": 10
+      }
+    }
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-factorial",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 10
+      },
+      "start": {
+        "column": 11,
+        "line": 10
+      }
+    }
   }
 ]
 ```
@@ -1142,6 +1382,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 10
+      }
+    }
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 8
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-fails-without-feature",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 12
+      },
+      "start": {
+        "column": 11,
+        "line": 12
+      }
+    }
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 8
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-fails-without-feature",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 12
+      },
+      "start": {
+        "column": 11,
+        "line": 12
       }
     }
   }
@@ -3041,6 +3341,66 @@ expression: buf
         "line": 5
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-small-well-tested",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 7
+      },
+      "start": {
+        "column": 11,
+        "line": 7
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 4
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-small-well-tested",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 7
+      },
+      "start": {
+        "column": 11,
+        "line": 7
+      }
+    }
   }
 ]
 ```
@@ -3746,6 +4106,66 @@ expression: buf
       },
       "start": {
         "column": 9,
+        "line": 17
+      }
+    }
+  },
+  {
+    "file": "src/methods.rs",
+    "function": {
+      "function_name": "Foo::double",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 18
+        },
+        "start": {
+          "column": 5,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 17
+      },
+      "start": {
+        "column": 16,
+        "line": 17
+      }
+    }
+  },
+  {
+    "file": "src/methods.rs",
+    "function": {
+      "function_name": "Foo::double",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 18
+        },
+        "start": {
+          "column": 5,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 17
+      },
+      "start": {
+        "column": 16,
         "line": 17
       }
     }
@@ -4593,6 +5013,66 @@ expression: buf
   {
     "file": "src/simple_fns.rs",
     "function": {
+      "function_name": "returns_unit",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 8
+      },
+      "start": {
+        "column": 8,
+        "line": 8
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
+      "function_name": "returns_unit",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 8
+      },
+      "start": {
+        "column": 8,
+        "line": 8
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
       "function_name": "returns_42u32",
       "return_type": "-> u32",
       "span": {
@@ -5157,6 +5637,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 13
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 14
+      },
+      "start": {
+        "column": 12,
+        "line": 14
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 14
+      },
+      "start": {
+        "column": 12,
+        "line": 14
       }
     }
   },
@@ -6242,6 +6782,66 @@ expression: buf
       "start": {
         "column": 5,
         "line": 12
+      }
+    }
+  },
+  {
+    "file": "main/src/main.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "main",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 14
+      },
+      "start": {
+        "column": 11,
+        "line": 14
+      }
+    }
+  },
+  {
+    "file": "main/src/main.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "main",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 14
+      },
+      "start": {
+        "column": 11,
+        "line": 14
       }
     }
   },

@@ -250,7 +250,7 @@ mod test {
         let mutants = workspace
             .mutants(&PackageFilter::All, &options, &Console::new())
             .unwrap();
-        assert_eq!(mutants.len(), 3);
+        assert_eq!(mutants.len(), 5);
         assert_eq!(
             format!("{:#?}", mutants[0]),
             indoc! {
@@ -332,7 +332,7 @@ mod test {
             &Options::default(),
             &Console::new(),
         )?;
-        assert_eq!(mutants.len(), 3);
+        assert_eq!(mutants.len(), 5);
 
         let mutated_code = mutants[0].mutated_code();
         assert_eq!(mutants[0].function.as_ref().unwrap().function_name, "main");

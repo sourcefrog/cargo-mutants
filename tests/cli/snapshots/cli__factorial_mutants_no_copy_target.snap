@@ -2,8 +2,8 @@
 source: tests/cli/main.rs
 expression: stdout
 ---
-Found 3 mutants to test
+Found 5 mutants to test
 ok       Unmutated baseline
 MISSED   src/bin/factorial.rs:2:5: replace main with ()
-3 mutants tested: 1 missed, 2 caught
+5 mutants tested: 1 missed, 4 caught
 

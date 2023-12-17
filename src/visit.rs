@@ -9,6 +9,7 @@
 
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::vec;
 
 use anyhow::Context;
 use proc_macro2::{Ident, TokenStream};
@@ -368,15 +369,25 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Le(_) => vec![quote! {>}],
             BinOp::Ge(_) => vec![quote! {<}],
             BinOp::Add(_) => vec![quote! {-}, quote! {*}],
+            BinOp::AddAssign(_) => vec![quote! {-=}, quote! {*=}],
             BinOp::Sub(_) => vec![quote! {+}, quote! {/}],
+            BinOp::SubAssign(_) => vec![quote! {+=}, quote! {/=}],
             BinOp::Mul(_) => vec![quote! {+}, quote! {/}],
+            BinOp::MulAssign(_) => vec![quote! {+=}, quote! {/=}],
             BinOp::Div(_) => vec![quote! {%}, quote! {*}],
+            BinOp::DivAssign(_) => vec![quote! {%=}, quote! {*=}],
             BinOp::Rem(_) => vec![quote! {/}, quote! {+}],
+            BinOp::RemAssign(_) => vec![quote! {/=}, quote! {+=}],
             BinOp::Shl(_) => vec![quote! {>>}],
+            BinOp::ShlAssign(_) => vec![quote! {>>=}],
             BinOp::Shr(_) => vec![quote! {<<}],
+            BinOp::ShrAssign(_) => vec![quote! {<<=}],
             BinOp::BitAnd(_) => vec![quote! {|}, quote! {^}],
+            BinOp::BitAndAssign(_) => vec![quote! {|=}, quote! {^=}],
             BinOp::BitOr(_) => vec![quote! {&}, quote! {^}],
+            BinOp::BitOrAssign(_) => vec![quote! {&=}, quote! {^=}],
             BinOp::BitXor(_) => vec![quote! {|}, quote! {&}],
+            BinOp::BitXorAssign(_) => vec![quote! {|=}, quote! {&=}],
             _ => {
                 trace!(
                     op = i.op.to_pretty_string(),

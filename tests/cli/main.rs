@@ -170,7 +170,7 @@ fn list_diff_json_contains_diffs() {
     println!("{}", String::from_utf8_lossy(&out.stdout));
     let out_json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
     let mutants_json = out_json.as_array().expect("json output is array");
-    assert_eq!(mutants_json.len(), 3);
+    assert_eq!(mutants_json.len(), 5);
     assert!(mutants_json.iter().all(|e| e.as_object().unwrap()["diff"]
         .as_str()
         .unwrap()

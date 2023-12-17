@@ -156,6 +156,66 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "file": "src/methods.rs",
     "function": {
+      "function_name": "Foo::double",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 18
+        },
+        "start": {
+          "column": 5,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 17
+      },
+      "start": {
+        "column": 16,
+        "line": 17
+      }
+    }
+  },
+  {
+    "file": "src/methods.rs",
+    "function": {
+      "function_name": "Foo::double",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 18
+        },
+        "start": {
+          "column": 5,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 17
+      },
+      "start": {
+        "column": 16,
+        "line": 17
+      }
+    }
+  },
+  {
+    "file": "src/methods.rs",
+    "function": {
       "function_name": "<impl Display for Foo>::fmt",
       "return_type": "-> fmt::Result",
       "span": {
@@ -996,6 +1056,66 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "file": "src/simple_fns.rs",
     "function": {
+      "function_name": "returns_unit",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 8
+      },
+      "start": {
+        "column": 8,
+        "line": 8
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
+      "function_name": "returns_unit",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 9
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 8
+      },
+      "start": {
+        "column": 8,
+        "line": 8
+      }
+    }
+  },
+  {
+    "file": "src/simple_fns.rs",
+    "function": {
       "function_name": "returns_42u32",
       "return_type": "-> u32",
       "span": {
@@ -1560,6 +1680,66 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       "start": {
         "column": 5,
         "line": 13
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 14
+      },
+      "start": {
+        "column": 12,
+        "line": 14
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "return_mut_slice",
+      "return_type": "-> &mut[usize]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 12
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 14
+      },
+      "start": {
+        "column": 12,
+        "line": 14
       }
     }
   },

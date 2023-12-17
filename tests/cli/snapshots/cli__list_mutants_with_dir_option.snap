@@ -5,4 +5,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 src/bin/factorial.rs:2:5: replace main with ()
 src/bin/factorial.rs:8:5: replace factorial -> u32 with 0
 src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
+src/bin/factorial.rs:10:11: replace *= with += in factorial
+src/bin/factorial.rs:10:11: replace *= with /= in factorial
 

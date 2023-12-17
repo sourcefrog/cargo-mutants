@@ -4,7 +4,6 @@
 
 use std::fs::{self, read_to_string};
 
-use indoc::indoc;
 use insta::assert_snapshot;
 use itertools::Itertools;
 use serde_json::json;
@@ -23,11 +22,9 @@ fn open_by_manifest_path() {
         ])
         .assert()
         .success()
-        .stdout(indoc! {"
-            src/bin/factorial.rs: replace main with ()
-            src/bin/factorial.rs: replace factorial -> u32 with 0
-            src/bin/factorial.rs: replace factorial -> u32 with 1
-        "});
+        .stdout(predicates::str::contains(
+            "src/bin/factorial.rs: replace main with ()",
+        ));
 }
 
 #[test]

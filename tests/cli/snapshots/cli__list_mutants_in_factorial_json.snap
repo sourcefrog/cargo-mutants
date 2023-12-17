@@ -92,5 +92,65 @@ expression: "String::from_utf8_lossy(&output.stdout)"
         "line": 8
       }
     }
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-factorial",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 10
+      },
+      "start": {
+        "column": 11,
+        "line": 10
+      }
+    }
+  },
+  {
+    "file": "src/bin/factorial.rs",
+    "function": {
+      "function_name": "factorial",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-factorial",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 10
+      },
+      "start": {
+        "column": 11,
+        "line": 10
+      }
+    }
   }
 ]
