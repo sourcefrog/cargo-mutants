@@ -66,6 +66,14 @@ A rough model for the overall execution time for all of the shards, allowing for
 SHARD_STARTUP + (CLEAN_BUILD + TEST) + (N_MUTANTS/K) * (INCREMENTAL_BUILD + TEST)
 ```
 
+The total cost in CPU seconds can be modelled as:
+
+```raw
+K * (SHARD_STARTUP + CLEAN_BUILD + TEST) + N_MUTANTS * (INCREMENTAL_BUILD + TEST)
+```
+
+As a result, at very large `k` the cost of the initial setup work will dominate, but overall time to solution will be minimized.
+
 ## Choosing a number of shards
 
 Because there's some constant overhead for every shard there will be diminishing returns and increasing ineffiency if you use too many shards. (In the extreme cases where there are more shards than mutants, some of them will do the setup work, then find they have nothing to do and immediately exit.)
@@ -76,4 +84,6 @@ The optimal setting probably depends on how long your tree takes to build from z
 
 If your CI system offers a choice of VM sizes you might experiment with using smaller or larger VMs and more or less shards: the optimal setting probably also depends on your tree's ability to exploit larger machines.
 
-You should also think about cost and capacity constraints in your CI system.
+You should also think about cost and capacity constraints in your CI system, and the risk of starving out other users.
+
+cargo-mutants has no internal scaling constraints to prevent you from setting `k` very large, if cost, efficiency and CI capacity are not a concern.
