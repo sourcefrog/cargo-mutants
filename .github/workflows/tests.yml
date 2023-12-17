@@ -65,7 +65,7 @@ jobs:
       - run: cargo install --path .
       - name: Mutants
         run: |
-          cargo mutants --no-shuffle --exclude console.rs -vV --in-diff git.diff
+          cargo mutants --no-shuffle -vV --in-diff git.diff
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()
@@ -88,7 +88,7 @@ jobs:
       - run: cargo install --path .
       - name: Mutants
         run: |
-          cargo mutants --no-shuffle --exclude console.rs -vV --shard ${{ matrix.shard }}/8
+          cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()
