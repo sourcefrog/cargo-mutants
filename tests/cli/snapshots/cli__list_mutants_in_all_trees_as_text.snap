@@ -152,6 +152,8 @@ src/lib.rs:2:7: replace * with / in double
 src/lib.rs:2:5: replace is_symlink -> bool with true
 src/lib.rs:2:5: replace is_symlink -> bool with false
 src/lib.rs:2:26: replace != with == in is_symlink
+src/lib.rs:2:15: replace & with | in is_symlink
+src/lib.rs:2:15: replace & with ^ in is_symlink
 ```
 
 ## testdata/mut_ref

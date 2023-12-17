@@ -89,6 +89,7 @@ src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace - with + in <impl Model for LabModel>::render
+src/console.rs: replace - with / in <impl Model for LabModel>::render
 src/console.rs: replace / with % in <impl Model for LabModel>::render
 src/console.rs: replace / with * in <impl Model for LabModel>::render
 src/console.rs: replace * with + in <impl Model for LabModel>::render
@@ -195,6 +196,7 @@ src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::an
 src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Ok(())
 src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/in_diff.rs: replace - with + in check_diff_new_text_matches
+src/in_diff.rs: replace - with / in check_diff_new_text_matches
 src/in_diff.rs: replace != with == in check_diff_new_text_matches
 src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
@@ -210,7 +212,9 @@ src/in_diff.rs: replace > with < in affected_lines
 src/in_diff.rs: replace < with == in affected_lines
 src/in_diff.rs: replace < with > in affected_lines
 src/in_diff.rs: replace - with + in affected_lines
+src/in_diff.rs: replace - with / in affected_lines
 src/in_diff.rs: replace - with + in affected_lines
+src/in_diff.rs: replace - with / in affected_lines
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "xyzzy")]
@@ -221,6 +225,7 @@ src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default(
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace - with + in test_mutants
+src/lab.rs: replace - with / in test_mutants
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
