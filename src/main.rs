@@ -24,6 +24,7 @@ mod path;
 mod pretty;
 mod process;
 mod scenario;
+mod shard;
 mod source;
 mod span;
 mod tail_file;
@@ -53,6 +54,7 @@ use crate::mutate::{Genre, Mutant};
 use crate::options::Options;
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::scenario::Scenario;
+use crate::shard::Shard;
 use crate::workspace::{PackageFilter, Workspace};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -200,6 +202,10 @@ struct Args {
     #[arg(long)]
     no_shuffle: bool,
 
+    /// run only one shard of all generated mutants: specify as e.g. 1/4.
+    #[arg(long)]
+    shard: Option<Shard>,
+
     /// maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't')]
     timeout: Option<f64>,
@@ -290,6 +296,9 @@ fn main() -> Result<()> {
             mutants,
             &read_to_string(in_diff).context("Failed to read filter diff")?,
         )?;
+    }
+    if let Some(shard) = &args.shard {
+        mutants = shard.select(mutants);
     }
     if args.list {
         list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
