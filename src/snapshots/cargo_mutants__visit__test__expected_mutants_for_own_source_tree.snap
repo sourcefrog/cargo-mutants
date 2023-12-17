@@ -88,8 +88,19 @@ src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace - with + in <impl Model for LabModel>::render
+src/console.rs: replace / with % in <impl Model for LabModel>::render
+src/console.rs: replace / with * in <impl Model for LabModel>::render
+src/console.rs: replace * with + in <impl Model for LabModel>::render
+src/console.rs: replace * with / in <impl Model for LabModel>::render
 src/console.rs: replace > with == in <impl Model for LabModel>::render
 src/console.rs: replace > with < in <impl Model for LabModel>::render
+src/console.rs: replace * with + in <impl Model for LabModel>::render
+src/console.rs: replace * with / in <impl Model for LabModel>::render
+src/console.rs: replace / with % in <impl Model for LabModel>::render
+src/console.rs: replace / with * in <impl Model for LabModel>::render
+src/console.rs: replace + with - in <impl Model for LabModel>::render
+src/console.rs: replace + with * in <impl Model for LabModel>::render
 src/console.rs: replace LabModel::find_scenario_mut -> &mut ScenarioModel with Box::leak(Box::new(Default::default()))
 src/console.rs: replace == with != in LabModel::find_scenario_mut
 src/console.rs: replace LabModel::remove_scenario with ()
@@ -183,6 +194,7 @@ src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Ok(vec![Default:
 src/in_diff.rs: replace diff_filter -> Result<Vec<Mutant>> with Err(::anyhow::anyhow!("mutated!"))
 src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Ok(())
 src/in_diff.rs: replace check_diff_new_text_matches -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/in_diff.rs: replace - with + in check_diff_new_text_matches
 src/in_diff.rs: replace != with == in check_diff_new_text_matches
 src/in_diff.rs: replace strip_patch_path -> &Utf8Path with &Default::default()
 src/in_diff.rs: replace affected_lines -> Vec<usize> with vec![]
@@ -197,6 +209,8 @@ src/in_diff.rs: replace > with == in affected_lines
 src/in_diff.rs: replace > with < in affected_lines
 src/in_diff.rs: replace < with == in affected_lines
 src/in_diff.rs: replace < with > in affected_lines
+src/in_diff.rs: replace - with + in affected_lines
+src/in_diff.rs: replace - with + in affected_lines
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "")]
 src/in_diff.rs: replace partial_new_file -> Vec<(usize, &'d str)> with vec![(0, "xyzzy")]
@@ -206,6 +220,7 @@ src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace == with != in test_mutants
+src/lab.rs: replace - with + in test_mutants
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
@@ -299,6 +314,8 @@ src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S
 src/options.rs: replace join_slices -> Vec<String> with vec![]
 src/options.rs: replace join_slices -> Vec<String> with vec![String::new()]
 src/options.rs: replace join_slices -> Vec<String> with vec!["xyzzy".into()]
+src/options.rs: replace + with - in join_slices
+src/options.rs: replace + with * in join_slices
 src/options.rs: replace or_slices -> &'c[T] with Vec::leak(Vec::new())
 src/options.rs: replace or_slices -> &'c[T] with Vec::leak(vec![Default::default()])
 src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Ok(None)
@@ -462,6 +479,8 @@ src/source.rs: replace SourceFile::path -> &Utf8Path with &Default::default()
 src/source.rs: replace SourceFile::code -> &str with ""
 src/source.rs: replace SourceFile::code -> &str with "xyzzy"
 src/span.rs: replace <impl From for LineColumn>::from -> Self with Default::default()
+src/span.rs: replace + with - in <impl From for LineColumn>::from
+src/span.rs: replace + with * in <impl From for LineColumn>::from
 src/span.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Ok(Default::default())
 src/span.rs: replace <impl Debug for LineColumn>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/span.rs: replace Span::quad -> Self with Default::default()
@@ -502,6 +521,8 @@ src/span.rs: replace == with != in Span::extract
 src/span.rs: replace >= with < in Span::extract
 src/span.rs: replace Span::replace -> String with String::new()
 src/span.rs: replace Span::replace -> String with "xyzzy".into()
+src/span.rs: replace + with - in Span::replace
+src/span.rs: replace + with * in Span::replace
 src/span.rs: replace && with || in Span::replace
 src/span.rs: replace && with == in Span::replace
 src/span.rs: replace && with != in Span::replace
@@ -611,6 +632,8 @@ src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::
 src/visit.rs: replace || with && in find_mod_source
 src/visit.rs: replace || with == in find_mod_source
 src/visit.rs: replace || with != in find_mod_source
+src/visit.rs: replace + with - in find_mod_source
+src/visit.rs: replace + with * in find_mod_source
 src/visit.rs: replace fn_sig_excluded -> bool with true
 src/visit.rs: replace fn_sig_excluded -> bool with false
 src/visit.rs: replace attrs_excluded -> bool with true

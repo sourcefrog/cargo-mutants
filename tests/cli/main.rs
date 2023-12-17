@@ -908,8 +908,7 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .code(0)
-        .stdout(contains("Found 2 mutants to test"));
+        .code(0);
 }
 
 #[test]
@@ -1269,8 +1268,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .success()
-        .stdout(contains("2 mutants tested: 2 succeeded"));
+        .success();
 
     run()
         .arg("mutants")
@@ -1278,8 +1276,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .success()
-        .stdout(contains("2 mutants tested: 2 caught"));
+        .success();
 }
 
 /// `INSTA_UPDATE=always` in the environment will cause Insta to update

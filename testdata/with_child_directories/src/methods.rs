@@ -5,7 +5,8 @@ pub fn double(x: usize) -> usize {
 #[cfg(test)]
 mod test {
     #[test]
-    fn double() {
+    fn test_double() {
         assert_eq!(super::double(2), 4);
+        assert_eq!(super::double(8), 16);
     }
 }

@@ -2,8 +2,8 @@
 source: tests/cli/error_value.rs
 expression: stdout
 ---
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(0)
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(1)
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Err(::eyre::eyre!("mutant"))
-src/lib.rs:4:14: replace == with != in even_is_ok
+src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Ok(0)
+src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Ok(1)
+src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Err(::eyre::eyre!("mutant"))
+src/lib.rs:4:10: replace == with != in zero_is_ok
 

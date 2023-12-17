@@ -5,6 +5,7 @@
 use std::fs::{create_dir, write};
 
 use indoc::indoc;
+use insta::assert_snapshot;
 use predicates::prelude::*;
 use tempfile::TempDir;
 
@@ -163,15 +164,20 @@ fn list_with_config_file_regexps() {
         exclude_re = ["-> bool with true"]
         "#,
     );
-    run()
+    let cmd = run()
         .args(["mutants", "--list", "--line-col=false", "-d"])
         .arg(testdata.path())
         .assert()
-        .success()
-        .stdout(predicates::str::diff(indoc! {"\
-                src/simple_fns.rs: replace divisible_by_three -> bool with false
-                src/simple_fns.rs: replace == with != in divisible_by_three
-        "}));
+        .success();
+    assert_snapshot!(
+        String::from_utf8_lossy(&cmd.get_output().stdout),
+        @r###"
+    src/simple_fns.rs: replace divisible_by_three -> bool with false
+    src/simple_fns.rs: replace == with != in divisible_by_three
+    src/simple_fns.rs: replace % with / in divisible_by_three
+    src/simple_fns.rs: replace % with + in divisible_by_three
+    "###
+    );
 }
 
 #[test]
@@ -180,8 +186,8 @@ fn exclude_re_overrides_config() {
     write_config_file(
         &testdata,
         r#"
-exclude_re = [".*"]     # would exclude everything
-"#,
+            exclude_re = [".*"]     # would exclude everything
+        "#,
     );
     run()
         .args(["mutants", "--list", "-d"])
@@ -190,17 +196,21 @@ exclude_re = [".*"]     # would exclude everything
         .success()
         .stdout(predicates::str::is_empty());
     // Also tests that the alias --exclude-regex is accepted
-    run()
+    let cmd = run()
         .args(["mutants", "--list", "--line-col=false", "-d"])
         .arg(testdata.path())
         .args(["--exclude-regex", " -> "])
         .args(["-f", "src/simple_fns.rs"])
         .assert()
-        .success()
-        .stdout(indoc! {"
-            src/simple_fns.rs: replace returns_unit with ()
-            src/simple_fns.rs: replace == with != in divisible_by_three
-        "});
+        .success();
+    assert_snapshot!(
+        String::from_utf8_lossy(&cmd.get_output().stdout),
+        @r###"
+    src/simple_fns.rs: replace returns_unit with ()
+    src/simple_fns.rs: replace == with != in divisible_by_three
+    src/simple_fns.rs: replace % with / in divisible_by_three
+    src/simple_fns.rs: replace % with + in divisible_by_three
+    "###);
 }
 
 #[test]

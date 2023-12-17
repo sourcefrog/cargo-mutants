@@ -367,6 +367,11 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Gt(_) => vec![quote! { == }, quote! {<}],
             BinOp::Le(_) => vec![quote! {>}],
             BinOp::Ge(_) => vec![quote! {<}],
+            BinOp::Add(_) => vec![quote! {-}, quote! {*}],
+            BinOp::Sub(_) => vec![quote! {+}],
+            BinOp::Mul(_) => vec![quote! {+}, quote! {/}],
+            BinOp::Div(_) => vec![quote! {%}, quote! {*}],
+            BinOp::Rem(_) => vec![quote! {/}, quote! {+}],
             _ => {
                 trace!(
                     op = i.op.to_pretty_string(),

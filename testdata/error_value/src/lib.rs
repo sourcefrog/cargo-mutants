@@ -1,10 +1,10 @@
 use std::result::Result;
 
-pub fn even_is_ok(n: u32) -> Result<u32, &'static str> {
-    if n % 2 == 0 {
+pub fn zero_is_ok(n: u32) -> Result<u32, &'static str> {
+    if n == 0 {
         Ok(n)
     } else {
-        Err("number is odd")
+        Err("not zero")
     }
 }
 
@@ -30,7 +30,7 @@ mod test {
     fn bad_test_ignores_error_results() {
         // A bit contrived but does the job: never checks that
         // the code passes on values that it should accept.
-        assert!(even_is_ok(1).is_err());
-        assert!(even_is_ok(3).is_err());
+        assert!(zero_is_ok(1).is_err());
+        assert!(zero_is_ok(3).is_err());
     }
 }
