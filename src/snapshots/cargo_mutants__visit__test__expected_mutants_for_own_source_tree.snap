@@ -476,6 +476,8 @@ src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".int
 src/shard.rs: replace Shard::select -> Vec<M> with vec![]
 src/shard.rs: replace Shard::select -> Vec<M> with vec![Default::default()]
 src/shard.rs: replace == with != in Shard::select
+src/shard.rs: replace % with / in Shard::select
+src/shard.rs: replace % with + in Shard::select
 src/shard.rs: replace <impl FromStr for Shard>::from_str -> Result<Self, Self::Err> with Ok(Default::default())
 src/shard.rs: replace <impl FromStr for Shard>::from_str -> Result<Self, Self::Err> with Err(::anyhow::anyhow!("mutated!"))
 src/source.rs: replace SourceFile::tree_relative_slashes -> String with String::new()
