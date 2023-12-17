@@ -47,8 +47,28 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
+  release-binary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cargo-mutants-linux
+          path: |
+            target/release/cargo-mutants
+
   pr-mutants:
     runs-on: ubuntu-latest
+    needs: [release-binary]
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
@@ -62,7 +82,13 @@ jobs:
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - run: cargo install --path .
+      - name: Download release binary
+        uses: actions/download-artifact@v3
+        with:
+          name: cargo-mutants-linux
+      - name: Install binary artifact
+        run: |
+          install cargo-mutants $HOME/.cargo/bin/
       - name: Mutants
         run: |
           cargo mutants --no-shuffle -vV --in-diff git.diff
@@ -75,7 +101,7 @@ jobs:
 
   cargo-mutants:
     runs-on: ubuntu-latest
-    needs: [build, pr-mutants]
+    needs: [build, pr-mutants, release-binary]
     strategy:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
@@ -85,7 +111,13 @@ jobs:
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - run: cargo install --path .
+      - name: Download release binary
+        uses: actions/download-artifact@v3
+        with:
+          name: cargo-mutants-linux
+      - name: Install binary artifact
+        run: |
+          install cargo-mutants $HOME/.cargo/bin/
       - name: Mutants
         run: |
           cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8
