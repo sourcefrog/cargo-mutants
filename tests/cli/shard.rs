@@ -15,7 +15,6 @@ fn shard_divides_all_mutants() {
         "--list",
         "-d",
         "testdata/well_tested",
-        "--no-shuffle",
     ];
     let full_list = String::from_utf8(
         run()
@@ -53,6 +52,9 @@ fn shard_divides_all_mutants() {
 
     // If you combine all the mutants selected for each shard, you get the
     // full list, with nothing lost or duplicated, disregarding order.
+    //
+    // If we had a bug where we shuffled before sharding, then the shards would
+    // see inconsistent lists and this test would fail in at least some attempts.
     assert_eq!(
         shard_lists.iter().flatten().sorted().collect_vec(),
         full_list.iter().sorted().collect_vec()
