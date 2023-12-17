@@ -10,12 +10,7 @@ use super::run;
 fn shard_divides_all_mutants() {
     // For speed, this only lists the mutants, trusting that the mutants
     // that are listed are the ones that are run.
-    let common_args = [
-        "mutants",
-        "--list",
-        "-d",
-        "testdata/well_tested",
-    ];
+    let common_args = ["mutants", "--list", "-d", "testdata/well_tested"];
     let full_list = String::from_utf8(
         run()
             .args(common_args)
