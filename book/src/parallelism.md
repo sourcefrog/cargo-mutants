@@ -36,6 +36,8 @@ behavior under high load. Ultimately you'll need to experiment to find the best 
 
 To tune the number of jobs, you can watch `htop` or some similar program while the tests are running, to see whether cores are fully utilized or whether the system is running out of memory. On laptop or desktop machines you might also want to watch the temperature of the CPU.
 
+As well as using more CPU and RAM, higher `-j` settings will also use more disk space in your temporary directory: Rust `target` directories can commonly be 2GB or more, and there will be one per parallel job, plus whatever temp files your test suite might create.
+
 ## Interaction with `--test-threads`
 
 The Rust test framework exposes a `--test-threads` option controlling how many threads run inside a test binary. cargo-mutants doesn't set this, but you can set it from the command line, along with other parameters to the test binary. You might need to set this if your test suite is non-hermetic with regard to global process state.
