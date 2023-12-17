@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- New: A `--shard k/n` allows you to split the work across n independent parallel `cargo mutants` invocations running on separate machines to get a faster overall solution on large suites. You, or your CI system, are responsible for launching all the shards and checking whether any of them failed.
+
+- Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
+
 - Mutate `+, -, *, /, %` binary ops.
 
 ## 23.12.1
