@@ -4,6 +4,8 @@
 
 - New: A `--shard k/n` allows you to split the work across n independent parallel `cargo mutants` invocations running on separate machines to get a faster overall solution on large suites. You, or your CI system, are responsible for launching all the shards and checking whether any of them failed.
 
+- Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
+
 ## 23.12.1
 
 - Improved progress bars and console output, including putting the outcome of each mutant on the left, and the overall progress bar at the bottom. Improved display of estimated remaining time, and other times.
