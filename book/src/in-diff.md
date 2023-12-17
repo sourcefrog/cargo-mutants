@@ -1,4 +1,4 @@
-# Incremental tests of modified code
+# Testing code changed in a diff
 
 If you're working on a large project or one with a long test suite, you may not want to test the entire codebase every time you make a change. You can use `cargo-mutants --in-diff` to test only mutants generated from recently changed code.
 
@@ -18,6 +18,8 @@ Changes to non-Rust files, or files from which no mutants are produced, are igno
 ## Caution
 
 `--in-diff` makes tests faster by covering the mutants that are most likely to be missed in the changed code. However, it's certainly possible that edits in one region cause code in a different region or a different file to no longer be well tested. Incremental tests are helpful for giving faster feedback, but they're not a substitute for a full test run.
+
+The diff is only matched against the code under test, not the test code. So, a diff that only deletes or changes test code won't cause any mutants to run, even though it may have a very material effect on test coverage.
 
 ## Example
 
