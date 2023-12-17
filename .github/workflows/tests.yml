@@ -75,7 +75,7 @@ jobs:
 
   cargo-mutants:
     runs-on: ubuntu-latest
-    # needs: [build, incremental-mutants]
+    needs: [build, pr-mutants]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
