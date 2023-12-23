@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "23.12.2-pre"
+version = "23.12.2"
 edition = "2021"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -148,7 +148,12 @@ ci = ["github"]
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-pc-windows-msvc"]
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
 # Publish jobs to run in CI
 pr-run-mode = "upload"
 
