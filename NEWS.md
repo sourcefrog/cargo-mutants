@@ -6,6 +6,8 @@
 
 - Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
 
+- New: Binary releases on GitHub through cargo-dist.
+
 ## 23.12.1
 
 - Improved progress bars and console output, including putting the outcome of each mutant on the left, and the overall progress bar at the bottom. Improved display of estimated remaining time, and other times.
