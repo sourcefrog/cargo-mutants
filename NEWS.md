@@ -8,6 +8,8 @@
 
 - New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
 
+- Changed: Stop generating mutations of `||` to `!=`, because it seems to raise too many low-value false positives, where the program does not need to care about the case where both operands are true.
+
 ## 23.12.1
 
 - Improved progress bars and console output, including putting the outcome of each mutant on the left, and the overall progress bar at the bottom. Improved display of estimated remaining time, and other times.

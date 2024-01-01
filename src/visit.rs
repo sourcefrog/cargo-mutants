@@ -362,8 +362,8 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             // because they require parenthesis for disambiguation in many expressions.
             BinOp::Eq(_) => vec![quote! { != }],
             BinOp::Ne(_) => vec![quote! { == }],
-            BinOp::And(_) => vec![quote! { || }, quote! {==}, quote! {!=}],
-            BinOp::Or(_) => vec![quote! { && }, quote! {==}, quote! {!=}],
+            BinOp::And(_) => vec![quote! { || }, quote! {!=}],
+            BinOp::Or(_) => vec![quote! { && }, quote! {==}],
             BinOp::Lt(_) => vec![quote! { == }, quote! {>}],
             BinOp::Gt(_) => vec![quote! { == }, quote! {<}],
             BinOp::Le(_) => vec![quote! {>}],
