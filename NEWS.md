@@ -8,7 +8,7 @@
 
 - New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
 
-- Changed: Stop generating mutations of `||` to `!=`, because it seems to raise too many low-value false positives, where the program does not need to care about the case where both operands are true.
+- Changed: Stop generating mutations of `||` and `&&` to `!=` and `||`, because it seems to raise too many low-value false positives that may be hard to test.
 
 ## 23.12.1
 

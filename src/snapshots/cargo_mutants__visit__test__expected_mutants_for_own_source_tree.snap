@@ -15,8 +15,6 @@ src/cargo.rs: replace cargo_argv -> Vec<String> with vec![]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![String::new()]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec!["xyzzy".into()]
 src/cargo.rs: replace || with && in cargo_argv
-src/cargo.rs: replace || with == in cargo_argv
-src/cargo.rs: replace || with != in cargo_argv
 src/cargo.rs: replace == with != in cargo_argv
 src/cargo.rs: replace == with != in cargo_argv
 src/cargo.rs: replace == with != in cargo_argv
@@ -48,20 +46,10 @@ src/console.rs: replace += with *= in Console::scenario_finished
 src/console.rs: replace += with -= in Console::scenario_finished
 src/console.rs: replace += with *= in Console::scenario_finished
 src/console.rs: replace || with && in Console::scenario_finished
-src/console.rs: replace || with == in Console::scenario_finished
-src/console.rs: replace || with != in Console::scenario_finished
 src/console.rs: replace && with || in Console::scenario_finished
-src/console.rs: replace && with == in Console::scenario_finished
-src/console.rs: replace && with != in Console::scenario_finished
 src/console.rs: replace && with || in Console::scenario_finished
-src/console.rs: replace && with == in Console::scenario_finished
-src/console.rs: replace && with != in Console::scenario_finished
 src/console.rs: replace && with || in Console::scenario_finished
-src/console.rs: replace && with == in Console::scenario_finished
-src/console.rs: replace && with != in Console::scenario_finished
 src/console.rs: replace || with && in Console::scenario_finished
-src/console.rs: replace || with == in Console::scenario_finished
-src/console.rs: replace || with != in Console::scenario_finished
 src/console.rs: replace Console::autoset_timeout with ()
 src/console.rs: replace Console::start_copy with ()
 src/console.rs: replace Console::finish_copy with ()
@@ -178,8 +166,6 @@ src/fnvalue.rs: replace == with != in path_ends_with
 src/fnvalue.rs: replace match_impl_iterator -> Option<&Type> with None
 src/fnvalue.rs: replace match_impl_iterator -> Option<&Type> with Some(&Default::default())
 src/fnvalue.rs: replace && with || in match_impl_iterator
-src/fnvalue.rs: replace && with == in match_impl_iterator
-src/fnvalue.rs: replace && with != in match_impl_iterator
 src/fnvalue.rs: replace == with != in match_impl_iterator
 src/fnvalue.rs: replace == with != in match_impl_iterator
 src/fnvalue.rs: replace == with != in match_impl_iterator
@@ -229,8 +215,6 @@ src/in_diff.rs: replace < with > in affected_lines
 src/in_diff.rs: replace += with -= in affected_lines
 src/in_diff.rs: replace += with *= in affected_lines
 src/in_diff.rs: replace && with || in affected_lines
-src/in_diff.rs: replace && with == in affected_lines
-src/in_diff.rs: replace && with != in affected_lines
 src/in_diff.rs: replace > with == in affected_lines
 src/in_diff.rs: replace > with < in affected_lines
 src/in_diff.rs: replace < with == in affected_lines
@@ -257,11 +241,7 @@ src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace || with && in test_scenario
-src/lab.rs: replace || with == in test_scenario
-src/lab.rs: replace || with != in test_scenario
 src/lab.rs: replace && with || in test_scenario
-src/lab.rs: replace && with == in test_scenario
-src/lab.rs: replace && with != in test_scenario
 src/lab.rs: replace == with != in test_scenario
 src/list.rs: replace <impl Write for FmtToIoWrite<W>>::write_str -> Result<(), fmt::Error> with Ok(())
 src/list.rs: replace <impl Write for FmtToIoWrite<W>>::write_str -> Result<(), fmt::Error> with Err(::anyhow::anyhow!("mutated!"))
@@ -296,8 +276,6 @@ src/manifest.rs: replace fix_path -> Option<String> with None
 src/manifest.rs: replace fix_path -> Option<String> with Some(String::new())
 src/manifest.rs: replace fix_path -> Option<String> with Some("xyzzy".into())
 src/manifest.rs: replace || with && in fix_path
-src/manifest.rs: replace || with == in fix_path
-src/manifest.rs: replace || with != in fix_path
 src/manifest.rs: replace == with != in fix_path
 src/mutate.rs: replace Mutant::mutated_code -> String with String::new()
 src/mutate.rs: replace Mutant::mutated_code -> String with "xyzzy".into()
@@ -353,8 +331,6 @@ src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Ok(None)
 src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Ok(Some(Default::default()))
 src/options.rs: replace build_glob_set -> Result<Option<GlobSet>> with Err(::anyhow::anyhow!("mutated!"))
 src/options.rs: replace || with && in build_glob_set
-src/options.rs: replace || with == in build_glob_set
-src/options.rs: replace || with != in build_glob_set
 src/outcome.rs: replace Phase::name -> &'static str with ""
 src/outcome.rs: replace Phase::name -> &'static str with "xyzzy"
 src/outcome.rs: replace <impl Display for Phase>::fmt -> fmt::Result with Ok(Default::default())
@@ -378,8 +354,6 @@ src/outcome.rs: replace LabOutcome::exit_code -> i32 with 0
 src/outcome.rs: replace LabOutcome::exit_code -> i32 with 1
 src/outcome.rs: replace LabOutcome::exit_code -> i32 with -1
 src/outcome.rs: replace && with || in LabOutcome::exit_code
-src/outcome.rs: replace && with == in LabOutcome::exit_code
-src/outcome.rs: replace && with != in LabOutcome::exit_code
 src/outcome.rs: replace > with == in LabOutcome::exit_code
 src/outcome.rs: replace > with < in LabOutcome::exit_code
 src/outcome.rs: replace > with == in LabOutcome::exit_code
@@ -411,8 +385,6 @@ src/outcome.rs: replace ScenarioOutcome::phase_results -> &[PhaseResult] with Ve
 src/outcome.rs: replace ScenarioOutcome::should_show_logs -> bool with true
 src/outcome.rs: replace ScenarioOutcome::should_show_logs -> bool with false
 src/outcome.rs: replace && with || in ScenarioOutcome::should_show_logs
-src/outcome.rs: replace && with == in ScenarioOutcome::should_show_logs
-src/outcome.rs: replace && with != in ScenarioOutcome::should_show_logs
 src/outcome.rs: replace ScenarioOutcome::success -> bool with true
 src/outcome.rs: replace ScenarioOutcome::success -> bool with false
 src/outcome.rs: replace ScenarioOutcome::has_timeout -> bool with true
@@ -420,28 +392,18 @@ src/outcome.rs: replace ScenarioOutcome::has_timeout -> bool with false
 src/outcome.rs: replace ScenarioOutcome::check_or_build_failed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::check_or_build_failed -> bool with false
 src/outcome.rs: replace && with || in ScenarioOutcome::check_or_build_failed
-src/outcome.rs: replace && with == in ScenarioOutcome::check_or_build_failed
-src/outcome.rs: replace && with != in ScenarioOutcome::check_or_build_failed
 src/outcome.rs: replace != with == in ScenarioOutcome::check_or_build_failed
 src/outcome.rs: replace == with != in ScenarioOutcome::check_or_build_failed
 src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_caught -> bool with false
 src/outcome.rs: replace && with || in ScenarioOutcome::mutant_caught
-src/outcome.rs: replace && with == in ScenarioOutcome::mutant_caught
-src/outcome.rs: replace && with != in ScenarioOutcome::mutant_caught
 src/outcome.rs: replace && with || in ScenarioOutcome::mutant_caught
-src/outcome.rs: replace && with == in ScenarioOutcome::mutant_caught
-src/outcome.rs: replace && with != in ScenarioOutcome::mutant_caught
 src/outcome.rs: replace == with != in ScenarioOutcome::mutant_caught
 src/outcome.rs: replace == with != in ScenarioOutcome::mutant_caught
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with true
 src/outcome.rs: replace ScenarioOutcome::mutant_missed -> bool with false
 src/outcome.rs: replace && with || in ScenarioOutcome::mutant_missed
-src/outcome.rs: replace && with == in ScenarioOutcome::mutant_missed
-src/outcome.rs: replace && with != in ScenarioOutcome::mutant_missed
 src/outcome.rs: replace && with || in ScenarioOutcome::mutant_missed
-src/outcome.rs: replace && with == in ScenarioOutcome::mutant_missed
-src/outcome.rs: replace && with != in ScenarioOutcome::mutant_missed
 src/outcome.rs: replace == with != in ScenarioOutcome::mutant_missed
 src/outcome.rs: replace ScenarioOutcome::summary -> SummaryOutcome with Default::default()
 src/outcome.rs: replace PhaseResult::is_success -> bool with true
@@ -477,26 +439,16 @@ src/path.rs: replace > with < in ascent
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with String::new()
 src/path.rs: replace <impl Utf8PathSlashes for Utf8Path>::to_slash_path -> String with "xyzzy".into()
 src/path.rs: replace || with && in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
-src/path.rs: replace || with == in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
-src/path.rs: replace || with != in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
 src/path.rs: replace == with != in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
 src/path.rs: replace == with != in <impl Utf8PathSlashes for Utf8Path>::to_slash_path
 src/pretty.rs: replace <impl ToPrettyString for T>::to_pretty_string -> String with String::new()
 src/pretty.rs: replace <impl ToPrettyString for T>::to_pretty_string -> String with "xyzzy".into()
 src/pretty.rs: replace && with || in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace && with == in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace && with != in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace || with && in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace || with == in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace || with != in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace || with && in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace || with == in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace || with != in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace == with != in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace == with != in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace || with && in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace || with == in <impl ToPrettyString for T>::to_pretty_string
-src/pretty.rs: replace || with != in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace += with -= in <impl ToPrettyString for T>::to_pretty_string
 src/pretty.rs: replace += with *= in <impl ToPrettyString for T>::to_pretty_string
 src/process.rs: replace Process::run -> Result<ProcessStatus> with Ok(Default::default())
@@ -545,26 +497,16 @@ src/span.rs: replace Span::quad -> Self with Default::default()
 src/span.rs: replace Span::extract -> String with String::new()
 src/span.rs: replace Span::extract -> String with "xyzzy".into()
 src/span.rs: replace && with || in Span::extract
-src/span.rs: replace && with == in Span::extract
-src/span.rs: replace && with != in Span::extract
 src/span.rs: replace || with && in Span::extract
-src/span.rs: replace || with == in Span::extract
-src/span.rs: replace || with != in Span::extract
 src/span.rs: replace && with || in Span::extract
-src/span.rs: replace && with == in Span::extract
-src/span.rs: replace && with != in Span::extract
 src/span.rs: replace == with != in Span::extract
 src/span.rs: replace >= with < in Span::extract
 src/span.rs: replace > with == in Span::extract
 src/span.rs: replace > with < in Span::extract
 src/span.rs: replace || with && in Span::extract
-src/span.rs: replace || with == in Span::extract
-src/span.rs: replace || with != in Span::extract
 src/span.rs: replace < with == in Span::extract
 src/span.rs: replace < with > in Span::extract
 src/span.rs: replace && with || in Span::extract
-src/span.rs: replace && with == in Span::extract
-src/span.rs: replace && with != in Span::extract
 src/span.rs: replace == with != in Span::extract
 src/span.rs: replace < with == in Span::extract
 src/span.rs: replace < with > in Span::extract
@@ -577,8 +519,6 @@ src/span.rs: replace == with != in Span::extract
 src/span.rs: replace += with -= in Span::extract
 src/span.rs: replace += with *= in Span::extract
 src/span.rs: replace && with || in Span::extract
-src/span.rs: replace && with == in Span::extract
-src/span.rs: replace && with != in Span::extract
 src/span.rs: replace == with != in Span::extract
 src/span.rs: replace >= with < in Span::extract
 src/span.rs: replace Span::replace -> String with String::new()
@@ -586,32 +526,20 @@ src/span.rs: replace Span::replace -> String with "xyzzy".into()
 src/span.rs: replace + with - in Span::replace
 src/span.rs: replace + with * in Span::replace
 src/span.rs: replace && with || in Span::replace
-src/span.rs: replace && with == in Span::replace
-src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace || with && in Span::replace
-src/span.rs: replace || with == in Span::replace
-src/span.rs: replace || with != in Span::replace
 src/span.rs: replace || with && in Span::replace
-src/span.rs: replace || with == in Span::replace
-src/span.rs: replace || with != in Span::replace
 src/span.rs: replace || with && in Span::replace
-src/span.rs: replace || with == in Span::replace
-src/span.rs: replace || with != in Span::replace
 src/span.rs: replace < with == in Span::replace
 src/span.rs: replace < with > in Span::replace
 src/span.rs: replace > with == in Span::replace
 src/span.rs: replace > with < in Span::replace
 src/span.rs: replace && with || in Span::replace
-src/span.rs: replace && with == in Span::replace
-src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace < with == in Span::replace
 src/span.rs: replace < with > in Span::replace
 src/span.rs: replace && with || in Span::replace
-src/span.rs: replace && with == in Span::replace
-src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace >= with < in Span::replace
 src/span.rs: replace == with != in Span::replace
@@ -621,8 +549,6 @@ src/span.rs: replace == with != in Span::replace
 src/span.rs: replace += with -= in Span::replace
 src/span.rs: replace += with *= in Span::replace
 src/span.rs: replace && with || in Span::replace
-src/span.rs: replace && with == in Span::replace
-src/span.rs: replace && with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace == with != in Span::replace
 src/span.rs: replace <impl From for Span>::from -> Self with Default::default()
@@ -638,14 +564,8 @@ src/tail_file.rs: replace > with < in TailFile::last_line
 src/visit.rs: replace walk_tree -> Result<Discovered> with Ok(Default::default())
 src/visit.rs: replace walk_tree -> Result<Discovered> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace && with || in walk_tree
-src/visit.rs: replace && with == in walk_tree
-src/visit.rs: replace && with != in walk_tree
 src/visit.rs: replace || with && in walk_tree
-src/visit.rs: replace || with == in walk_tree
-src/visit.rs: replace || with != in walk_tree
 src/visit.rs: replace || with && in walk_tree
-src/visit.rs: replace || with == in walk_tree
-src/visit.rs: replace || with != in walk_tree
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec![]))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec![String::new()]))
 src/visit.rs: replace walk_file -> Result<(Vec<Mutant>, Vec<String>)> with Ok((vec![], vec!["xyzzy".into()]))
@@ -661,29 +581,15 @@ src/visit.rs: replace == with != in DiscoveryVisitor<'o>::collect_fn_mutants
 src/visit.rs: replace DiscoveryVisitor<'o>::in_namespace -> T with Default::default()
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn with ()
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn with ()
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_impl_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn with ()
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
-src/visit.rs: replace || with == in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
-src/visit.rs: replace || with != in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn
 src/visit.rs: replace <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl with ()
 src/visit.rs: replace == with != in <impl Visit for DiscoveryVisitor<'_>>::visit_item_impl
@@ -696,8 +602,6 @@ src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(Non
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Ok(Some(Default::default()))
 src/visit.rs: replace find_mod_source -> Result<Option<Utf8PathBuf>> with Err(::anyhow::anyhow!("mutated!"))
 src/visit.rs: replace || with && in find_mod_source
-src/visit.rs: replace || with == in find_mod_source
-src/visit.rs: replace || with != in find_mod_source
 src/visit.rs: replace + with - in find_mod_source
 src/visit.rs: replace + with * in find_mod_source
 src/visit.rs: replace fn_sig_excluded -> bool with true
@@ -705,11 +609,7 @@ src/visit.rs: replace fn_sig_excluded -> bool with false
 src/visit.rs: replace attrs_excluded -> bool with true
 src/visit.rs: replace attrs_excluded -> bool with false
 src/visit.rs: replace || with && in attrs_excluded
-src/visit.rs: replace || with == in attrs_excluded
-src/visit.rs: replace || with != in attrs_excluded
 src/visit.rs: replace || with && in attrs_excluded
-src/visit.rs: replace || with == in attrs_excluded
-src/visit.rs: replace || with != in attrs_excluded
 src/visit.rs: replace block_is_empty -> bool with true
 src/visit.rs: replace block_is_empty -> bool with false
 src/visit.rs: replace attr_is_cfg_test -> bool with true
@@ -747,8 +647,6 @@ src/workspace.rs: replace direct_package_sources -> Result<Vec<Utf8PathBuf>> wit
 src/workspace.rs: replace should_mutate_target -> bool with true
 src/workspace.rs: replace should_mutate_target -> bool with false
 src/workspace.rs: replace || with && in should_mutate_target
-src/workspace.rs: replace || with == in should_mutate_target
-src/workspace.rs: replace || with != in should_mutate_target
 src/workspace.rs: replace == with != in should_mutate_target
 src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Ok(Default::default())
 src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
