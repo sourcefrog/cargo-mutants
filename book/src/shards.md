@@ -87,3 +87,7 @@ If your CI system offers a choice of VM sizes you might experiment with using sm
 You should also think about cost and capacity constraints in your CI system, and the risk of starving out other users.
 
 cargo-mutants has no internal scaling constraints to prevent you from setting `k` very large, if cost, efficiency and CI capacity are not a concern.
+
+## Sampling mutants
+
+An option like `--shard 1/100` can be used to run 1% of all the generated mutants for testing cargo-mutants, to get a sense of whether it works or to see how it performs on some tree.
