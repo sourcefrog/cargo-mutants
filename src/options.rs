@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Global in-process options for experimenting on mutants.
 //!
@@ -11,9 +11,12 @@ use anyhow::Context;
 use camino::Utf8PathBuf;
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use regex::RegexSet;
+use serde::Deserialize;
+use strum::{Display, EnumString};
 use tracing::warn;
 
-use crate::{config::Config, *};
+use crate::config::Config;
+use crate::*;
 
 /// Options for mutation testing, based on both command-line arguments and the
 /// config file.
@@ -90,8 +93,25 @@ pub struct Options {
 
     /// Emit diffs showing just what changed.
     pub emit_diffs: bool,
+
+    /// The tool to use to run tests.
+    pub test_tool: TestTool,
 }
 
+/// Choice of tool to use to run tests.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, EnumString, Display, Deserialize)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum TestTool {
+    /// Use `cargo test`, the default.
+    #[default]
+    Cargo,
+
+    /// Use `cargo nextest`.
+    Nextest,
+}
+
+/// Join two slices into a new vector.
 fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
     let mut v = Vec::with_capacity(a.len() + b.len());
     v.extend_from_slice(a);
@@ -119,6 +139,9 @@ impl Options {
                 &config.additional_cargo_test_args,
             ),
             check_only: args.check,
+            colors: true, // TODO: An option for this and use CLICOLORS.
+            emit_json: args.json,
+            emit_diffs: args.diff,
             error_values: join_slices(&args.error, &config.error_values),
             examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
                 .context("Failed to compile examine_re regex")?,
@@ -129,6 +152,7 @@ impl Options {
             gitignore: args.gitignore,
             jobs: args.jobs,
             leak_dirs: args.leak_dirs,
+            minimum_test_timeout,
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,
@@ -137,10 +161,7 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
-            emit_json: args.json,
-            colors: true, // TODO: An option for this and use CLICOLORS.
-            emit_diffs: args.diff,
-            minimum_test_timeout,
+            test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         options.error_values.iter().for_each(|e| {
             if e.starts_with("Err(") {
@@ -181,4 +202,42 @@ fn build_glob_set<S: AsRef<str>, I: IntoIterator<Item = S>>(
         }
     }
     Ok(Some(builder.build()?))
+}
+
+#[cfg(test)]
+mod test {
+    use std::io::Write;
+
+    use indoc::indoc;
+    use tempfile::NamedTempFile;
+
+    use super::*;
+
+    #[test]
+    fn default_options() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(!options.check_only);
+        assert_eq!(options.test_tool, TestTool::Cargo);
+    }
+
+    #[test]
+    fn options_from_test_tool_arg() {
+        let args = Args::parse_from(["mutants", "--test-tool", "nextest"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_tool, TestTool::Nextest);
+    }
+
+    #[test]
+    fn test_tool_from_config() {
+        let config = indoc! { r#"
+            test_tool = "nextest"
+        "#};
+        let mut config_file = NamedTempFile::new().unwrap();
+        config_file.write_all(config.as_bytes()).unwrap();
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::read_file(config_file.path()).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.test_tool, TestTool::Nextest);
+    }
 }

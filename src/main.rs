@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! `cargo-mutants`: Find test gaps by inserting bugs.
 
@@ -51,7 +51,7 @@ use crate::list::{list_files, list_mutants, FmtToIoWrite};
 use crate::log_file::LogFile;
 use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
-use crate::options::Options;
+use crate::options::{Options, TestTool};
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::scenario::Scenario;
 use crate::shard::Shard;
@@ -190,6 +190,10 @@ struct Args {
     #[arg(long, short = 'D')]
     in_diff: Option<Utf8PathBuf>,
 
+    /// minimum timeout for tests, in seconds, as a lower bound on the auto-set time.
+    #[arg(long, env = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT")]
+    minimum_test_timeout: Option<f64>,
+
     /// only test mutants from these packages.
     #[arg(id = "package", long, short = 'p')]
     mutate_packages: Vec<String>,
@@ -206,13 +210,13 @@ struct Args {
     #[arg(long)]
     shard: Option<Shard>,
 
+    /// tool used to run test suites: cargo or nextest.
+    #[arg(long)]
+    test_tool: Option<TestTool>,
+
     /// maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't')]
     timeout: Option<f64>,
-
-    /// minimum timeout for tests, in seconds, as a lower bound on the auto-set time.
-    #[arg(long, env = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT")]
-    minimum_test_timeout: Option<f64>,
 
     /// print mutations that failed to check or build.
     #[arg(long, short = 'V')]
