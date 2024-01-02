@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Fixed: Fixed spurious "Patch input contains repeated filenames" error when `--in-diff` is given a patch that deletes multiple files.
+
 ## 23.12.2
 
 - New: A `--shard k/n` allows you to split the work across n independent parallel `cargo mutants` invocations running on separate machines to get a faster overall solution on large suites. You, or your CI system, are responsible for launching all the shards and checking whether any of them failed.
