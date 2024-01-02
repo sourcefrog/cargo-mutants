@@ -25,6 +25,10 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
     for patch in &patches {
         let path = strip_patch_path(&patch.new.path);
+        if path == "/dev/null" {
+            // The file was deleted; we can't possibly match anything in it.
+            continue;
+        }
         if lines_changed_by_path
             .insert(path, affected_lines(patch))
             .is_some()
