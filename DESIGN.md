@@ -228,6 +228,10 @@ Many features can be tested adequately by only looking at the list of mutants pr
 
 Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient to exercise from the command line.
 
+### Nextest tests
+
+cargo-mutants tests require `nextest` to be installed.
+
 ## UI Style
 
 Always print paths with forward slashes, even on Windows. Use `path_slash`.
