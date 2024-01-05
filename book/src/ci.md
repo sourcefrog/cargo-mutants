@@ -20,6 +20,11 @@ The recommended way to install cargo-mutants is using [install-action](https://g
 
 Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
 
+The recommended way to install cargo-mutants is using [install-action](https://github.com/taiki-e/install-action), which will fetch a binary from cargo-mutants most recent GitHub release, which is faster than building from source. You could alternatively use [baptiste0928/cargo-install](https://github.com/baptiste0928/cargo-install) which will build it from source in your worker and cache the result.
+
 ```yml
 {{#include ../../examples/workflows/basic.yml}}
 ```
+
+The workflow used by cargo-mutants on itself can be seen at
+<https://github.com/sourcefrog/cargo-mutants/blob/main/.github/workflows/mutate-self.yaml>, but this is different from what you will typically want to use, because it runs cargo-mutants from HEAD.
