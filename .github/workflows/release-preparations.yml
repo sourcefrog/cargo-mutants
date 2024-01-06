@@ -1,0 +1,54 @@
+name: Release preparations
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        default: patch
+        description: SemVer release level
+        options:
+          - major
+          - minor
+          - patch
+        required: true
+        type: choice
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  aeruginous:
+    if: |
+      contains(fromJson('["major", "minor", "patch"]'), inputs.release) &&
+      github.repository == 'sourcefrog/cargo-mutants'
+    runs-on: ubuntu-latest
+    steps:
+      - run: rustup update
+      - uses: actions/checkout@v4
+      - uses: fregante/setup-git-user@v2
+
+      - uses: baptiste0928/cargo-install@v2
+        with:
+          crate: aeruginous
+
+      - run: |
+          aeruginous increment-version \
+            -v "$(cargo r -- mutants --version | cut -d \  -f 2)" \
+            -r ${{ inputs.release }} \
+            -p cargo-mutants \
+            -e Cargo.lock \
+            -e Cargo.toml \
+            -e CITATION.cff
+          git add .
+          git commit -m '[Aeruginous] Release preparations'
+
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          assignees: |
+            sourcefrog
+          branch: documentation/release-preparations
+          branch-suffix: timestamp
+          labels: |
+            documentation
+          title: '[Aeruginous] Release preparations'
