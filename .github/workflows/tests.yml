@@ -127,13 +127,3 @@ jobs:
         with:
           name: mutants.out
           path: mutants.out
-
-  cffconvert:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: docker://citationcff/cffconvert:latest
-        with:
-          args: --validate
