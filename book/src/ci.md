@@ -42,6 +42,3 @@ jobs:
           name: mutants-out
           path: mutants.out
 ```
-
-The workflow used by cargo-mutants on itself can be seen at
-<https://github.com/sourcefrog/cargo-mutants/blob/main/.github/workflows/mutate-self.yaml>, but this is different from what you will typically want to use, because it runs cargo-mutants from HEAD.

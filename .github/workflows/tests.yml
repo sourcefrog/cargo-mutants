@@ -127,3 +127,25 @@ jobs:
         with:
           name: mutants.out
           path: mutants.out
+
+  book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
+      - uses: Swatinem/rust-cache@v2
+      - name: Install mdbook and mdbook-linkcheck
+        uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook, mdbook-linkcheck
+      - name: Build mdbook
+        run: |
+          mdbook build book
+      - name: Archive book output
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: book
+          path: book/book
