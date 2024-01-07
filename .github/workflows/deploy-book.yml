@@ -31,7 +31,7 @@ jobs:
       - name: Install mdbook
         uses: taiki-e/install-action@v2
         with:
-          tool: mdbook
+          tool: mdbook, mdbook-linkcheck
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Build book
