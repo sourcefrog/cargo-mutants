@@ -33,7 +33,13 @@ Please run `cargo fmt` and `cargo clippy`. These are checked in CI.
 
 ## Testing
 
-Of course, please add tests for new features or bug fixes, and see the _Testing_ section of [the design doc](DESIGN.md).
+Of course, please add tests for new features or bug fixes. See also the _Testing_ section of [the design doc](DESIGN.md).
+
+### Running the tests
+
+cargo-mutants tests require [`cargo-nextest`](https://nexte.st/) to be installed, so that they can exercise `--test-tool=nextest`.
+
+cargo-mutants tests can be run under either `cargo test` or `cargo nextest run`.
 
 ### Test naming
 

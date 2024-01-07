@@ -1,6 +1,6 @@
 # cargo-mutants with nextest
 
-nextest is a tool for running Rust tests, as a replacement for `cargo test`.
+[nextest](https://nexte.st) is a tool for running Rust tests, as a replacement for `cargo test`.
 
 You can use nextest to run your tests with cargo-mutants, instead of `cargo test`, by either passing the `--test-tool=nextest` option, or setting `test_tool = "nextest"` in `.cargo/mutants.toml`.
 
