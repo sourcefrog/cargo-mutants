@@ -158,7 +158,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-mutants"
-version = "23.12.2"
+version = "24.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
