@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Martin Pool.
+// Copyright 2022-2024 Martin Pool.
 
 //! `.cargo/mutants.toml` configuration file.
 //!
@@ -10,11 +10,13 @@
 
 use std::default::Default;
 use std::fs::read_to_string;
+use std::path::Path;
 
 use anyhow::Context;
 use camino::Utf8Path;
 use serde::Deserialize;
 
+use crate::options::TestTool;
 use crate::Result;
 
 /// Configuration read from a config file.
@@ -40,10 +42,12 @@ pub struct Config {
     pub additional_cargo_test_args: Vec<String>,
     /// Minimum test timeout, in seconds, as a floor on the autoset value.
     pub minimum_test_timeout: Option<f64>,
+    /// Choice of test tool: cargo or nextest.
+    pub test_tool: Option<TestTool>,
 }
 
 impl Config {
-    pub fn read_file(path: &Utf8Path) -> Result<Config> {
+    pub fn read_file(path: &Path) -> Result<Config> {
         let toml = read_to_string(path).with_context(|| format!("read config {path:?}"))?;
         toml::de::from_str(&toml).with_context(|| format!("parse toml from {path:?}"))
     }
@@ -53,7 +57,7 @@ impl Config {
     pub fn read_tree_config(workspace_dir: &Utf8Path) -> Result<Config> {
         let path = workspace_dir.join(".cargo").join("mutants.toml");
         if path.exists() {
-            Config::read_file(&path)
+            Config::read_file(path.as_ref())
         } else {
             Ok(Config::default())
         }

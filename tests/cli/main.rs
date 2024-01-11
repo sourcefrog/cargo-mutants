@@ -26,6 +26,7 @@ mod config;
 mod error_value;
 mod in_diff;
 mod jobs;
+mod nextest;
 mod shard;
 mod trace;
 #[cfg(windows)]

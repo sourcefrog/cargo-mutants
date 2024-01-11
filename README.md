@@ -22,11 +22,17 @@ the tests might be insufficient.
 
 **The main documentation is the user guide at <https://mutants.rs/>.**
 
+## Prerequisites
+
+cargo-mutants can help on trees with non-flaky tests that run under `cargo test` or [`cargo nextest run`](https://nexte.st/).
+
 ## Install
 
 ```sh
 cargo install --locked cargo-mutants
 ```
+
+You can also install using [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) or from binaries attached to GitHub releases.
 
 ## Quick start
 
@@ -42,8 +48,6 @@ To generate mutants in only one file:
 cargo mutants -f src/something.rs
 ```
 
-**For more, see the user guide is at <https://mutants.rs/>.**
-
 ## Help advance cargo-mutants
 
 If you use cargo-mutants or just like the idea you can help it get better:
@@ -53,18 +57,20 @@ If you use cargo-mutants or just like the idea you can help it get better:
 
 ## Project status
 
-As of October 2023 this is an actively-maintained spare time project. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) about every one or two months.
+As of January 2024 this is an actively-maintained spare time project. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) about every one or two months.
 
 It's very usable at it is and there's room for lots more future improvement,
 especially in adding new types of mutation.
+
+This software is provided as-is with no warranty of any kind.
 
 ## Further reading
 
 See also:
 
-- [cargo-mutants manual](https://mutants.rs/)
-- [How cargo-mutants compares to other techniques and tools](https://github.com/sourcefrog/cargo-mutants/wiki/Compared).
-- [Design notes](DESIGN.md)
-- [Contributing](CONTRIBUTING.md)
-- [Release notes](NEWS.md)
-- [Discussions](https://github.com/sourcefrog/cargo-mutants/discussions)
+* [cargo-mutants manual](https://mutants.rs/)
+* [How cargo-mutants compares to other techniques and tools](https://github.com/sourcefrog/cargo-mutants/wiki/Compared).
+* [Design notes](DESIGN.md)
+* [Contributing](CONTRIBUTING.md)
+* [Release notes](NEWS.md)
+* [Discussions](https://github.com/sourcefrog/cargo-mutants/discussions)

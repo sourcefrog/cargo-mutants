@@ -14,8 +14,6 @@ src/cargo.rs: replace cargo_bin -> String with "xyzzy".into()
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec![String::new()]
 src/cargo.rs: replace cargo_argv -> Vec<String> with vec!["xyzzy".into()]
-src/cargo.rs: replace || with && in cargo_argv
-src/cargo.rs: replace == with != in cargo_argv
 src/cargo.rs: replace == with != in cargo_argv
 src/cargo.rs: replace == with != in cargo_argv
 src/cargo.rs: replace rustflags -> String with String::new()

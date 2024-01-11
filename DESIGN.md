@@ -194,6 +194,18 @@ Cargo-mutants is primarily tested on its public interface, which is the command 
 
 `cargo-mutants` runs as a subprocess of the test process so that we get the most realistic view of its behavior. In some cases it is run via the `cargo` command to test that this level of indirection works properly.
 
+### Test performance
+
+Since cargo-mutants itself runs the test suite of the program under test many times there is a risk that the test suite can get slow. Aside from slowing down developers and CI, this has a multiplicative effect on the time to run `cargo mutants` on itself.
+
+To manage test time:
+
+* Although key behaviour should be tested through integration tests that run the CLI, it's OK to handle additional cases with unit tests that run much faster.
+
+* Whenever reasonable, CLI tests can only list mutants with `--list` rather than actually testing all of them: we have just a small set of tests that check that the mutants that are listed are actually run.
+
+* Use relatively small testdata trees that are sufficient to test the right behavior.
+
 ### `testdata` trees
 
 The primary means of testing is Rust source trees under `testdata`: you can copy an existing tree and modify it to show the new behavior that you want to test.
@@ -214,7 +226,11 @@ Many features can be tested adequately by only looking at the list of mutants pr
 
 ### Unit tests
 
-Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient to exercise from the command line.
+Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient or overly slow to exercise from the command line.
+
+### Nextest tests
+
+cargo-mutants tests require `nextest` to be installed.
 
 ## UI Style
 
