@@ -8,6 +8,14 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - ".cargo/**"
+      - ".github/workflows/tests.yml"
+      - "Cargo.*"
+      - "mutants_attrs/**"
+      - "src/**"
+      - "testdata/**"
+      - "tests/**"
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
 env:
