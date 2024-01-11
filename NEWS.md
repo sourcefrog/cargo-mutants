@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- New! `cargo mutants --test-tool nextest`, or `test_tool = "nextest"` in `.cargo/mutants.toml` runs tests under [Nextest](https://nextest.rs/). Some trees have tests that only work under Nextest, and this allows them to be tested. In other cases Nextest may be significantly faster, because it will exit soon after the first test failure.
+- New! `cargo mutants --test-tool nextest`, or `test_tool = "nextest"` in `.cargo/mutants.toml` runs tests under [Nextest](https://nexte.st/). Some trees have tests that only work under Nextest, and this allows them to be tested. In other cases Nextest may be significantly faster, because it will exit soon after the first test failure.
 
 - Fixed: Fixed spurious "Patch input contains repeated filenames" error when `--in-diff` is given a patch that deletes multiple files.
 
