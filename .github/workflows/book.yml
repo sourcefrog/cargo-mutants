@@ -5,6 +5,12 @@ on:
       - main
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/book.yml
+      - book/**
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -12,17 +18,39 @@ permissions:
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
+      - uses: Swatinem/rust-cache@v2
+      - name: Install mdbook and mdbook-linkcheck
+        uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook, mdbook-linkcheck
+      - name: Build mdbook
+        run: |
+          mdbook build book
+      - name: Archive book output
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: book
+          path: book/book
+
   deploy:
-    if: github.repository == 'sourcefrog/cargo-mutants'
+    if:
+      github.repository == 'sourcefrog/cargo-mutants' && github.ref_name ==
+      'main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    concurrency: # Allow one concurrent deployment
+      group: "pages"
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
