@@ -3,6 +3,17 @@
 Just run `cargo mutants` in a Rust source directory, and it will point out
 functions that may be inadequately tested.
 
+## Prerequisites
+
+For cargo-mutants to give useful results, your tree must already
+
+1. Be built with `cargo build`, and
+2. Have reliable non-flaky tests that run under either `cargo test` or `cargo nextest`.
+
+If the tests are flaky, meaning that they can pass or fail depending on factors other than the source tree, then the cargo-mutants results will be meaningless.
+
+Cross-compilation is not currently supported, so the tree must be buildable for the host platform.
+
 ## Example
 
 ```none

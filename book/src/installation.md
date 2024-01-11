@@ -6,6 +6,8 @@ Install cargo-mutants from source:
 cargo install --locked cargo-mutants
 ```
 
+You can also use `cargo binstall` from [cargo-binstall](https://github.com/cargo-bins/cargo-binstall), or install binaries from GitHub releases.
+
 ## Supported Rust versions
 
 Building cargo-mutants requires a reasonably recent stable (or nightly or beta) Rust toolchain.

@@ -16,11 +16,13 @@ However, running each test individually also means there is more per-test startu
 
 In general, nextest will do relatively poorly on trees that have tests that are individually very fast, or on trees that establish shared or cached state across tests.
 
-So there are at least two reasons why you might want to use nextest:
+## When to use nextest
 
-1. Some trees only support testing under nextest, and their tests fail under `cargo test`: in that case, you have to use this option! In particular, nextest's behavior of running each test in a separate process gives better isolation between tests.
+There are at least two reasons why you might want to use nextest:
 
-2. Some trees might be faster under nextest than under `cargo test`, because they have a lot of tests that fail quickly, and the startup time is a small fraction of the time for the average test. This may or may not be true for your tree, so you can try it and see.
+1. Some Rust source trees only support testing under nextest, and their tests fail under `cargo test`: in that case, you have to use this option! In particular, nextest's behavior of running each test in a separate process gives better isolation between tests.
+
+2. Some trees might be faster under nextest than under `cargo test`, because they have a lot of tests that fail quickly, and the startup time is a small fraction of the time for the average test. This may or may not be true for your tree, so you can try it and see. Some trees, including cargo-mutants itself, are slower under nextest.
 
 ## nextest and doctests
 
