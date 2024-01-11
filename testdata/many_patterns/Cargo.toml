@@ -1,0 +1,8 @@
+[package]
+name = "cargo-mutants-testdata-many-patterns"
+version = "0.0.0"
+edition = "2021"
+authors = ["Martin Pool"]
+publish = false
+
+[lib]
