@@ -29,7 +29,10 @@ jobs:
           git branch -av
           git diff origin/${{ github.base_ref }}.. | tee git.diff
       - uses: Swatinem/rust-cache@v2
-      - run: cargo install cargo-mutants
+      - uses: taiki-e/install-action@v2
+        name: Install cargo-mutants using install-action
+        with:
+          tool: cargo-mutants
       - name: Mutants
         run: |
           cargo mutants --no-shuffle -j 2 -vV --in-diff git.diff

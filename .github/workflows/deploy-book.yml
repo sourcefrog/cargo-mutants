@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.repository == 'sourcefrog/cargo-mutants'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -28,10 +29,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install mdbook
-        run: |
-          mkdir mdbook
-          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.21/mdbook-v0.4.21-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=./mdbook
-          echo `pwd`/mdbook >> $GITHUB_PATH
+        uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook, mdbook-linkcheck
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Build book
@@ -40,7 +40,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: "book/book"
+          path: "book/book/html"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1

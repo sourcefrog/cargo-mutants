@@ -2,13 +2,19 @@
 
 ## Unreleased
 
-- New: A `--shard k/n` allows you to split the work across n independent parallel `cargo mutants` invocations running on separate machines to get a faster overall solution on large suites. You, or your CI system, are responsible for launching all the shards and checking whether any of them failed.
-
-- Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
+- Fixed: Fixed spurious "Patch input contains repeated filenames" error when `--in-diff` is given a patch that deletes multiple files.
 
 - New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
 
 - Changed: Stop generating mutations of `||` and `&&` to `!=` and `||`, because it seems to raise too many low-value false positives that may be hard to test.
+
+## 23.12.2
+
+- New: A `--shard k/n` allows you to split the work across n independent parallel `cargo mutants` invocations running on separate machines to get a faster overall solution on large suites. You, or your CI system, are responsible for launching all the shards and checking whether any of them failed.
+
+- Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
+
+- New: Binary releases on GitHub through cargo-dist.
 
 ## 23.12.1
 

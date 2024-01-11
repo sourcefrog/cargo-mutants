@@ -96,3 +96,42 @@ fn mismatched_diff_causes_error() {
             "Diff content doesn't match source file: src/lib.rs",
         ));
 }
+
+/// If the diff contains multiple deletions (with a new filename of /dev/null),
+/// don't fail.
+///
+/// <https://github.com/sourcefrog/cargo-mutants/issues/219>
+#[test]
+fn diff_with_multiple_deletions_is_ok() {
+    let diff = indoc! {r#"
+        diff --git a/src/monitor/collect.rs b/src/monitor/collect.rs
+        deleted file mode 100644
+        index d842cf9..0000000
+        --- a/src/monitor/collect.rs
+        +++ /dev/null
+        @@ -1,1 +0,0 @@
+        -// Some stuff
+        diff --git a/src/monitor/another.rs b/src/monitor/another.rs
+        deleted file mode 100644
+        index d842cf9..0000000
+        --- a/src/monitor/collect.rs
+        +++ /dev/null
+        @@ -1,1 +0,0 @@
+        -// More stuff
+    "#};
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .stderr(predicates::str::contains(
+            "No mutants found under the active filters",
+        ))
+        .success();
+}

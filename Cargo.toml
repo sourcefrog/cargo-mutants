@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mutants"
-version = "23.12.2-pre"
+version = "23.12.2"
 edition = "2021"
 authors = ["Martin Pool"]
 license = "MIT"
@@ -23,6 +23,12 @@ exclude = [
     "book",
     "testdata",
 ]
+
+[package.metadata.wix]
+upgrade-guid = "CA7BFE8D-F3A7-4D1D-AE43-B7749110FA90"
+path-guid = "457C7F8E-0F02-42CC-80D9-FE55FBED23F8"
+license = false
+eula = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -133,3 +139,26 @@ exclude = [
     "testdata/well_tested",
     "testdata/with_child_directories",
 ]
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.7.1"
+# CI backends to support
+ci = ["github"]
+# The installers to generate for each app
+installers = ["shell", "powershell"]
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+# # Publish jobs to run in CI
+# pr-run-mode = "upload"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

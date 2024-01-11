@@ -32,7 +32,6 @@ impl LogFile {
             };
             let path = log_dir.join(t);
             match OpenOptions::new()
-                .write(true)
                 .read(true)
                 .append(true)
                 .create_new(true)
