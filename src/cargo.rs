@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
@@ -10,6 +10,7 @@ use camino::Utf8Path;
 use itertools::Itertools;
 use tracing::{debug, debug_span};
 
+use crate::options::TestTool;
 use crate::outcome::PhaseResult;
 use crate::package::Package;
 use crate::process::Process;
@@ -63,8 +64,17 @@ fn cargo_argv(
     phase: Phase,
     options: &Options,
 ) -> Vec<String> {
-    let mut cargo_args = vec![cargo_bin(), phase.name().to_string()];
-    if phase == Phase::Check || phase == Phase::Build {
+    let mut cargo_args = vec![cargo_bin()];
+    if phase == Phase::Test {
+        match &options.test_tool {
+            TestTool::Cargo => cargo_args.push("test".to_string()),
+            TestTool::Nextest => {
+                cargo_args.push("nextest".to_string());
+                cargo_args.push("run".to_string());
+            }
+        }
+    } else {
+        cargo_args.push(phase.name().to_string());
         cargo_args.push("--tests".to_string());
     }
     if let Some([package]) = packages {

@@ -4,7 +4,7 @@ version = "23.12.2"
 edition = "2021"
 authors = ["Martin Pool"]
 license = "MIT"
-description = "Find inadequately-tested code that can be removed without any tests failing."
+description = "Inject bugs and see if your tests catch them"
 repository = "https://github.com/sourcefrog/cargo-mutants"
 homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
@@ -60,6 +60,7 @@ quote = "1.0"
 regex = "1.10"
 serde_json = "1"
 similar = "2.0"
+strum = { version = "0.25", features = ["derive"] }
 subprocess = "0.2.8"
 tempfile = "3.2"
 time = "0.3"
@@ -72,7 +73,6 @@ whoami = "1.2"
 [dependencies.nutmeg]
 version = "0.1.4"
 # git = "https://github.com/sourcefrog/nutmeg.git"
-# branch = "const-new"
 
 [dependencies.proc-macro2]
 features = ["span-locations"]

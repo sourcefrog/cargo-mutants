@@ -27,7 +27,9 @@ additional_cargo_args = ["--all-features"]
 ## Arguments to `cargo test`
 
 Command-line options following a `--` delimiter are passed through to
-`cargo test`. For example, this can be used to pass `--all-targets` which (unobviously)
+`cargo test` (or to [nextest](nextest.md), if you're using that).
+
+For example, this can be used to pass `--all-targets` which (unobviously)
 excludes doctests. (If the doctests are numerous and slow, and not relied upon to catch bugs, this can improve performance.)
 
 ```shell

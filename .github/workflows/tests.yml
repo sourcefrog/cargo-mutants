@@ -42,6 +42,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: rustfmt
         run: cargo fmt --all -- --check
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
       - name: Build
         run: cargo build --all-targets
       - name: Test
@@ -70,6 +74,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [release-binary]
     if: github.event_name == 'pull_request'
+    strategy:
+      matrix:
+        test_tool: [cargo, nextest]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -82,16 +89,21 @@ jobs:
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - name: Download release binary
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - name: Download cargo-mutants binary
         uses: actions/download-artifact@v3
         with:
           name: cargo-mutants-linux
-      - name: Install binary artifact
+      - name: Install cargo-mutants binary
         run: |
           install cargo-mutants $HOME/.cargo/bin/
-      - name: Mutants
-        run: |
-          cargo mutants --no-shuffle -vV --in-diff git.diff
+      - name: Mutants in-diff
+        run: >
+          cargo mutants --no-shuffle -vV --in-diff git.diff --test-tool
+          ${{matrix.test_tool}}
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()
@@ -105,22 +117,28 @@ jobs:
     strategy:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        test_tool: [cargo, nextest]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - name: Download release binary
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - name: Download cargo-mutants binary
         uses: actions/download-artifact@v3
         with:
           name: cargo-mutants-linux
-      - name: Install binary artifact
+      - name: Install cargo-mutants binary
         run: |
           install cargo-mutants $HOME/.cargo/bin/
       - name: Mutants
-        run: |
+        run: >
           cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8
+          --test-tool ${{ matrix.test_tool }}
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
         if: always()
