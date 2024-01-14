@@ -55,48 +55,63 @@ pub fn test_mutants(
 
     let output_mutex = Mutex::new(output_dir);
     let mut build_dirs = vec![BuildDir::new(workspace_dir, &options, console)?];
-    let baseline_outcome = {
-        let _span = debug_span!("baseline").entered();
-        test_scenario(
-            &mut build_dirs[0],
-            &output_mutex,
-            &Scenario::Baseline,
-            &all_packages,
-            options.test_timeout.unwrap_or(Duration::MAX),
-            &options,
-            console,
-        )?
-    };
-    if !baseline_outcome.success() {
-        error!(
-            "cargo {} failed in an unmutated tree, so no mutants were tested",
-            baseline_outcome.last_phase(),
-        );
-        return Ok(output_mutex
-            .into_inner()
-            .expect("lock output_dir")
-            .take_lab_outcome());
-    }
 
-    let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
-        timeout
-    } else if let Some(baseline_test_duration) = baseline_outcome
-        .phase_results()
-        .iter()
-        .find(|r| r.phase == Phase::Test)
-        .map(|r| r.duration)
-    {
-        let auto_timeout = max(
-            options.minimum_test_timeout,
-            baseline_test_duration.mul_f32(5.0),
-        );
-        if options.show_times {
-            console.autoset_timeout(auto_timeout);
+    let mutated_test_timeout;
+    if options.baseline == BaselineStrategy::Run {
+        let baseline_outcome = {
+            let _span = debug_span!("baseline").entered();
+            test_scenario(
+                &mut build_dirs[0],
+                &output_mutex,
+                &Scenario::Baseline,
+                &all_packages,
+                options.test_timeout.unwrap_or(Duration::MAX),
+                &options,
+                console,
+            )?
+        };
+        if !baseline_outcome.success() {
+            error!(
+                "cargo {} failed in an unmutated tree, so no mutants were tested",
+                baseline_outcome.last_phase(),
+            );
+            return Ok(output_mutex
+                .into_inner()
+                .expect("lock output_dir")
+                .take_lab_outcome());
         }
-        auto_timeout
+        mutated_test_timeout = if let Some(timeout) = options.test_timeout {
+            timeout
+        } else if options.check_only {
+            Duration::MAX
+        } else {
+            let baseline_test_duration = baseline_outcome
+                .phase_results()
+                .iter()
+                .find(|r| r.phase == Phase::Test)
+                .map(|r| r.duration)
+                .ok_or(anyhow!("baseline test duration not found"))?;
+            let auto_timeout = max(
+                options.minimum_test_timeout,
+                baseline_test_duration.mul_f32(5.0),
+            );
+            if options.show_times {
+                console.autoset_timeout(auto_timeout);
+            }
+            auto_timeout
+        };
     } else {
-        Duration::MAX
-    };
+        mutated_test_timeout = if let Some(timeout) = options.test_timeout {
+            timeout
+        } else if options.check_only {
+            Duration::MAX
+        } else {
+            warn!("An explicit timeout is recommended when using --baseline=skip");
+            let t = Duration::from_secs(300);
+            console.autoset_timeout(t);
+            t
+        };
+    }
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     console.build_dirs_start(jobs - 1);

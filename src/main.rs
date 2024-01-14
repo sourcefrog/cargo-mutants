@@ -38,7 +38,7 @@ use std::process::exit;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
-use clap::{ArgAction, CommandFactory, Parser};
+use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use tracing::debug;
 
@@ -70,6 +70,16 @@ enum Cargo {
     Mutants(Args),
 }
 
+#[derive(Debug, Default, ValueEnum, Clone, Copy, Eq, PartialEq)]
+enum BaselineStrategy {
+    /// Run tests in an unmutated tree before testing mutants.
+    #[default]
+    Run,
+
+    /// Don't run tests in an unmutated tree: assume that they pass.
+    Skip,
+}
+
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///
 /// See <https://github.com/sourcefrog/cargo-mutants> for more information.
@@ -79,6 +89,10 @@ struct Args {
     /// show cargo output for all invocations (very verbose).
     #[arg(long)]
     all_logs: bool,
+
+    /// baseline strategy: check that tests pass in an unmutated tree before testing mutants.
+    #[arg(long, value_enum, default_value_t = BaselineStrategy::Run)]
+    baseline: BaselineStrategy,
 
     /// print mutants that were caught by tests.
     #[arg(long, short = 'v')]

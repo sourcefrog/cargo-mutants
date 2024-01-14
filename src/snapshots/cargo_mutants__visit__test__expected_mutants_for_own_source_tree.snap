@@ -233,6 +233,7 @@ src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace == with != in test_mutants
+src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace - with + in test_mutants
 src/lab.rs: replace - with / in test_mutants
 src/lab.rs: replace == with != in test_mutants

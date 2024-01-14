@@ -22,6 +22,9 @@ use crate::*;
 /// config file.
 #[derive(Default, Debug, Clone)]
 pub struct Options {
+    /// Run tests in an unmutated tree?
+    pub baseline: BaselineStrategy,
+
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
@@ -138,6 +141,7 @@ impl Options {
                 &args.cargo_test_args,
                 &config.additional_cargo_test_args,
             ),
+            baseline: args.baseline,
             check_only: args.check,
             colors: true, // TODO: An option for this and use CLICOLORS.
             emit_json: args.json,
