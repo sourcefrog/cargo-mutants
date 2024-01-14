@@ -232,12 +232,13 @@ src/in_diff.rs: replace += with *= in partial_new_file
 src/interrupt.rs: replace install_handler with ()
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Ok(Default::default())
 src/lab.rs: replace test_mutants -> Result<LabOutcome> with Err(::anyhow::anyhow!("mutated!"))
-src/lab.rs: replace == with != in test_mutants
-src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace - with + in test_mutants
 src/lab.rs: replace - with / in test_mutants
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace == with != in test_mutants
+src/lab.rs: replace test_timeout -> Duration with Default::default()
+src/lab.rs: replace == with != in test_timeout
+src/lab.rs: replace == with != in test_timeout
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace || with && in test_scenario
