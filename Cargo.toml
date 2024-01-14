@@ -121,6 +121,7 @@ exclude = [
     "testdata/hang_when_mutated",
     "testdata/insta",
     "testdata/integration_tests",
+    "testdata/many_patterns",
     "testdata/missing_test",
     "testdata/mut_ref",
     "testdata/never_type",

@@ -4,4 +4,6 @@ expression: content
 ---
 src/bin/factorial.rs:8:5: replace factorial -> u32 with 0
 src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
+src/bin/factorial.rs:10:11: replace *= with += in factorial
+src/bin/factorial.rs:10:11: replace *= with /= in factorial
 

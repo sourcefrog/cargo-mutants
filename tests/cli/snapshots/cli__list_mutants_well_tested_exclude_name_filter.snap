@@ -7,18 +7,26 @@ src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into())
 src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with ""
 src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy"
 src/methods.rs:17:9: replace Foo::double with ()
+src/methods.rs:17:16: replace *= with += in Foo::double
+src/methods.rs:17:16: replace *= with /= in Foo::double
 src/methods.rs:23:9: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
 src/methods.rs:29:9: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())
 src/nested_function.rs:2:5: replace has_nested -> u32 with 0
 src/nested_function.rs:2:5: replace has_nested -> u32 with 1
 src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 0
 src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 1
+src/nested_function.rs:5:13: replace * with + in has_nested
+src/nested_function.rs:5:13: replace * with / in has_nested
 src/numbers.rs:2:5: replace double_float -> f32 with 0.0
 src/numbers.rs:2:5: replace double_float -> f32 with 1.0
 src/numbers.rs:2:5: replace double_float -> f32 with -1.0
+src/numbers.rs:2:9: replace * with + in double_float
+src/numbers.rs:2:9: replace * with / in double_float
 src/numbers.rs:6:5: replace is_double -> bool with true
 src/numbers.rs:6:5: replace is_double -> bool with false
 src/numbers.rs:6:7: replace == with != in is_double
+src/numbers.rs:6:12: replace * with + in is_double
+src/numbers.rs:6:12: replace * with / in is_double
 src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(())
@@ -38,7 +46,11 @@ src/slices.rs:5:20: replace < with > in pad
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])
+src/slices.rs:14:12: replace *= with += in return_mut_slice
+src/slices.rs:14:12: replace *= with /= in return_mut_slice
 src/static_item.rs:1:33: replace == with !=
+src/static_item.rs:1:39: replace + with -
+src/static_item.rs:1:39: replace + with *
 src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 0
 src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 1
 src/traits.rs:5:9: replace Something::is_three -> bool with true

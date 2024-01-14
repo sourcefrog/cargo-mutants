@@ -2,11 +2,13 @@
 source: tests/cli/error_value.rs
 expression: stdout
 ---
-Found 4 mutants to test
+Found 6 mutants to test
 ok       Unmutated baseline
 caught   src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(0)
 caught   src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(1)
 MISSED   src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Err("injected")
 caught   src/lib.rs:4:14: replace == with != in even_is_ok
-4 mutants tested: 1 missed, 3 caught
+caught   src/lib.rs:4:10: replace % with / in even_is_ok
+MISSED   src/lib.rs:4:10: replace % with + in even_is_ok
+6 mutants tested: 2 missed, 4 caught
 

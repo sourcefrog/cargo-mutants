@@ -4,4 +4,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 src/methods.rs:2:5: replace double -> usize with 0
 src/methods.rs:2:5: replace double -> usize with 1
+src/methods.rs:2:7: replace * with + in double
+src/methods.rs:2:7: replace * with / in double
 

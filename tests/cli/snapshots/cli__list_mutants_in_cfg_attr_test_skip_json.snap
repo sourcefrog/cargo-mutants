@@ -62,5 +62,65 @@ expression: "String::from_utf8_lossy(&output.stdout)"
         "line": 18
       }
     }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 18
+      },
+      "start": {
+        "column": 7,
+        "line": 18
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "double",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 19
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-cfg-attr-test-skip",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 18
+      },
+      "start": {
+        "column": 7,
+        "line": 18
+      }
+    }
   }
 ]

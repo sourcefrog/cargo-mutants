@@ -5,4 +5,6 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 src/simple_fns.rs:18:5: replace divisible_by_three -> bool with true
 src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false
 src/simple_fns.rs:18:11: replace == with != in divisible_by_three
+src/simple_fns.rs:18:7: replace % with / in divisible_by_three
+src/simple_fns.rs:18:7: replace % with + in divisible_by_three
 

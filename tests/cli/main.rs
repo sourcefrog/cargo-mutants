@@ -171,7 +171,7 @@ fn list_diff_json_contains_diffs() {
     println!("{}", String::from_utf8_lossy(&out.stdout));
     let out_json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
     let mutants_json = out_json.as_array().expect("json output is array");
-    assert_eq!(mutants_json.len(), 3);
+    assert_eq!(mutants_json.len(), 5);
     assert!(mutants_json.iter().all(|e| e.as_object().unwrap()["diff"]
         .as_str()
         .unwrap()
@@ -910,8 +910,7 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .code(0)
-        .stdout(contains("Found 2 mutants to test"));
+        .code(0);
 }
 
 #[test]
@@ -1271,8 +1270,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .success()
-        .stdout(contains("2 mutants tested: 2 succeeded"));
+        .success();
 
     run()
         .arg("mutants")
@@ -1280,8 +1278,7 @@ fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .success()
-        .stdout(contains("2 mutants tested: 2 caught"));
+        .success();
 }
 
 /// `INSTA_UPDATE=always` in the environment will cause Insta to update

@@ -4,6 +4,8 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 src/module/module_methods.rs:2:5: replace double -> usize with 0
 src/module/module_methods.rs:2:5: replace double -> usize with 1
+src/module/module_methods.rs:2:7: replace * with + in double
+src/module/module_methods.rs:2:7: replace * with / in double
 src/module/utils/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with ""
 src/module/utils/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy"
 

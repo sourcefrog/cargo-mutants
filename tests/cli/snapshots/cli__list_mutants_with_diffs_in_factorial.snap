@@ -70,4 +70,50 @@ src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
      assert_eq!(factorial(6), 720);
  }
 
+src/bin/factorial.rs:10:11: replace *= with += in factorial
+--- src/bin/factorial.rs
++++ replace *= with += in factorial
+@@ -2,17 +2,17 @@
+     for i in 1..=6 {
+         println!("{}! = {}", i, factorial(i));
+     }
+ }
+ 
+ fn factorial(n: u32) -> u32 {
+     let mut a = 1;
+     for i in 2..=n {
+-        a *= i;
++        a += /* ~ changed by cargo-mutants ~ */ i;
+     }
+     a
+ }
+ 
+ #[test]
+ fn test_factorial() {
+     println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
+     assert_eq!(factorial(6), 720);
+
+src/bin/factorial.rs:10:11: replace *= with /= in factorial
+--- src/bin/factorial.rs
++++ replace *= with /= in factorial
+@@ -2,17 +2,17 @@
+     for i in 1..=6 {
+         println!("{}! = {}", i, factorial(i));
+     }
+ }
+ 
+ fn factorial(n: u32) -> u32 {
+     let mut a = 1;
+     for i in 2..=n {
+-        a *= i;
++        a /= /* ~ changed by cargo-mutants ~ */ i;
+     }
+     a
+ }
+ 
+ #[test]
+ fn test_factorial() {
+     println!("factorial({}) = {}", 6, factorial(6)); // This line is here so we can see it in --nocapture
+     assert_eq!(factorial(6), 720);
+
 

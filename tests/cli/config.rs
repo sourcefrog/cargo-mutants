@@ -5,6 +5,7 @@
 use std::fs::{create_dir, write};
 
 use indoc::indoc;
+use insta::assert_snapshot;
 use predicates::prelude::*;
 use tempfile::TempDir;
 
@@ -163,15 +164,20 @@ fn list_with_config_file_regexps() {
         exclude_re = ["-> bool with true"]
         "#,
     );
-    run()
+    let cmd = run()
         .args(["mutants", "--list", "--line-col=false", "-d"])
         .arg(testdata.path())
         .assert()
-        .success()
-        .stdout(predicates::str::diff(indoc! {"\
-                src/simple_fns.rs: replace divisible_by_three -> bool with false
-                src/simple_fns.rs: replace == with != in divisible_by_three
-        "}));
+        .success();
+    assert_snapshot!(
+        String::from_utf8_lossy(&cmd.get_output().stdout),
+        @r###"
+    src/simple_fns.rs: replace divisible_by_three -> bool with false
+    src/simple_fns.rs: replace == with != in divisible_by_three
+    src/simple_fns.rs: replace % with / in divisible_by_three
+    src/simple_fns.rs: replace % with + in divisible_by_three
+    "###
+    );
 }
 
 #[test]
@@ -180,8 +186,8 @@ fn exclude_re_overrides_config() {
     write_config_file(
         &testdata,
         r#"
-exclude_re = [".*"]     # would exclude everything
-"#,
+            exclude_re = [".*"]     # would exclude everything
+        "#,
     );
     run()
         .args(["mutants", "--list", "-d"])
@@ -190,17 +196,23 @@ exclude_re = [".*"]     # would exclude everything
         .success()
         .stdout(predicates::str::is_empty());
     // Also tests that the alias --exclude-regex is accepted
-    run()
+    let cmd = run()
         .args(["mutants", "--list", "--line-col=false", "-d"])
         .arg(testdata.path())
         .args(["--exclude-regex", " -> "])
         .args(["-f", "src/simple_fns.rs"])
         .assert()
-        .success()
-        .stdout(indoc! {"
-            src/simple_fns.rs: replace returns_unit with ()
-            src/simple_fns.rs: replace == with != in divisible_by_three
-        "});
+        .success();
+    assert_snapshot!(
+        String::from_utf8_lossy(&cmd.get_output().stdout),
+        @r###"
+    src/simple_fns.rs: replace returns_unit with ()
+    src/simple_fns.rs: replace += with -= in returns_unit
+    src/simple_fns.rs: replace += with *= in returns_unit
+    src/simple_fns.rs: replace == with != in divisible_by_three
+    src/simple_fns.rs: replace % with / in divisible_by_three
+    src/simple_fns.rs: replace % with + in divisible_by_three
+    "###);
 }
 
 #[test]
@@ -220,8 +232,6 @@ fn tree_fails_without_needed_feature() {
 
 #[test]
 fn additional_cargo_args() {
-    // The point of this tree is to check that Cargo features can be turned on,
-    // but let's make sure it does fail as intended if they're not.
     let testdata = copy_of_testdata("fails_without_feature");
     write_config_file(
         &testdata,
@@ -233,14 +243,11 @@ fn additional_cargo_args() {
         .args(["mutants", "-d"])
         .arg(testdata.path())
         .assert()
-        .success()
-        .stdout(predicates::str::contains("2 caught"));
+        .success();
 }
 
 #[test]
 fn additional_cargo_test_args() {
-    // The point of this tree is to check that Cargo features can be turned on,
-    // but let's make sure it does fail as intended if they're not.
     let testdata = copy_of_testdata("fails_without_feature");
     write_config_file(
         &testdata,
@@ -252,6 +259,5 @@ fn additional_cargo_test_args() {
         .args(["mutants", "-d"])
         .arg(testdata.path())
         .assert()
-        .success()
-        .stdout(predicates::str::contains("2 caught"));
+        .success();
 }

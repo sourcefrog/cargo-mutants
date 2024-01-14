@@ -7,6 +7,8 @@ expression: buf
 ```
 src/lib.rs:10:5: replace takes_one_arg -> usize with 0
 src/lib.rs:10:5: replace takes_one_arg -> usize with 1
+src/lib.rs:10:7: replace + with - in takes_one_arg
+src/lib.rs:10:7: replace + with * in takes_one_arg
 ```
 
 ## testdata/already_failing_tests
@@ -14,6 +16,8 @@ src/lib.rs:10:5: replace takes_one_arg -> usize with 1
 ```
 src/lib.rs:2:5: replace factorial -> u32 with 0
 src/lib.rs:2:5: replace factorial -> u32 with 1
+src/lib.rs:4:11: replace *= with += in factorial
+src/lib.rs:4:11: replace *= with /= in factorial
 ```
 
 ## testdata/already_hangs
@@ -27,6 +31,8 @@ src/lib.rs:12:5: replace infinite_loop with ()
 ```
 src/entry.rs:2:5: replace factorial -> u32 with 0
 src/entry.rs:2:5: replace factorial -> u32 with 1
+src/entry.rs:4:11: replace *= with += in factorial
+src/entry.rs:4:11: replace *= with /= in factorial
 ```
 
 ## testdata/cfg_attr_mutants_skip
@@ -39,6 +45,8 @@ src/entry.rs:2:5: replace factorial -> u32 with 1
 ```
 src/lib.rs:18:5: replace double -> usize with 0
 src/lib.rs:18:5: replace double -> usize with 1
+src/lib.rs:18:7: replace * with + in double
+src/lib.rs:18:7: replace * with / in double
 ```
 
 ## testdata/custom_top_file
@@ -47,6 +55,8 @@ src/lib.rs:18:5: replace double -> usize with 1
 src/custom_top.rs:2:5: replace is_even -> bool with true
 src/custom_top.rs:2:5: replace is_even -> bool with false
 src/custom_top.rs:2:11: replace == with != in is_even
+src/custom_top.rs:2:7: replace % with / in is_even
+src/custom_top.rs:2:7: replace % with + in is_even
 ```
 
 ## testdata/dependency
@@ -54,6 +64,8 @@ src/custom_top.rs:2:11: replace == with != in is_even
 ```
 src/lib.rs:2:5: replace factorial -> u32 with 0
 src/lib.rs:2:5: replace factorial -> u32 with 1
+src/lib.rs:4:11: replace *= with += in factorial
+src/lib.rs:4:11: replace *= with /= in factorial
 ```
 
 ## testdata/diff0
@@ -75,10 +87,10 @@ src/lib.rs:6:5: replace two -> String with "xyzzy".into()
 ## testdata/error_value
 
 ```
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(0)
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Ok(1)
-src/lib.rs:4:5: replace even_is_ok -> Result<u32, &'static str> with Err("injected")
-src/lib.rs:4:14: replace == with != in even_is_ok
+src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Ok(0)
+src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Ok(1)
+src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Err("injected")
+src/lib.rs:4:10: replace == with != in zero_is_ok
 ```
 
 ## testdata/everything_skipped
@@ -92,6 +104,8 @@ src/lib.rs:4:14: replace == with != in even_is_ok
 src/bin/factorial.rs:2:5: replace main with ()
 src/bin/factorial.rs:8:5: replace factorial -> u32 with 0
 src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
+src/bin/factorial.rs:10:11: replace *= with += in factorial
+src/bin/factorial.rs:10:11: replace *= with /= in factorial
 ```
 
 ## testdata/fails_without_feature
@@ -99,6 +113,8 @@ src/bin/factorial.rs:8:5: replace factorial -> u32 with 1
 ```
 src/bin/factorial.rs:10:5: replace factorial -> u32 with 0
 src/bin/factorial.rs:10:5: replace factorial -> u32 with 1
+src/bin/factorial.rs:12:11: replace *= with += in factorial
+src/bin/factorial.rs:12:11: replace *= with /= in factorial
 ```
 
 ## testdata/hang_avoided_by_attr
@@ -107,6 +123,8 @@ src/bin/factorial.rs:10:5: replace factorial -> u32 with 1
 src/lib.rs:15:5: replace controlled_loop with ()
 src/lib.rs:21:28: replace > with == in controlled_loop
 src/lib.rs:21:28: replace > with < in controlled_loop
+src/lib.rs:21:53: replace * with + in controlled_loop
+src/lib.rs:21:53: replace * with / in controlled_loop
 ```
 
 ## testdata/hang_when_mutated
@@ -118,6 +136,8 @@ src/lib.rs:26:5: replace controlled_loop -> usize with 0
 src/lib.rs:26:5: replace controlled_loop -> usize with 1
 src/lib.rs:33:28: replace > with == in controlled_loop
 src/lib.rs:33:28: replace > with < in controlled_loop
+src/lib.rs:33:53: replace * with + in controlled_loop
+src/lib.rs:33:53: replace * with / in controlled_loop
 ```
 
 ## testdata/insta
@@ -132,6 +152,49 @@ src/lib.rs:2:5: replace say_hello -> String with "xyzzy".into()
 ```
 src/lib.rs:2:5: replace double -> u32 with 0
 src/lib.rs:2:5: replace double -> u32 with 1
+src/lib.rs:2:7: replace * with + in double
+src/lib.rs:2:7: replace * with / in double
+```
+
+## testdata/many_patterns
+
+```
+src/binops.rs:2:5: replace binops with ()
+src/binops.rs:2:15: replace + with - in binops
+src/binops.rs:2:15: replace + with * in binops
+src/binops.rs:2:27: replace % with / in binops
+src/binops.rs:2:27: replace % with + in binops
+src/binops.rs:2:23: replace / with % in binops
+src/binops.rs:2:23: replace / with * in binops
+src/binops.rs:2:19: replace * with + in binops
+src/binops.rs:2:19: replace * with / in binops
+src/binops.rs:3:19: replace | with & in binops
+src/binops.rs:3:19: replace | with ^ in binops
+src/binops.rs:3:15: replace & with | in binops
+src/binops.rs:3:15: replace & with ^ in binops
+src/binops.rs:3:23: replace ^ with | in binops
+src/binops.rs:3:23: replace ^ with & in binops
+src/binops.rs:3:32: replace >> with << in binops
+src/binops.rs:3:27: replace << with >> in binops
+src/binops.rs:5:7: replace += with -= in binops
+src/binops.rs:5:7: replace += with *= in binops
+src/binops.rs:6:7: replace -= with += in binops
+src/binops.rs:6:7: replace -= with /= in binops
+src/binops.rs:7:7: replace *= with += in binops
+src/binops.rs:7:7: replace *= with /= in binops
+src/binops.rs:8:7: replace /= with %= in binops
+src/binops.rs:8:7: replace /= with *= in binops
+src/binops.rs:12:5: replace bin_assign -> i32 with 0
+src/binops.rs:12:5: replace bin_assign -> i32 with 1
+src/binops.rs:12:5: replace bin_assign -> i32 with -1
+src/binops.rs:13:7: replace |= with &= in bin_assign
+src/binops.rs:13:7: replace |= with ^= in bin_assign
+src/binops.rs:14:7: replace ^= with |= in bin_assign
+src/binops.rs:14:7: replace ^= with &= in bin_assign
+src/binops.rs:15:7: replace &= with |= in bin_assign
+src/binops.rs:15:7: replace &= with ^= in bin_assign
+src/binops.rs:16:7: replace >>= with <<= in bin_assign
+src/binops.rs:17:7: replace <<= with >>= in bin_assign
 ```
 
 ## testdata/missing_test
@@ -140,6 +203,8 @@ src/lib.rs:2:5: replace double -> u32 with 1
 src/lib.rs:2:5: replace is_symlink -> bool with true
 src/lib.rs:2:5: replace is_symlink -> bool with false
 src/lib.rs:2:26: replace != with == in is_symlink
+src/lib.rs:2:15: replace & with | in is_symlink
+src/lib.rs:2:15: replace & with ^ in is_symlink
 ```
 
 ## testdata/mut_ref
@@ -168,6 +233,8 @@ src/lib.rs:3:5: replace box_an_int -> Box<i32> with Box::new(-1)
 src/lib.rs:7:5: replace is_even -> bool with true
 src/lib.rs:7:5: replace is_even -> bool with false
 src/lib.rs:7:11: replace == with != in is_even
+src/lib.rs:7:7: replace % with / in is_even
+src/lib.rs:7:7: replace % with + in is_even
 ```
 
 ## testdata/package_fails
@@ -175,8 +242,12 @@ src/lib.rs:7:11: replace == with != in is_even
 ```
 failing/src/lib.rs:2:5: replace triple -> usize with 0
 failing/src/lib.rs:2:5: replace triple -> usize with 1
+failing/src/lib.rs:2:7: replace * with + in triple
+failing/src/lib.rs:2:7: replace * with / in triple
 passing/src/lib.rs:2:5: replace triple -> usize with 0
 passing/src/lib.rs:2:5: replace triple -> usize with 1
+passing/src/lib.rs:2:7: replace * with + in triple
+passing/src/lib.rs:2:7: replace * with / in triple
 ```
 
 ## testdata/patch_dependency
@@ -185,6 +256,8 @@ passing/src/lib.rs:2:5: replace triple -> usize with 1
 src/lib.rs:7:5: replace is_even -> bool with true
 src/lib.rs:7:5: replace is_even -> bool with false
 src/lib.rs:7:11: replace == with != in is_even
+src/lib.rs:7:7: replace % with / in is_even
+src/lib.rs:7:7: replace % with + in is_even
 ```
 
 ## testdata/relative_dependency
@@ -194,6 +267,8 @@ src/lib.rs:6:5: replace double_factorial -> u32 with 0
 src/lib.rs:6:5: replace double_factorial -> u32 with 1
 src/lib.rs:6:10: replace < with == in double_factorial
 src/lib.rs:6:10: replace < with > in double_factorial
+src/lib.rs:9:7: replace * with + in double_factorial
+src/lib.rs:9:7: replace * with / in double_factorial
 ```
 
 ## testdata/replace_dependency
@@ -202,6 +277,8 @@ src/lib.rs:6:10: replace < with > in double_factorial
 src/lib.rs:7:5: replace is_even -> bool with true
 src/lib.rs:7:5: replace is_even -> bool with false
 src/lib.rs:7:11: replace == with != in is_even
+src/lib.rs:7:7: replace % with / in is_even
+src/lib.rs:7:7: replace % with + in is_even
 ```
 
 ## testdata/small_well_tested
@@ -209,6 +286,8 @@ src/lib.rs:7:11: replace == with != in is_even
 ```
 src/lib.rs:5:5: replace factorial -> u32 with 0
 src/lib.rs:5:5: replace factorial -> u32 with 1
+src/lib.rs:7:11: replace *= with += in factorial
+src/lib.rs:7:11: replace *= with /= in factorial
 ```
 
 ## testdata/strict_warnings
@@ -216,6 +295,8 @@ src/lib.rs:5:5: replace factorial -> u32 with 1
 ```
 src/lib.rs:6:5: replace some_fn -> usize with 0
 src/lib.rs:6:5: replace some_fn -> usize with 1
+src/lib.rs:6:7: replace + with - in some_fn
+src/lib.rs:6:7: replace + with * in some_fn
 ```
 
 ## testdata/struct_with_no_default
@@ -236,6 +317,8 @@ src/lib.rs:4:5: replace read_through_symlink -> String with "xyzzy".into()
 ```
 src/lib.rs:6:5: replace try_value_coercion -> String with String::new()
 src/lib.rs:6:5: replace try_value_coercion -> String with "xyzzy".into()
+src/lib.rs:6:9: replace + with - in try_value_coercion
+src/lib.rs:6:9: replace + with * in try_value_coercion
 ```
 
 ## testdata/unapply
@@ -262,18 +345,26 @@ src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into())
 src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with ""
 src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy"
 src/methods.rs:17:9: replace Foo::double with ()
+src/methods.rs:17:16: replace *= with += in Foo::double
+src/methods.rs:17:16: replace *= with /= in Foo::double
 src/methods.rs:23:9: replace <impl Display for Foo>::fmt -> fmt::Result with Ok(Default::default())
 src/methods.rs:29:9: replace <impl Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())
 src/nested_function.rs:2:5: replace has_nested -> u32 with 0
 src/nested_function.rs:2:5: replace has_nested -> u32 with 1
 src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 0
 src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 1
+src/nested_function.rs:5:13: replace * with + in has_nested
+src/nested_function.rs:5:13: replace * with / in has_nested
 src/numbers.rs:2:5: replace double_float -> f32 with 0.0
 src/numbers.rs:2:5: replace double_float -> f32 with 1.0
 src/numbers.rs:2:5: replace double_float -> f32 with -1.0
+src/numbers.rs:2:9: replace * with + in double_float
+src/numbers.rs:2:9: replace * with / in double_float
 src/numbers.rs:6:5: replace is_double -> bool with true
 src/numbers.rs:6:5: replace is_double -> bool with false
 src/numbers.rs:6:7: replace == with != in is_double
+src/numbers.rs:6:12: replace * with + in is_double
+src/numbers.rs:6:12: replace * with / in is_double
 src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(())
@@ -284,11 +375,15 @@ src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::new()
 src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()])
 src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter(["xyzzy".into()])
 src/simple_fns.rs:8:5: replace returns_unit with ()
+src/simple_fns.rs:8:8: replace += with -= in returns_unit
+src/simple_fns.rs:8:8: replace += with *= in returns_unit
 src/simple_fns.rs:13:5: replace returns_42u32 -> u32 with 0
 src/simple_fns.rs:13:5: replace returns_42u32 -> u32 with 1
 src/simple_fns.rs:18:5: replace divisible_by_three -> bool with true
 src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false
 src/simple_fns.rs:18:11: replace == with != in divisible_by_three
+src/simple_fns.rs:18:7: replace % with / in divisible_by_three
+src/simple_fns.rs:18:7: replace % with + in divisible_by_three
 src/simple_fns.rs:27:5: replace double_string -> String with String::new()
 src/simple_fns.rs:27:5: replace double_string -> String with "xyzzy".into()
 src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new())
@@ -301,7 +396,11 @@ src/slices.rs:5:20: replace < with > in pad
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])
+src/slices.rs:14:12: replace *= with += in return_mut_slice
+src/slices.rs:14:12: replace *= with /= in return_mut_slice
 src/static_item.rs:1:33: replace == with !=
+src/static_item.rs:1:39: replace + with -
+src/static_item.rs:1:39: replace + with *
 src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 0
 src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 1
 src/traits.rs:5:9: replace Something::is_three -> bool with true
@@ -314,18 +413,26 @@ src/traits.rs:5:11: replace == with != in Something::is_three
 ```
 src/methods.rs:2:5: replace double -> usize with 0
 src/methods.rs:2:5: replace double -> usize with 1
+src/methods.rs:2:7: replace * with + in double
+src/methods.rs:2:7: replace * with / in double
 src/module/module_methods.rs:2:5: replace double -> usize with 0
 src/module/module_methods.rs:2:5: replace double -> usize with 1
+src/module/module_methods.rs:2:7: replace * with + in double
+src/module/module_methods.rs:2:7: replace * with / in double
 src/module/utils/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with ""
 src/module/utils/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy"
 src/module/utils/nested_function.rs:2:5: replace has_nested -> u32 with 0
 src/module/utils/nested_function.rs:2:5: replace has_nested -> u32 with 1
 src/module/utils/nested_function.rs:3:9: replace has_nested::inner -> u32 with 0
 src/module/utils/nested_function.rs:3:9: replace has_nested::inner -> u32 with 1
+src/module/utils/nested_function.rs:5:13: replace * with + in has_nested
+src/module/utils/nested_function.rs:5:13: replace * with / in has_nested
 src/module/utils/sub_utils/subutils_nested_function.rs:2:5: replace has_nested -> u32 with 0
 src/module/utils/sub_utils/subutils_nested_function.rs:2:5: replace has_nested -> u32 with 1
 src/module/utils/sub_utils/subutils_nested_function.rs:3:9: replace has_nested::inner -> u32 with 0
 src/module/utils/sub_utils/subutils_nested_function.rs:3:9: replace has_nested::inner -> u32 with 1
+src/module/utils/sub_utils/subutils_nested_function.rs:5:13: replace * with + in has_nested
+src/module/utils/sub_utils/subutils_nested_function.rs:5:13: replace * with / in has_nested
 ```
 
 ## testdata/workspace
@@ -334,8 +441,12 @@ src/module/utils/sub_utils/subutils_nested_function.rs:3:9: replace has_nested::
 utils/src/lib.rs:2:5: replace triple -> i32 with 0
 utils/src/lib.rs:2:5: replace triple -> i32 with 1
 utils/src/lib.rs:2:5: replace triple -> i32 with -1
+utils/src/lib.rs:2:7: replace * with + in triple
+utils/src/lib.rs:2:7: replace * with / in triple
 main/src/main.rs:12:5: replace factorial -> u32 with 0
 main/src/main.rs:12:5: replace factorial -> u32 with 1
+main/src/main.rs:14:11: replace *= with += in factorial
+main/src/main.rs:14:11: replace *= with /= in factorial
 main2/src/main.rs:10:5: replace triple_3 -> i32 with 0
 main2/src/main.rs:10:5: replace triple_3 -> i32 with 1
 main2/src/main.rs:10:5: replace triple_3 -> i32 with -1

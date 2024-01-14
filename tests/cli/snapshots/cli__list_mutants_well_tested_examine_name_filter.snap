@@ -6,4 +6,6 @@ src/nested_function.rs:2:5: replace has_nested -> u32 with 0
 src/nested_function.rs:2:5: replace has_nested -> u32 with 1
 src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 0
 src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 1
+src/nested_function.rs:5:13: replace * with + in has_nested
+src/nested_function.rs:5:13: replace * with / in has_nested
 

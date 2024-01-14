@@ -4,4 +4,6 @@ expression: content
 ---
 src/lib.rs:2:5: replace double -> u32 with 0
 src/lib.rs:2:5: replace double -> u32 with 1
+src/lib.rs:2:7: replace * with + in double
+src/lib.rs:2:7: replace * with / in double
 
