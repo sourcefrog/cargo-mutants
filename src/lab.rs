@@ -162,18 +162,13 @@ fn test_timeout(
         warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
         Duration::from_secs(300)
     } else {
-        // TODO: Move into ScenarioOutcome?
-        let baseline_test_duration = baseline_outcome
-            .as_ref()
-            .expect("Baseline tests should have run")
-            .phase_results()
-            .iter()
-            .find(|r| r.phase == Phase::Test)
-            .map(|r| r.duration)
-            .expect("Baseline tests should have a duration");
         let auto_timeout = max(
             options.minimum_test_timeout,
-            baseline_test_duration.mul_f32(5.0),
+            baseline_outcome
+                .as_ref()
+                .expect("Baseline tests should have run")
+                .total_phase_duration(Phase::Test)
+                .mul_f32(5.0),
         );
         if options.show_times {
             // TODO: Just `info!` not a special method.

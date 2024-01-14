@@ -238,7 +238,6 @@ src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace == with != in test_mutants
 src/lab.rs: replace test_timeout -> Duration with Default::default()
 src/lab.rs: replace == with != in test_timeout
-src/lab.rs: replace == with != in test_timeout
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Ok(Default::default())
 src/lab.rs: replace test_scenario -> Result<ScenarioOutcome> with Err(::anyhow::anyhow!("mutated!"))
 src/lab.rs: replace || with && in test_scenario
@@ -383,6 +382,8 @@ src/outcome.rs: replace ScenarioOutcome::last_phase -> Phase with Default::defau
 src/outcome.rs: replace ScenarioOutcome::last_phase_result -> ProcessStatus with Default::default()
 src/outcome.rs: replace ScenarioOutcome::phase_results -> &[PhaseResult] with Vec::leak(Vec::new())
 src/outcome.rs: replace ScenarioOutcome::phase_results -> &[PhaseResult] with Vec::leak(vec![Default::default()])
+src/outcome.rs: replace ScenarioOutcome::total_phase_duration -> Duration with Default::default()
+src/outcome.rs: replace == with != in ScenarioOutcome::total_phase_duration
 src/outcome.rs: replace ScenarioOutcome::should_show_logs -> bool with true
 src/outcome.rs: replace ScenarioOutcome::should_show_logs -> bool with false
 src/outcome.rs: replace && with || in ScenarioOutcome::should_show_logs
