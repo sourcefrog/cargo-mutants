@@ -71,7 +71,7 @@ enum Cargo {
 }
 
 #[derive(Debug, Default, ValueEnum, Clone, Copy, Eq, PartialEq)]
-enum BaselineStrategy {
+pub enum BaselineStrategy {
     /// Run tests in an unmutated tree before testing mutants.
     #[default]
     Run,
