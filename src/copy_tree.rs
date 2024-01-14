@@ -80,7 +80,7 @@ pub fn copy_tree(
             })?;
             total_bytes += bytes_copied;
             total_files += 1;
-            console.copy_progress(bytes_copied);
+            console.copy_progress(total_bytes);
         } else if ft.is_dir() {
             std::fs::create_dir_all(&dest_path)
                 .with_context(|| format!("Failed to create directory {dest_path:?}"))?;

@@ -162,3 +162,10 @@ targets = [
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+# Config for <https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md>
+[workspace.metadata.release]
+pre-release-replacements = [
+    { "file" = "NEWS.md", search = "## Unreleased", replace = "$0\n ## {{version}}", exactly = 1 },
+    { "file" = "CITATION.cff", search = "^version: .*", replace = "version: {{version}}", exactly = 1 },
+]

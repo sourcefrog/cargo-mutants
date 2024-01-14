@@ -555,7 +555,6 @@ impl CopyModel {
     /// Update that some bytes have been copied.
     ///
     /// `bytes_copied` is the total bytes copied so far.
-    #[allow(dead_code)]
     fn bytes_copied(&mut self, bytes_copied: u64) {
         self.bytes_copied = bytes_copied
     }
