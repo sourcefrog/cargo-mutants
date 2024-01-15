@@ -42,6 +42,7 @@ use clap::builder::styling::{self};
 use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
+use color_print::cstr;
 use tracing::debug;
 
 use crate::build_dir::BuildDir;
@@ -64,6 +65,8 @@ const NAME: &str = env!("CARGO_PKG_NAME");
 
 /// A comment marker inserted next to changes, so they can be easily found.
 static MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
+
+static SPONSOR_MESSAGE: &str = cstr!("<magenta><bold>Support and accelerate cargo-mutants at <<https://github.com/sponsors/sourcefrog>></></>");
 
 #[mutants::skip] // only visual effects, not worth testing
 fn clap_styles() -> Styles {
@@ -95,7 +98,11 @@ pub enum BaselineStrategy {
 ///
 /// See <https://github.com/sourcefrog/cargo-mutants> for more information.
 #[derive(Parser, PartialEq, Debug)]
-#[command(author, about)]
+#[command(
+    author,
+    about,
+    after_help = SPONSOR_MESSAGE,
+)]
 struct Args {
     /// show cargo output for all invocations (very verbose).
     #[arg(long)]
