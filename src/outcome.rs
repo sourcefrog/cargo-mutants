@@ -198,6 +198,17 @@ impl ScenarioOutcome {
         &self.phase_results
     }
 
+    /// Return the total time spent in commands for one phase.
+    ///
+    /// If the phase was not run, returns zero.
+    pub fn total_phase_duration(&self, phase: Phase) -> Duration {
+        self.phase_results
+            .iter()
+            .filter(|pr| pr.phase == phase)
+            .map(|pr| pr.duration)
+            .sum()
+    }
+
     /// True if this status indicates the user definitely needs to see the logs, because a task
     /// failed that should not have failed.
     pub fn should_show_logs(&self) -> bool {

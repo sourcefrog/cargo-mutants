@@ -529,6 +529,32 @@ fn small_well_tested_tree_is_clean() {
 }
 
 #[test]
+fn test_small_well_tested_tree_with_baseline_skip() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "-v", "-V", "--baseline=skip"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout| {
+            insta::assert_snapshot!(stdout);
+            true
+        }))
+        .stderr(
+            predicate::str::contains(
+                "An explicit timeout is recommended when using --baseline=skip",
+            )
+            .and(predicate::str::contains("Unmutated baseline in").not()),
+        );
+    assert!(!tmp_src_dir
+        .path()
+        .join("mutants.out/log/baseline.log")
+        .exists());
+}
+
+#[test]
 fn cdylib_tree_is_well_tested() {
     let tmp_src_dir = copy_of_testdata("cdylib");
     run()

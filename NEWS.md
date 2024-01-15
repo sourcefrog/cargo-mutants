@@ -4,6 +4,8 @@
 
 - New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
 
+- New: `--baseline=skip` option to skip running tests in an unmutated tree, when they're already been checked externally.
+
 - Changed: Stop generating mutations of `||` and `&&` to `!=` and `||`, because it seems to raise too many low-value false positives that may be hard to test.
 
 ## 24.1.0

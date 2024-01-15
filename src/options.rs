@@ -22,6 +22,9 @@ use crate::*;
 /// config file.
 #[derive(Default, Debug, Clone)]
 pub struct Options {
+    /// Run tests in an unmutated tree?
+    pub baseline: BaselineStrategy,
+
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
@@ -138,6 +141,7 @@ impl Options {
                 &args.cargo_test_args,
                 &config.additional_cargo_test_args,
             ),
+            baseline: args.baseline,
             check_only: args.check,
             colors: true, // TODO: An option for this and use CLICOLORS.
             emit_json: args.json,
@@ -226,6 +230,21 @@ mod test {
         let args = Args::parse_from(["mutants", "--test-tool", "nextest"]);
         let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
+    }
+
+    #[test]
+    fn options_from_baseline_arg() {
+        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.baseline, BaselineStrategy::Skip);
+
+        let args = Args::parse_from(["mutants", "--baseline", "run"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.baseline, BaselineStrategy::Run);
+
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.baseline, BaselineStrategy::Run);
     }
 
     #[test]

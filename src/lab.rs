@@ -55,48 +55,34 @@ pub fn test_mutants(
 
     let output_mutex = Mutex::new(output_dir);
     let mut build_dirs = vec![BuildDir::new(workspace_dir, &options, console)?];
-    let baseline_outcome = {
-        let _span = debug_span!("baseline").entered();
-        test_scenario(
-            &mut build_dirs[0],
-            &output_mutex,
-            &Scenario::Baseline,
-            &all_packages,
-            options.test_timeout.unwrap_or(Duration::MAX),
-            &options,
-            console,
-        )?
-    };
-    if !baseline_outcome.success() {
-        error!(
-            "cargo {} failed in an unmutated tree, so no mutants were tested",
-            baseline_outcome.last_phase(),
-        );
-        return Ok(output_mutex
-            .into_inner()
-            .expect("lock output_dir")
-            .take_lab_outcome());
-    }
-
-    let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
-        timeout
-    } else if let Some(baseline_test_duration) = baseline_outcome
-        .phase_results()
-        .iter()
-        .find(|r| r.phase == Phase::Test)
-        .map(|r| r.duration)
-    {
-        let auto_timeout = max(
-            options.minimum_test_timeout,
-            baseline_test_duration.mul_f32(5.0),
-        );
-        if options.show_times {
-            console.autoset_timeout(auto_timeout);
+    let baseline_outcome = match options.baseline {
+        BaselineStrategy::Run => {
+            let outcome = test_scenario(
+                &mut build_dirs[0],
+                &output_mutex,
+                &Scenario::Baseline,
+                &all_packages,
+                options.test_timeout.unwrap_or(Duration::MAX),
+                &options,
+                console,
+            )?;
+            if !outcome.success() {
+                error!(
+                    "cargo {} failed in an unmutated tree, so no mutants were tested",
+                    outcome.last_phase(),
+                );
+                // We "successfully" established that the baseline tree doesn't work; arguably this should be represented as an error
+                // but we'd need a way for that error to convey an exit code...
+                return Ok(output_mutex
+                    .into_inner()
+                    .expect("lock output_dir")
+                    .take_lab_outcome());
+            }
+            Some(outcome)
         }
-        auto_timeout
-    } else {
-        Duration::MAX
+        BaselineStrategy::Skip => None,
     };
+    let test_timeout = test_timeout(&baseline_outcome, &options, console);
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     console.build_dirs_start(jobs - 1);
@@ -131,7 +117,7 @@ pub fn test_mutants(
                             &output_mutex,
                             &Scenario::Mutant(mutant),
                             &[&package],
-                            mutated_test_timeout,
+                            test_timeout,
                             &options,
                             console,
                         )
@@ -161,6 +147,35 @@ pub fn test_mutants(
         warn!("No mutants were viable; perhaps there is a problem with building in a scratch directory");
     }
     Ok(lab_outcome)
+}
+
+fn test_timeout(
+    baseline_outcome: &Option<ScenarioOutcome>,
+    options: &Options,
+    console: &Console,
+) -> Duration {
+    if let Some(timeout) = options.test_timeout {
+        timeout
+    } else if options.check_only {
+        Duration::ZERO
+    } else if options.baseline == BaselineStrategy::Skip {
+        warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
+        Duration::from_secs(300)
+    } else {
+        let auto_timeout = max(
+            options.minimum_test_timeout,
+            baseline_outcome
+                .as_ref()
+                .expect("Baseline tests should have run")
+                .total_phase_duration(Phase::Test)
+                .mul_f32(5.0),
+        );
+        if options.show_times {
+            // TODO: Just `info!` not a special method.
+            console.autoset_timeout(auto_timeout);
+        }
+        auto_timeout
+    }
 }
 
 /// Test various phases of one scenario in a build dir.
