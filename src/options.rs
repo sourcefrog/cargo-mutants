@@ -31,6 +31,9 @@ pub struct Options {
     /// Don't copy files matching gitignore patterns to build directories.
     pub gitignore: bool,
 
+    /// Don't copy at all; run tests in the source directory.
+    pub in_place: bool,
+
     /// Don't delete scratch directories.
     pub leak_dirs: bool,
 
@@ -154,6 +157,7 @@ impl Options {
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             gitignore: args.gitignore,
+            in_place: args.in_place,
             jobs: args.jobs,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
