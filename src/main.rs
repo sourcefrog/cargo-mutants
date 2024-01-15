@@ -38,6 +38,8 @@ use std::process::exit;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use camino::{Utf8Path, Utf8PathBuf};
+use clap::builder::styling::{self};
+use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use tracing::debug;
@@ -63,10 +65,19 @@ const NAME: &str = env!("CARGO_PKG_NAME");
 /// A comment marker inserted next to changes, so they can be easily found.
 static MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
+#[mutants::skip] // only visual effects, not worth testing
+fn clap_styles() -> Styles {
+    styling::Styles::styled()
+        .header(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
+        .usage(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
+        .literal(styling::AnsiColor::Blue.on_default() | styling::Effects::BOLD)
+        .placeholder(styling::AnsiColor::Cyan.on_default())
+}
+
 #[derive(Parser)]
-#[command(name = "cargo", bin_name = "cargo")]
+#[command(name = "cargo", bin_name = "cargo", styles(clap_styles()))]
 enum Cargo {
-    #[command(name = "mutants")]
+    #[command(name = "mutants", styles(clap_styles()))]
     Mutants(Args),
 }
 
@@ -259,8 +270,14 @@ fn main() -> Result<()> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
-            eprintln!("{e}");
-            exit(exit_code::USAGE);
+            e.print().expect("Failed to show clap error message");
+            // Clap by default exits with code 2.
+            let code = match e.exit_code() {
+                2 => exit_code::USAGE,
+                0 => 0,
+                _ => exit_code::SOFTWARE,
+            };
+            exit(code);
         }
     };
 
