@@ -60,7 +60,7 @@ Then, for each mutant in its shard, it does an incremental build and runs all th
 
 Each shard runs the same number of mutants, +/-1. Typically this will mean they each take roughly the same amount of time, although it's possible that some shards are unlucky in drawing mutants that happen to take longer to test.
 
-A rough model for the overall execution time for all of the shards, allowing for this work occuring in parallel, is
+A rough model for the overall execution time for all of the shards, allowing for this work occurring in parallel, is
 
 ```raw
 SHARD_STARTUP + (CLEAN_BUILD + TEST) + (N_MUTANTS/K) * (INCREMENTAL_BUILD + TEST)

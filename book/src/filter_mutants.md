@@ -20,7 +20,7 @@ Within this name, your regex can match any substring, including for example:
 - The trait, `impl Serialize`
 - The struct name, `ScenarioOutcome`
 - The function name, `serialize`
-- The mutated return value, `with Ok(Defualt::default())`, or any part of it.
+- The mutated return value, `with Ok(Default::default())`, or any part of it.
 
 The regex matches a substring, but can be anchored with `^` and `$` to require that
 it match the whole name.

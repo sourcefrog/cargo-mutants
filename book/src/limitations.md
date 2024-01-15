@@ -51,7 +51,7 @@ cargo-mutants contains two main categories of code, which are mostly independent
 
 2. Code for finding the modules to mutate and their source files, finding the tree to copy, adjusting paths after it is copied, and finally running builds and tests. This is very Cargo-specific, but should not be too hard to generalize.
 
-The main precondition for supporting Bazel is a realistc test case: preferably an open source Rust tree built with Bazel, or at least a contributor with a Bazel-based Rust tree who is willing to help test and debug and to produce some test cases.
+The main precondition for supporting Bazel is a realistic test case: preferably an open source Rust tree built with Bazel, or at least a contributor with a Bazel-based Rust tree who is willing to help test and debug and to produce some test cases.
 
 (See <https://github.com/sourcefrog/cargo-mutants/issues/77> for more discussion.)
 
