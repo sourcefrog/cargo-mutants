@@ -36,7 +36,7 @@ eula = false
 anyhow = "1.0"
 camino = "1.0"
 cargo_metadata = "0.18"
-clap = { version = "4", features = [
+clap = { version = "4.4", features = [
     "deprecated",
     "derive",
     "env",

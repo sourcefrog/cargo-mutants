@@ -7,7 +7,7 @@
 //!
 //! These are also described in README.md.
 
-// TODO: Maybe merge this with outcome::Status?
+// TODO: Maybe merge this with outcome::Status, and maybe merge with sysexit.
 
 /// Everything worked and all the mutants were caught.
 pub const SUCCESS: i32 = 0;
@@ -25,3 +25,6 @@ pub const TIMEOUT: i32 = 3;
 
 /// The tests are already failing in an unmutated tree.
 pub const CLEAN_TESTS_FAILED: i32 = 4;
+
+/// An internal software error, from sysexit.
+pub const SOFTWARE: i32 = 70;
