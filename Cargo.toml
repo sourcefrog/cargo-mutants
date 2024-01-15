@@ -43,6 +43,7 @@ clap = { version = "4.4", features = [
     "wrap_help",
 ] }
 clap_complete = "4"
+color-print = "0.3"
 console = "0.15"
 ctrlc = { version = "3.2.1", features = ["termination"] }
 fastrand = "2"
