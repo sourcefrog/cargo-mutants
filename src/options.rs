@@ -233,6 +233,21 @@ mod test {
     }
 
     #[test]
+    fn options_from_baseline_arg() {
+        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.baseline, BaselineStrategy::Skip);
+
+        let args = Args::parse_from(["mutants", "--baseline", "run"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.baseline, BaselineStrategy::Run);
+
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.baseline, BaselineStrategy::Run);
+    }
+
+    #[test]
     fn test_tool_from_config() {
         let config = indoc! { r#"
             test_tool = "nextest"
