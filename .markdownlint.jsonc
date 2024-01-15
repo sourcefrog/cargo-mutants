@@ -2,5 +2,6 @@
   "default": true,
   // Allow lines that are all italics or bold; they're not meant to be headings
   "MD036": false,
-  "MD013": false // Allow long lines
+  "MD013": false, // Allow long lines
+  "MD033": false // Allow inline HTML, needed for <div class="warning"> etc
 }

@@ -20,7 +20,7 @@ The basic approach is:
   - Before applying any mutations, check that `cargo test` succeeds in the
     scratch directory: perhaps a test is already broken, or perhaps the tree
     doesn't build when copied because it relies on relative paths to find
-    dependencies, etc.
+    dependencies, etc. This is called the "baseline" test.
   - If running more than one parallel job, make the appropriate number of
     additional scratch directories.
 
