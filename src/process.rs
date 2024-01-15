@@ -6,7 +6,7 @@
 //! knowledge of whether it's running Cargo or potentially something else.
 //!
 //! On Unix, the subprocess runs as its own process group, so that any
-//! grandchild processses are also signalled if it's interrupted.
+//! grandchild processes are also signalled if it's interrupted.
 
 use std::ffi::OsString;
 use std::io::Read;
@@ -38,7 +38,7 @@ pub struct Process {
 }
 
 impl Process {
-    /// Run a subprocess to completion, watching for interupts, with a timeout, while
+    /// Run a subprocess to completion, watching for interrupts, with a timeout, while
     /// ticking the progress bar.
     pub fn run(
         argv: &[String],

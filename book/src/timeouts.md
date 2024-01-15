@@ -24,7 +24,7 @@ run the test suite in the unmodified tree, and then sets a timeout for mutated
 tests at 5x the time to run tests with no mutations, and a minimum of 20
 seconds.
 
-The minimum of 20 seconds can be overriden by the
+The minimum of 20 seconds can be overridden by the
 `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in seconds.
 
 You can also set an explicit timeout with the `--timeout` option, also measured
