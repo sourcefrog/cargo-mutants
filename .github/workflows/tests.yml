@@ -97,8 +97,9 @@ jobs:
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
+      - name: Install nextest using install-action
+        uses: taiki-e/install-action@v2
+        if: ${{ matrix.test_tool == 'nextest' }}
         with:
           tool: nextest
       - name: Download cargo-mutants binary
@@ -132,8 +133,9 @@ jobs:
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
+      - name: Install nextest using install-action
+        if: ${{ matrix.test_tool == 'nextest' }}
+        uses: taiki-e/install-action@v2
         with:
           tool: nextest
       - name: Download cargo-mutants binary
