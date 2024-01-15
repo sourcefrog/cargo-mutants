@@ -408,7 +408,7 @@ fn path_is_nonzero_unsigned(path: &Path) -> bool {
 /// If this is a path ending in `expected_ident`, return the first type argument, ignoring
 /// lifetimes.
 fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p Type> {
-    // TODO: Maybe match only things witn one arg?
+    // TODO: Maybe match only things with one arg?
     let last = path.segments.last()?;
     if last.ident == expected_ident {
         if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
@@ -610,7 +610,7 @@ mod test {
     #[test]
     fn unknown_container_replacement() {
         // This looks like something that holds a &str, and maybe can be constructed
-        // from a &str, but we don't know anythig else about it, so we just guess.
+        // from a &str, but we don't know anything else about it, so we just guess.
         check_replacements(
             parse_quote! { -> UnknownContainer<'static, str> },
             &[],
