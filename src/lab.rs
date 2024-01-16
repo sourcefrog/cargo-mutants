@@ -54,11 +54,15 @@ pub fn test_mutants(
     debug!(?all_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let mut build_dirs = vec![BuildDir::new(workspace_dir, &options, console)?];
+    let mut build_dir = if options.in_place {
+        BuildDir::in_place(workspace_dir)?
+    } else {
+        BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?
+    };
     let baseline_outcome = match options.baseline {
         BaselineStrategy::Run => {
             let outcome = test_scenario(
-                &mut build_dirs[0],
+                &mut build_dir,
                 &output_mutex,
                 &Scenario::Baseline,
                 &all_packages,
@@ -82,13 +86,19 @@ pub fn test_mutants(
         }
         BaselineStrategy::Skip => None,
     };
+    let mut build_dirs = vec![build_dir];
     let test_timeout = test_timeout(&baseline_outcome, &options, console);
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");
-        build_dirs.push(BuildDir::new(workspace_dir, &options, console)?);
+        build_dirs.push(BuildDir::copy_from(
+            workspace_dir,
+            options.gitignore,
+            options.leak_dirs,
+            console,
+        )?);
     }
     console.build_dirs_finished();
     debug!(build_dirs = ?build_dirs);

@@ -4,9 +4,11 @@ expression: list_output
 ---
 src/main.rs: replace main -> Result<()> with Ok(())
 src/main.rs: replace main -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/build_dir.rs: replace BuildDir::copy_from -> Result<BuildDir> with Ok(Default::default())
+src/build_dir.rs: replace BuildDir::copy_from -> Result<BuildDir> with Err(::anyhow::anyhow!("mutated!"))
+src/build_dir.rs: replace BuildDir::in_place -> Result<BuildDir> with Ok(Default::default())
+src/build_dir.rs: replace BuildDir::in_place -> Result<BuildDir> with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace BuildDir::path -> &Utf8Path with &Default::default()
-src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Ok(Default::default())
-src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Ok(Default::default())
 src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace cargo_bin -> String with String::new()
