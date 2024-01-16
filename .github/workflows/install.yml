@@ -1,3 +1,5 @@
+name: Test install from crates.io
+
 permissions:
   contents: read
 
