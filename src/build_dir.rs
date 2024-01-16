@@ -76,6 +76,7 @@ impl BuildDir {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::Result;
 
     #[test]
     fn build_dir_copy_from() {
@@ -90,9 +91,15 @@ mod test {
     }
 
     #[test]
-    fn build_dir_in_place() {
-        let workspace = Workspace::open("testdata/factorial").unwrap();
-        let build_dir = BuildDir::in_place(&workspace.dir).unwrap();
-        assert_eq!(build_dir.path(), workspace.dir);
+    fn build_dir_in_place() -> Result<()> {
+        let workspace = Workspace::open("testdata/factorial")?;
+        let build_dir = BuildDir::in_place(&workspace.dir)?;
+        // On Windows e.g. the paths might not have the same form, but they
+        // should point to the same place.
+        assert_eq!(
+            build_dir.path().canonicalize_utf8()?,
+            workspace.dir.canonicalize_utf8()?
+        );
+        Ok(())
     }
 }
