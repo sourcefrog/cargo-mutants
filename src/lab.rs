@@ -54,7 +54,7 @@ pub fn test_mutants(
     debug!(?all_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let mut build_dir = if options.in_place {
+    let build_dir = if options.in_place {
         BuildDir::in_place(workspace_dir)?
     } else {
         BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?
@@ -62,7 +62,7 @@ pub fn test_mutants(
     let baseline_outcome = match options.baseline {
         BaselineStrategy::Run => {
             let outcome = test_scenario(
-                &mut build_dir,
+                &build_dir,
                 &output_mutex,
                 &Scenario::Baseline,
                 &all_packages,
@@ -109,9 +109,10 @@ pub fn test_mutants(
     let numbered_mutants = Mutex::new(mutants.into_iter().enumerate());
     thread::scope(|scope| {
         let mut threads = Vec::new();
+        // TODO: Maybe, make the copies in parallel on each thread, rather than up front?
         for build_dir in build_dirs {
             threads.push(scope.spawn(|| {
-                let mut build_dir = build_dir; // move it into this thread
+                let build_dir = build_dir; // move it into this thread
                 let _thread_span =
                     debug_span!("test thread", thread = ?thread::current().id()).entered();
                 trace!("start thread in {build_dir:?}");
@@ -123,7 +124,7 @@ pub fn test_mutants(
                         let package = mutant.package().clone();
                         // We don't care about the outcome; it's been collected into the output_dir.
                         let _outcome = test_scenario(
-                            &mut build_dir,
+                            &build_dir,
                             &output_mutex,
                             &Scenario::Mutant(mutant),
                             &[&package],
@@ -193,7 +194,7 @@ fn test_timeout(
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
 fn test_scenario(
-    build_dir: &mut BuildDir,
+    build_dir: &BuildDir,
     output_mutex: &Mutex<OutputDir>,
     scenario: &Scenario,
     test_packages: &[&Package],
