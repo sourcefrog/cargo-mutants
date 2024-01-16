@@ -1,6 +1,7 @@
 # cargo-mutants changelog
 
 ## Unreleased
+ ## 24.1.1
 
 - New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
 
