@@ -207,10 +207,12 @@ fn test_scenario(
         .expect("lock output_dir to create log")
         .create_log(scenario)?;
     log_file.message(&scenario.to_string());
-    if let Scenario::Mutant(mutant) = scenario {
+    let applied = if let Scenario::Mutant(mutant) = scenario {
         log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
-        mutant.apply(build_dir)?;
-    }
+        Some(mutant.apply(build_dir)?)
+    } else {
+        None
+    };
     console.scenario_started(scenario, log_file.path())?;
 
     let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
@@ -241,9 +243,7 @@ fn test_scenario(
             break;
         }
     }
-    if let Scenario::Mutant(mutant) = scenario {
-        mutant.unapply(build_dir)?;
-    }
+    drop(applied);
     output_mutex
         .lock()
         .expect("lock output dir to add outcome")

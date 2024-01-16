@@ -310,8 +310,8 @@ src/mutate.rs: replace Mutant::package_name -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::package -> &Package with &Default::default()
 src/mutate.rs: replace Mutant::diff -> String with String::new()
 src/mutate.rs: replace Mutant::diff -> String with "xyzzy".into()
-src/mutate.rs: replace Mutant::apply -> Result<()> with Ok(())
-src/mutate.rs: replace Mutant::apply -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/mutate.rs: replace Mutant::apply -> Result<AppliedMutant> with Ok(Default::default())
+src/mutate.rs: replace Mutant::apply -> Result<AppliedMutant> with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace Mutant::unapply -> Result<()> with Ok(())
 src/mutate.rs: replace Mutant::unapply -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace Mutant::write_in_dir -> Result<()> with Ok(())
@@ -322,6 +322,7 @@ src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Ok(Defau
 src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
+src/mutate.rs: replace <impl Drop for AppliedMutant<'_>>::drop with ()
 src/options.rs: replace join_slices -> Vec<String> with vec![]
 src/options.rs: replace join_slices -> Vec<String> with vec![String::new()]
 src/options.rs: replace join_slices -> Vec<String> with vec!["xyzzy".into()]
