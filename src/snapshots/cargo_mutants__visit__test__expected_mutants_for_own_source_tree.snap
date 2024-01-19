@@ -479,6 +479,8 @@ src/scenario.rs: replace <impl Display for Scenario>::fmt -> fmt::Result with Ok
 src/scenario.rs: replace <impl Display for Scenario>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/scenario.rs: replace Scenario::is_mutant -> bool with true
 src/scenario.rs: replace Scenario::is_mutant -> bool with false
+src/scenario.rs: replace Scenario::mutant -> Option<&Mutant> with None
+src/scenario.rs: replace Scenario::mutant -> Option<&Mutant> with Some(&Default::default())
 src/scenario.rs: replace Scenario::log_file_name_base -> String with String::new()
 src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".into()
 src/shard.rs: replace Shard::select -> Vec<M> with vec![]

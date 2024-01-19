@@ -28,6 +28,14 @@ impl Scenario {
         matches!(self, Scenario::Mutant { .. })
     }
 
+    /// Return a reference to the mutant, if there is one.
+    pub fn mutant(&self) -> Option<&Mutant> {
+        match self {
+            Scenario::Baseline => None,
+            Scenario::Mutant(mutant) => Some(mutant),
+        }
+    }
+
     pub fn log_file_name_base(&self) -> String {
         match self {
             Scenario::Baseline => "baseline".into(),
