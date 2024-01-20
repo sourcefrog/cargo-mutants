@@ -11,6 +11,8 @@ use console::{style, StyledObject};
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
+use tracing::error;
+use tracing::trace;
 
 use crate::build_dir::BuildDir;
 use crate::package::Package;
@@ -173,17 +175,21 @@ impl Mutant {
     }
 
     /// Apply this mutant to the relevant file within a BuildDir.
-    pub fn apply(&self, build_dir: &mut BuildDir) -> Result<()> {
-        self.write_in_dir(build_dir, &self.mutated_code())
+    pub fn apply<'a>(&'a self, build_dir: &'a BuildDir) -> Result<AppliedMutant> {
+        trace!(?self, "Apply mutant");
+        self.write_in_dir(build_dir, &self.mutated_code())?;
+        Ok(AppliedMutant {
+            mutant: self,
+            build_dir,
+        })
     }
 
-    pub fn unapply(&self, build_dir: &mut BuildDir) -> Result<()> {
+    fn unapply(&self, build_dir: &BuildDir) -> Result<()> {
+        trace!(?self, "Unapply mutant");
         self.write_in_dir(build_dir, self.source_file.code())
     }
 
-    #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)]
-    // The Rust object is not mutated, but the BuildDir on disk should be exclusively owned for this to be safe.
-    fn write_in_dir(&self, build_dir: &mut BuildDir, code: &str) -> Result<()> {
+    fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
         let path = build_dir.path().join(&self.source_file.tree_relative_path);
         // for safety, don't follow symlinks
         ensure!(path.is_file(), "{path:?} is not a file");
@@ -230,6 +236,22 @@ impl Serialize for Mutant {
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
+    }
+}
+
+/// Manages the lifetime of a mutant being applied to a build directory; when
+/// dropped, the mutant is unapplied.
+#[must_use]
+pub struct AppliedMutant<'a> {
+    mutant: &'a Mutant,
+    build_dir: &'a BuildDir,
+}
+
+impl Drop for AppliedMutant<'_> {
+    fn drop(&mut self) {
+        if let Err(e) = self.mutant.unapply(self.build_dir) {
+            error!("Failed to unapply mutant: {}", e);
+        }
     }
 }
 

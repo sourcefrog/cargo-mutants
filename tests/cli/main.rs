@@ -25,6 +25,7 @@ mod build_dir;
 mod config;
 mod error_value;
 mod in_diff;
+mod in_place;
 mod jobs;
 mod nextest;
 mod shard;

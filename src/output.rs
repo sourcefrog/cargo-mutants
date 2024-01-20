@@ -181,7 +181,7 @@ impl OutputDir {
     /// Update the state of the overall lab.
     ///
     /// Called multiple times as the lab runs.
-    pub fn write_lab_outcome(&self) -> Result<()> {
+    fn write_lab_outcome(&self) -> Result<()> {
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(self.path.join("outcomes.json"))?),
             &self.lab_outcome,

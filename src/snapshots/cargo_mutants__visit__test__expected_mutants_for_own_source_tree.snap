@@ -4,9 +4,11 @@ expression: list_output
 ---
 src/main.rs: replace main -> Result<()> with Ok(())
 src/main.rs: replace main -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/build_dir.rs: replace BuildDir::copy_from -> Result<BuildDir> with Ok(Default::default())
+src/build_dir.rs: replace BuildDir::copy_from -> Result<BuildDir> with Err(::anyhow::anyhow!("mutated!"))
+src/build_dir.rs: replace BuildDir::in_place -> Result<BuildDir> with Ok(Default::default())
+src/build_dir.rs: replace BuildDir::in_place -> Result<BuildDir> with Err(::anyhow::anyhow!("mutated!"))
 src/build_dir.rs: replace BuildDir::path -> &Utf8Path with &Default::default()
-src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Ok(Default::default())
-src/build_dir.rs: replace <impl Debug for BuildDir>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Ok(Default::default())
 src/cargo.rs: replace run_cargo -> Result<PhaseResult> with Err(::anyhow::anyhow!("mutated!"))
 src/cargo.rs: replace cargo_bin -> String with String::new()
@@ -308,8 +310,8 @@ src/mutate.rs: replace Mutant::package_name -> &str with "xyzzy"
 src/mutate.rs: replace Mutant::package -> &Package with &Default::default()
 src/mutate.rs: replace Mutant::diff -> String with String::new()
 src/mutate.rs: replace Mutant::diff -> String with "xyzzy".into()
-src/mutate.rs: replace Mutant::apply -> Result<()> with Ok(())
-src/mutate.rs: replace Mutant::apply -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/mutate.rs: replace Mutant::apply -> Result<AppliedMutant> with Ok(Default::default())
+src/mutate.rs: replace Mutant::apply -> Result<AppliedMutant> with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace Mutant::unapply -> Result<()> with Ok(())
 src/mutate.rs: replace Mutant::unapply -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace Mutant::write_in_dir -> Result<()> with Ok(())
@@ -320,6 +322,7 @@ src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Ok(Defau
 src/mutate.rs: replace <impl Debug for Mutant>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Ok(Default::default())
 src/mutate.rs: replace <impl Serialize for Mutant>::serialize -> Result<S::Ok, S::Error> with Err(::anyhow::anyhow!("mutated!"))
+src/mutate.rs: replace <impl Drop for AppliedMutant<'_>>::drop with ()
 src/options.rs: replace join_slices -> Vec<String> with vec![]
 src/options.rs: replace join_slices -> Vec<String> with vec![String::new()]
 src/options.rs: replace join_slices -> Vec<String> with vec!["xyzzy".into()]
@@ -478,6 +481,8 @@ src/scenario.rs: replace <impl Display for Scenario>::fmt -> fmt::Result with Ok
 src/scenario.rs: replace <impl Display for Scenario>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/scenario.rs: replace Scenario::is_mutant -> bool with true
 src/scenario.rs: replace Scenario::is_mutant -> bool with false
+src/scenario.rs: replace Scenario::mutant -> Option<&Mutant> with None
+src/scenario.rs: replace Scenario::mutant -> Option<&Mutant> with Some(&Default::default())
 src/scenario.rs: replace Scenario::log_file_name_base -> String with String::new()
 src/scenario.rs: replace Scenario::log_file_name_base -> String with "xyzzy".into()
 src/shard.rs: replace Shard::select -> Vec<M> with vec![]

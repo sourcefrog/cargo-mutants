@@ -168,8 +168,17 @@ struct Args {
     file: Vec<String>,
 
     /// don't copy files matching gitignore patterns.
-    #[arg(long, action = ArgAction::Set, default_value = "true", help_heading = "Copying")]
+    #[arg(long, action = ArgAction::Set, default_value = "true", help_heading = "Copying", group = "copy_opts")]
     gitignore: bool,
+
+    /// test mutations in the source tree, rather than in a copy.
+    #[arg(
+        long,
+        help_heading = "Copying",
+        conflicts_with = "jobs",
+        conflicts_with = "copy_opts"
+    )]
+    in_place: bool,
 
     /// run this many cargo build/test jobs in parallel.
     #[arg(
@@ -215,7 +224,7 @@ struct Args {
     no_config: bool,
 
     /// don't copy the /target directory, and don't build the source tree first.
-    #[arg(long, help_heading = "Copying")]
+    #[arg(long, help_heading = "Copying", group = "copy_opts")]
     no_copy_target: bool,
 
     /// don't print times or tree sizes, to make output deterministic.
