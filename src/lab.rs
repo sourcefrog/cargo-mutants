@@ -210,6 +210,8 @@ fn test_scenario(
     let applied = scenario
         .mutant()
         .map(|mutant| {
+            // TODO: This is slightly inefficient as it computes the mutated source twice,
+            // once for the diff and once to write it out.
             log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
             mutant.apply(build_dir)
         })

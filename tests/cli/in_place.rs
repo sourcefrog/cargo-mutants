@@ -30,9 +30,6 @@ fn in_place_check_leaves_no_changes() -> Result<()> {
         "stderr:\n{}",
         String::from_utf8_lossy(&cmd.get_output().stderr)
     );
-    // TODO: The source and Cargo.toml files are unchanged
-    // from the source; we made sure there's no `target` in the
-    // source.
     let orig_path = Path::new("testdata/small_well_tested");
     for filename in ["Cargo.toml", "src/lib.rs"] {
         println!("comparing {filename}");
