@@ -8,9 +8,17 @@ There are at least two complementary ways to use cargo-mutants in CI:
 
 2. Checking that all mutants are caught, on PRs or on the development branch.
 
-Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
+## Recommendations for CI
+
+* Use the [`--in-place`](in-place.md) option to avoid copying the tree.
+
+## Installing into CI
 
 The recommended way to install cargo-mutants is using [install-action](https://github.com/taiki-e/install-action), which will fetch a binary from cargo-mutants most recent GitHub release, which is faster than building from source. You could alternatively use [baptiste0928/cargo-install](https://github.com/baptiste0928/cargo-install) which will build it from source in your worker and cache the result.
+
+## Example workflow
+
+Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
 
 ```yml
 name: cargo-mutants

@@ -18,6 +18,7 @@
   - [Build directories](build-dirs.md)
   - [Using nextest](nextest.md)
   - [Baseline tests](baseline.md)
+  - [Testing in-place](in-place.md)
 - [Generating mutants](mutants.md)
   - [Error values](error-values.md)
 - [Improving performance](performance.md)
