@@ -28,6 +28,15 @@ on:
     branches:
       - main
   pull_request:
+    # Only test PR if it changes something that's likely to affect the results, because
+    # mutant tests can take a long time. Adjust these paths to suit your project.
+    paths:
+      - ".cargo/**"
+      - ".github/workflows/mutants.yml"
+      - "Cargo.*"
+      - "src/**"
+      - "testdata/**"
+      - "tests/**"
 
 jobs:
   cargo-mutants:
