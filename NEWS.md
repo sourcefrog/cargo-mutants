@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: `--in-place` option tests mutations in the original source tree, without copying the tree. This is faster and uses less disk space, but it's incompatible with `--jobs`, and you must be careful not to edit or commit the source tree while tests are running.
+
 ## 24.1.1
 
 - New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
