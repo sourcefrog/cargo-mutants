@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Manage a subprocess, with polling, timeouts, termination, and so on.
 //!
@@ -70,8 +70,9 @@ impl Process {
         log_file: &mut LogFile,
     ) -> Result<Process> {
         let start = Instant::now();
-        log_file.message(&format!("run {}", argv.join(" ")));
-        debug!("start {argv:?}");
+        let quoted_argv = cheap_shell_quote(argv);
+        log_file.message(&quoted_argv);
+        debug!(%quoted_argv, "start process");
         let mut os_env = PopenConfig::current_env();
         os_env.extend(
             env.iter()
@@ -271,4 +272,36 @@ pub fn get_command_output(argv: &[&str], cwd: &Utf8Path) -> Result<String> {
         .context("failed to read child stdout")?;
     debug!("output: {}", stdout.trim());
     Ok(stdout)
+}
+
+/// Quote an argv slice in Unix shell style.
+///
+/// This is not completely guaranteed, but is only for debug logs.
+fn cheap_shell_quote<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> String {
+    argv.into_iter()
+        .map(|s| {
+            s.as_ref()
+                .chars()
+                .flat_map(|c| match c {
+                    ' ' | '\t' | '\n' | '\r' | '\\' | '\'' | '"' => vec!['\\', c],
+                    _ => vec![c],
+                })
+                .collect::<String>()
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+#[cfg(test)]
+mod test {
+    use super::cheap_shell_quote;
+
+    #[test]
+    fn shell_quoting() {
+        assert_eq!(cheap_shell_quote(["foo".to_string()]), "foo");
+        assert_eq!(
+            cheap_shell_quote(["foo bar", r#"\blah\t"#, r#""quoted""#]),
+            r#"foo\ bar \\blah\\t \"quoted\""#
+        );
+    }
 }
