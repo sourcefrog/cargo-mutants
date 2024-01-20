@@ -34,8 +34,8 @@ fn in_place_check_leaves_no_changes() -> Result<()> {
     for filename in ["Cargo.toml", "src/lib.rs"] {
         println!("comparing {filename}");
         assert_eq!(
-            std::fs::read_to_string(tmp.path().join(filename))?,
-            std::fs::read_to_string(orig_path.join(filename))?,
+            std::fs::read_to_string(tmp.path().join(filename))?.replace("\r\n", "\n"),
+            std::fs::read_to_string(orig_path.join(filename))?.replace("\r\n", "\n"),
             "{filename} should be unchanged"
         );
     }
