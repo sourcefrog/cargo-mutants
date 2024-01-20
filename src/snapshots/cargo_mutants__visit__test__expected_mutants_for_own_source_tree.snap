@@ -472,6 +472,8 @@ src/process.rs: replace setpgid_on_unix -> PopenConfig with Default::default()
 src/process.rs: replace get_command_output -> Result<String> with Ok(String::new())
 src/process.rs: replace get_command_output -> Result<String> with Ok("xyzzy".into())
 src/process.rs: replace get_command_output -> Result<String> with Err(::anyhow::anyhow!("mutated!"))
+src/process.rs: replace cheap_shell_quote -> String with String::new()
+src/process.rs: replace cheap_shell_quote -> String with "xyzzy".into()
 src/scenario.rs: replace <impl Display for Scenario>::fmt -> fmt::Result with Ok(Default::default())
 src/scenario.rs: replace <impl Display for Scenario>::fmt -> fmt::Result with Err(::anyhow::anyhow!("mutated!"))
 src/scenario.rs: replace Scenario::is_mutant -> bool with true
