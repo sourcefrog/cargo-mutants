@@ -10,6 +10,8 @@ With the `--in-place` option, it will instead mutate and test your code in the o
 
 If you use `--in-place` then you shouldn't edit the code, commit, or run your own tests while tests are running, because cargo-mutants will be modifying the code at the same time. It's not the default because of the risk that users might accidentally do this.
 
+cargo-mutants will try to restore the code to its original state after testing each mutant, but it's possible that it might fail to do so if it's interrupted or panics.
+
 ## Why test in place?
 
 Some situations where `--in-place` might be useful are:
