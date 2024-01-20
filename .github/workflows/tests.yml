@@ -148,7 +148,7 @@ jobs:
         # Skip baselines because this action depends on the tests
         run: >
           cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8
-          --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=60
+          --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=240
           --in-place
       - name: Archive mutants.out
         uses: actions/upload-artifact@v3
