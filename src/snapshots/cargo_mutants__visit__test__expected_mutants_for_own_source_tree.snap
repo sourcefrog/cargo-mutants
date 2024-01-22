@@ -50,7 +50,6 @@ src/console.rs: replace && with || in Console::scenario_finished
 src/console.rs: replace && with || in Console::scenario_finished
 src/console.rs: replace && with || in Console::scenario_finished
 src/console.rs: replace || with && in Console::scenario_finished
-src/console.rs: replace Console::autoset_timeout with ()
 src/console.rs: replace Console::start_copy with ()
 src/console.rs: replace Console::finish_copy with ()
 src/console.rs: replace Console::copy_progress with ()

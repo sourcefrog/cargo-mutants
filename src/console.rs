@@ -133,14 +133,6 @@ impl Console {
         self.message(&s);
     }
 
-    /// Update that a test timeout was auto-set.
-    pub fn autoset_timeout(&self, timeout: Duration) {
-        self.message(&format!(
-            "Auto-set test timeout to {}\n",
-            style_duration(timeout)
-        ));
-    }
-
     pub fn build_dirs_start(&self, _n: usize) {
         // self.message(&format!("Make {n} more build directories...\n"));
     }

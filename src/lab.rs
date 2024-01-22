@@ -87,7 +87,7 @@ pub fn test_mutants(
         BaselineStrategy::Skip => None,
     };
     let mut build_dirs = vec![build_dir];
-    let test_timeout = test_timeout(&baseline_outcome, &options, console);
+    let test_timeout = test_timeout(&baseline_outcome, &options);
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     console.build_dirs_start(jobs - 1);
@@ -160,11 +160,7 @@ pub fn test_mutants(
     Ok(lab_outcome)
 }
 
-fn test_timeout(
-    baseline_outcome: &Option<ScenarioOutcome>,
-    options: &Options,
-    console: &Console,
-) -> Duration {
+fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -> Duration {
     if let Some(timeout) = options.test_timeout {
         timeout
     } else if options.check_only {
@@ -175,15 +171,20 @@ fn test_timeout(
     } else {
         let auto_timeout = max(
             options.minimum_test_timeout,
-            baseline_outcome
+            Duration::from_secs(
+                baseline_outcome
                 .as_ref()
                 .expect("Baseline tests should have run")
                 .total_phase_duration(Phase::Test)
-                .mul_f32(5.0),
+                .as_secs() // round
+                *5,
+            ),
         );
         if options.show_times {
-            // TODO: Just `info!` not a special method.
-            console.autoset_timeout(auto_timeout);
+            info!(
+                "Auto-set test timeout to {}",
+                humantime::format_duration(auto_timeout)
+            );
         }
         auto_timeout
     }

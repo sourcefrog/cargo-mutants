@@ -737,7 +737,7 @@ fn factorial_mutants_with_all_logs() {
         .arg(tmp_src_dir.path())
         .assert()
         .code(2)
-        .stderr("")
+        .stderr(predicate::str::contains("WARN").or(predicate::str::contains("ERR")).not())
         .stdout(is_match(
     r"ok *Unmutated baseline in \d+\.\ds"
         ).unwrap())
@@ -760,7 +760,6 @@ fn factorial_mutants_with_all_logs_and_nocapture() {
         .args(["--", "--", "--nocapture"])
         .assert()
         .code(2)
-        .stderr("")
         .stdout(contains("factorial(6) = 720")) // println from the test
         .stdout(contains("factorial(6) = 0")) // The mutated result
         ;
@@ -986,7 +985,7 @@ fn minimum_test_timeout_from_env() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .success()
-        .stdout(predicate::str::contains("Auto-set test timeout to 20m 34s"));
+        .stderr(predicate::str::contains("Auto-set test timeout to 20m 34s"));
 }
 
 /// In this tree, as the name suggests, tests will hang in a clean tree.
