@@ -543,10 +543,13 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
+    use std::path::Path;
+
     use indoc::indoc;
     use itertools::Itertools;
 
     use super::*;
+    use crate::config::Config;
     use crate::package::Package;
     use crate::source::SourceFile;
 
@@ -585,11 +588,11 @@ mod test {
     /// To stop it being too noisy, we use a custom format with no line numbers.
     #[test]
     fn expected_mutants_for_own_source_tree() {
-        let options = Options {
-            error_values: vec!["::anyhow::anyhow!(\"mutated!\")".to_owned()],
-            show_line_col: false,
-            ..Default::default()
-        };
+        let config = Config::read_file(Path::new("./.cargo/mutants.toml")).expect("Read config");
+        let args =
+            Args::try_parse_from(["mutants", "--list", "--line-col=false"]).expect("Parse args");
+        let mut options = Options::new(&args, &config).expect("Build options");
+        options.colors = false; // TODO: Use a command-line arg.
         let mut list_output = String::new();
         let console = Console::new();
         let workspace = Workspace::open(
