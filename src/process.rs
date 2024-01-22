@@ -101,10 +101,7 @@ impl Process {
     pub fn poll(&mut self) -> Result<Option<ProcessStatus>> {
         let elapsed = self.start.elapsed();
         if elapsed > self.timeout {
-            info!(
-                "timeout after {:.1}s, terminating child process...",
-                elapsed.as_secs_f32()
-            );
+            debug!(?elapsed, "timeout, terminating child process...",);
             self.terminate()?;
             Ok(Some(ProcessStatus::Timeout))
         } else if let Err(e) = check_interrupted() {

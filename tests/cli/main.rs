@@ -1008,7 +1008,6 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
         .stdout(is_match(r"TIMEOUT *Unmutated baseline in \d+\.\ds").unwrap())
-        .stderr(contains("timeout"))
         .stderr(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
