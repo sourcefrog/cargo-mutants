@@ -16,10 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: beta
-      - uses: Swatinem/rust-cache@v2
       - name: Install mdbook and mdbook-linkcheck
         uses: taiki-e/install-action@v2
         with:
