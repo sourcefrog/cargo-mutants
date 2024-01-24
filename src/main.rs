@@ -54,7 +54,7 @@ use crate::list::{list_files, list_mutants, FmtToIoWrite};
 use crate::log_file::LogFile;
 use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
-use crate::options::{Options, TestTool};
+use crate::options::{Colors, Options, TestTool};
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::scenario::Scenario;
 use crate::shard::Shard;
@@ -119,6 +119,10 @@ struct Args {
     /// cargo check generated mutants, but don't run tests.
     #[arg(long, help_heading = "Execution")]
     check: bool,
+
+    /// draw colors in output.
+    #[arg(long, value_enum, help_heading = "Output", default_value_t)]
+    colors: Colors,
 
     /// show the mutation diffs.
     #[arg(long, help_heading = "Filters")]

@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Visit all the files in a source tree, and then the AST of each file,
 //! to discover mutation opportunities.
@@ -590,9 +590,9 @@ mod test {
     fn expected_mutants_for_own_source_tree() {
         let config = Config::read_file(Path::new("./.cargo/mutants.toml")).expect("Read config");
         let args =
-            Args::try_parse_from(["mutants", "--list", "--line-col=false"]).expect("Parse args");
-        let mut options = Options::new(&args, &config).expect("Build options");
-        options.colors = false; // TODO: Use a command-line arg.
+            Args::try_parse_from(["mutants", "--list", "--line-col=false", "--colors=never"])
+                .expect("Parse args");
+        let options = Options::new(&args, &config).expect("Build options");
         let mut list_output = String::new();
         let console = Console::new();
         let workspace = Workspace::open(

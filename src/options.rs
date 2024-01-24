@@ -92,7 +92,7 @@ pub struct Options {
     pub error_values: Vec<String>,
 
     /// Show ANSI colors.
-    pub colors: bool,
+    pub colors: Colors,
 
     /// List mutants in json, etc.
     pub emit_json: bool,
@@ -125,6 +125,19 @@ fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
     v
 }
 
+/// Should ANSI colors be drawn?
+///
+/// See also
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Display, Deserialize, ValueEnum)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum Colors {
+    #[default]
+    Auto,
+    Always,
+    Never,
+}
+
 impl Options {
     /// Build options by merging command-line args and config file.
     pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
@@ -146,7 +159,7 @@ impl Options {
             ),
             baseline: args.baseline,
             check_only: args.check,
-            colors: true, // TODO: An option for this and use CLICOLORS.
+            colors: args.colors,
             emit_json: args.json,
             emit_diffs: args.diff,
             error_values: join_slices(&args.error, &config.error_values),
@@ -180,6 +193,16 @@ impl Options {
             }
         });
         Ok(options)
+    }
+
+    /// True if colors should be drawn.
+    pub fn colors_active(&self) -> bool {
+        // TODO: Also check (and memoize?) environment variables.
+        match self.colors {
+            Colors::Always => true,
+            Colors::Never => false,
+            Colors::Auto => true, // TODO: atty::is(atty::Stream::Stdout),
+        }
     }
 }
 

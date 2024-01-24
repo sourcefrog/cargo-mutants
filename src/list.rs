@@ -1,4 +1,4 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023-2024 Martin Pool
 
 //! List mutants and files as text.
 
@@ -49,7 +49,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
             writeln!(
                 out,
                 "{}",
-                mutant.name(options.show_line_col, options.colors)
+                mutant.name(options.show_line_col, options.colors_active())
             )?;
             if options.emit_diffs {
                 writeln!(out, "{}", mutant.diff())?;
