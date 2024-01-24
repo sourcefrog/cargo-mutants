@@ -18,4 +18,4 @@ message: Please cite this project using these information.
 repository-code: https://github.com/sourcefrog/cargo-mutants
 title: cargo-mutants
 url: https://mutants.rs/
-version: 24.1.1
+version: 24.1.2
