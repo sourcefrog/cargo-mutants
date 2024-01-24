@@ -49,7 +49,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
             writeln!(
                 out,
                 "{}",
-                mutant.name(options.show_line_col, options.colors_active())
+                mutant.name(options.show_line_col, options.colors.active())
             )?;
             if options.emit_diffs {
                 writeln!(out, "{}", mutant.diff())?;

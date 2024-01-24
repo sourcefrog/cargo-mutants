@@ -18,6 +18,7 @@ use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::prelude::*;
 
+use crate::options::Colors;
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::tail_file::TailFile;
@@ -241,7 +242,7 @@ impl Console {
     /// Configure tracing to send messages to the console and debug log.
     ///
     /// The debug log is opened later and provided by [Console::set_debug_log].
-    pub fn setup_global_trace(&self, console_trace_level: Level) -> Result<()> {
+    pub fn setup_global_trace(&self, console_trace_level: Level, colors: Colors) -> Result<()> {
         // Show time relative to the start of the program.
         let uptime = tracing_subscriber::fmt::time::uptime();
         let debug_log_layer = tracing_subscriber::fmt::layer()
@@ -252,7 +253,7 @@ impl Console {
             .with_writer(self.make_debug_log_writer());
         let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
         let console_layer = tracing_subscriber::fmt::layer()
-            .with_ansi(true)
+            .with_ansi(colors.active())
             .with_writer(self.make_terminal_writer())
             .with_target(false)
             .without_time()
