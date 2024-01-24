@@ -44,8 +44,9 @@ impl Console {
     }
 
     pub fn set_colors_enabled(&self, colors: Colors) {
-        if let Some(colors) = colors.active() {
+        if let Some(colors) = colors.forced_value() {
             ::console::set_colors_enabled(colors);
+            ::console::set_colors_enabled_stderr(colors);
         }
         // Otherwise, let the console crate decide, based on isatty, etc.
     }
@@ -253,7 +254,7 @@ impl Console {
         // Show time relative to the start of the program.
         let uptime = tracing_subscriber::fmt::time::uptime();
         let stderr_colors = colors
-            .active()
+            .forced_value()
             .unwrap_or_else(::console::colors_enabled_stderr);
         let debug_log_layer = tracing_subscriber::fmt::layer()
             .with_ansi(false)
