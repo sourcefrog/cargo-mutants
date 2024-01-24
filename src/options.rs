@@ -137,20 +137,17 @@ pub enum Colors {
 }
 
 impl Colors {
-    fn forced_value(&self) -> Option<bool> {
+    /// If colors were forced on or off by the user through an option or
+    /// environment variable, return that value.
+    ///
+    /// Otherwise, return None, meaning we should decide based on the
+    /// detected terminal characteristics.
+    pub fn forced_value(&self) -> Option<bool> {
         // From https://bixense.com/clicolors/
         if env::var("NO_COLOR").map_or(false, |x| x != "0") {
             Some(false)
         } else if env::var("CLICOLOR_FORCE").map_or(false, |x| x != "0") {
             Some(true)
-        } else {
-            None
-        }
-    }
-
-    pub fn active(&self) -> Option<bool> {
-        if let Some(active) = self.forced_value() {
-            Some(active)
         } else {
             match self {
                 Colors::Always => Some(true),
@@ -161,7 +158,8 @@ impl Colors {
     }
 
     pub fn active_stdout(&self) -> bool {
-        self.active().unwrap_or_else(::console::colors_enabled)
+        self.forced_value()
+            .unwrap_or_else(::console::colors_enabled)
     }
 }
 

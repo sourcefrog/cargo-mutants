@@ -212,9 +212,6 @@ src/options.rs: replace Colors::forced_value -> Option<bool> with Some(true)
 src/options.rs: replace Colors::forced_value -> Option<bool> with Some(false)
 src/options.rs: replace != with == in Colors::forced_value
 src/options.rs: replace != with == in Colors::forced_value
-src/options.rs: replace Colors::active -> Option<bool> with None
-src/options.rs: replace Colors::active -> Option<bool> with Some(true)
-src/options.rs: replace Colors::active -> Option<bool> with Some(false)
 src/options.rs: replace Colors::active_stdout -> bool with true
 src/options.rs: replace Colors::active_stdout -> bool with false
 src/options.rs: replace or_slices -> &'c[T] with Vec::leak(Vec::new())
