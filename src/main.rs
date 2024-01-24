@@ -121,7 +121,13 @@ struct Args {
     check: bool,
 
     /// draw colors in output.
-    #[arg(long, value_enum, help_heading = "Output", default_value_t)]
+    #[arg(
+        long,
+        value_enum,
+        help_heading = "Output",
+        default_value_t,
+        env = "CARGO_TERM_COLOR"
+    )]
     colors: Colors,
 
     /// show the mutation diffs.
