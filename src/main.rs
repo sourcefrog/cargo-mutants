@@ -338,6 +338,7 @@ fn main() -> Result<()> {
 
     let console = Console::new();
     console.setup_global_trace(args.level, args.colors)?; // We don't have Options yet.
+    console.set_colors_enabled(args.colors);
     interrupt::install_handler();
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {

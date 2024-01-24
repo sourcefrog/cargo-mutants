@@ -43,6 +43,13 @@ impl Console {
         }
     }
 
+    pub fn set_colors_enabled(&self, colors: Colors) {
+        if let Some(colors) = colors.active() {
+            ::console::set_colors_enabled(colors);
+        }
+        // Otherwise, let the console crate decide, based on isatty, etc.
+    }
+
     pub fn walk_tree_start(&self) {
         self.view
             .update(|model| model.walk_tree = Some(WalkModel::default()));
@@ -245,6 +252,9 @@ impl Console {
     pub fn setup_global_trace(&self, console_trace_level: Level, colors: Colors) -> Result<()> {
         // Show time relative to the start of the program.
         let uptime = tracing_subscriber::fmt::time::uptime();
+        let stderr_colors = colors
+            .active()
+            .unwrap_or_else(::console::colors_enabled_stderr);
         let debug_log_layer = tracing_subscriber::fmt::layer()
             .with_ansi(false)
             .with_file(true) // source file name
@@ -253,7 +263,7 @@ impl Console {
             .with_writer(self.make_debug_log_writer());
         let level_filter = tracing_subscriber::filter::LevelFilter::from_level(console_trace_level);
         let console_layer = tracing_subscriber::fmt::layer()
-            .with_ansi(colors.active())
+            .with_ansi(stderr_colors)
             .with_writer(self.make_terminal_writer())
             .with_target(false)
             .without_time()

@@ -137,15 +137,31 @@ pub enum Colors {
 }
 
 impl Colors {
-    /// True if colors should actually be drawn, resolving the `auto` behavior.`
-    pub fn active(&self) -> bool {
-        // TODO: Also check (and memoize?) environment variables, or maybe do that at a higher level
-        // when constructing Colors.
-        match self {
-            Colors::Always => true,
-            Colors::Never => false,
-            Colors::Auto => true, // TODO: Check and memoize atty, etc.
+    fn forced_value(&self) -> Option<bool> {
+        // From https://bixense.com/clicolors/
+        if env::var("NO_COLOR").map_or(false, |x| x != "0") {
+            Some(false)
+        } else if env::var("CLICOLOR_FORCE").map_or(false, |x| x != "0") {
+            Some(true)
+        } else {
+            None
         }
+    }
+
+    pub fn active(&self) -> Option<bool> {
+        if let Some(active) = self.forced_value() {
+            Some(active)
+        } else {
+            match self {
+                Colors::Always => Some(true),
+                Colors::Never => Some(false),
+                Colors::Auto => None, // library should decide
+            }
+        }
+    }
+
+    pub fn active_stdout(&self) -> bool {
+        self.active().unwrap_or_else(::console::colors_enabled)
     }
 }
 
