@@ -102,7 +102,7 @@ jobs:
         with:
           tool: nextest
       - name: Download cargo-mutants binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cargo-mutants-linux
       - name: Install cargo-mutants binary
@@ -138,7 +138,7 @@ jobs:
         with:
           tool: nextest
       - name: Download cargo-mutants binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cargo-mutants-linux
       - name: Install cargo-mutants binary
