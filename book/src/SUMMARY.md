@@ -12,6 +12,7 @@
   - [Filtering files](skip_files.md)
   - [Filtering functions and mutants](filter_mutants.md)
 - [Controlling cargo-mutants](controlling.md)
+  - [Display and output](output.md)
   - [Listing and previewing mutations](list.md)
   - [Workspaces and packages](workspaces.md)
   - [Passing options to Cargo](cargo-args.md)

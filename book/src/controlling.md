@@ -26,14 +26,4 @@ the source.
 `-d`, `--dir`: Test the Rust tree in the given directory, rather than the source tree
 enclosing the working directory where cargo-mutants is launched.
 
-## Console output
-
-`-v`, `--caught`: Also print mutants that were caught by tests.
-
-`-V`, `--unviable`: Also print mutants that failed `cargo build`.
-
-`--no-times`: Don't print elapsed times.
-
-`-L`, `--level`, and `$CARGO_MUTANTS_TRACE_LEVEL`: set the verbosity of trace
-output to stdout. The default is `info`, and it can be increased to `debug` or
-`trace`.
+`--manifest-path`: Also selects the tree to test, but takes a path to a Cargo.toml file rather than a directory. (This is less convenient but compatible with other Cargo commands.)

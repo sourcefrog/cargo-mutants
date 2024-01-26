@@ -1,6 +1,7 @@
 # cargo-mutants changelog
 
 ## Unreleased
+
 ## 24.1.2
 
 - New: `--in-place` option tests mutations in the original source tree, without copying the tree. This is faster and uses less disk space, but it's incompatible with `--jobs`, and you must be careful not to edit or commit the source tree while tests are running.

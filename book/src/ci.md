@@ -23,6 +23,9 @@ Here is an example of a GitHub Actions workflow that runs mutation tests and upl
 ```yml
 name: cargo-mutants
 
+env:
+  CARGO_TERM_COLOR: always
+
 on:
   push:
     branches:
