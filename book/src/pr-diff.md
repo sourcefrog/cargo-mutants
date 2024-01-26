@@ -10,6 +10,9 @@ name: Tests
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+
 on:
   push:
     branches:

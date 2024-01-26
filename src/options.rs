@@ -92,7 +92,7 @@ pub struct Options {
     pub error_values: Vec<String>,
 
     /// Show ANSI colors.
-    pub colors: bool,
+    pub colors: Colors,
 
     /// List mutants in json, etc.
     pub emit_json: bool,
@@ -125,6 +125,44 @@ fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
     v
 }
 
+/// Should ANSI colors be drawn?
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Display, Deserialize, ValueEnum)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+pub enum Colors {
+    #[default]
+    Auto,
+    Always,
+    Never,
+}
+
+impl Colors {
+    /// If colors were forced on or off by the user through an option or
+    /// environment variable, return that value.
+    ///
+    /// Otherwise, return None, meaning we should decide based on the
+    /// detected terminal characteristics.
+    pub fn forced_value(&self) -> Option<bool> {
+        // From https://bixense.com/clicolors/
+        if env::var("NO_COLOR").map_or(false, |x| x != "0") {
+            Some(false)
+        } else if env::var("CLICOLOR_FORCE").map_or(false, |x| x != "0") {
+            Some(true)
+        } else {
+            match self {
+                Colors::Always => Some(true),
+                Colors::Never => Some(false),
+                Colors::Auto => None, // library should decide
+            }
+        }
+    }
+
+    pub fn active_stdout(&self) -> bool {
+        self.forced_value()
+            .unwrap_or_else(::console::colors_enabled)
+    }
+}
+
 impl Options {
     /// Build options by merging command-line args and config file.
     pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
@@ -146,7 +184,7 @@ impl Options {
             ),
             baseline: args.baseline,
             check_only: args.check,
-            colors: true, // TODO: An option for this and use CLICOLORS.
+            colors: args.colors,
             emit_json: args.json,
             emit_diffs: args.diff,
             error_values: join_slices(&args.error, &config.error_values),

@@ -1,4 +1,4 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023-2024 Martin Pool
 
 //! List mutants and files as text.
 
@@ -45,12 +45,11 @@ pub(crate) fn list_mutants<W: fmt::Write>(
         }
         out.write_str(&serde_json::to_string_pretty(&list)?)?;
     } else {
+        // TODO: Do we need to check this? Could the console library strip them if they're not
+        // supported?
+        let colors = options.colors.active_stdout();
         for mutant in mutants {
-            writeln!(
-                out,
-                "{}",
-                mutant.name(options.show_line_col, options.colors)
-            )?;
+            writeln!(out, "{}", mutant.name(options.show_line_col, colors))?;
             if options.emit_diffs {
                 writeln!(out, "{}", mutant.diff())?;
             }

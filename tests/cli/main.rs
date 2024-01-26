@@ -22,6 +22,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::{tempdir, TempDir};
 
 mod build_dir;
+mod colors;
 mod config;
 mod error_value;
 mod in_diff;
@@ -59,7 +60,12 @@ fn run() -> assert_cmd::Command {
     // as reasonably possible.
     env::vars()
         .map(|(k, _v)| k)
-        .filter(|k| k.starts_with("CARGO_MUTANTS_"))
+        .filter(|k| {
+            k.starts_with("CARGO_MUTANTS_")
+                || k == "CLICOLOR_FORCE"
+                || k == "NOCOLOR"
+                || k == "CARGO_TERM_COLOR"
+        })
         .for_each(|k| {
             cmd.env_remove(k);
         });
