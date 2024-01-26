@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: Colored output can be enabled in CI or other noninteractive situations by passing `--colors=always`, or setting `CARGO_TERM_COLOR=always`, or `CLICOLOR_FORCE=1`. Colors can similarly be forced off with `--colors=never`, `CARGO_TERM_COLOR=never`, or `NO_COLOR=1`.
+
 ## 24.1.2
 
 - New: `--in-place` option tests mutations in the original source tree, without copying the tree. This is faster and uses less disk space, but it's incompatible with `--jobs`, and you must be careful not to edit or commit the source tree while tests are running.
