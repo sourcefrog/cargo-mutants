@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Relative diff
@@ -40,7 +40,7 @@ jobs:
         run: |
           cargo mutants --no-shuffle -j 2 -vV --in-diff git.diff
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutants-incremental.out
