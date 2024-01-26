@@ -9,7 +9,7 @@ on:
       - main
   pull_request:
     paths:
-      - ".cargo/**"
+      - ".cargo/*.toml"
       - ".github/workflows/tests.yml"
       - "Cargo.*"
       - "mutants_attrs/**"
