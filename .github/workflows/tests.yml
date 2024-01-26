@@ -117,7 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mutants-incremental.out
+          name: mutants-incremental-${{ matrix.test_tool}}.out
           path: mutants.out
 
   cargo-mutants:
@@ -154,5 +154,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mutants.out
+          name: mutants-${{matrix.test_tool}}-shard${{matrix.shard}}.out
           path: mutants.out
