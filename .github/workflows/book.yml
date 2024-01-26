@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install mdbook and mdbook-linkcheck
         uses: taiki-e/install-action@v2
         with:
@@ -24,7 +24,7 @@ jobs:
         run: |
           mdbook build book
       - name: Archive book output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: book

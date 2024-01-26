@@ -29,7 +29,7 @@ For example, in GitHub Actions, you could use a matrix job to run multiple shard
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
@@ -39,7 +39,7 @@ For example, in GitHub Actions, you could use a matrix job to run multiple shard
         run: |
           cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutants.out

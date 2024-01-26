@@ -38,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.version }}
@@ -62,7 +62,7 @@ jobs:
   release-binary:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@master
@@ -72,7 +72,7 @@ jobs:
       - name: Build
         run: cargo build --release
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cargo-mutants-linux
           path: |
@@ -86,7 +86,7 @@ jobs:
       matrix:
         test_tool: [cargo, nextest]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Relative diff
@@ -114,7 +114,7 @@ jobs:
           cargo mutants --no-shuffle -vV --in-diff git.diff --test-tool
           ${{matrix.test_tool}}
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutants-incremental.out
@@ -128,7 +128,7 @@ jobs:
         shard: [0, 1, 2, 3, 4, 5, 6, 7]
         test_tool: [cargo]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
@@ -151,7 +151,7 @@ jobs:
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=240
           --in-place
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutants.out

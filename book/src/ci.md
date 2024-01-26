@@ -53,7 +53,7 @@ jobs:
       - name: Run mutant tests
         run: cargo mutants -vV --in-place
       - name: Archive results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mutants-out
