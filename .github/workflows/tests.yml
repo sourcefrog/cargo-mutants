@@ -107,7 +107,7 @@ jobs:
           name: cargo-mutants-linux
       - name: Install cargo-mutants binary
         run: |
-          install cargo-mutants $HOME/.cargo/bin/
+          install cargo-mutants ~/.cargo/bin/
       - name: Mutants in-diff
         # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
         run: >
@@ -143,7 +143,7 @@ jobs:
           name: cargo-mutants-linux
       - name: Install cargo-mutants binary
         run: |
-          install cargo-mutants $HOME/.cargo/bin/
+          install cargo-mutants ~/.cargo/bin/
       - name: Mutants
         # Skip baselines because this action depends on the tests
         run: >
