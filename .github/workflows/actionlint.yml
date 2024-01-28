@@ -24,4 +24,5 @@ jobs:
         shell: bash
         run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          # shellcheck disable=SC2046
           ./actionlint -color $(find .github/workflows -name '*.yml' -type f ! -name release.yml -print)
