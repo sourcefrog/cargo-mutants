@@ -1,0 +1,46 @@
+# An example of how to run cargo-mutants on only the sections of code that have changed in a pull request,
+# using the `--in-diff` feature of cargo-mutants.
+#
+# This can give much faster feedback on pull requests, but can miss some problems that
+# would be found by running mutants on the whole codebase.
+
+name: Tests
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  incremental-mutants:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Relative diff
+        run: |
+          git branch -av
+          git diff origin/${{ github.base_ref }}.. | tee git.diff
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        name: Install cargo-mutants using install-action
+        with:
+          tool: cargo-mutants
+      - name: Mutants
+        run: |
+          cargo mutants --no-shuffle -vV --in-diff git.diff
+      - name: Archive mutants.out
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutants-incremental.out
+          path: mutants.out
