@@ -48,6 +48,10 @@ To generate mutants in only one file:
 cargo mutants -f src/something.rs
 ```
 
+## Integration with CI
+
+The [manual includes instructions and examples for automatically testing mutants in CI](https://mutants.rs/ci.html), including incremental testing of pull requests and full testing of the development branch.
+
 ## Help advance cargo-mutants
 
 If you use cargo-mutants or just like the idea you can help it get better:
