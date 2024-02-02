@@ -21,44 +21,5 @@ The recommended way to install cargo-mutants is using [install-action](https://g
 Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
 
 ```yml
-name: cargo-mutants
-
-env:
-  CARGO_TERM_COLOR: always
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    # Only test PR if it changes something that's likely to affect the results, because
-    # mutant tests can take a long time. Adjust these paths to suit your project.
-    paths:
-      - ".cargo/**"
-      - ".github/workflows/mutants.yml"
-      - "Cargo.*"
-      - "src/**"
-      - "testdata/**"
-      - "tests/**"
-
-jobs:
-  cargo-mutants:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: taiki-e/install-action@v2
-        name: Install cargo-mutants using install-action
-        with:
-          tool: cargo-mutants
-      - name: Run mutant tests
-        run: cargo mutants -vV --in-place
-      - name: Archive results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mutants-out
-          path: mutants.out
+{{#include ../../examples/workflows/basic.yml}}
 ```
