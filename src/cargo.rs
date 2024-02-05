@@ -90,6 +90,19 @@ fn cargo_argv(
     } else {
         cargo_args.push("--workspace".to_string());
     }
+    let features = &options.features;
+    if features.no_default_features {
+        cargo_args.push("--no-default-features".to_owned());
+    }
+    if features.all_features {
+        cargo_args.push("--all-features".to_owned());
+    }
+    cargo_args.extend(
+        features
+            .features
+            .iter()
+            .map(|f| format!("--features={}", f)),
+    );
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
         cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
@@ -229,6 +242,48 @@ mod test {
                 "--release",
                 "--lib",
                 "--no-fail-fast"
+            ]
+        );
+    }
+
+    #[test]
+    fn no_default_features_args_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--no-default-features"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--workspace", "--no-default-features"]
+        );
+    }
+
+    #[test]
+    fn all_features_args_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--all-features"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--workspace", "--all-features"]
+        );
+    }
+
+    #[test]
+    fn feature_args_passed_to_cargo() {
+        let args = Args::try_parse_from(
+            ["mutants", "--features", "foo", "--features", "bar,baz"].as_slice(),
+        )
+        .unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--workspace",
+                "--features=foo",
+                "--features=bar,baz"
             ]
         );
     }

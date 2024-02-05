@@ -7,6 +7,16 @@ test`.
 
 There is not yet a way to pass options only to `cargo build` but not to `cargo test`.
 
+## Feature flags
+
+The `--features`, `--all-features`, and `--no-default-features` flags can be given to cargo-mutants and they will be passed down to `cargo build` and `cargo test`.
+
+For example, this can be useful if you have tests that are only enabled with a feature flag:
+
+```shell
+cargo mutants -- --features=fail/failpoints
+```
+
 ## Arguments to all `cargo` commands
 
 To pass more arguments to every Cargo invocation, use `--cargo-arg`, or the `additional_cargo_args` configuration key.
