@@ -70,6 +70,9 @@ pub struct Options {
     /// Additional arguments to `cargo test`.
     pub additional_cargo_test_args: Vec<String>,
 
+    /// Selection of features for cargo.
+    pub features: super::Features,
+
     /// Files to examine.
     pub examine_globset: Option<GlobSet>,
 
@@ -194,6 +197,7 @@ impl Options {
                 .context("Failed to compile exclude_re regex")?,
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
+            features: args.features.clone(),
             gitignore: args.gitignore,
             in_place: args.in_place,
             jobs: args.jobs,
@@ -218,6 +222,11 @@ impl Options {
             }
         });
         Ok(options)
+    }
+
+    #[cfg(test)]
+    pub fn from_args(args: &Args) -> Result<Options> {
+        Options::new(args, &Config::default())
     }
 }
 
@@ -300,5 +309,62 @@ mod test {
         let config = Config::read_file(config_file.path()).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
+    }
+
+    #[test]
+    fn features_arg() {
+        let args = Args::try_parse_from(["mutants", "--features", "nice,shiny features"]).unwrap();
+        assert_eq!(
+            args.features.features.iter().as_ref(),
+            ["nice,shiny features"]
+        );
+        assert!(!args.features.no_default_features);
+        assert!(!args.features.all_features);
+
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(
+            options.features.features.iter().as_ref(),
+            ["nice,shiny features"]
+        );
+        assert!(!options.features.no_default_features);
+        assert!(!options.features.all_features);
+    }
+
+    #[test]
+    fn no_default_features_arg() {
+        let args = Args::try_parse_from([
+            "mutants",
+            "--no-default-features",
+            "--features",
+            "nice,shiny features",
+        ])
+        .unwrap();
+
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(
+            options.features.features.iter().as_ref(),
+            ["nice,shiny features"]
+        );
+        assert!(options.features.no_default_features);
+        assert!(!options.features.all_features);
+    }
+
+    #[test]
+    fn all_features_arg() {
+        let args = Args::try_parse_from([
+            "mutants",
+            "--all-features",
+            "--features",
+            "nice,shiny features",
+        ])
+        .unwrap();
+
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(
+            options.features.features.iter().as_ref(),
+            ["nice,shiny features"]
+        );
+        assert!(!options.features.no_default_features);
+        assert!(options.features.all_features);
     }
 }

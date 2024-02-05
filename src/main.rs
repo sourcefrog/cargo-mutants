@@ -103,7 +103,7 @@ pub enum BaselineStrategy {
     about,
     after_help = SPONSOR_MESSAGE,
 )]
-struct Args {
+pub struct Args {
     /// show cargo output for all invocations (very verbose).
     #[arg(long, help_heading = "Output")]
     all_logs: bool,
@@ -311,6 +311,28 @@ struct Args {
     /// pass remaining arguments to cargo test after all options and after `--`.
     #[arg(last = true, help_heading = "Execution")]
     cargo_test_args: Vec<String>,
+
+    #[command(flatten)]
+    features: Features,
+}
+
+#[derive(clap::Args, PartialEq, Eq, Debug, Default, Clone)]
+pub struct Features {
+    //---  features
+    /// Space or comma separated list of features to activate.
+    // (The features are not split or parsed, just passed through to Cargo.)
+    #[arg(long, help_heading = "Feature Selection")]
+    pub features: Vec<String>,
+
+    /// Do not activate the `default` feature.
+    #[arg(long, help_heading = "Feature Selection")]
+    pub no_default_features: bool,
+
+    /// Activate all features.
+    // (This does not conflict because this only turns on features in the top level package,
+    // and you might use --features to turn on features in dependencies.)
+    #[arg(long, help_heading = "Feature Selection")]
+    pub all_features: bool,
 }
 
 fn main() -> Result<()> {
@@ -358,6 +380,7 @@ fn main() -> Result<()> {
         config::Config::read_tree_config(&workspace.dir)?
     };
     debug!(?config);
+    debug!(?args.features);
     let options = Options::new(&args, &config)?;
     debug!(?options);
     let package_filter = if !args.mutate_packages.is_empty() {
