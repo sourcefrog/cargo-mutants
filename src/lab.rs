@@ -240,7 +240,7 @@ fn test_scenario(
             options,
             console,
         )?;
-        let success = phase_result.is_success();
+        let success = phase_result.is_success(); // so we can move it away
         outcome.add_phase_result(phase_result);
         console.scenario_phase_finished(scenario, phase);
         if (phase == Phase::Check && options.check_only) || !success {
