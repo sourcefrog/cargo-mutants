@@ -160,7 +160,7 @@ fn workspace_tree_is_well_tested() {
             mutant_phases[0]["argv"].as_array().unwrap()[1..=3],
             ["build", "--tests", "--manifest-path"]
         );
-        assert_eq!(mutant_phases[1]["process_status"], "Failure");
+        assert_eq!(mutant_phases[1]["process_status"], json!({"Failure": 101}));
         assert_eq!(
             mutant_phases[1]["argv"].as_array().unwrap()[1..=2],
             ["test", "--manifest-path"],

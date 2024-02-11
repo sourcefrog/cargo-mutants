@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Martin Pool
+// Copyright 2022-2024 Martin Pool
 
 //! The outcome of running a single mutation scenario, or a whole lab.
 
@@ -216,33 +216,33 @@ impl ScenarioOutcome {
     }
 
     pub fn success(&self) -> bool {
-        self.last_phase_result().success()
+        self.last_phase_result().is_success()
     }
 
     pub fn has_timeout(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.process_status.timeout())
+            .any(|pr| pr.process_status.is_timeout())
     }
 
     pub fn check_or_build_failed(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.phase != Phase::Test && pr.process_status == ProcessStatus::Failure)
+            .any(|pr| pr.phase != Phase::Test && pr.process_status.is_failure())
     }
 
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
     pub fn mutant_caught(&self) -> bool {
         self.scenario.is_mutant()
             && self.last_phase() == Phase::Test
-            && self.last_phase_result() == ProcessStatus::Failure
+            && self.last_phase_result().is_failure()
     }
 
     /// True if this outcome is a missed mutant: it's a mutant and the tests succeeded.
     pub fn mutant_missed(&self) -> bool {
         self.scenario.is_mutant()
             && self.last_phase() == Phase::Test
-            && self.last_phase_result().success()
+            && self.last_phase_result().is_success()
     }
 
     pub fn summary(&self) -> SummaryOutcome {
@@ -290,7 +290,7 @@ pub struct PhaseResult {
 
 impl PhaseResult {
     pub fn is_success(&self) -> bool {
-        self.process_status.success()
+        self.process_status.is_success()
     }
 }
 

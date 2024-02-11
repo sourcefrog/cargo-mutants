@@ -6,6 +6,10 @@
 
 - Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.73.
 
+- New: Warn if nextest returns an exit code indicating some failure other than test failure, such as an internal error in nextest.
+
+- New: json output includes the exit code of subprocesses, and the signal if it was killed by a signal.
+
 ## 24.2.0
 
 - New: Colored output can be enabled in CI or other noninteractive situations by passing `--colors=always`, or setting `CARGO_TERM_COLOR=always`, or `CLICOLOR_FORCE=1`. Colors can similarly be forced off with `--colors=never`, `CARGO_TERM_COLOR=never`, or `NO_COLOR=1`.

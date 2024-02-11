@@ -16,9 +16,8 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use serde::Serialize;
-use subprocess::{Popen, PopenConfig, Redirection};
-#[allow(unused_imports)]
-use tracing::{debug, debug_span, error, info, span, trace, warn, Level};
+use subprocess::{ExitStatus, Popen, PopenConfig, Redirection};
+use tracing::{debug, debug_span, error, span, trace, warn, Level};
 
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
@@ -97,6 +96,7 @@ impl Process {
         })
     }
 
+    /// Check if the child process has finished; if so, return its status.
     #[mutants::skip] // It's hard to avoid timeouts if this never works...
     pub fn poll(&mut self) -> Result<Option<ProcessStatus>> {
         let elapsed = self.start.elapsed();
@@ -109,10 +109,11 @@ impl Process {
             self.terminate()?;
             Err(e)
         } else if let Some(status) = self.child.poll() {
-            if status.success() {
-                Ok(Some(ProcessStatus::Success))
-            } else {
-                Ok(Some(ProcessStatus::Failure))
+            match status {
+                _ if status.success() => Ok(Some(ProcessStatus::Success)),
+                ExitStatus::Exited(code) => Ok(Some(ProcessStatus::Failure(code))),
+                ExitStatus::Signaled(signal) => Ok(Some(ProcessStatus::Signalled(signal))),
+                ExitStatus::Undetermined | ExitStatus::Other(_) => Ok(Some(ProcessStatus::Other)),
             }
         } else {
             Ok(None)
@@ -189,18 +190,29 @@ fn terminate_child_impl(child: &mut Popen) -> Result<()> {
 /// The result of running a single child process.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum ProcessStatus {
+    /// Exited with status 0.
     Success,
-    Failure,
+    /// Exited with status non-0.
+    Failure(u32),
+    /// Exceeded its timeout, and killed.
     Timeout,
+    /// Killed by some signal.
+    Signalled(u8),
+    /// Unknown or unexpected situation.
+    Other,
 }
 
 impl ProcessStatus {
-    pub fn success(&self) -> bool {
+    pub fn is_success(&self) -> bool {
         *self == ProcessStatus::Success
     }
 
-    pub fn timeout(&self) -> bool {
+    pub fn is_timeout(&self) -> bool {
         *self == ProcessStatus::Timeout
+    }
+
+    pub fn is_failure(&self) -> bool {
+        matches!(self, ProcessStatus::Failure(_))
     }
 }
 
