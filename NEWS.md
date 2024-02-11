@@ -4,6 +4,8 @@
 
 - New: `--features`, `--no-default-features` and `--all-features` options are passed through to Cargo.
 
+- Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.73.
+
 ## 24.2.0
 
 - New: Colored output can be enabled in CI or other noninteractive situations by passing `--colors=always`, or setting `CARGO_TERM_COLOR=always`, or `CLICOLOR_FORCE=1`. Colors can similarly be forced off with `--colors=never`, `CARGO_TERM_COLOR=never`, or `NO_COLOR=1`.
