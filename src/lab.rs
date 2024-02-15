@@ -168,7 +168,7 @@ fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -
     } else if options.baseline == BaselineStrategy::Skip {
         warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
         Duration::from_secs(300)
-    } else if let Some(multiplier) = options.test_timeout_multiplier {
+    } else {
         let timeout = max(
             options.minimum_test_timeout,
             Duration::from_secs(
@@ -177,33 +177,14 @@ fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -
                 .expect("Baseline tests should have run")
                 .total_phase_duration(Phase::Test)
                 .as_secs() as f64 // round
-                *multiplier) as u64,
+                *options.test_timeout_multiplier.unwrap_or(5.0)) as u64,
             ),
         );
         info!(
-            "Set test timeout to {}",
+            "Auto-set test timeout to {}",
             humantime::format_duration(timeout)
         );
         timeout
-    } else {
-        let auto_timeout = max(
-            options.minimum_test_timeout,
-            Duration::from_secs(
-                baseline_outcome
-                .as_ref()
-                .expect("Baseline tests should have run")
-                .total_phase_duration(Phase::Test)
-                .as_secs() // round
-                *5,
-            ),
-        );
-        if options.show_times {
-            info!(
-                "Auto-set test timeout to {}",
-                humantime::format_duration(auto_timeout)
-            );
-        }
-        auto_timeout
     }
 }
 
@@ -273,4 +254,18 @@ fn test_scenario(
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::config::Config;
+
+    #[test]
+    fn test_timeout_multiplier_correct_parsing() {
+        let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, Some(1.5))
+    }
 }
