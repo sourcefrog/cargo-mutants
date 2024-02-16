@@ -353,6 +353,8 @@ src/process.rs: replace Process::terminate -> Result<()> with Err(::anyhow::anyh
 src/process.rs: replace terminate_child_impl -> Result<()> with Ok(())
 src/process.rs: replace terminate_child_impl -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
 src/process.rs: replace != with == in terminate_child_impl
+src/process.rs: replace ProcessStatus::from_exit_code -> ProcessStatus with Default::default()
+src/process.rs: replace == with != in ProcessStatus::from_exit_code
 src/process.rs: replace ProcessStatus::is_success -> bool with true
 src/process.rs: replace ProcessStatus::is_success -> bool with false
 src/process.rs: replace == with != in ProcessStatus::is_success

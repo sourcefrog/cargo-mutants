@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Tests for cargo-mutants CLI layer.
 
@@ -13,16 +13,17 @@ use std::time::Duration;
 
 use indoc::indoc;
 use itertools::Itertools;
-use lazy_static::lazy_static;
 use path_slash::PathBufExt;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use subprocess::{Popen, PopenConfig, Redirection};
-use tempfile::{tempdir, TempDir};
+use tempfile::TempDir;
 
 mod build_dir;
 mod colors;
+#[path = "../common/common.rs"]
+mod common;
 mod config;
 mod error_value;
 mod in_diff;
@@ -35,42 +36,13 @@ mod trace;
 mod windows;
 mod workspace;
 
+pub use common::{copy_of_testdata, run, MAIN_BINARY};
+
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
 /// long enough that even commands that do a lot of work can pass even on slow
 /// CI VMs and even on Windows, but short enough that the test does not hang
 /// forever.
 const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
-
-lazy_static! {
-    static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
-}
-
-fn run() -> assert_cmd::Command {
-    let mut cmd = assert_cmd::Command::new(MAIN_BINARY.as_os_str());
-    // Strip any options configured in the environment running these tests,
-    // so that they don't cause unexpected behavior in the code under test.
-    //
-    // For example, without this,
-    // `env CARGO_MUTANTS_JOBS=4 cargo mutants`
-    //
-    // would end up with tests running 4 jobs by default, which would cause
-    // the tests to fail.
-    //
-    // Even more generally than that example, we want the tests to be as hermetic
-    // as reasonably possible.
-    env::vars()
-        .map(|(k, _v)| k)
-        .filter(|k| {
-            k.starts_with("CARGO_MUTANTS_")
-                || k == "CLICOLOR_FORCE"
-                || k == "NOCOLOR"
-                || k == "CARGO_TERM_COLOR"
-        })
-        .for_each(|k| {
-            cmd.env_remove(k);
-        });
-    cmd
-}
 
 trait CommandInstaExt {
     fn assert_insta(&mut self, snapshot_name: &str);
@@ -83,20 +55,6 @@ impl CommandInstaExt for assert_cmd::Command {
         insta::assert_snapshot!(snapshot_name, String::from_utf8_lossy(&output.stdout));
         assert_eq!(&String::from_utf8_lossy(&output.stderr), "");
     }
-}
-
-// Copy the source because output is written into mutants.out.
-fn copy_of_testdata(tree_name: &str) -> TempDir {
-    let tmp_src_dir = tempdir().unwrap();
-    cp_r::CopyOptions::new()
-        .filter(|path, _stat| {
-            Ok(["target", "mutants.out", "mutants.out.old"]
-                .iter()
-                .all(|p| !path.starts_with(p)))
-        })
-        .copy_tree(Path::new("testdata").join(tree_name), &tmp_src_dir)
-        .unwrap();
-    tmp_src_dir
 }
 
 /// Assert that some bytes, when parsed as json, equal a json value.

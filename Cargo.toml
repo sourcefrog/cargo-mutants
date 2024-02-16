@@ -46,6 +46,7 @@ clap_complete = "4"
 color-print = "0.3"
 console = "0.15"
 ctrlc = { version = "3.2.1", features = ["termination"] }
+fail = { version="0.5" }
 fastrand = "2"
 fs2 = "0.4"
 globset = "0.4.8"
@@ -173,3 +174,8 @@ pre-release-replacements = [
     { "file" = "NEWS.md", search = "## Unreleased", replace = "$0\n\n## {{version}}", exactly = 1 },
     { "file" = "CITATION.cff", search = "^version: .*", replace = "version: {{version}}", exactly = 1 },
 ]
+
+[[test]]
+name = "failpoints"
+path = "tests/failpoints/main.rs"
+required-features = ["fail/failpoints"]

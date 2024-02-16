@@ -43,6 +43,7 @@ use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use color_print::cstr;
+use fail::FailScenario;
 use tracing::debug;
 
 use crate::build_dir::BuildDir;
@@ -336,6 +337,9 @@ pub struct Features {
 }
 
 fn main() -> Result<()> {
+    // It's unfortunate that this has to be here: see <https://github.com/tikv/fail-rs/issues/77>.
+    let _fail_scenario = FailScenario::setup();
+
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {

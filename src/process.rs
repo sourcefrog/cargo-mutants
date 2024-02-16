@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
+use fail::fail_point;
 use serde::Serialize;
 use subprocess::{ExitStatus, Popen, PopenConfig, Redirection};
 use tracing::{debug, debug_span, error, span, trace, warn, Level};
@@ -47,6 +48,15 @@ impl Process {
         log_file: &mut LogFile,
         console: &Console,
     ) -> Result<ProcessStatus> {
+        fail_point!("Process::run", |r| {
+            if let Some(status) = r {
+                Ok(ProcessStatus::from_exit_code(
+                    status.parse().expect("integer exit code"),
+                ))
+            } else {
+                Err(anyhow!("simulated error in Process::run"))
+            }
+        });
         let mut child = Process::start(argv, env, cwd, timeout, log_file)?;
         let process_status = loop {
             if let Some(exit_status) = child.poll()? {
@@ -203,6 +213,15 @@ pub enum ProcessStatus {
 }
 
 impl ProcessStatus {
+    #[allow(dead_code)] // currently only used from failpoint tests, which might not be built
+    pub fn from_exit_code(code: u32) -> ProcessStatus {
+        if code == 0 {
+            ProcessStatus::Success
+        } else {
+            ProcessStatus::Failure(code)
+        }
+    }
+
     pub fn is_success(&self) -> bool {
         *self == ProcessStatus::Success
     }
