@@ -31,6 +31,6 @@ You can also set an explicit timeout with the `--timeout` option, also measured
 in seconds. If this option is specified then the timeout is also applied to the
 unmutated tests.
 
-You can set a timeout multiplier that is relative to the duration of the unmutated tests with `--timeout-multiplier`. This option is only applied if the baseline is not skipped and no `--timeout` option is specified, otherwise it is ignored.
+You can set a timeout multiplier that is relative to the duration of the unmutated tests with `--timeout-multiplier` or setting `timeout_multiplier` in `.cargo/mutants.toml` (`timeout-multiplier = 1.5`). This option is only applied if the baseline is not skipped and no `--timeout` option is specified, otherwise it is ignored.
 
 The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.

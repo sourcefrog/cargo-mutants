@@ -44,6 +44,8 @@ pub struct Config {
     pub minimum_test_timeout: Option<f64>,
     /// Choice of test tool: cargo or nextest.
     pub test_tool: Option<TestTool>,
+    /// Timeout multiplier, relative to the baseline 'cargo test'.
+    pub timeout_multiplier: Option<f64>,
 }
 
 impl Config {

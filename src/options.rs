@@ -214,7 +214,7 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
-            test_timeout_multiplier: args.timeout_multiplier,
+            test_timeout_multiplier: config.timeout_multiplier.or(args.timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         options.error_values.iter().for_each(|e| {
