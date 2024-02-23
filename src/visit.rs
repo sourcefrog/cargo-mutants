@@ -177,7 +177,7 @@ impl<'o> DiscoveryVisitor<'o> {
     fn collect_mutant(&mut self, span: Span, replacement: TokenStream, genre: Genre) {
         self.mutants.push(Mutant {
             source_file: self.source_file.clone(),
-            function: self.fn_stack.last().map(Arc::clone),
+            function: self.fn_stack.last().cloned(),
             span,
             replacement: replacement.to_pretty_string(),
             genre,
@@ -185,7 +185,7 @@ impl<'o> DiscoveryVisitor<'o> {
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
-        if let Some(function) = self.fn_stack.last().map(Arc::clone) {
+        if let Some(function) = self.fn_stack.last().cloned() {
             let body_span = function_body_span(block).expect("Empty function body");
             let repls = return_type_replacements(&sig.output, self.error_exprs);
             if repls.is_empty() {
