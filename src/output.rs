@@ -57,6 +57,7 @@ impl LockFile {
         let lock_path = output_dir.join(LOCK_JSON);
         let mut lock_file = File::options()
             .create(true)
+            .truncate(false)
             .write(true)
             .open(&lock_path)
             .context("open or create lock.json in existing directory")?;
