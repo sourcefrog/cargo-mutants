@@ -285,6 +285,10 @@ pub struct Args {
     #[arg(long, short = 't', help_heading = "Execution")]
     timeout: Option<f64>,
 
+    /// test timeout multiplier (relative to base test time).
+    #[arg(long, help_heading = "Execution")]
+    timeout_multiplier: Option<f64>,
+
     /// print mutations that failed to check or build.
     #[arg(long, short = 'V', help_heading = "Output")]
     unviable: bool,

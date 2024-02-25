@@ -169,24 +169,25 @@ fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -
         warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
         Duration::from_secs(300)
     } else {
-        let auto_timeout = max(
+        let timeout = max(
             options.minimum_test_timeout,
             Duration::from_secs(
-                baseline_outcome
-                .as_ref()
-                .expect("Baseline tests should have run")
-                .total_phase_duration(Phase::Test)
-                .as_secs() // round
-                *5,
+                (baseline_outcome
+                    .as_ref()
+                    .expect("Baseline tests should have run")
+                    .total_phase_duration(Phase::Test)
+                    .as_secs_f64()
+                    * options.test_timeout_multiplier.unwrap_or(5.0))
+                .round() as u64,
             ),
         );
         if options.show_times {
             info!(
                 "Auto-set test timeout to {}",
-                humantime::format_duration(auto_timeout)
+                humantime::format_duration(timeout)
             );
         }
-        auto_timeout
+        timeout
     }
 }
 
@@ -256,4 +257,18 @@ fn test_scenario(
     console.scenario_finished(scenario, &outcome, options);
 
     Ok(outcome)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::config::Config;
+
+    #[test]
+    fn test_timeout_multiplier_correct_parsing() {
+        let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, Some(1.5))
+    }
 }

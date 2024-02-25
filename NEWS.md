@@ -12,6 +12,8 @@
 
 - Changed: Set `INSTA_FORCE_PASS=0` (in addition to previously `INSTA_UPDATE=no`) when running tests, so that tests that use the [Insta](https://insta.rs/) library don't write updates back into the source directory, and so don't falsely pass.
 
+- New: `--timeout-multiplier` option allows setting the timeout for mutants to be a multiple of the baseline timeout, rather than a fixed time.
+
 ## 24.2.0
 
 - New: Colored output can be enabled in CI or other noninteractive situations by passing `--colors=always`, or setting `CARGO_TERM_COLOR=always`, or `CLICOLOR_FORCE=1`. Colors can similarly be forced off with `--colors=never`, `CARGO_TERM_COLOR=never`, or `NO_COLOR=1`.
