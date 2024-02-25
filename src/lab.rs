@@ -113,8 +113,6 @@ pub fn test_mutants(
         for build_dir in build_dirs {
             threads.push(scope.spawn(|| {
                 let build_dir = build_dir; // move it into this thread
-                let _thread_span =
-                    debug_span!("test thread", thread = ?thread::current().id()).entered();
                 trace!("start thread in {build_dir:?}");
                 loop {
                     // Not a while loop so that it only holds the lock briefly.
