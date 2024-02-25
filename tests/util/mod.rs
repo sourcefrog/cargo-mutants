@@ -6,6 +6,7 @@
 
 use std::borrow::Borrow;
 use std::env;
+use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -85,4 +86,19 @@ pub fn assert_bytes_eq_json<J: Borrow<serde_json::Value>>(actual: &[u8], expecte
         .parse::<serde_json::Value>()
         .expect("bytes can be parsed as JSON");
     assert_eq!(&actual_json, expected.borrow());
+}
+
+/// Return paths to all testdata trees, in order, excluding leftover git
+/// detritus with no Cargo.toml.
+pub fn all_testdata_tree_paths() -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = read_dir("testdata")
+        .unwrap()
+        .map(|r| r.unwrap())
+        .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
+        .filter(|dir_entry| dir_entry.file_name() != "parse_fails")
+        .map(|dir_entry| dir_entry.path())
+        .filter(|dir_path| dir_path.join("Cargo.toml").exists())
+        .collect();
+    paths.sort();
+    paths
 }
