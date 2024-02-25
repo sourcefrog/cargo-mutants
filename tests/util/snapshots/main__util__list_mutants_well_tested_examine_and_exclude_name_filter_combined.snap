@@ -1,0 +1,13 @@
+---
+source: tests/util/mod.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+src/module/utils/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with ""
+src/module/utils/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy"
+src/module/utils/sub_utils/subutils_nested_function.rs:2:5: replace has_nested -> u32 with 0
+src/module/utils/sub_utils/subutils_nested_function.rs:2:5: replace has_nested -> u32 with 1
+src/module/utils/sub_utils/subutils_nested_function.rs:3:9: replace has_nested::inner -> u32 with 0
+src/module/utils/sub_utils/subutils_nested_function.rs:3:9: replace has_nested::inner -> u32 with 1
+src/module/utils/sub_utils/subutils_nested_function.rs:5:13: replace * with + in has_nested
+src/module/utils/sub_utils/subutils_nested_function.rs:5:13: replace * with / in has_nested
+

@@ -1,0 +1,6 @@
+---
+source: tests/main.rs
+expression: content
+---
+src/lib.rs:12:5: replace make_an_s -> S with Default::default()
+
