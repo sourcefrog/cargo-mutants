@@ -180,10 +180,12 @@ fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -
                 *options.test_timeout_multiplier.unwrap_or(5.0)) as u64,
             ),
         );
-        info!(
-            "Auto-set test timeout to {}",
-            humantime::format_duration(timeout)
-        );
+        if options.show_times {
+            info!(
+                "Auto-set test timeout to {}",
+                humantime::format_duration(timeout)
+            );
+        }
         timeout
     }
 }
