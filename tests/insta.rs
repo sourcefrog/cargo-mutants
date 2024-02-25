@@ -16,7 +16,7 @@ fn insta_test_failures_are_detected() {
         let tmp_src_dir = copy_of_testdata("insta");
         run()
             .arg("mutants")
-            .args(["--no-times", "--no-shuffle", "--caught"])
+            .args(["--no-times", "--no-shuffle", "--caught", "-Ltrace"])
             .env("INSTA_UPDATE", insta_update)
             .current_dir(tmp_src_dir.path())
             .assert()
