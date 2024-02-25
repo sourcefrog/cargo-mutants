@@ -173,11 +173,12 @@ fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -
             options.minimum_test_timeout,
             Duration::from_secs(
                 (baseline_outcome
-                .as_ref()
-                .expect("Baseline tests should have run")
-                .total_phase_duration(Phase::Test)
-                .as_secs() as f64 // round
-                *options.test_timeout_multiplier.unwrap_or(5.0)) as u64,
+                    .as_ref()
+                    .expect("Baseline tests should have run")
+                    .total_phase_duration(Phase::Test)
+                    .as_secs_f64()
+                    * options.test_timeout_multiplier.unwrap_or(5.0))
+                .round() as u64,
             ),
         );
         if options.show_times {
