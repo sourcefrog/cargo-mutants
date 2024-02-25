@@ -36,6 +36,7 @@ pub fn run_cargo(
         // updates to the source tree, and we *certainly* don't want it to write
         // updates and then let the test pass.
         ("INSTA_UPDATE".to_owned(), "no".to_owned()),
+        ("INSTA_FORCE_PASS".to_owned(), "0".to_owned()),
     ];
     let process_status = Process::run(&argv, &env, build_dir.path(), timeout, log_file, console)?;
     check_interrupted()?;
