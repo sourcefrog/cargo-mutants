@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 24.2.1
+
 - New: `--features`, `--no-default-features` and `--all-features` options are passed through to Cargo.
 
 - Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.73.
