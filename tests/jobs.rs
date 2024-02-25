@@ -30,7 +30,7 @@ fn jobs_option_accepted_and_causes_multiple_threads() {
     // This might be brittle, as the ThreadId debug form is not specified, and
     // also _possibly_ everything will complete on one thread before the next
     // gets going, though that seems unlikely.
-    let re = Regex::new(r#"\{thread=ThreadId\(\d+\)\}"#).expect("compile regex");
+    let re = Regex::new(r#"start thread thread_id=ThreadId\(\d+\)"#).expect("compile regex");
     let matches = re
         .find_iter(&debug_log)
         .map(|m| m.as_str())
