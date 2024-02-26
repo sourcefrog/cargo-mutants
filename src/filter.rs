@@ -10,6 +10,8 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use tracing::{trace, warn};
 
+use crate::mutate::Mutant;
+
 /* When filtering by name, we match the filename and the function name, and the description
  * of the mutant ("replace good by bad"), but not the line/column because they might easily
  * change as the tree is edited.
@@ -33,7 +35,18 @@ struct NameFilter {
     by_file: HashMap<(Utf8PathBuf, Option<String>), HashSet<String>>,
 }
 
-impl NameFilter {}
+impl NameFilter {
+    pub fn matches(&self, mutant: &Mutant) -> bool {
+        // Maybe this clones too much here; maybe it's not a big deal.
+        self.by_file
+            .get(&(
+                mutant.source_file.path().into(),
+                mutant.function.as_ref().map(|f| f.function_name.clone()),
+            ))
+            .map(|descriptions| descriptions.contains(&mutant.describe_change()))
+            .unwrap_or(false)
+    }
+}
 
 impl<S> FromIterator<S> for NameFilter
 where
