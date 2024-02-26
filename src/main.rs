@@ -8,6 +8,7 @@ mod config;
 mod console;
 mod copy_tree;
 mod exit_code;
+mod filter;
 mod fnvalue;
 mod in_diff;
 mod interrupt;

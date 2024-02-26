@@ -183,6 +183,7 @@ dependencies = [
  "nextest-metadata",
  "nix",
  "nutmeg",
+ "once_cell",
  "patch",
  "path-slash",
  "predicates",

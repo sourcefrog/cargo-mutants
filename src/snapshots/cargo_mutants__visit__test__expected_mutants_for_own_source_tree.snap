@@ -37,6 +37,14 @@ src/copy_tree.rs: replace += with -= in copy_tree
 src/copy_tree.rs: replace += with *= in copy_tree
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Ok(())
 src/copy_tree.rs: replace copy_symlink -> Result<()> with Err(::anyhow::anyhow!("mutated!"))
+src/filter.rs: replace <impl FromIterator for NameFilter>::from_iter -> Self with Default::default()
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with None
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with Some((Default::default(), None, String::new()))
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with Some((Default::default(), None, "xyzzy".into()))
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with Some((Default::default(), Some(String::new()), String::new()))
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with Some((Default::default(), Some(String::new()), "xyzzy".into()))
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with Some((Default::default(), Some("xyzzy".into()), String::new()))
+src/filter.rs: replace parse_line -> Option<(Utf8PathBuf, Option<String>, String)> with Some((Default::default(), Some("xyzzy".into()), "xyzzy".into()))
 src/fnvalue.rs: replace return_type_replacements -> Vec<TokenStream> with vec![]
 src/fnvalue.rs: replace return_type_replacements -> Vec<TokenStream> with vec![Default::default()]
 src/fnvalue.rs: replace type_replacements -> impl Iterator<Item = TokenStream> with ::std::iter::empty()
@@ -549,4 +557,3 @@ src/workspace.rs: replace || with && in should_mutate_target
 src/workspace.rs: replace == with != in should_mutate_target
 src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Ok(Default::default())
 src/workspace.rs: replace locate_project -> Result<Utf8PathBuf> with Err(::anyhow::anyhow!("mutated!"))
-
