@@ -91,8 +91,8 @@ pub fn walk_tree(
     }
     mutants.retain(|m| {
         let name = m.name(true, false);
-        (options.examine_names.is_empty() || options.examine_names.is_match(&name))
-            && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
+        (options.examine_regex.is_empty() || options.examine_regex.is_match(&name))
+            && (options.exclude_regex.is_empty() || !options.exclude_regex.is_match(&name))
     });
     console.walk_tree_done();
     Ok(Discovered { mutants, files })

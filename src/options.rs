@@ -83,10 +83,10 @@ pub struct Options {
     pub exclude_globset: Option<GlobSet>,
 
     /// Mutants to examine, as a regexp matched against the full name.
-    pub examine_names: RegexSet,
+    pub examine_regex: RegexSet,
 
     /// Mutants to skip, as a regexp matched against the full name.
-    pub exclude_names: RegexSet,
+    pub exclude_regex: RegexSet,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
@@ -194,10 +194,10 @@ impl Options {
             emit_json: args.json,
             emit_diffs: args.diff,
             error_values: join_slices(&args.error, &config.error_values),
-            examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
-                .context("Failed to compile examine_re regex")?,
-            exclude_names: RegexSet::new(or_slices(&args.exclude_re, &config.exclude_re))
-                .context("Failed to compile exclude_re regex")?,
+            examine_regex: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
+                .context("Failed to compile examine_regex")?,
+            exclude_regex: RegexSet::new(or_slices(&args.exclude_re, &config.exclude_re))
+                .context("Failed to compile exclude_regex")?,
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             features: args.features.clone(),
