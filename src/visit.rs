@@ -86,9 +86,16 @@ pub fn walk_tree(
                 continue;
             }
         }
+        if let Some(exclude_names) = &options.exclude_names {
+            file_mutants.retain(|m| !exclude_names.matches(m));
+        }
+        if let Some(examine_names) = &options.examine_names {
+            file_mutants.retain(|m| examine_names.matches(m));
+        }
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
+    // TODO: Maybe move mutant-at-a-time filtering into a separate function?
     mutants.retain(|m| {
         let name = m.name(true, false);
         (options.examine_regex.is_empty() || options.examine_regex.is_match(&name))

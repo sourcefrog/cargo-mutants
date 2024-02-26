@@ -16,6 +16,7 @@ use strum::{Display, EnumString};
 use tracing::warn;
 
 use crate::config::Config;
+use crate::filter::NameFilter;
 use crate::*;
 
 /// Options for mutation testing, based on both command-line arguments and the
@@ -87,6 +88,16 @@ pub struct Options {
 
     /// Mutants to skip, as a regexp matched against the full name.
     pub exclude_regex: RegexSet,
+
+    /// File/function/description names to match.
+    ///
+    /// If set, only mutants with names matching this filter will be examined.
+    pub examine_names: Option<NameFilter>,
+
+    /// File/function/description names to skip.
+    ///
+    /// If set, mutants with names matching this filter will be skipped.
+    pub exclude_names: Option<NameFilter>,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
@@ -182,6 +193,11 @@ impl Options {
                 .unwrap_or(20f64),
         );
 
+        let examine_names =
+            NameFilter::from_files(&args.names_from).context("Loading --names-from files")?;
+        let exclude_names = NameFilter::from_files(&args.exclude_names_from)
+            .context("Loading --exclude-names-from files")?;
+
         let options = Options {
             additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
             additional_cargo_test_args: join_slices(
@@ -194,6 +210,8 @@ impl Options {
             emit_json: args.json,
             emit_diffs: args.diff,
             error_values: join_slices(&args.error, &config.error_values),
+            examine_names,
+            exclude_names,
             examine_regex: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
                 .context("Failed to compile examine_regex")?,
             exclude_regex: RegexSet::new(or_slices(&args.exclude_re, &config.exclude_re))

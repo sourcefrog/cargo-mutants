@@ -230,6 +230,20 @@ pub struct Args {
     #[arg(long, help_heading = "Input")]
     manifest_path: Option<Utf8PathBuf>,
 
+    /// test only mutants listed in this file.
+    ///
+    /// lines are in the "filename:line:col: description of change" format used by --list
+    /// and written into mutants.out list files.
+    #[arg(long, help_heading = "Filters")]
+    names_from: Vec<Utf8PathBuf>,
+
+    /// do not test mutants listed in this file.
+    ///
+    /// lines are in the "filename:line:col: description of change" format used by --list
+    /// and written into mutants.out list files.
+    #[arg(long, help_heading = "Filters")]
+    exclude_names_from: Vec<Utf8PathBuf>,
+
     /// don't read .cargo/mutants.toml.
     #[arg(long, help_heading = "Input")]
     no_config: bool,

@@ -3,14 +3,17 @@
 //! Filter and exclude mutants.
 
 use std::collections::{HashMap, HashSet};
+use std::fs::read_to_string;
 
-use camino::Utf8PathBuf;
+use anyhow::Context;
+use camino::{Utf8Path, Utf8PathBuf};
 use once_cell::sync::Lazy;
 // use lazy_static::lazy_static;
 use regex::Regex;
-use tracing::{trace, warn};
+use tracing::{debug, trace, warn};
 
 use crate::mutate::Mutant;
+use crate::Result;
 
 /* When filtering by name, we match the filename and the function name, and the description
  * of the mutant ("replace good by bad"), but not the line/column because they might easily
@@ -25,26 +28,63 @@ use crate::mutate::Mutant;
  * file; maybe later.
  */
 
-/// A filter that can match mutants from a list, matching on filename, function name, and
-/// description and ignoring line/column.
+/// A filter that can match mutants from a list, matching on filename and
+/// description (possibly including the function name), and ignoring line/column.
 ///
 /// The filter can be applied as either an include or exclude filter.
-#[derive(Debug, Default)]
-struct NameFilter {
+#[derive(Debug, Clone, Default)]
+pub struct NameFilter {
     /// Map from (path, function) to a list of descriptions.
-    by_file: HashMap<(Utf8PathBuf, Option<String>), HashSet<String>>,
+    by_file: HashMap<Utf8PathBuf, HashSet<String>>,
 }
 
 impl NameFilter {
+    /// Build a NameFilter from the lines in the given files.
+    ///
+    /// Returns Ok(None) if no files are given.
+    pub fn from_files(
+        filenames: impl IntoIterator<Item = impl AsRef<Utf8Path>>,
+    ) -> Result<Option<Self>> {
+        let filenames = filenames.into_iter().collect::<Vec<_>>();
+        if filenames.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(
+            filenames
+                .into_iter()
+                .map(|filename| {
+                    let filename = filename.as_ref();
+                    read_to_string(filename).with_context(|| "Read filter file {filename:?}")
+                })
+                .collect::<Result<Vec<String>>>()?
+                .into_iter()
+                .fold(NameFilter::default(), |mut filter, content| {
+                    // Not quite using FromIterator here because of annoying errors that you
+                    // can't return a reference to each line from a closure, therefore I can't
+                    // easily build an iterator over the lines in all the files...
+                    for line in content.lines() {
+                        filter.add_line(line);
+                    }
+                    filter
+                }),
+        ))
+    }
+
     pub fn matches(&self, mutant: &Mutant) -> bool {
         // Maybe this clones too much here; maybe it's not a big deal.
+        let path = mutant.source_file.path();
+        let description = mutant.describe_change();
+        debug!(?path, ?description, "match mutant");
         self.by_file
-            .get(&(
-                mutant.source_file.path().into(),
-                mutant.function.as_ref().map(|f| f.function_name.clone()),
-            ))
-            .map(|descriptions| descriptions.contains(&mutant.describe_change()))
+            .get(path)
+            .map(|descriptions| descriptions.contains(&description))
             .unwrap_or(false)
+    }
+
+    fn add_line(&mut self, line: &str) {
+        if let Some((path, description)) = parse_line(line) {
+            self.by_file.entry(path).or_default().insert(description);
+        }
     }
 }
 
@@ -53,40 +93,30 @@ where
     S: AsRef<str>,
 {
     fn from_iter<I: IntoIterator<Item = S>>(iter: I) -> Self {
-        let mut filter = NameFilter::default();
-        for line in iter.into_iter() {
-            if let Some((path, function, description)) = parse_line(line.as_ref()) {
+        iter.into_iter()
+            .fold(NameFilter::default(), |mut filter, line| {
+                filter.add_line(line.as_ref());
                 filter
-                    .by_file
-                    .entry((path, function))
-                    .or_default()
-                    .insert(description);
-            }
-        }
-        filter
+            })
     }
 }
 
 /// Parse a line into a filter entry.
 ///
 /// The line is like: `src/lib.rs:102:1: foo replace good by bad in some_function`,
-/// or the line, line&col, or function name can be omitted.
+/// or the line, line&col can be omitted.
 ///
 /// Returns None and emits a warning if the line can't be parsed.
-fn parse_line(line: &str) -> Option<(Utf8PathBuf, Option<String>, String)> {
+fn parse_line(line: &str) -> Option<(Utf8PathBuf, String)> {
     static LINE_RE: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r#"^([^:]+)(?::\d+)?(?::\d+)?: (.+?)(?: in (.+))?$"#).unwrap());
+        Lazy::new(|| Regex::new(r#"^([^:]+)(?::\d+)?(?::\d+)?: (.+)$"#).unwrap());
     if let Some(captures) = LINE_RE.captures(line) {
         trace!(?captures, ?line, "parse name filter line");
         let path: Utf8PathBuf = captures.get(1)?.as_str().into();
         let description = captures.get(2)?.as_str().to_string();
-        let function = captures.get(3).map(|m| m.as_str().to_string());
-        Some((path, function, description))
+        Some((path, description))
     } else {
-        warn!(
-            ?line,
-            "Can't parse line as \"FILE:LINE:COL: DESCRIPTION in FUNCTION\""
-        );
+        warn!(?line, "Can't parse line as \"FILE:LINE:COL: DESCRIPTION\"");
         None
     }
 }
@@ -100,7 +130,7 @@ mod test {
         let line = "src/lib.rs: foo replace good by bad";
         assert_eq!(
             parse_line(line),
-            Some(("src/lib.rs".into(), None, "foo replace good by bad".into()))
+            Some(("src/lib.rs".into(), "foo replace good by bad".into()))
         );
     }
 
@@ -109,7 +139,7 @@ mod test {
         let line = "src/lib.rs:123:45: foo replace good by bad";
         assert_eq!(
             parse_line(line),
-            Some(("src/lib.rs".into(), None, "foo replace good by bad".into()))
+            Some(("src/lib.rs".into(), "foo replace good by bad".into()))
         );
     }
 
@@ -120,8 +150,7 @@ mod test {
             parse_line(line),
             Some((
                 "src/lib.rs".into(),
-                Some("some_function".into()),
-                "foo replace good by bad".into()
+                "foo replace good by bad in some_function".into()
             ))
         );
     }
@@ -133,8 +162,7 @@ mod test {
             parse_line(line),
             Some((
                 "src/lib.rs".into(),
-                Some("some_function".into()),
-                "foo replace good by bad".into()
+                "foo replace good by bad in some_function".into()
             ))
         );
     }
@@ -146,8 +174,8 @@ mod test {
             parse_line(line),
             Some((
                 "src/visit.rs".into(),
-                Some("<impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn".into()),
-                "replace || with &&".into(),
+                "replace || with && in <impl Visit for DiscoveryVisitor<'_>>::visit_trait_item_fn"
+                    .into()
             ))
         );
     }
