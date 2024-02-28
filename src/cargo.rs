@@ -162,6 +162,7 @@ mod test {
     use std::sync::Arc;
 
     use pretty_assertions::assert_eq;
+    use rusty_fork::rusty_fork_test;
 
     use crate::{Options, Phase};
 
@@ -299,5 +300,28 @@ mod test {
                 "--features=bar,baz"
             ]
         );
+    }
+
+    rusty_fork_test! {
+        #[test]
+        fn rustflags_with_no_environment_variables() {
+            env::remove_var("RUSTFLAGS");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(rustflags(), "--cap-lints=allow");
+        }
+
+        #[test]
+        fn rustflags_added_to_existing_encoded_rustflags() {
+            env::set_var("RUSTFLAGS", "--something\x1f--else");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(rustflags(), "--something\x1f--else\x1f--cap-lints=allow");
+        }
+
+        #[test]
+        fn rustflags_added_to_existing_rustflags() {
+            env::set_var("RUSTFLAGS", "-Dwarnings");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(rustflags(), "-Dwarnings\x1f--cap-lints=allow");
+        }
     }
 }
