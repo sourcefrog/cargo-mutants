@@ -259,20 +259,61 @@ fn test_scenario(
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
+
+    use indoc::indoc;
+
     use super::*;
     use crate::config::Config;
 
     #[test]
-    fn timeout_multiplier() {
+    fn timeout_multiplier_from_option() {
         let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5"]);
         let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.test_timeout_multiplier, Some(1.5));
+        assert_eq!(
+            test_timeout(Some(Duration::from_secs(40)), &options),
+            Duration::from_secs(60),
+        );
+    }
 
+    #[test]
+    fn timeout_multiplier_from_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(indoc! {r#"
+            timeout_multiplier = 2.0
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, Some(2.0));
         assert_eq!(
             test_timeout(Some(Duration::from_secs(42)), &options),
-            Duration::from_secs(63),
+            Duration::from_secs(42 * 2),
         );
-        // TODO: Test other cases
+    }
+
+    #[test]
+    fn timeout_multiplier_default() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, None);
+        assert_eq!(
+            test_timeout(Some(Duration::from_secs(42)), &options),
+            Duration::from_secs(42 * 5),
+        );
+    }
+
+    #[test]
+    fn timeout_multiplier_default_with_baseline_skip() {
+        // The --baseline option is not used to set the timeout but it's
+        // indicative of the realistic situation.
+        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, None);
+        assert_eq!(test_timeout(None, &options), Duration::from_secs(300),);
     }
 }
