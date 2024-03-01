@@ -11,6 +11,7 @@
 use std::default::Default;
 use std::fs::read_to_string;
 use std::path::Path;
+use std::str::FromStr;
 
 use anyhow::Context;
 use camino::Utf8Path;
@@ -63,5 +64,13 @@ impl Config {
         } else {
             Ok(Config::default())
         }
+    }
+}
+
+impl FromStr for Config {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        toml::de::from_str(s).with_context(|| "parse toml")
     }
 }
