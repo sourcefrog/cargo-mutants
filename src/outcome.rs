@@ -118,22 +118,22 @@ impl LabOutcome {
         }
         s.push(": ".into());
         let mut by_outcome: Vec<String> = Vec::new();
-        if self.missed > 0 {
+        if self.missed != 0 {
             by_outcome.push(format!("{} missed", self.missed));
         }
-        if self.caught > 0 {
+        if self.caught != 0 {
             by_outcome.push(format!("{} caught", self.caught));
         }
-        if self.unviable > 0 {
+        if self.unviable != 0 {
             by_outcome.push(format!("{} unviable", self.unviable));
         }
-        if self.timeout > 0 {
+        if self.timeout != 0 {
             by_outcome.push(format!("{} timeouts", self.timeout));
         }
-        if self.success > 0 {
+        if self.success != 0 {
             by_outcome.push(format!("{} succeeded", self.success));
         }
-        if self.failure > 0 {
+        if self.failure != 0 {
             by_outcome.push(format!("{} failed", self.failure));
         }
         s.push(by_outcome.join(", "));
