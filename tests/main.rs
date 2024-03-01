@@ -21,6 +21,8 @@ use tempfile::TempDir;
 mod util;
 use util::{copy_of_testdata, run, MAIN_BINARY, OUTER_TIMEOUT};
 
+use crate::util::outcome_json_counts;
+
 #[test]
 fn incorrect_cargo_subcommand() {
     // argv[1] "mutants" is missing here.
@@ -243,6 +245,18 @@ fn unviable_mutation_of_struct_with_no_default() {
     check_text_list_output(
         tmp_src_dir.path(),
         "unviable_mutation_of_struct_with_no_default",
+    );
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 0,
+            "caught": 0,
+            "failure": 0,
+            "unviable": 1,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 1,
+        })
     );
 }
 

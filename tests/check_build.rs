@@ -2,26 +2,11 @@
 
 //! Tests for `--check`
 
-mod util;
-
-use std::fs::read_to_string;
-
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
-use tempfile::TempDir;
-use util::{copy_of_testdata, run};
-
-fn read_mutant_outcomes(tmp_src_dir: &TempDir) -> serde_json::Value {
-    let mut outcomes: serde_json::Value =
-        read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json"))
-            .expect("read outcomes.json")
-            .parse()
-            .expect("parse outcomes.json");
-    // We don't want to compare the detailed outcomes
-    outcomes.as_object_mut().unwrap().remove("outcomes");
-    outcomes
-}
+mod util;
+use util::{copy_of_testdata, outcome_json_counts, run};
 
 #[test]
 fn small_well_tested_tree_check_only() {
@@ -43,7 +28,7 @@ fn small_well_tested_tree_check_only() {
             "###);
             true
         }));
-    let outcomes = read_mutant_outcomes(&tmp_src_dir);
+    let outcomes = outcome_json_counts(&tmp_src_dir);
     assert_eq!(
         outcomes,
         serde_json::json!({
@@ -68,7 +53,7 @@ fn small_well_tested_tree_check_only_shuffled() {
         .success()
         .stdout(predicate::str::contains("4 mutants tested: 4 succeeded"));
     assert_eq!(
-        read_mutant_outcomes(&tmp_src_dir),
+        outcome_json_counts(&tmp_src_dir),
         serde_json::json!({
             "success": 4, // They did all build
             "caught": 0, // They weren't actually tested
@@ -119,7 +104,7 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
             true
         }));
     assert_eq!(
-        read_mutant_outcomes(&tmp_src_dir),
+        outcome_json_counts(&tmp_src_dir),
         serde_json::json!({
             "caught": 0,
             "failure": 0,
@@ -156,7 +141,7 @@ fn check_tree_with_mutants_skip() {
             true
         }));
     assert_eq!(
-        read_mutant_outcomes(&tmp_src_dir),
+        outcome_json_counts(&tmp_src_dir),
         serde_json::json!({
             "caught": 0,
             "failure": 0,
