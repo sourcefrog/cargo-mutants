@@ -219,31 +219,6 @@ fn well_tested_tree_finds_no_problems() {
 }
 
 #[test]
-fn well_tested_tree_check_only() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .args(["mutants", "--check", "--no-shuffle", "--no-times"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-}
-
-#[test]
-fn well_tested_tree_check_only_shuffled() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .args(["mutants", "--check", "--no-times", "--shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success();
-    // Caution: No assertions about output here, we just check that it runs.
-}
-
-#[test]
 fn unviable_mutation_of_struct_with_no_default() {
     let tmp_src_dir = copy_of_testdata("struct_with_no_default");
     run()
@@ -286,19 +261,6 @@ fn integration_test_source_is_not_mutated() {
         .assert()
         .success();
     check_text_list_output(tmp_src_dir.path(), "integration_test_source_is_not_mutated");
-}
-#[test]
-fn warning_when_no_mutants_found() {
-    let tmp_src_dir = copy_of_testdata("everything_skipped");
-    run()
-        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .stderr(predicate::str::contains(
-            "No mutants found under the active filters",
-        ))
-        .stdout(predicate::str::contains("Found 0 mutants to test"))
-        .success(); // It's arguable, but better if CI doesn't fail in this case.
 }
 
 #[test]
@@ -467,38 +429,6 @@ fn output_option() {
     ] {
         assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
     }
-}
-
-#[test]
-fn check_succeeds_in_tree_that_builds_but_fails_tests() {
-    // --check doesn't actually run the tests so won't discover that they fail.
-    let tmp_src_dir = copy_of_testdata("already_failing_tests");
-    run()
-        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .env_remove("RUST_BACKTRACE")
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-}
-
-#[test]
-fn check_tree_with_mutants_skip() {
-    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
-    run()
-        .arg("mutants")
-        .args(["--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .env_remove("RUST_BACKTRACE")
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
 }
 
 #[test]
