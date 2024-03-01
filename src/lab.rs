@@ -89,7 +89,8 @@ pub fn test_mutants(
     let mut build_dirs = vec![build_dir];
     let baseline_test_duration = baseline_outcome
         .as_ref()
-        .map(|b| b.total_phase_duration(Phase::Test));
+        .and_then(|so| so.phase_result(Phase::Test))
+        .map(|pr| pr.duration);
 
     let test_timeout = test_timeout(baseline_test_duration, &options);
 

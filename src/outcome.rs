@@ -194,19 +194,14 @@ impl ScenarioOutcome {
         self.phase_results.last().unwrap().process_status
     }
 
+    /// Return the results of all phases.
     pub fn phase_results(&self) -> &[PhaseResult] {
         &self.phase_results
     }
 
-    /// Return the total time spent in commands for one phase.
-    ///
-    /// If the phase was not run, returns zero.
-    pub fn total_phase_duration(&self, phase: Phase) -> Duration {
-        self.phase_results
-            .iter()
-            .filter(|pr| pr.phase == phase)
-            .map(|pr| pr.duration)
-            .sum()
+    /// Return the result of the given phase, if it was run.
+    pub fn phase_result(&self, phase: Phase) -> Option<&PhaseResult> {
+        self.phase_results.iter().find(|pr| pr.phase == phase)
     }
 
     /// True if this status indicates the user definitely needs to see the logs, because a task
@@ -317,4 +312,61 @@ pub enum SummaryOutcome {
     Unviable,
     Failure,
     Timeout,
+}
+
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    use crate::process::ProcessStatus;
+
+    use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
+
+    #[test]
+    fn find_phase_result() {
+        let outcome = ScenarioOutcome {
+            log_path: "log".into(),
+            scenario: Scenario::Baseline,
+            phase_results: vec![
+                PhaseResult {
+                    phase: Phase::Build,
+                    duration: Duration::from_secs(2),
+                    process_status: ProcessStatus::Success,
+                    argv: vec!["cargo".into(), "build".into()],
+                },
+                PhaseResult {
+                    phase: Phase::Test,
+                    duration: Duration::from_secs(3),
+                    process_status: ProcessStatus::Success,
+                    argv: vec!["cargo".into(), "test".into()],
+                },
+            ],
+        };
+        assert_eq!(
+            outcome.phase_result(Phase::Build),
+            Some(&PhaseResult {
+                phase: Phase::Build,
+                duration: Duration::from_secs(2),
+                process_status: ProcessStatus::Success,
+                argv: vec!["cargo".into(), "build".into()],
+            })
+        );
+        assert_eq!(
+            outcome
+                .phase_result(Phase::Build)
+                .unwrap()
+                .duration
+                .as_secs(),
+            2
+        );
+        assert_eq!(
+            outcome
+                .phase_result(Phase::Test)
+                .unwrap()
+                .duration
+                .as_secs(),
+            3
+        );
+        assert_eq!(outcome.phase_result(Phase::Check), None);
+    }
 }
