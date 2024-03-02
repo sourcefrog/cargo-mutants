@@ -242,16 +242,19 @@ fn path_ends_with(path: &Path, ident: &str) -> bool {
 fn match_impl_iterator(TypeImplTrait { bounds, .. }: &TypeImplTrait) -> Option<&Type> {
     for bound in bounds {
         if let TypeParamBound::Trait(TraitBound { path, .. }) = bound {
-            if path.segments.len() == 1 && path.segments[0].ident == "Iterator" {
-                if let PathArguments::AngleBracketed(AngleBracketedGenericArguments {
-                    args, ..
-                }) = &path.segments[0].arguments
-                {
-                    if let Some(GenericArgument::AssocType(AssocType { ident, ty, .. })) =
-                        args.first()
+            if let Some(last_segment) = path.segments.last() {
+                if last_segment.ident == "Iterator" {
+                    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                        args,
+                        ..
+                    }) = &last_segment.arguments
                     {
-                        if ident == "Item" {
-                            return Some(ty);
+                        if let Some(GenericArgument::AssocType(AssocType { ident, ty, .. })) =
+                            args.first()
+                        {
+                            if ident == "Item" {
+                                return Some(ty);
+                            }
                         }
                     }
                 }
@@ -432,6 +435,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use syn::{parse_quote, Expr, ReturnType};
 
+    use crate::fnvalue::match_impl_iterator;
     use crate::pretty::ToPrettyString;
 
     use super::{known_map, return_type_replacements};
@@ -661,6 +665,25 @@ mod test {
                 "::std::iter::once(String::new())",
                 r#"::std::iter::once("xyzzy".into())"#,
             ],
+        );
+    }
+
+    #[test]
+    fn impl_matches_iterator() {
+        assert_eq!(
+            match_impl_iterator(&parse_quote! { impl std::iter::Iterator<Item = String> }),
+            Some(&parse_quote! { String })
+        );
+        assert_eq!(
+            match_impl_iterator(&parse_quote! { impl Iterator<Item = String> }),
+            Some(&parse_quote! { String })
+        );
+        // Strange, maybe it's a type defined in this crate, but we don't know what to
+        // do with it.
+        assert_eq!(match_impl_iterator(&parse_quote! { impl Iterator }), None);
+        assert_eq!(
+            match_impl_iterator(&parse_quote! { impl Borrow<String> }),
+            None
         );
     }
 
