@@ -126,10 +126,7 @@ pub enum TestTool {
 
 /// Join two slices into a new vector.
 fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
-    let mut v = Vec::with_capacity(a.len() + b.len());
-    v.extend_from_slice(a);
-    v.extend_from_slice(b);
-    v
+    a.iter().chain(b).cloned().collect()
 }
 
 /// Should ANSI colors be drawn?
