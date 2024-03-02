@@ -9,7 +9,7 @@ repository = "https://github.com/sourcefrog/cargo-mutants"
 homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
-rust-version = "1.73"
+rust-version = "1.74"
 exclude = [
     ".codespell*",
     ".markdownlint*",
