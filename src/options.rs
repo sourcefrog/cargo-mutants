@@ -161,6 +161,7 @@ impl Colors {
         }
     }
 
+    #[mutants::skip] // depends on a real tty etc, hard to test
     pub fn active_stdout(&self) -> bool {
         self.forced_value()
             .unwrap_or_else(::console::colors_enabled)
@@ -246,6 +247,7 @@ mod test {
     use std::io::Write;
 
     use indoc::indoc;
+    use rusty_fork::rusty_fork_test;
     use tempfile::NamedTempFile;
 
     use super::*;
@@ -348,5 +350,58 @@ mod test {
         );
         assert!(!options.features.no_default_features);
         assert!(options.features.all_features);
+    }
+
+    rusty_fork_test! {
+        #[test]
+        fn color_control_from_cargo_env() {
+            use std::env::{set_var,remove_var};
+
+            set_var("CARGO_TERM_COLOR", "always");
+            remove_var("CLICOLOR_FORCE");
+            remove_var("NO_COLOR");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(true));
+
+            set_var("CARGO_TERM_COLOR", "never");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(false));
+
+            set_var("CARGO_TERM_COLOR", "auto");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+
+            remove_var("CARGO_TERM_COLOR");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+        }
+
+        #[test]
+        fn color_control_from_env() {
+            use std::env::{set_var,remove_var};
+
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+
+            remove_var("CLICOLOR_FORCE");
+            set_var("NO_COLOR", "1");
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(false));
+
+            remove_var("NO_COLOR");
+            set_var("CLICOLOR_FORCE", "1");
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(true));
+
+            remove_var("CLICOLOR_FORCE");
+            remove_var("NO_COLOR");
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+        }
     }
 }
