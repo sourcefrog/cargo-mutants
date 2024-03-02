@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Mutations of replacing a function body with a value of a (hopefully) appropriate type.
 
@@ -291,6 +291,8 @@ fn known_container(path: &Path) -> Option<(&Ident, &Type)> {
 
 /// Match known simple collections that can be empty or constructed from an
 /// iterator.
+///
+/// Returns the short name (like "VecDeque") and the inner type.
 fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
     if ![
@@ -581,6 +583,69 @@ mod test {
             parse_quote! { -> alloc::sync::Rc<String> },
             &[],
             &["Rc::new(String::new())", r#"Rc::new("xyzzy".into())"#],
+        );
+    }
+
+    #[test]
+    fn match_known_collection() {
+        assert_eq!(
+            super::known_collection(&parse_quote! { std::collections::VecDeque<String> }),
+            Some((&parse_quote! { VecDeque }, &parse_quote! { String }))
+        );
+
+        assert_eq!(
+            super::known_collection(&parse_quote! { std::collections::BinaryHeap<(u32, u32)> }),
+            Some((&parse_quote! { BinaryHeap }, &parse_quote! { (u32, u32) }))
+        );
+
+        assert_eq!(
+            super::known_collection(&parse_quote! { LinkedList<[u8; 256]> }),
+            Some((&parse_quote! { LinkedList }, &parse_quote! { [u8; 256] }))
+        );
+
+        assert_eq!(super::known_collection(&parse_quote! { Arc<String> }), None);
+
+        // This might be a collection, and is handled generically, but it's not a specifically known
+        // collection type. (Maybe we shouldn't bother knowing specific types?)
+        assert_eq!(
+            super::known_collection(&parse_quote! { Wibble<&str> }),
+            None
+        );
+    }
+
+    #[test]
+    fn match_known_map() {
+        assert_eq!(
+            super::known_map(&parse_quote! { std::collections::BTreeMap<String, usize> }),
+            Some((
+                &parse_quote! { BTreeMap },
+                &parse_quote! { String },
+                &parse_quote! { usize }
+            ))
+        );
+
+        assert_eq!(
+            super::known_map(&parse_quote! { std::collections::HashMap<(usize, usize), bool> }),
+            Some((
+                &parse_quote! { HashMap },
+                &parse_quote! { (usize, usize) },
+                &parse_quote! { bool }
+            ))
+        );
+
+        assert_eq!(
+            super::known_map(&parse_quote! { Option<(usize, usize)> }),
+            None
+        );
+
+        assert_eq!(
+            super::known_map(&parse_quote! { MyMap<String, usize> }),
+            None,
+        );
+
+        assert_eq!(
+            super::known_map(&parse_quote! { Pair<String, usize> }),
+            None,
         );
     }
 
