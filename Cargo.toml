@@ -55,7 +55,6 @@ indoc = "2.0.0"
 itertools = "0.12"
 mutants = "0.0.3"
 nextest-metadata = "0.10"
-nix = "0.27"
 patch = "0.7"
 path-slash = "0.2"
 quote = "1.0"
@@ -87,6 +86,9 @@ features = ["derive"]
 [dependencies.syn]
 version = "2"
 features = ["full", "extra-traits", "visit"]
+
+[target.'cfg(unix)'.dependencies]
+nix = { version="0.28", features = ["signal"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
