@@ -98,6 +98,7 @@ lazy_static = "1.4"
 predicates = "3"
 pretty_assertions = "1"
 regex = "1.5"
+rusty-fork = "0.3"
 walkdir = "2.3"
 
 [workspace]

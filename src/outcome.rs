@@ -12,6 +12,7 @@ use humantime::format_duration;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
+use tracing::warn;
 
 use crate::console::plural;
 use crate::exit_code;
@@ -64,7 +65,6 @@ pub struct LabOutcome {
     pub timeout: usize,
     pub unviable: usize,
     pub success: usize,
-    pub failure: usize,
 }
 
 impl LabOutcome {
@@ -82,7 +82,10 @@ impl LabOutcome {
                 SummaryOutcome::Timeout => self.timeout += 1,
                 SummaryOutcome::Unviable => self.unviable += 1,
                 SummaryOutcome::Success => self.success += 1,
-                SummaryOutcome::Failure => self.failure += 1,
+                SummaryOutcome::Failure => {
+                    // We don't expect to see failures that don't fit into the other categories.
+                    warn!("Unclassified failure for mutant {:?}", outcome.scenario);
+                }
             }
         }
         self.outcomes.push(outcome);
@@ -118,23 +121,20 @@ impl LabOutcome {
         }
         s.push(": ".into());
         let mut by_outcome: Vec<String> = Vec::new();
-        if self.missed > 0 {
+        if self.missed != 0 {
             by_outcome.push(format!("{} missed", self.missed));
         }
-        if self.caught > 0 {
+        if self.caught != 0 {
             by_outcome.push(format!("{} caught", self.caught));
         }
-        if self.unviable > 0 {
+        if self.unviable != 0 {
             by_outcome.push(format!("{} unviable", self.unviable));
         }
-        if self.timeout > 0 {
+        if self.timeout != 0 {
             by_outcome.push(format!("{} timeouts", self.timeout));
         }
-        if self.success > 0 {
+        if self.success != 0 {
             by_outcome.push(format!("{} succeeded", self.success));
-        }
-        if self.failure > 0 {
-            by_outcome.push(format!("{} failed", self.failure));
         }
         s.push(by_outcome.join(", "));
         s.join("")
@@ -194,19 +194,14 @@ impl ScenarioOutcome {
         self.phase_results.last().unwrap().process_status
     }
 
+    /// Return the results of all phases.
     pub fn phase_results(&self) -> &[PhaseResult] {
         &self.phase_results
     }
 
-    /// Return the total time spent in commands for one phase.
-    ///
-    /// If the phase was not run, returns zero.
-    pub fn total_phase_duration(&self, phase: Phase) -> Duration {
-        self.phase_results
-            .iter()
-            .filter(|pr| pr.phase == phase)
-            .map(|pr| pr.duration)
-            .sum()
+    /// Return the result of the given phase, if it was run.
+    pub fn phase_result(&self, phase: Phase) -> Option<&PhaseResult> {
+        self.phase_results.iter().find(|pr| pr.phase == phase)
     }
 
     /// True if this status indicates the user definitely needs to see the logs, because a task
@@ -268,6 +263,10 @@ impl ScenarioOutcome {
                 } else if self.success() {
                     SummaryOutcome::Success
                 } else {
+                    warn!(
+                        "Unexpected outcome for mutant {:?}: {:?}",
+                        self.scenario, self.phase_results
+                    );
                     SummaryOutcome::Failure
                 }
             }
@@ -317,4 +316,61 @@ pub enum SummaryOutcome {
     Unviable,
     Failure,
     Timeout,
+}
+
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    use crate::process::ProcessStatus;
+
+    use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
+
+    #[test]
+    fn find_phase_result() {
+        let outcome = ScenarioOutcome {
+            log_path: "log".into(),
+            scenario: Scenario::Baseline,
+            phase_results: vec![
+                PhaseResult {
+                    phase: Phase::Build,
+                    duration: Duration::from_secs(2),
+                    process_status: ProcessStatus::Success,
+                    argv: vec!["cargo".into(), "build".into()],
+                },
+                PhaseResult {
+                    phase: Phase::Test,
+                    duration: Duration::from_secs(3),
+                    process_status: ProcessStatus::Success,
+                    argv: vec!["cargo".into(), "test".into()],
+                },
+            ],
+        };
+        assert_eq!(
+            outcome.phase_result(Phase::Build),
+            Some(&PhaseResult {
+                phase: Phase::Build,
+                duration: Duration::from_secs(2),
+                process_status: ProcessStatus::Success,
+                argv: vec!["cargo".into(), "build".into()],
+            })
+        );
+        assert_eq!(
+            outcome
+                .phase_result(Phase::Build)
+                .unwrap()
+                .duration
+                .as_secs(),
+            2
+        );
+        assert_eq!(
+            outcome
+                .phase_result(Phase::Test)
+                .unwrap()
+                .duration
+                .as_secs(),
+            3
+        );
+        assert_eq!(outcome.phase_result(Phase::Check), None);
+    }
 }

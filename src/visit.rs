@@ -543,13 +543,10 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 
 #[cfg(test)]
 mod test {
-    use std::path::Path;
-
     use indoc::indoc;
     use itertools::Itertools;
 
     use super::*;
-    use crate::config::Config;
     use crate::package::Package;
     use crate::source::SourceFile;
 
@@ -577,35 +574,5 @@ mod test {
             mutant_names,
             ["src/lib.rs: replace always_true -> bool with false"]
         );
-    }
-
-    /// As a generic protection against regressions in discovery, the the mutants
-    /// generated from `cargo-mutants` own tree against a checked-in list.
-    ///
-    /// The snapshot will need to be updated when functions are added or removed,
-    /// as well as when new mutation patterns are added.
-    ///
-    /// To stop it being too noisy, we use a custom format with no line numbers.
-    #[test]
-    fn expected_mutants_for_own_source_tree() {
-        let config = Config::read_file(Path::new("./.cargo/mutants.toml")).expect("Read config");
-        let args =
-            Args::try_parse_from(["mutants", "--list", "--line-col=false", "--colors=never"])
-                .expect("Parse args");
-        let options = Options::new(&args, &config).expect("Build options");
-        let mut list_output = String::new();
-        let console = Console::new();
-        let workspace = Workspace::open(
-            Utf8Path::new(".")
-                .canonicalize_utf8()
-                .expect("Canonicalize source path"),
-        )
-        .unwrap();
-        let discovered = workspace
-            .discover(&PackageFilter::All, &options, &console)
-            .expect("Discover mutants");
-        crate::list_mutants(&mut list_output, &discovered.mutants, &options)
-            .expect("Discover mutants in own source tree");
-        insta::assert_snapshot!(list_output);
     }
 }

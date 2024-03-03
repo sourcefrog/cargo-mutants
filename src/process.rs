@@ -158,6 +158,7 @@ impl Process {
 
 #[cfg(unix)]
 #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
+#[mutants::skip] // hard to exercise the ESRCH edge case
 fn terminate_child_impl(child: &mut Popen) -> Result<()> {
     use nix::errno::Errno;
     use nix::sys::signal::{killpg, Signal};

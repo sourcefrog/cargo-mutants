@@ -117,7 +117,7 @@ fn strip_patch_path(path: &str) -> &Utf8Path {
 ///
 /// If a line is deleted then the range will span from the line before to the line after.
 fn affected_lines(patch: &Patch) -> Vec<usize> {
-    let mut r = Vec::new();
+    let mut affected_lines = Vec::new();
     for hunk in &patch.hunks {
         let mut lineno: usize = hunk.new_range.start.try_into().unwrap();
         // True if the previous line was deleted. If set, then the next line that exists in the
@@ -131,11 +131,11 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
                 Line::Add(_) | Line::Context(_) => {
                     if prev_removed {
                         debug_assert!(
-                            r.last().map_or(true, |last| *last < lineno),
-                            "{lineno} {r:?}"
+                            affected_lines.last().map_or(true, |last| *last < lineno),
+                            "{lineno} {affected_lines:?}"
                         );
                         debug_assert!(lineno >= 1, "{lineno}");
-                        r.push(lineno);
+                        affected_lines.push(lineno);
                         prev_removed = false;
                     }
                 }
@@ -145,24 +145,28 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
                     lineno += 1;
                 }
                 Line::Add(_) => {
-                    if r.last().map_or(true, |last| *last < lineno) {
-                        r.push(lineno);
+                    if affected_lines.last().map_or(true, |last| *last != lineno) {
+                        affected_lines.push(lineno);
                     }
                     lineno += 1;
                 }
                 Line::Remove(_) => {
-                    if lineno > 1 && r.last().map_or(true, |last| *last < (lineno - 1)) {
-                        r.push(lineno - 1);
+                    if lineno > 1
+                        && affected_lines
+                            .last()
+                            .map_or(true, |last| *last != (lineno - 1))
+                    {
+                        affected_lines.push(lineno - 1);
                     }
                 }
             }
         }
     }
     debug_assert!(
-        r.iter().tuple_windows().all(|(a, b)| a < b),
-        "remove_context: line numbers not sorted and unique: {r:?}"
+        affected_lines.iter().tuple_windows().all(|(a, b)| a < b),
+        "remove_context: line numbers not sorted and unique: {affected_lines:?}"
     );
-    r
+    affected_lines
 }
 
 /// Recreate a partial view of the new file from a Patch.
