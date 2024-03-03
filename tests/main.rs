@@ -221,45 +221,6 @@ fn well_tested_tree_finds_no_problems() {
 }
 
 #[test]
-fn unviable_mutation_of_struct_with_no_default() {
-    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
-    run()
-        .args([
-            "mutants",
-            "--line-col=false",
-            "--no-times",
-            "--no-shuffle",
-            "-v",
-            "-V",
-        ])
-        .arg("-d")
-        .arg(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(
-            predicate::str::is_match(
-                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
-            )
-            .unwrap(),
-        );
-    check_text_list_output(
-        tmp_src_dir.path(),
-        "unviable_mutation_of_struct_with_no_default",
-    );
-    assert_eq!(
-        outcome_json_counts(&tmp_src_dir),
-        serde_json::json!({
-            "success": 0,
-            "caught": 0,
-            "unviable": 1,
-            "missed": 0,
-            "timeout": 0,
-            "total_mutants": 1,
-        })
-    );
-}
-
-#[test]
 fn integration_test_source_is_not_mutated() {
     let tmp_src_dir = copy_of_testdata("integration_tests");
     run()

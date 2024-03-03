@@ -173,3 +173,39 @@ fn check_tree_where_build_fails() {
         })
     );
 }
+
+#[test]
+fn unviable_mutation_of_struct_with_no_default() {
+    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
+    run()
+        .args([
+            "mutants",
+            "--line-col=false",
+            "--check",
+            "--no-times",
+            "--no-shuffle",
+            "-v",
+            "-V",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::is_match(
+                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
+            )
+            .unwrap(),
+        );
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 0,
+            "caught": 0,
+            "unviable": 1,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 1,
+        })
+    );
+}
