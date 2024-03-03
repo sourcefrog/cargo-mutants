@@ -1,0 +1,81 @@
+# Example of using a GitHub Actions matrix to shard the mutants run into 8 parts.
+
+# See https://github.com/sourcefrog/cargo-mutants/blob/main/.github/workflows/tests.yml for a full example.
+
+# Only run this on PRs or main branch commits that could affect the results,
+# so we don't waste time on doc-only changes. Adjust these paths and branch names
+# to suit your project.
+on:
+  pull_request:
+    paths:
+      - ".cargo/*.toml"
+      - ".github/workflows/tests.yml"
+      - "Cargo.*"
+      - "mutants_attrs/**"
+      - "src/**"
+      - "testdata/**"
+      - "tests/**"
+  push:
+    branches:
+      - main
+    # Actions doesn't support YAML references, so it's repeated here
+    paths:
+      - ".cargo/*.toml"
+      - ".github/workflows/tests.yml"
+      - "Cargo.*"
+      - "mutants_attrs/**"
+      - "src/**"
+      - "testdata/**"
+      - "tests/**"
+
+jobs:
+  # Before testing mutants, run the build and tests on all platforms.
+  # You probably already have CI configuration like this, so don't duplicate it,
+  # merge cargo-mutants into your existing workflow.
+  test:
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+        version: [stable, nightly]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.version }}
+          components: rustfmt
+      - uses: swatinem/rust-cache@v2
+      - name: rustfmt
+        run: cargo fmt --all -- --check
+      - name: Build
+        run: cargo build --all-targets
+      - name: Test
+        run: cargo test --workspace
+  cargo-mutants:
+    runs-on: ubuntu-latest
+    # Often you'll want to only run this after the build is known to pass its basic tests,
+    # to avoid wasting time, and to allow using --baseline=skip.
+    needs: [test]
+    strategy:
+      fail-fast: false # Collect all mutants even if some are missed
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        name: Install cargo-mutants using install-action
+        with:
+          tool: cargo-mutants
+      # Set an appropriate timeout for your tree here.
+      # The denominator of the shard count must be the number of shards.
+      - name: Mutants
+        run: |
+          cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8 --baseline=skip --timeout 300 --in-place
+      - name: Archive mutants.out
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          path: mutants.out
+          name: mutants-shard${{matrix.shard}}.out
