@@ -384,6 +384,9 @@ mod test {
         fn color_control_from_env() {
             use std::env::{set_var,remove_var};
 
+            remove_var("CARGO_TERM_COLOR");
+            remove_var("CLICOLOR_FORCE");
+            remove_var("NO_COLOR");
             let args = Args::parse_from(["mutants"]);
             let options = Options::new(&args, &Config::default()).unwrap();
             assert_eq!(options.colors.forced_value(), None);
