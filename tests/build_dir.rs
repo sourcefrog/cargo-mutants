@@ -34,6 +34,7 @@ fn gitignore_can_be_turned_off() {
 
 /// A tree containing a symlink that must exist for the tests to pass works properly.
 #[test]
+#[cfg(unix)]
 fn tree_with_symlink() {
     let tmp = copy_of_testdata("symlink");
     assert!(tmp.path().join("testdata").join("symlink").is_symlink());
