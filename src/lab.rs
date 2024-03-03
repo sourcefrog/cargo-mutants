@@ -95,7 +95,6 @@ pub fn test_mutants(
     let test_timeout = test_timeout(baseline_test_duration, &options);
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
-    console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");
         build_dirs.push(BuildDir::copy_from(
@@ -105,7 +104,6 @@ pub fn test_mutants(
             console,
         )?);
     }
-    console.build_dirs_finished();
     debug!(build_dirs = ?build_dirs);
 
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
