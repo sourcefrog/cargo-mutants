@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 #![cfg(windows)]
 
@@ -12,9 +12,11 @@ use util::run;
 /// Only on Windows, backslash can be used as a path separator in filters.
 #[test]
 fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
+    // This could be written more simply as `--exclude module` but we want to
+    // test that backslash is accepted.
     run()
         .arg("mutants")
-        .args(["--list", "--exclude", "*\\module\\*"])
+        .args(["--list", "--exclude", "**\\module\\**\\*.rs"])
         .current_dir("testdata/with_child_directories")
         .assert()
         .stdout(

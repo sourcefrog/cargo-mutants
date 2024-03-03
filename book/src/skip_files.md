@@ -12,11 +12,14 @@ If any `-f` options are given, only source files that match are
 considered; otherwise all files are considered. This list is then further
 reduced by exclusions.
 
-If the glob contains `/` (or on Windows, `\`), then it matches against the path from the root of the source
-tree. For example, `src/*/*.rs` will exclude all files in subdirectories of `src`.
+Globs are treated differently depending on whether they contain a path separator or not.
+`/` matches the path separator on both Unix and Windows. `\\` matches the path separator on Windows and is an escape character on Unix.
 
-If the glob does not contain a path separator, it matches against filenames
-in any directory.  `/` matches the path separator on both Unix and Windows.
+If the glob contains a path separator then it matches against the path from the root of the source
+tree. For example, `src/*/*.rs` will match (and exclude or exclude) all files in subdirectories of `src`. Matches on paths can use `**` to match zero or more directory components: `src/**/*.rs` will match all `.rs` files in `src` and its subdirectories.
+
+If the glob does not contain a path separator, it matches against file and directory names, in any directory. For example, `t*.rs` will match all files whose name start with `t` and ends with `.rs`, in any directory.
+in any directory.  `--exclude console` excludes all files within directories called "console", but not files called "console.rs".
 
 Note that the glob must contain `.rs` (or a matching wildcard) to match
 source files with that suffix. For example, `-f network` will match
@@ -39,7 +42,7 @@ Examples:
 
 - `cargo mutants -e console.rs` -- test mutants in any file except `console.rs`.
 
-- `cargo mutants -f src/db/*.rs` -- test mutants in any file in this directory.
+- `cargo mutants -f src/db/*.rs` -- test mutants in any file in this directory. This could also be written as `-f src/db`, or (if all the source is in `src`) as `-f db`.
 
 ## Configuring filters by filename
 

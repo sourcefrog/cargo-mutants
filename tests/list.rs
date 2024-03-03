@@ -190,7 +190,7 @@ fn list_mutants_well_tested_exclude_name_filter() {
 fn list_mutants_well_tested_exclude_folder_filter() {
     run()
         .arg("mutants")
-        .args(["--list", "--exclude", "*/module/*"])
+        .args(["--list", "--exclude", "module"])
         .current_dir("testdata/with_child_directories")
         .assert_insta("list_mutants_well_tested_exclude_folder_filter");
 }
@@ -202,7 +202,7 @@ fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
         .args([
             "--list",
             "--file",
-            "src/module/utils/*.rs",
+            "src/module/utils/**/*.rs",
             "--exclude",
             "nested_function.rs",
         ])
@@ -257,7 +257,7 @@ fn list_mutants_regex_filters_json() {
 fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
     run()
         .arg("mutants")
-        .args(["--list", "--file", "module_methods.rs", "--file", "*/utils/*", "--exclude", "*/sub_utils/*", "--exclude", "nested_function.rs"])
+        .args(["--list", "--file", "module_methods.rs", "--file", "utils", "--exclude", "**/sub_utils/**", "--exclude", "nested_function.rs"])
         .current_dir("testdata/with_child_directories")
         .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
 }

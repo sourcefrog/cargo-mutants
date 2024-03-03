@@ -9,6 +9,7 @@ mod console;
 mod copy_tree;
 mod exit_code;
 mod fnvalue;
+mod glob;
 mod in_diff;
 mod interrupt;
 mod lab;

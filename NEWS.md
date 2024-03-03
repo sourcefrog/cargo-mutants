@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Changed: In globs, `*` no longer matches path separators, only parts of a filename. For example, `src/*.rs` will now only match files directly in `src/`, not in subdirectories. To include subdirectories, use `**` as in `src/**/*.rs`.
+
+  And, patterns that do not contain a path separator match directories at any level, and all files within them. For example, `-f db` will match `src/db.rs` and `src/db/mod.rs` and all files in `src/db/` or in `other/db`.
+
+  This may break existing configurations but is considered a bug fix because it brings the behavior in line with other tools and allows more precise expressions.
+
 - Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.74.
 
 ## 24.2.1
