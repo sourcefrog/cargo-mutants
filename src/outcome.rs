@@ -12,6 +12,7 @@ use humantime::format_duration;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
+use tracing::warn;
 
 use crate::console::plural;
 use crate::exit_code;
@@ -64,7 +65,6 @@ pub struct LabOutcome {
     pub timeout: usize,
     pub unviable: usize,
     pub success: usize,
-    pub failure: usize,
 }
 
 impl LabOutcome {
@@ -82,7 +82,10 @@ impl LabOutcome {
                 SummaryOutcome::Timeout => self.timeout += 1,
                 SummaryOutcome::Unviable => self.unviable += 1,
                 SummaryOutcome::Success => self.success += 1,
-                SummaryOutcome::Failure => self.failure += 1,
+                SummaryOutcome::Failure => {
+                    // We don't expect to see failures that don't fit into the other categories.
+                    warn!("Unclassified failure for mutant {:?}", outcome.scenario);
+                }
             }
         }
         self.outcomes.push(outcome);
@@ -132,9 +135,6 @@ impl LabOutcome {
         }
         if self.success != 0 {
             by_outcome.push(format!("{} succeeded", self.success));
-        }
-        if self.failure != 0 {
-            by_outcome.push(format!("{} failed", self.failure));
         }
         s.push(by_outcome.join(", "));
         s.join("")
@@ -263,6 +263,10 @@ impl ScenarioOutcome {
                 } else if self.success() {
                     SummaryOutcome::Success
                 } else {
+                    warn!(
+                        "Unexpected outcome for mutant {:?}: {:?}",
+                        self.scenario, self.phase_results
+                    );
                     SummaryOutcome::Failure
                 }
             }

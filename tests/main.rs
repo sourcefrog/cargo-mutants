@@ -251,7 +251,6 @@ fn unviable_mutation_of_struct_with_no_default() {
         serde_json::json!({
             "success": 0,
             "caught": 0,
-            "failure": 0,
             "unviable": 1,
             "missed": 0,
             "timeout": 0,

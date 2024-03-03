@@ -34,7 +34,6 @@ fn small_well_tested_tree_check_only() {
         serde_json::json!({
             "success": 4, // They did all build
             "caught": 0, // They weren't actually tested
-            "failure": 0,
             "unviable": 0,
             "missed": 0,
             "timeout": 0,
@@ -57,7 +56,6 @@ fn small_well_tested_tree_check_only_shuffled() {
         serde_json::json!({
             "success": 4, // They did all build
             "caught": 0, // They weren't actually tested
-            "failure": 0,
             "unviable": 0,
             "missed": 0,
             "timeout": 0,
@@ -107,7 +105,6 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
         outcome_json_counts(&tmp_src_dir),
         serde_json::json!({
             "caught": 0,
-            "failure": 0,
             "missed": 0,
             "success": 4,
             "timeout": 0,
@@ -144,12 +141,35 @@ fn check_tree_with_mutants_skip() {
         outcome_json_counts(&tmp_src_dir),
         serde_json::json!({
             "caught": 0,
-            "failure": 0,
             "missed": 0,
             "success": 5,
             "timeout": 0,
             "unviable": 0,
             "total_mutants": 5,
+        })
+    );
+}
+
+#[test]
+fn check_tree_where_build_fails() {
+    let tmp_src_dir = copy_of_testdata("typecheck_fails");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .code(4) // clean tests failed
+        .stdout(predicate::str::contains("FAILED   Unmutated baseline"));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 0,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 0,
         })
     );
 }
