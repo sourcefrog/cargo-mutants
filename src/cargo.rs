@@ -41,15 +41,11 @@ pub fn run_cargo(
     let process_status = Process::run(&argv, &env, build_dir.path(), timeout, log_file, console)?;
     check_interrupted()?;
     debug!(?process_status, elapsed = ?start.elapsed());
-    if options.test_tool == TestTool::Nextest && phase == Phase::Test {
-        // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
-        // error, but we can at least warn if it's unexpected.
-        if let ProcessStatus::Failure(code) = process_status {
-            // TODO: When we build with `nextest test --no-test` then we should also check build
-            // processes.
-            if code != NextestExitCode::TEST_RUN_FAILED as u32 {
-                warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
-            }
+    if let ProcessStatus::Failure(code) = process_status {
+        if argv[1] == "nextest" && code != NextestExitCode::TEST_RUN_FAILED as u32 {
+            // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
+            // error, but we can at least warn if it's unexpected.
+            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
         }
     }
     Ok(PhaseResult {
