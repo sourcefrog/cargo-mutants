@@ -9,13 +9,14 @@ use std::time::Duration;
 
 use anyhow::Context;
 use camino::Utf8PathBuf;
-use globset::{Glob, GlobSet, GlobSetBuilder};
+use globset::GlobSet;
 use regex::RegexSet;
 use serde::Deserialize;
 use strum::{Display, EnumString};
 use tracing::warn;
 
 use crate::config::Config;
+use crate::glob::build_glob_set;
 use crate::*;
 
 /// Options for mutation testing, based on both command-line arguments and the
@@ -241,26 +242,6 @@ fn or_slices<'a: 'c, 'b: 'c, 'c, T>(a: &'a [T], b: &'b [T]) -> &'c [T] {
     } else {
         a
     }
-}
-
-fn build_glob_set<S: AsRef<str>, I: IntoIterator<Item = S>>(
-    glob_set: I,
-) -> Result<Option<GlobSet>> {
-    let mut glob_set = glob_set.into_iter().peekable();
-    if glob_set.peek().is_none() {
-        return Ok(None);
-    }
-
-    let mut builder = GlobSetBuilder::new();
-    for glob_str in glob_set {
-        let glob_str = glob_str.as_ref();
-        if glob_str.contains('/') || glob_str.contains(std::path::MAIN_SEPARATOR) {
-            builder.add(Glob::new(glob_str)?);
-        } else {
-            builder.add(Glob::new(&format!("**/{glob_str}"))?);
-        }
-    }
-    Ok(Some(builder.build()?))
 }
 
 #[cfg(test)]
