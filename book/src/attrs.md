@@ -9,7 +9,7 @@ To mark functions as skipped, so they are not mutated:
 2. Mark functions with `#[mutants::skip]` or other attributes containing
    `mutants::skip` (e.g. `#[cfg_attr(test, mutants::skip)]`).
 
-The `mutants` create is tiny and the attribute has no effect on the compiled
+The `mutants` crate is tiny and the attribute has no effect on the compiled
 code. It only flags the function for cargo-mutants. However, you can avoid the
 dependency by using the slightly longer `#[cfg_attr(test, mutants::skip)]` form.
 
