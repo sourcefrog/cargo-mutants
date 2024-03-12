@@ -69,6 +69,29 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
+  install-from-checkout:
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+        version: [stable, nightly, "1.74"]
+        locked: ["locked", "unlocked"]
+    runs-on: ${{ matrix.os }}
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.version }}
+      - name: Show Cargo and rustc version
+        run: |
+          cargo --version
+          rustc --version
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install --locked --path .
+        if: ${{ matrix.locked }} == "locked"
+      - run: cargo install --path .
+        if: ${{ matrix.locked }} != "locked"
+
   release-binary:
     runs-on: ubuntu-latest
     steps:
