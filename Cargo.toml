@@ -88,7 +88,7 @@ version = "2"
 features = ["full", "extra-traits", "visit"]
 
 [target.'cfg(unix)'.dependencies]
-nix = { version="0.28", features = ["signal"] }
+nix = { version="0.28", features = ["process", "signal"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
