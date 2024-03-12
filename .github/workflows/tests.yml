@@ -76,7 +76,6 @@ jobs:
         version: [stable, nightly, "1.74"]
         locked: ["locked", "unlocked"]
     runs-on: ${{ matrix.os }}
-    needs: [test]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
