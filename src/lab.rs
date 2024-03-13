@@ -7,15 +7,13 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
 use itertools::Itertools;
 use tracing::warn;
 #[allow(unused)]
 use tracing::{debug, debug_span, error, info, trace};
 
 use crate::cargo::run_cargo;
-use crate::console::Console;
-use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
+use crate::outcome::LabOutcome;
 use crate::output::OutputDir;
 use crate::package::Package;
 use crate::*;

@@ -2,9 +2,6 @@
 
 //! A directory containing mutated source to run cargo builds and tests.
 
-use std::convert::TryInto;
-
-use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 use tracing::info;
 
@@ -76,7 +73,6 @@ impl BuildDir {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::Result;
 
     #[test]
     fn build_dir_copy_from() {

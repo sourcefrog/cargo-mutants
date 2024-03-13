@@ -1,5 +1,6 @@
 ---
 source: tests/list.rs
+assertion_line: 78
 expression: buf
 ---
 ## testdata/already_failing_doctests
@@ -263,12 +264,12 @@ src/lib.rs:7:7: replace % with + in is_even
 ## testdata/relative_dependency
 
 ```
-src/lib.rs:6:5: replace double_factorial -> u32 with 0
-src/lib.rs:6:5: replace double_factorial -> u32 with 1
-src/lib.rs:6:10: replace < with == in double_factorial
-src/lib.rs:6:10: replace < with > in double_factorial
-src/lib.rs:9:7: replace * with + in double_factorial
-src/lib.rs:9:7: replace * with / in double_factorial
+src/lib.rs:4:5: replace double_factorial -> u32 with 0
+src/lib.rs:4:5: replace double_factorial -> u32 with 1
+src/lib.rs:4:10: replace < with == in double_factorial
+src/lib.rs:4:10: replace < with > in double_factorial
+src/lib.rs:7:7: replace * with + in double_factorial
+src/lib.rs:7:7: replace * with / in double_factorial
 ```
 
 ## testdata/replace_dependency

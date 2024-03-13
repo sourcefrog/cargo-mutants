@@ -47,7 +47,7 @@ impl TailFile {
                 .filter(|l| !l.trim().is_empty())
                 .last()
             {
-                self.last_line_seen = new_last.to_owned();
+                new_last.clone_into(&mut self.last_line_seen);
             }
         }
         Ok(self.last_line_seen.as_str())

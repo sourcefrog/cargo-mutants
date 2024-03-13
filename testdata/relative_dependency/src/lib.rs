@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use cargo_mutants_testdata_dependency::factorial;
 
 pub fn double_factorial(n: i32) -> u32 {
