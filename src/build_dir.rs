@@ -2,8 +2,6 @@
 
 //! A directory containing mutated source to run cargo builds and tests.
 
-use std::convert::TryInto;
-
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 use tracing::info;

@@ -1,5 +1,6 @@
 ---
 source: tests/list.rs
+assertion_line: 60
 expression: buf
 ---
 ## testdata/already_failing_doctests
@@ -4033,11 +4034,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 10
+          "line": 8
         },
         "start": {
           "column": 1,
-          "line": 5
+          "line": 3
         }
       }
     },
@@ -4047,11 +4048,11 @@ expression: buf
     "span": {
       "end": {
         "column": 41,
-        "line": 9
+        "line": 7
       },
       "start": {
         "column": 5,
-        "line": 6
+        "line": 4
       }
     }
   },
@@ -4063,11 +4064,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 10
+          "line": 8
         },
         "start": {
           "column": 1,
-          "line": 5
+          "line": 3
         }
       }
     },
@@ -4077,11 +4078,11 @@ expression: buf
     "span": {
       "end": {
         "column": 41,
-        "line": 9
+        "line": 7
       },
       "start": {
         "column": 5,
-        "line": 6
+        "line": 4
       }
     }
   },
@@ -4093,11 +4094,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 10
+          "line": 8
         },
         "start": {
           "column": 1,
-          "line": 5
+          "line": 3
         }
       }
     },
@@ -4107,11 +4108,11 @@ expression: buf
     "span": {
       "end": {
         "column": 11,
-        "line": 6
+        "line": 4
       },
       "start": {
         "column": 10,
-        "line": 6
+        "line": 4
       }
     }
   },
@@ -4123,11 +4124,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 10
+          "line": 8
         },
         "start": {
           "column": 1,
-          "line": 5
+          "line": 3
         }
       }
     },
@@ -4137,11 +4138,11 @@ expression: buf
     "span": {
       "end": {
         "column": 11,
-        "line": 6
+        "line": 4
       },
       "start": {
         "column": 10,
-        "line": 6
+        "line": 4
       }
     }
   },
@@ -4153,11 +4154,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 10
+          "line": 8
         },
         "start": {
           "column": 1,
-          "line": 5
+          "line": 3
         }
       }
     },
@@ -4167,11 +4168,11 @@ expression: buf
     "span": {
       "end": {
         "column": 8,
-        "line": 9
+        "line": 7
       },
       "start": {
         "column": 7,
-        "line": 9
+        "line": 7
       }
     }
   },
@@ -4183,11 +4184,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 10
+          "line": 8
         },
         "start": {
           "column": 1,
-          "line": 5
+          "line": 3
         }
       }
     },
@@ -4197,11 +4198,11 @@ expression: buf
     "span": {
       "end": {
         "column": 8,
-        "line": 9
+        "line": 7
       },
       "start": {
         "column": 7,
-        "line": 9
+        "line": 7
       }
     }
   }

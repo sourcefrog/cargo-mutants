@@ -1,7 +1,7 @@
 [package]
 name = "cargo-mutants-testdata-relative-dependency"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 authors = ["Martin Pool"]
 publish = false
 

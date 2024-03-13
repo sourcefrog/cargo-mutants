@@ -232,8 +232,6 @@ impl OutputDir {
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
-
     use indoc::indoc;
     use itertools::Itertools;
     use path_slash::PathExt;
