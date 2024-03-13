@@ -257,7 +257,6 @@ impl Drop for AppliedMutant<'_> {
 
 #[cfg(test)]
 mod test {
-    use camino::Utf8Path;
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
