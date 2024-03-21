@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         locked: ["", "--locked"]
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: cargo-install
