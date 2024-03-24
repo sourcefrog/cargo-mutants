@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 24.3.0
+
 - Fixed: `cargo install cargo-mutants` without `--locked` was failing due to breaking API changes in some unstable dependencies.
 
 - Changed: In globs, `*` no longer matches path separators, only parts of a filename. For example, `src/*.rs` will now only match files directly in `src/`, not in subdirectories. To include subdirectories, use `**` as in `src/**/*.rs`.
