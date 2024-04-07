@@ -238,6 +238,8 @@ impl ScenarioOutcome {
     }
 
     pub fn summary(&self) -> SummaryOutcome {
+        // Caution: this function is called when rendering progress
+        // and so should not log; see https://github.com/sourcefrog/nutmeg/issues/16.
         match self.scenario {
             Scenario::Baseline => {
                 if self.has_timeout() {
@@ -260,10 +262,7 @@ impl ScenarioOutcome {
                 } else if self.success() {
                     SummaryOutcome::Success
                 } else {
-                    warn!(
-                        "Unexpected outcome for mutant {:?}: {:?}",
-                        self.scenario, self.phase_results
-                    );
+                    // Some unattributed failure; should be rare or impossible?
                     SummaryOutcome::Failure
                 }
             }
