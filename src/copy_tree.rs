@@ -2,7 +2,6 @@
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
-use std::convert::TryInto;
 use std::fs::FileType;
 
 use anyhow::Context;

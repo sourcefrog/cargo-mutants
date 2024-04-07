@@ -11,7 +11,6 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::vec;
 
-use anyhow::Context;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
@@ -548,7 +547,6 @@ mod test {
 
     use super::*;
     use crate::package::Package;
-    use crate::source::SourceFile;
 
     /// We should not generate mutants that produce the same tokens as the
     /// source.

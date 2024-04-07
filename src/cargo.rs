@@ -2,16 +2,12 @@
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
-use std::env;
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
-use camino::Utf8Path;
 use itertools::Itertools;
 use nextest_metadata::NextestExitCode;
 use tracing::{debug, debug_span, warn};
 
-use crate::options::TestTool;
 use crate::outcome::PhaseResult;
 use crate::package::Package;
 use crate::process::{Process, ProcessStatus};
@@ -159,8 +155,6 @@ mod test {
 
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
-
-    use crate::{Options, Phase};
 
     use super::*;
 

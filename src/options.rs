@@ -7,8 +7,6 @@
 
 use std::time::Duration;
 
-use anyhow::Context;
-use camino::Utf8PathBuf;
 use globset::GlobSet;
 use regex::RegexSet;
 use serde::Deserialize;

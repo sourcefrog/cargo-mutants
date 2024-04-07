@@ -7,7 +7,6 @@ use std::fs;
 use std::time::Duration;
 use std::time::Instant;
 
-use anyhow::Context;
 use humantime::format_duration;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
@@ -15,8 +14,6 @@ use serde::Serializer;
 use tracing::warn;
 
 use crate::console::plural;
-use crate::exit_code;
-use crate::log_file::LogFile;
 use crate::process::ProcessStatus;
 use crate::*;
 

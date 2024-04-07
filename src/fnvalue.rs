@@ -333,10 +333,10 @@ fn known_map(path: &Path) -> Option<(&Ident, &Type, &Type)> {
     {
         // TODO: Skip lifetime args.
         // TODO: Return the path with args stripped out.
-        if let Some((GenericArgument::Type(key_type), GenericArgument::Type(value_type))) =
+        if let Some((GenericArgument::Type(ref key_type), GenericArgument::Type(ref value_type))) =
             args.iter().collect_tuple()
         {
-            return Some((&last.ident, &key_type, &value_type));
+            return Some((&last.ident, key_type, value_type));
         }
     }
     None

@@ -8,8 +8,6 @@ use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
-use anyhow::{Context, Result};
-use camino::Utf8Path;
 use fs2::FileExt;
 use path_slash::PathExt;
 use serde::Serialize;
@@ -44,7 +42,7 @@ impl LockFile {
         LockFile {
             cargo_mutants_version: crate::VERSION.to_string(),
             start_time,
-            hostname: whoami::hostname(),
+            hostname: whoami::fallible::hostname().unwrap_or_default(),
             username: whoami::username(),
         }
     }
@@ -232,11 +230,8 @@ impl OutputDir {
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
-
     use indoc::indoc;
     use itertools::Itertools;
-    use path_slash::PathExt;
     use pretty_assertions::assert_eq;
     use tempfile::TempDir;
 
