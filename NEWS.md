@@ -14,6 +14,8 @@
 
 - Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.74.
 
+- Changed: Removed the count of `failure` from `mutants.out/outcomes.json`: it was already the case that every outcome received some other classification, so the count was always zero.
+
 ## 24.2.1
 
 - New: `--features`, `--no-default-features` and `--all-features` options are passed through to Cargo.

@@ -304,3 +304,16 @@ fn list_files_json_well_tested() {
         .current_dir("testdata/well_tested")
         .assert_insta("list_files_json_well_tested");
 }
+
+#[test]
+fn no_mutants_in_tree_everything_skipped() {
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    run()
+        .args(["mutants", "--list"])
+        .arg("--dir")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .stderr(predicate::str::is_empty()) // not an error or warning
+        .stdout(predicate::str::is_empty())
+        .success();
+}

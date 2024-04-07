@@ -14,6 +14,7 @@ use itertools::Itertools;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
+
 use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::TempDir;
 
@@ -77,8 +78,15 @@ fn tree_with_child_directories_is_well_tested() {
         .arg("mutants")
         .arg("-d")
         .arg(tmp_src_dir.path())
+        .arg("-Ldebug")
         .assert()
-        .success();
+        .success()
+        .stderr(
+            predicate::str::is_match(
+                r#"DEBUG Copied source tree total_bytes=\d{3,} total_files=1[34]"#,
+            )
+            .unwrap(),
+        );
 }
 
 #[test]
@@ -278,19 +286,6 @@ fn integration_test_source_is_not_mutated() {
         .assert()
         .success();
     check_text_list_output(tmp_src_dir.path(), "integration_test_source_is_not_mutated");
-}
-#[test]
-fn warning_when_no_mutants_found() {
-    let tmp_src_dir = copy_of_testdata("everything_skipped");
-    run()
-        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .stderr(predicate::str::contains(
-            "No mutants found under the active filters",
-        ))
-        .stdout(predicate::str::contains("Found 0 mutants to test"))
-        .success(); // It's arguable, but better if CI doesn't fail in this case.
 }
 
 #[test]

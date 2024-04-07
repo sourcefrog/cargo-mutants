@@ -37,15 +37,11 @@ pub fn run_cargo(
     let process_status = Process::run(&argv, &env, build_dir.path(), timeout, log_file, console)?;
     check_interrupted()?;
     debug!(?process_status, elapsed = ?start.elapsed());
-    if options.test_tool == TestTool::Nextest && phase == Phase::Test {
-        // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
-        // error, but we can at least warn if it's unexpected.
-        if let ProcessStatus::Failure(code) = process_status {
-            // TODO: When we build with `nextest test --no-test` then we should also check build
-            // processes.
-            if code != NextestExitCode::TEST_RUN_FAILED as u32 {
-                warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
-            }
+    if let ProcessStatus::Failure(code) = process_status {
+        if argv[1] == "nextest" && code != NextestExitCode::TEST_RUN_FAILED as u32 {
+            // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
+            // error, but we can at least warn if it's unexpected.
+            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
         }
     }
     Ok(PhaseResult {
@@ -158,6 +154,7 @@ mod test {
     use std::sync::Arc;
 
     use pretty_assertions::assert_eq;
+    use rusty_fork::rusty_fork_test;
 
     use super::*;
 
@@ -293,5 +290,28 @@ mod test {
                 "--features=bar,baz"
             ]
         );
+    }
+
+    rusty_fork_test! {
+        #[test]
+        fn rustflags_with_no_environment_variables() {
+            env::remove_var("RUSTFLAGS");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(rustflags(), "--cap-lints=allow");
+        }
+
+        #[test]
+        fn rustflags_added_to_existing_encoded_rustflags() {
+            env::set_var("RUSTFLAGS", "--something\x1f--else");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(rustflags(), "--something\x1f--else\x1f--cap-lints=allow");
+        }
+
+        #[test]
+        fn rustflags_added_to_existing_rustflags() {
+            env::set_var("RUSTFLAGS", "-Dwarnings");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(rustflags(), "-Dwarnings\x1f--cap-lints=allow");
+        }
     }
 }

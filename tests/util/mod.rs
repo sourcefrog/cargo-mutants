@@ -6,7 +6,7 @@
 
 use std::borrow::Borrow;
 use std::env;
-use std::fs::read_dir;
+use std::fs::{read_dir, read_to_string};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -101,4 +101,18 @@ pub fn all_testdata_tree_paths() -> Vec<PathBuf> {
         .collect();
     paths.sort();
     paths
+}
+
+pub fn outcome_json(tmp_src_dir: &TempDir) -> serde_json::Value {
+    read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json"))
+        .expect("read outcomes.json")
+        .parse()
+        .expect("parse outcomes.json")
+}
+
+pub fn outcome_json_counts(tmp_src_dir: &TempDir) -> serde_json::Value {
+    let mut outcomes = outcome_json(tmp_src_dir);
+    // We don't want to compare the detailed outcomes
+    outcomes.as_object_mut().unwrap().remove("outcomes");
+    outcomes
 }

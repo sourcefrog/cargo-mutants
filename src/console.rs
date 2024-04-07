@@ -142,12 +142,6 @@ impl Console {
         self.message(&s);
     }
 
-    pub fn build_dirs_start(&self, _n: usize) {
-        // self.message(&format!("Make {n} more build directories...\n"));
-    }
-
-    pub fn build_dirs_finished(&self) {}
-
     pub fn start_copy(&self) {
         self.view.update(|model| {
             assert!(model.copy_model.is_none());

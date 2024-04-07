@@ -85,10 +85,14 @@ pub fn test_mutants(
         BaselineStrategy::Skip => None,
     };
     let mut build_dirs = vec![build_dir];
-    let test_timeout = test_timeout(&baseline_outcome, &options);
+    let baseline_test_duration = baseline_outcome
+        .as_ref()
+        .and_then(|so| so.phase_result(Phase::Test))
+        .map(|pr| pr.duration);
+
+    let test_timeout = test_timeout(baseline_test_duration, &options);
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
-    console.build_dirs_start(jobs - 1);
     for i in 1..jobs {
         debug!("copy build dir {i}");
         build_dirs.push(BuildDir::copy_from(
@@ -98,7 +102,6 @@ pub fn test_mutants(
             console,
         )?);
     }
-    console.build_dirs_finished();
     debug!(build_dirs = ?build_dirs);
 
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
@@ -156,23 +159,16 @@ pub fn test_mutants(
     Ok(lab_outcome)
 }
 
-fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -> Duration {
+fn test_timeout(baseline_test_duration: Option<Duration>, options: &Options) -> Duration {
     if let Some(timeout) = options.test_timeout {
         timeout
     } else if options.check_only {
         Duration::ZERO
-    } else if options.baseline == BaselineStrategy::Skip {
-        warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
-        Duration::from_secs(300)
-    } else {
+    } else if let Some(baseline_test_duration) = baseline_test_duration {
         let timeout = max(
             options.minimum_test_timeout,
             Duration::from_secs(
-                (baseline_outcome
-                    .as_ref()
-                    .expect("Baseline tests should have run")
-                    .total_phase_duration(Phase::Test)
-                    .as_secs_f64()
+                (baseline_test_duration.as_secs_f64()
                     * options.test_timeout_multiplier.unwrap_or(5.0))
                 .round() as u64,
             ),
@@ -184,6 +180,9 @@ fn test_timeout(baseline_outcome: &Option<ScenarioOutcome>, options: &Options) -
             );
         }
         timeout
+    } else {
+        warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
+        Duration::from_secs(300)
     }
 }
 
@@ -240,7 +239,7 @@ fn test_scenario(
         let success = phase_result.is_success(); // so we can move it away
         outcome.add_phase_result(phase_result);
         console.scenario_phase_finished(scenario, phase);
-        if (phase == Phase::Check && options.check_only) || !success {
+        if !success {
             break;
         }
     }
@@ -257,14 +256,61 @@ fn test_scenario(
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
+
+    use indoc::indoc;
+
     use super::*;
     use crate::config::Config;
 
     #[test]
-    fn test_timeout_multiplier_correct_parsing() {
+    fn timeout_multiplier_from_option() {
         let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5"]);
         let options = Options::new(&args, &Config::default()).unwrap();
 
-        assert_eq!(options.test_timeout_multiplier, Some(1.5))
+        assert_eq!(options.test_timeout_multiplier, Some(1.5));
+        assert_eq!(
+            test_timeout(Some(Duration::from_secs(40)), &options),
+            Duration::from_secs(60),
+        );
+    }
+
+    #[test]
+    fn timeout_multiplier_from_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(indoc! {r#"
+            timeout_multiplier = 2.0
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, Some(2.0));
+        assert_eq!(
+            test_timeout(Some(Duration::from_secs(42)), &options),
+            Duration::from_secs(42 * 2),
+        );
+    }
+
+    #[test]
+    fn timeout_multiplier_default() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, None);
+        assert_eq!(
+            test_timeout(Some(Duration::from_secs(42)), &options),
+            Duration::from_secs(42 * 5),
+        );
+    }
+
+    #[test]
+    fn timeout_multiplier_default_with_baseline_skip() {
+        // The --baseline option is not used to set the timeout but it's
+        // indicative of the realistic situation.
+        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, None);
+        assert_eq!(test_timeout(None, &options), Duration::from_secs(300),);
     }
 }
