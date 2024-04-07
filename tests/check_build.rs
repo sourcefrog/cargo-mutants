@@ -16,7 +16,7 @@ fn small_well_tested_tree_check_only() {
         .current_dir(tmp_src_dir.path())
         .assert()
         .success()
-        .stdout(predicate::function(|stdout| {
+        .stdout(predicate::function(|stdout: &str| {
             insta::assert_snapshot!(stdout, @r###"
             Found 4 mutants to test
             ok       Unmutated baseline
@@ -89,7 +89,7 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .success()
-        .stdout(predicate::function(|stdout| {
+        .stdout(predicate::function(|stdout: &str| {
             insta::assert_snapshot!(stdout, @r###"
             Found 4 mutants to test
             ok       Unmutated baseline
@@ -124,7 +124,7 @@ fn check_tree_with_mutants_skip() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .success()
-        .stdout(predicate::function(|stdout| {
+        .stdout(predicate::function(|stdout: &str| {
             insta::assert_snapshot!(stdout, @r###"
             Found 5 mutants to test
             ok       Unmutated baseline
