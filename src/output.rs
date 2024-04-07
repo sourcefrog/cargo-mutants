@@ -42,7 +42,7 @@ impl LockFile {
         LockFile {
             cargo_mutants_version: crate::VERSION.to_string(),
             start_time,
-            hostname: whoami::hostname(),
+            hostname: whoami::fallible::hostname().unwrap_or_default(),
             username: whoami::username(),
         }
     }
