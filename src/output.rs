@@ -59,21 +59,17 @@ impl LockFile {
             .write(true)
             .open(&lock_path)
             .context("open or create lock.json in existing directory")?;
-        if lock_file.try_lock_exclusive().is_err() {
-            info!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
-            let contended_kind = fs2::lock_contended_error().kind();
-            loop {
-                check_interrupted()?;
-                if let Err(err) = lock_file.try_lock_exclusive() {
-                    if err.kind() == contended_kind {
-                        sleep(LOCK_POLL)
-                    } else {
-                        return Err(err).context("wait for lock");
-                    }
-                } else {
-                    break;
-                }
+        let mut first = true;
+        while let Err(err) = lock_file.try_lock_exclusive() {
+            if first {
+                info!(
+                    "Waiting for lock on {} ...: {err}",
+                    lock_path.to_slash_lossy()
+                );
+                first = false;
             }
+            check_interrupted()?;
+            sleep(LOCK_POLL);
         }
         lock_file.set_len(0)?;
         lock_file
