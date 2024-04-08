@@ -101,7 +101,7 @@ impl Span {
     /// `replacement`.
     pub fn replace(&self, s: &str, replacement: &str) -> String {
         let mut r = String::with_capacity(s.len() + replacement.len());
-        debug_assert_eq!(r.capacity(), s.len() + replacement.len()); // cheesy way to stop mutants complaining the previous line is untested, see #301
+        debug_assert_eq!(r.capacity(), s.len() + replacement.len()); // cheesy way to stop mutants complaining the previous line is untested, see #301 and #315
         let mut line_no = 1;
         let mut col_no = 1;
         let start = self.start;
