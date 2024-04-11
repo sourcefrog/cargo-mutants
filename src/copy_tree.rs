@@ -50,6 +50,7 @@ pub fn copy_tree(
     for entry in WalkBuilder::new(from_path)
         .standard_filters(gitignore)
         .hidden(false)
+        .ignore(false)
         .require_git(false)
         .filter_entry(|entry| {
             !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
