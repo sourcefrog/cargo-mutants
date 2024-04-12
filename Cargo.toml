@@ -88,7 +88,7 @@ version = "2"
 features = ["full", "extra-traits", "visit"]
 
 [target.'cfg(unix)'.dependencies]
-nix = { version="0.28", features = ["process", "signal"] }
+nix = { version = "0.28", features = ["process", "signal"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
@@ -114,6 +114,7 @@ exclude = [
     "testdata/cdylib",
     "testdata/cfg_attr_mutants_skip",
     "testdata/cfg_attr_test_skip",
+    "testdata/cfg_test_inner",
     "testdata/custom_top_file",
     "testdata/dependency",
     "testdata/diff0",
@@ -154,7 +155,12 @@ ci = ["github"]
 # The installers to generate for each app
 installers = []
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
 # Publish jobs to run in CI
 pr-run-mode = "plan"
 # # Publish jobs to run in CI

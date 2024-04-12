@@ -1,0 +1,8 @@
+[package]
+name = "cargo-mutants-cfg-test-inner"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+doctest = false

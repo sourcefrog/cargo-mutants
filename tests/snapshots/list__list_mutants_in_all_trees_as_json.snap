@@ -1,6 +1,5 @@
 ---
 source: tests/list.rs
-assertion_line: 60
 expression: buf
 ---
 ## testdata/already_failing_doctests
@@ -552,6 +551,12 @@ expression: buf
     }
   }
 ]
+```
+
+## testdata/cfg_test_inner
+
+```json
+[]
 ```
 
 ## testdata/custom_top_file
