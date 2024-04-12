@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed: `.ignore` files can no longer affect source tree copying, so test files listed in a `.ignore` (e.g. `*.snap` for Insta snapshots) are now correctly copied into temporary build directories.
+
 ## 24.3.0
 
 - Fixed: `cargo install cargo-mutants` without `--locked` was failing due to breaking API changes in some unstable dependencies.
