@@ -6,6 +6,8 @@
 
 - Fixed: Don't visit files marked with `#![cfg(test)]` (or other inner attributes that generally cause code to be skipped.)
 
+- Document stability policy in the manual.
+
 ## 24.3.0
 
 - Fixed: `cargo install cargo-mutants` without `--locked` was failing due to breaking API changes in some unstable dependencies.

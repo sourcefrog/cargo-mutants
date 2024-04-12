@@ -35,4 +35,5 @@
   - [Differences from fuzzing](vs-fuzzing.md)
   - [Limitations](limitations.md)
   - [How to help](how-to-help.md)
+- [Stability](stability.md)
 - [Changelog](changelog.md)
