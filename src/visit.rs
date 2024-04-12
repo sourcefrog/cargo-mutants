@@ -16,7 +16,7 @@ use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Attribute, BinOp, Block, Expr, ItemFn, ReturnType, Signature};
+use syn::{Attribute, BinOp, Block, Expr, File, ItemFn, ReturnType, Signature};
 use tracing::{debug, debug_span, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
@@ -233,6 +233,16 @@ impl<'o> DiscoveryVisitor<'o> {
 }
 
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
+    /// Visit a source file.
+    fn visit_file(&mut self, i: &'ast File) {
+        // No trace here; it's created per file for the whole visitor
+        if attrs_excluded(&i.attrs) {
+            trace!("file excluded by attrs");
+            return;
+        }
+        syn::visit::visit_file(self, i);
+    }
+
     /// Visit top-level `fn foo()`.
     fn visit_item_fn(&mut self, i: &'ast ItemFn) {
         let function_name = i.sig.ident.to_pretty_string();
@@ -470,6 +480,8 @@ fn fn_sig_excluded(sig: &syn::Signature) -> bool {
 }
 
 /// True if any of the attrs indicate that we should skip this node and everything inside it.
+///
+/// This checks for `#[cfg(test)]`, `#[test]`, and `#[mutants::skip]`.
 fn attrs_excluded(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
@@ -572,5 +584,17 @@ mod test {
             mutant_names,
             ["src/lib.rs: replace always_true -> bool with false"]
         );
+    }
+
+    /// We don't visit functions inside files marked with `#![cfg(test)]`.
+    #[test]
+    fn no_mutants_in_files_with_inner_cfg_test_attribute() {
+        let options = Options::default();
+        let console = Console::new();
+        let workspace = Workspace::open("testdata/cfg_test_inner").unwrap();
+        let discovered = workspace
+            .discover(&PackageFilter::All, &options, &console)
+            .unwrap();
+        assert_eq!(discovered.mutants.as_slice(), &[]);
     }
 }

@@ -4,6 +4,8 @@
 
 - Fixed: `.ignore` files can no longer affect source tree copying, so test files listed in a `.ignore` (e.g. `*.snap` for Insta snapshots) are now correctly copied into temporary build directories.
 
+- Fixed: Don't visit files marked with `#![cfg(test)]` (or other inner attributes that generally cause code to be skipped.)
+
 ## 24.3.0
 
 - Fixed: `cargo install cargo-mutants` without `--locked` was failing due to breaking API changes in some unstable dependencies.
@@ -314,7 +316,7 @@ Released 2022-08-21
 
 A 1.0 release to celebrate that with the addition of workspace handling, cargo-mutants gives useful results on many Rust projects.
 
-- New: Supports workspaces containing multiple packages. Mutants are generated for all relevant targets in all packages, and mutants are subject to the tests of their own package.  `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
+- New: Supports workspaces containing multiple packages. Mutants are generated for all relevant targets in all packages, and mutants are subject to the tests of their own package. `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
 
 - Improved: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
 
@@ -360,7 +362,7 @@ Released 2022-07-30
 - Fixed: Open log files in append mode to fix messages from other processes
   occasionally being partly overwritten.
 
-- Improved: `cargo mutants` should now give useful results in packages that use `#![deny(unused)]` or other mechanisms to reject warnings.  Mutated functions often ignore some parameters, which would previously be rejected by this configuration without proving anything interesting about test coverage. Now, `--cap-lints=allow` is passed in `RUSTFLAGS` while building mutants, so that they're not falsely rejected and the tests can be exercised.
+- Improved: `cargo mutants` should now give useful results in packages that use `#![deny(unused)]` or other mechanisms to reject warnings. Mutated functions often ignore some parameters, which would previously be rejected by this configuration without proving anything interesting about test coverage. Now, `--cap-lints=allow` is passed in `RUSTFLAGS` while building mutants, so that they're not falsely rejected and the tests can be exercised.
 
 - Improved: The build dir name includes the root package name.
 

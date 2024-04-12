@@ -1,6 +1,5 @@
 ---
 source: tests/list.rs
-assertion_line: 78
 expression: buf
 ---
 ## testdata/already_failing_doctests
@@ -48,6 +47,11 @@ src/lib.rs:18:5: replace double -> usize with 0
 src/lib.rs:18:5: replace double -> usize with 1
 src/lib.rs:18:7: replace * with + in double
 src/lib.rs:18:7: replace * with / in double
+```
+
+## testdata/cfg_test_inner
+
+```
 ```
 
 ## testdata/custom_top_file
