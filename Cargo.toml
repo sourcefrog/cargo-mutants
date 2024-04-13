@@ -130,6 +130,7 @@ exclude = [
     "testdata/many_patterns",
     "testdata/missing_test",
     "testdata/mut_ref",
+    "testdata/nested_mod",
     "testdata/never_type",
     "testdata/override_dependency",
     "testdata/package-fails/",
