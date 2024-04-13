@@ -6,6 +6,8 @@
 
 - Fixed: Don't visit files marked with `#![cfg(test)]` (or other inner attributes that generally cause code to be skipped.)
 
+- Fixed: Paths to module files nested within `mod` blocks are now correctly resolved.
+
 - Document stability policy in the manual.
 
 ## 24.3.0
