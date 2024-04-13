@@ -219,6 +219,11 @@ src/lib.rs:2:5: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(0))
 src/lib.rs:2:5: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(1))
 ```
 
+## testdata/nested_mod
+
+```
+```
+
 ## testdata/never_type
 
 ```

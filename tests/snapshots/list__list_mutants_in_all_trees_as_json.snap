@@ -3363,6 +3363,12 @@ expression: buf
 ]
 ```
 
+## testdata/nested_mod
+
+```json
+[]
+```
+
 ## testdata/never_type
 
 ```json
