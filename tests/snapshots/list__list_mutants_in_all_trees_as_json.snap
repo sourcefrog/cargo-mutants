@@ -3366,7 +3366,128 @@ expression: buf
 ## testdata/nested_mod
 
 ```json
-[]
+[
+  {
+    "file": "src/block_in_lib/a/b/c_file/d/e/f_file.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "nested_mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/block_in_main/a/b/c_file/d/e/f_file.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "nested_mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/file_in_lib/a/b/c_file/d/e/f_file.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "nested_mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/file_in_main/a/b/c_file/d/e/f_file.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "nested_mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  }
+]
 ```
 
 ## testdata/never_type

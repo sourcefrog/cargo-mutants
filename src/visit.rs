@@ -62,8 +62,8 @@ pub fn walk_tree(
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
-        for mod_name in &external_mods {
-            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_name)? {
+        for mod_namespace in &external_mods {
+            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace)? {
                 file_queue.push_back(SourceFile::new(
                     workspace_dir,
                     mod_path,
@@ -101,7 +101,10 @@ pub fn walk_tree(
 ///
 /// Returns the mutants found, and the names of modules referenced by `mod` statements
 /// that should be visited later.
-fn walk_file(source_file: &SourceFile, error_exprs: &[Expr]) -> Result<(Vec<Mutant>, Vec<String>)> {
+fn walk_file(
+    source_file: &SourceFile,
+    error_exprs: &[Expr],
+) -> Result<(Vec<Mutant>, Vec<Vec<String>>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(source_file.code())
@@ -136,8 +139,9 @@ struct DiscoveryVisitor<'o> {
     /// The functions we're inside.
     fn_stack: Vec<Arc<Function>>,
 
-    /// The names from `mod foo;` statements that should be visited later.
-    external_mods: Vec<String>,
+    /// The names from `mod foo;` statements that should be visited later,
+    /// namespaced relative to the source file
+    external_mods: Vec<Vec<String>>,
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
@@ -350,7 +354,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // statement referring to an external file. We remember the module
         // name and then later look for the file.
         if node.content.is_none() {
-            self.external_mods.push(mod_name.to_owned());
+            let mut mod_namespace = self.namespace_stack.clone();
+            mod_namespace.push(mod_name.to_owned());
+
+            self.external_mods.push(mod_namespace);
         }
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
     }
@@ -427,7 +434,7 @@ fn function_body_span(block: &Block) -> Option<Span> {
 fn find_mod_source(
     tree_root: &Utf8Path,
     parent: &SourceFile,
-    mod_name: &str,
+    mod_namespace: &[String],
 ) -> Result<Option<Utf8PathBuf>> {
     // First, work out whether the mod will be a sibling in the same directory, or
     // in a child directory.
@@ -446,7 +453,7 @@ fn find_mod_source(
     // is above or inside the directory corresponding to its module?
 
     let parent_path = &parent.tree_relative_path;
-    let search_dir = if parent.is_top || parent_path.ends_with("mod.rs") {
+    let mut search_dir = if parent.is_top || parent_path.ends_with("mod.rs") {
         parent_path
             .parent()
             .expect("mod path has no parent")
@@ -454,6 +461,10 @@ fn find_mod_source(
     } else {
         parent_path.with_extension("") // foo.rs -> foo/
     };
+
+    let (mod_name, mod_path) = mod_namespace.split_last().expect("mod namespace is empty");
+    search_dir.extend(mod_path.iter());
+
     let mut tried_paths = Vec::new();
     for &tail in &[".rs", "/mod.rs"] {
         let relative_path = search_dir.join(mod_name.to_owned() + tail);
