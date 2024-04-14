@@ -354,9 +354,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // statement referring to an external file. We remember the module
         // name and then later look for the file.
         if node.content.is_none() {
+            // If we're already inside `mod a { ... }` and see `mod b;` then
+            // remember [a, b] as an external module to visit later.
             let mut mod_namespace = self.namespace_stack.clone();
             mod_namespace.push(mod_name.to_owned());
-
             self.external_mods.push(mod_namespace);
         }
         self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
