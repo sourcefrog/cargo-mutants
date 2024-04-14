@@ -1,5 +1,6 @@
 [package]
-name = "nested_mod"
+name = "cargo-mutants-testdata-nested-mod"
+publish = false
 version = "0.0.0"
 edition = "2021"
 

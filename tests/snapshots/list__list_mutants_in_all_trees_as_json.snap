@@ -3384,7 +3384,7 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "package": "nested_mod",
+    "package": "cargo-mutants-testdata-nested-mod",
     "replacement": "false",
     "span": {
       "end": {
@@ -3414,7 +3414,7 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "package": "nested_mod",
+    "package": "cargo-mutants-testdata-nested-mod",
     "replacement": "false",
     "span": {
       "end": {
@@ -3444,7 +3444,7 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "package": "nested_mod",
+    "package": "cargo-mutants-testdata-nested-mod",
     "replacement": "false",
     "span": {
       "end": {
@@ -3474,7 +3474,7 @@ expression: buf
       }
     },
     "genre": "FnValue",
-    "package": "nested_mod",
+    "package": "cargo-mutants-testdata-nested-mod",
     "replacement": "false",
     "span": {
       "end": {
