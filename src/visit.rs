@@ -113,6 +113,7 @@ fn walk_file(
         error_exprs,
         external_mods: Vec::new(),
         mutants: Vec::new(),
+        mod_namespace_stack: Vec::new(),
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
         source_file: source_file.clone(),
@@ -133,10 +134,26 @@ struct DiscoveryVisitor<'o> {
     /// The file being visited.
     source_file: SourceFile,
 
-    /// The stack of namespaces we're currently inside.
+    /// The stack of modules namespaces that we're currently inside, from
+    /// visiting `mod foo { ... }` statements.
+    ///
+    /// This is a subsequence of `namespace_stack`, containing only elements
+    /// that form a module path.
+    mod_namespace_stack: Vec<String>,
+
+    /// The stack of namespaces, loosely defined, that we're inside.
+    ///
+    /// Basically these are names or strings that can be concatenated with `::`
+    /// to form a name that meaningfully describes where we are; it might not
+    /// exactly be valid Rust.
+    ///
+    /// For example, this includes mods, fns, impls, etc.
     namespace_stack: Vec<String>,
 
     /// The functions we're inside.
+    ///
+    /// Empty at the top level, often has one element, but potentially more if
+    /// there are nested functions.
     fn_stack: Vec<Arc<Function>>,
 
     /// The names from `mod foo;` statements that should be visited later,
@@ -155,9 +172,9 @@ impl<'o> DiscoveryVisitor<'o> {
         span: proc_macro2::Span,
     ) -> Arc<Function> {
         self.namespace_stack.push(function_name.to_string());
-        let function_name = self.namespace_stack.join("::");
+        let full_function_name = self.namespace_stack.join("::");
         let function = Arc::new(Function {
-            function_name: function_name.to_owned(),
+            function_name: full_function_name,
             return_type: return_type.to_pretty_string(),
             span: span.into(),
         });
@@ -344,23 +361,23 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
-        let mod_name = &node.ident.unraw().to_string();
+        let mod_name = node.ident.unraw().to_string();
         let _span = trace_span!("mod", line = node.mod_token.span.start().line, mod_name).entered();
         if attrs_excluded(&node.attrs) {
             trace!("mod excluded by attrs");
             return;
         }
+        self.mod_namespace_stack.push(mod_name.clone());
         // If there's no content in braces, then this is a `mod foo;`
         // statement referring to an external file. We remember the module
         // name and then later look for the file.
         if node.content.is_none() {
             // If we're already inside `mod a { ... }` and see `mod b;` then
             // remember [a, b] as an external module to visit later.
-            let mut mod_namespace = self.namespace_stack.clone();
-            mod_namespace.push(mod_name.to_owned());
-            self.external_mods.push(mod_namespace);
+            self.external_mods.push(self.mod_namespace_stack.clone());
         }
-        self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
+        self.in_namespace(&mod_name, |v| syn::visit::visit_item_mod(v, node));
+        assert_eq!(self.mod_namespace_stack.pop(), Some(mod_name));
     }
 
     /// Visit `a op b` expressions.

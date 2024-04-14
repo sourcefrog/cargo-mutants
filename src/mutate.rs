@@ -57,7 +57,7 @@ pub struct Mutant {
 /// This is used for both mutations of the whole function, and smaller mutations within it.
 #[derive(Eq, PartialEq, Debug, Serialize)]
 pub struct Function {
-    /// The function that's being mutated.
+    /// The function that's being mutated, including any containing namespaces.
     pub function_name: String,
 
     /// The return type of the function, including a leading "-> ", as a fragment of Rust syntax.
