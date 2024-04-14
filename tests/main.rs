@@ -635,7 +635,8 @@ fn timeout_when_unmutated_tree_test_hangs() {
 #[test]
 #[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
 fn interrupt_caught_and_kills_children() {
-    let tmp_src_dir = copy_of_testdata("already_hangs");
+    // Test a tree that has enough tests that we'll probably kill it before it completes.
+    let tmp_src_dir = copy_of_testdata("well_tested");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
     // which doesn't give it a chance to clean up. And, `std::process::Command` only
     // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
@@ -645,17 +646,20 @@ fn interrupt_caught_and_kills_children() {
         cwd: Some(tmp_src_dir.path().as_os_str().to_owned()),
         ..Default::default()
     };
+    // Skip baseline because firstly it should already pass but more importantly
+    // #333 exhibited only during non-baseline scenarios.
     let args = [
         MAIN_BINARY.to_str().unwrap(),
         "mutants",
         "--timeout=300",
+        "--baseline=skip",
         "--level=trace",
     ];
 
     println!("Running: {args:?}");
     let mut child = Popen::create(&args, config).expect("spawn child");
     // TODO: Watch the output, maybe using `subprocess`, rather than just guessing how long it needs.
-    sleep(Duration::from_secs(4)); // Let it get started
+    sleep(Duration::from_secs(2)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
 
     println!("Sending terminate to cargo-mutants...");
@@ -696,6 +700,8 @@ fn interrupt_caught_and_kills_children() {
     // Also because of `--level=trace` we see some debug details.
     assert!(stderr.contains("terminating child process"));
     assert!(stderr.contains("terminated child exit status"));
+    // This shouldn't cause a panic though (#333)
+    assert!(!stderr.contains("panic"));
 }
 
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants
