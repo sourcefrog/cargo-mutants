@@ -62,8 +62,8 @@ pub fn walk_tree(
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
-        for mod_name in &external_mods {
-            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_name)? {
+        for mod_namespace in &external_mods {
+            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace)? {
                 file_queue.push_back(SourceFile::new(
                     workspace_dir,
                     mod_path,
@@ -101,7 +101,10 @@ pub fn walk_tree(
 ///
 /// Returns the mutants found, and the names of modules referenced by `mod` statements
 /// that should be visited later.
-fn walk_file(source_file: &SourceFile, error_exprs: &[Expr]) -> Result<(Vec<Mutant>, Vec<String>)> {
+fn walk_file(
+    source_file: &SourceFile,
+    error_exprs: &[Expr],
+) -> Result<(Vec<Mutant>, Vec<Vec<String>>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(source_file.code())
@@ -110,6 +113,7 @@ fn walk_file(source_file: &SourceFile, error_exprs: &[Expr]) -> Result<(Vec<Muta
         error_exprs,
         external_mods: Vec::new(),
         mutants: Vec::new(),
+        mod_namespace_stack: Vec::new(),
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
         source_file: source_file.clone(),
@@ -130,14 +134,31 @@ struct DiscoveryVisitor<'o> {
     /// The file being visited.
     source_file: SourceFile,
 
-    /// The stack of namespaces we're currently inside.
+    /// The stack of modules namespaces that we're currently inside, from
+    /// visiting `mod foo { ... }` statements.
+    ///
+    /// This is a subsequence of `namespace_stack`, containing only elements
+    /// that form a module path.
+    mod_namespace_stack: Vec<String>,
+
+    /// The stack of namespaces, loosely defined, that we're inside.
+    ///
+    /// Basically these are names or strings that can be concatenated with `::`
+    /// to form a name that meaningfully describes where we are; it might not
+    /// exactly be valid Rust.
+    ///
+    /// For example, this includes mods, fns, impls, etc.
     namespace_stack: Vec<String>,
 
     /// The functions we're inside.
+    ///
+    /// Empty at the top level, often has one element, but potentially more if
+    /// there are nested functions.
     fn_stack: Vec<Arc<Function>>,
 
-    /// The names from `mod foo;` statements that should be visited later.
-    external_mods: Vec<String>,
+    /// The names from `mod foo;` statements that should be visited later,
+    /// namespaced relative to the source file
+    external_mods: Vec<Vec<String>>,
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
@@ -151,9 +172,9 @@ impl<'o> DiscoveryVisitor<'o> {
         span: proc_macro2::Span,
     ) -> Arc<Function> {
         self.namespace_stack.push(function_name.to_string());
-        let function_name = self.namespace_stack.join("::");
+        let full_function_name = self.namespace_stack.join("::");
         let function = Arc::new(Function {
-            function_name: function_name.to_owned(),
+            function_name: full_function_name,
             return_type: return_type.to_pretty_string(),
             span: span.into(),
         });
@@ -340,19 +361,23 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
     /// Visit `mod foo { ... }` or `mod foo;`.
     fn visit_item_mod(&mut self, node: &'ast syn::ItemMod) {
-        let mod_name = &node.ident.unraw().to_string();
+        let mod_name = node.ident.unraw().to_string();
         let _span = trace_span!("mod", line = node.mod_token.span.start().line, mod_name).entered();
         if attrs_excluded(&node.attrs) {
             trace!("mod excluded by attrs");
             return;
         }
+        self.mod_namespace_stack.push(mod_name.clone());
         // If there's no content in braces, then this is a `mod foo;`
         // statement referring to an external file. We remember the module
         // name and then later look for the file.
         if node.content.is_none() {
-            self.external_mods.push(mod_name.to_owned());
+            // If we're already inside `mod a { ... }` and see `mod b;` then
+            // remember [a, b] as an external module to visit later.
+            self.external_mods.push(self.mod_namespace_stack.clone());
         }
-        self.in_namespace(mod_name, |v| syn::visit::visit_item_mod(v, node));
+        self.in_namespace(&mod_name, |v| syn::visit::visit_item_mod(v, node));
+        assert_eq!(self.mod_namespace_stack.pop(), Some(mod_name));
     }
 
     /// Visit `a op b` expressions.
@@ -427,7 +452,7 @@ fn function_body_span(block: &Block) -> Option<Span> {
 fn find_mod_source(
     tree_root: &Utf8Path,
     parent: &SourceFile,
-    mod_name: &str,
+    mod_namespace: &[String],
 ) -> Result<Option<Utf8PathBuf>> {
     // First, work out whether the mod will be a sibling in the same directory, or
     // in a child directory.
@@ -446,7 +471,7 @@ fn find_mod_source(
     // is above or inside the directory corresponding to its module?
 
     let parent_path = &parent.tree_relative_path;
-    let search_dir = if parent.is_top || parent_path.ends_with("mod.rs") {
+    let mut search_dir = if parent.is_top || parent_path.ends_with("mod.rs") {
         parent_path
             .parent()
             .expect("mod path has no parent")
@@ -454,6 +479,10 @@ fn find_mod_source(
     } else {
         parent_path.with_extension("") // foo.rs -> foo/
     };
+
+    let (mod_name, mod_path) = mod_namespace.split_last().expect("mod namespace is empty");
+    search_dir.extend(mod_path.iter());
+
     let mut tried_paths = Vec::new();
     for &tail in &[".rs", "/mod.rs"] {
         let relative_path = search_dir.join(mod_name.to_owned() + tail);
