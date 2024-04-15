@@ -640,10 +640,19 @@ fn interrupt_caught_and_kills_children() {
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
     // which doesn't give it a chance to clean up. And, `std::process::Command` only
     // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
+
+    // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
+    // and we want to check that the process does not panic.
+    let env = Some(
+        env::vars_os()
+            .filter(|(k, _)| k != "RUST_BACKTRACE")
+            .collect::<Vec<_>>(),
+    );
     let config = PopenConfig {
         stdout: Redirection::Pipe,
         stderr: Redirection::Pipe,
         cwd: Some(tmp_src_dir.path().as_os_str().to_owned()),
+        env,
         ..Default::default()
     };
     // Skip baseline because firstly it should already pass but more importantly
