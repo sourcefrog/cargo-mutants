@@ -711,6 +711,8 @@ fn interrupt_caught_and_kills_children() {
     assert!(stderr.contains("terminated child exit status"));
     // This shouldn't cause a panic though (#333)
     assert!(!stderr.contains("panic"));
+    // And we don't want duplicate messages about workers failing.
+    assert!(!stderr.contains("Worker thread failed"));
 }
 
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants
