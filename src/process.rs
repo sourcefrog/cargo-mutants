@@ -164,15 +164,20 @@ fn terminate_child_impl(child: &mut Popen) -> Result<()> {
     use nix::sys::signal::{killpg, Signal};
 
     let pid = nix::unistd::Pid::from_raw(child.pid().expect("child has a pid").try_into().unwrap());
-    if let Err(errno) = killpg(pid, Signal::SIGTERM) {
-        // It might have already exited, in which case we can proceed to wait for it.
-        if errno != Errno::ESRCH {
+    match killpg(pid, Signal::SIGTERM) {
+        Ok(()) => Ok(()),
+        Err(Errno::ESRCH) => {
+            Ok(()) // Probably already gone
+        }
+        Err(Errno::EPERM) if cfg!(target_os = "macos") => {
+            Ok(()) // If the process no longer exists then macos can return EPERM (maybe?)
+        }
+        Err(errno) => {
             let message = format!("failed to terminate child: {errno}");
             warn!("{}", message);
-            return Err(anyhow!(message));
+            Err(anyhow!(message))
         }
     }
-    Ok(())
 }
 
 // We do not yet have a way to mutate this only on Windows, and I mostly test on Unix, so it's just skipped for now.
