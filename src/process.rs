@@ -223,6 +223,7 @@ impl ProcessStatus {
 }
 
 #[cfg(unix)]
+#[mutants::skip] // It's hard to observe if this is broken: we'd expect children to leak.
 fn setpgid_on_unix() -> PopenConfig {
     PopenConfig {
         setpgid: true,
