@@ -129,8 +129,7 @@ pub fn test_mutants(
                             let _span =
                                 debug_span!("mutant", name = mutant.name(false, false)).entered();
                             let package = mutant.package().clone();
-                            // We don't need to keep the outcome here: it's been collected into the output_dir.
-                            let _outcome = test_scenario(
+                            test_scenario(
                                 &build_dir,
                                 &output_mutex,
                                 &Scenario::Mutant(mutant),
