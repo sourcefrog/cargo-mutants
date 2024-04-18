@@ -3368,6 +3368,186 @@ expression: buf
 ```json
 [
   {
+    "file": "src/paths_in_lib/thread_files/tls.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_lib/thread_files_inner_attr/tls.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/toplevel_file_in_lib.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_main/thread_files/tls.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_main/thread_files_inner_attr/tls.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/toplevel_file_in_main.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
     "file": "src/block_in_lib/a/b/c_file/d/e/f_file.rs",
     "function": {
       "function_name": "always_true",
@@ -3398,7 +3578,247 @@ expression: buf
     }
   },
   {
+    "file": "src/paths_in_lib/a/foo.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_lib/a/b/inline/other.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_lib/a_mod_file/foo.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_lib/a_mod_file/inline/other.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
     "file": "src/block_in_main/a/b/c_file/d/e/f_file.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_main/a/foo.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_main/a/b/inline/other.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_main/a_mod_file/foo.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_main/a_mod_file/inline/other.rs",
     "function": {
       "function_name": "always_true",
       "return_type": "-> bool",

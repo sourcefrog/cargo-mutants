@@ -104,7 +104,7 @@ pub fn walk_tree(
 fn walk_file(
     source_file: &SourceFile,
     error_exprs: &[Expr],
-) -> Result<(Vec<Mutant>, Vec<Vec<String>>)> {
+) -> Result<(Vec<Mutant>, Vec<Vec<ModNamespace>>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(source_file.code())
@@ -122,6 +122,33 @@ fn walk_file(
     Ok((visitor.mutants, visitor.external_mods))
 }
 
+/// Namespace for a module defined in a `mod foo { ... }` block or `mod foo;` statement
+///
+/// In the context of resolving modules, a module "path" (and to some extent "name") is ambiguous:
+/// paths may describe a sequence of identifiers in code (e.g. `crate::foo::bar`) or sequence of
+/// folder and file names on the filesystem (e.g. `src/foo/bar.rs`).
+///
+/// The field and method names in this struct distinguish between the uses of path elements.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ModNamespace {
+    /// Identifier of the module (e.g. `foo` for `mod foo;`)
+    name: String,
+    /// File location override for the module, if specified by `#[path="file"]`
+    ///
+    /// Note that `mod foo { ... }` blocks can also have a file location specified,
+    /// which affects the filesystem location of all child `mod bar;` statements.
+    path_attribute: Option<Utf8PathBuf>,
+}
+impl ModNamespace {
+    /// Returns the name of the module for filesystem purposes
+    fn get_filesystem_name(&self) -> &Utf8Path {
+        self.path_attribute
+            .as_ref()
+            .map(Utf8PathBuf::as_path)
+            .unwrap_or(Utf8Path::new(&self.name))
+    }
+}
+
 /// `syn` visitor that recursively traverses the syntax tree, accumulating places
 /// that could be mutated.
 ///
@@ -137,9 +164,9 @@ struct DiscoveryVisitor<'o> {
     /// The stack of modules namespaces that we're currently inside, from
     /// visiting `mod foo { ... }` statements.
     ///
-    /// This is a subsequence of `namespace_stack`, containing only elements
-    /// that form a module path.
-    mod_namespace_stack: Vec<String>,
+    /// This is a subsequence of `namespace_stack` (with `#[path="..."]` information),
+    /// containing only elements that form a module path.
+    mod_namespace_stack: Vec<ModNamespace>,
 
     /// The stack of namespaces, loosely defined, that we're inside.
     ///
@@ -158,7 +185,7 @@ struct DiscoveryVisitor<'o> {
 
     /// The names from `mod foo;` statements that should be visited later,
     /// namespaced relative to the source file
-    external_mods: Vec<Vec<String>>,
+    external_mods: Vec<Vec<ModNamespace>>,
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
@@ -367,7 +394,26 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             trace!("mod excluded by attrs");
             return;
         }
-        self.mod_namespace_stack.push(mod_name.clone());
+
+        // Extract path attribute value, if any (e.g. `#[path="..."]`)
+        let path_attribute = node.attrs.iter().find_map(|attr| match &attr.meta {
+            syn::Meta::NameValue(meta) if meta.path.is_ident("path") => {
+                let syn::Expr::Lit(value_expr_lit) = &meta.value else {
+                    return None;
+                };
+                let syn::Lit::Str(value_str) = &value_expr_lit.lit else {
+                    return None;
+                };
+                Some(Utf8PathBuf::from(value_str.value()))
+            }
+            _ => None,
+        });
+        let mod_namespace = ModNamespace {
+            name: mod_name,
+            path_attribute,
+        };
+        self.mod_namespace_stack.push(mod_namespace.clone());
+
         // If there's no content in braces, then this is a `mod foo;`
         // statement referring to an external file. We remember the module
         // name and then later look for the file.
@@ -376,8 +422,8 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             // remember [a, b] as an external module to visit later.
             self.external_mods.push(self.mod_namespace_stack.clone());
         }
-        self.in_namespace(&mod_name, |v| syn::visit::visit_item_mod(v, node));
-        assert_eq!(self.mod_namespace_stack.pop(), Some(mod_name));
+        self.in_namespace(&mod_namespace.name, |v| syn::visit::visit_item_mod(v, node));
+        assert_eq!(self.mod_namespace_stack.pop(), Some(mod_namespace));
     }
 
     /// Visit `a op b` expressions.
@@ -452,7 +498,7 @@ fn function_body_span(block: &Block) -> Option<Span> {
 fn find_mod_source(
     tree_root: &Utf8Path,
     parent: &SourceFile,
-    mod_namespace: &[String],
+    mod_namespace: &[ModNamespace],
 ) -> Result<Option<Utf8PathBuf>> {
     // First, work out whether the mod will be a sibling in the same directory, or
     // in a child directory.
@@ -463,15 +509,36 @@ fn find_mod_source(
     //
     // 3. The parent is "src/foo/mod.rs" and so `mod bar` means "src/foo/bar.rs".
     //
-    // Having determined the right directory then we can look for either
-    // `foo.rs` or `foo/mod.rs`.
+    // 4. A path attribute on a mod statement when there is no enclosing mod block
+    //     E.g. for parent file "src/a/parent_file.rs",
+    //     ```
+    //     // `path` is relative to the directory where the source file is located
+    //     #[path="foo_file.rs"] // resolves to: src/a/foo_file.rs
+    //     mod foo;
+    //
+    //     mod bar {
+    //         // `path` is relative to the directory of the enclosing module block
+    //         #[path="baz_file.rs"] // resolves to: src/a/parent_file/bar/baz_file.rs
+    //         mod baz;
+    //     }
+    //     ```
+    //
+    // Having determined the right directory then we can follow the path attribute, or
+    // if no path is specified, then look for either `foo.rs` or `foo/mod.rs`.
+
+    let (mod_child, mod_parents) = mod_namespace.split_last().expect("mod namespace is empty");
 
     // TODO: Beyond #115, we should probably remove all special handling of
     // `mod.rs` here by remembering how we found this file, and whether it
     // is above or inside the directory corresponding to its module?
 
     let parent_path = &parent.tree_relative_path;
-    let mut search_dir = if parent.is_top || parent_path.ends_with("mod.rs") {
+    let mut search_dir = if parent.is_top
+        || parent_path.ends_with("mod.rs")
+        // NOTE: Path attribute on a top-level `mod foo;` (no enclosing block)
+        //       ignores the parent module path
+        || (mod_child.path_attribute.is_some() && mod_parents.is_empty())
+    {
         parent_path
             .parent()
             .expect("mod path has no parent")
@@ -480,12 +547,19 @@ fn find_mod_source(
         parent_path.with_extension("") // foo.rs -> foo/
     };
 
-    let (mod_name, mod_path) = mod_namespace.split_last().expect("mod namespace is empty");
-    search_dir.extend(mod_path.iter());
+    search_dir.extend(mod_parents.iter().map(ModNamespace::get_filesystem_name));
+
+    let mod_child_candidates = if let Some(filesystem_name) = &mod_child.path_attribute {
+        vec![search_dir.join(filesystem_name)]
+    } else {
+        [".rs", "/mod.rs"]
+            .iter()
+            .map(|tail| search_dir.join(mod_child.name.clone() + tail))
+            .collect()
+    };
 
     let mut tried_paths = Vec::new();
-    for &tail in &[".rs", "/mod.rs"] {
-        let relative_path = search_dir.join(mod_name.to_owned() + tail);
+    for relative_path in mod_child_candidates {
         let full_path = tree_root.join(&relative_path);
         if full_path.is_file() {
             trace!("found submodule in {full_path}");
@@ -494,6 +568,7 @@ fn find_mod_source(
             tried_paths.push(full_path);
         }
     }
+    let mod_name = &mod_child.name;
     warn!(?parent_path, %mod_name, ?tried_paths, "referent of mod not found");
     Ok(None)
 }
