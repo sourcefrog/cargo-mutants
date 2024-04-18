@@ -17,7 +17,7 @@ use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Attribute, BinOp, Block, Expr, File, ItemFn, ReturnType, Signature};
-use tracing::{debug, debug_span, trace, trace_span, warn};
+use tracing::{debug, debug_span, error, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
@@ -117,9 +117,14 @@ fn walk_file(
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
         source_file: source_file.clone(),
+        failed: false,
     };
     visitor.visit_file(&syn_file);
-    Ok((visitor.mutants, visitor.external_mods))
+    if visitor.failed {
+        anyhow::bail!("failed to walk {:?}", source_file.tree_relative_path)
+    } else {
+        Ok((visitor.mutants, visitor.external_mods))
+    }
 }
 
 /// Namespace for a module defined in a `mod foo { ... }` block or `mod foo;` statement
@@ -189,6 +194,9 @@ struct DiscoveryVisitor<'o> {
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
+
+    /// Set to `true` when a fatal error occurred, preventing traversal of the entire tree
+    failed: bool,
 }
 
 impl<'o> DiscoveryVisitor<'o> {
@@ -398,16 +406,31 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // Extract path attribute value, if any (e.g. `#[path="..."]`)
         let path_attribute = node.attrs.iter().find_map(|attr| match &attr.meta {
             syn::Meta::NameValue(meta) if meta.path.is_ident("path") => {
-                let syn::Expr::Lit(value_expr_lit) = &meta.value else {
+                let syn::Expr::Lit(expr_lit) = &meta.value else {
                     return None;
                 };
-                let syn::Lit::Str(value_str) = &value_expr_lit.lit else {
+                let syn::Lit::Str(lit_str) = &expr_lit.lit else {
                     return None;
                 };
-                Some(Utf8PathBuf::from(value_str.value()))
+                let path = lit_str.value();
+
+                // refuse to follow paths containing ".." and "/"
+                if path.contains("..") || path.starts_with('/') {
+                    Some(Err(path))
+                } else {
+                    Some(Ok(Utf8PathBuf::from(path)))
+                }
             }
             _ => None,
         });
+        let path_attribute = match path_attribute.transpose() {
+            Ok(path) => path,
+            Err(path_attribute) => {
+                error!(?path_attribute, %mod_name, "invalid filesystem traversal in mod path attribute");
+                self.failed = true;
+                return;
+            }
+        };
         let mod_namespace = ModNamespace {
             name: mod_name,
             path_attribute,
