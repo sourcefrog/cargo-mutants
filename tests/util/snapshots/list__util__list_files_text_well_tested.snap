@@ -4,6 +4,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
 ---
 src/lib.rs
 src/arc.rs
+src/booleans.rs
 src/empty_fns.rs
 src/inside_mod.rs
 src/item_mod.rs
