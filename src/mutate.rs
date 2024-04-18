@@ -27,6 +27,7 @@ pub enum Genre {
     FnValue,
     /// Replace `==` with `!=` and so on.
     BinaryOperator,
+    UnaryOperator,
 }
 
 /// A mutation applied to source code.
