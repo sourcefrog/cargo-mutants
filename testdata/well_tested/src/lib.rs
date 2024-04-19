@@ -9,6 +9,7 @@
 #![allow(unused, dead_code)]
 
 mod arc;
+mod booleans;
 mod empty_fns;
 mod inside_mod;
 mod item_mod;

@@ -142,6 +142,7 @@ fn exclude_file_argument_overrides_config() {
         .args(["--exclude", "src/*_mod.rs"])
         .args(["--exclude", "src/s*.rs"])
         .args(["--exclude", "src/n*.rs"])
+        .args(["--exclude", "src/b*.rs"])
         .assert()
         .success()
         .stdout(predicates::str::diff(indoc! { "\
