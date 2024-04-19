@@ -28,9 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-mutants
