@@ -178,6 +178,10 @@ Various output files, including the text output from all the cargo commands are
 written into `mutants.out` within the directory specified by `--output`, or by
 default the source directory.
 
+## Cargo quirks
+
+To build the tests, we actually run `cargo test --no-test` (or similarly for Nextest) so that the build uses the same profile as the tests. This is because the tests are built with the `test` profile, which can have different settings from the `dev` profile.
+
 ## Handling strict lints
 
 Some trees are configured so that any unused variable is an error. This is a reasonable choice to keep the tree very clean in CI, but if unhandled it would be a problem for cargo mutants. Many mutants -- in fact at the time of writing all generated mutants -- ignore function parameters and return a static value. Rejecting them due to the lint failure is a missed opportunity to consider a similar but more subtle potential bug.
