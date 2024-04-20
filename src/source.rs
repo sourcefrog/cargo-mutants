@@ -11,6 +11,7 @@ use tracing::{debug, info, warn};
 
 use crate::package::Package;
 use crate::path::Utf8PathSlashes;
+use crate::span::LineColumn;
 
 /// A Rust source file within a source tree.
 ///
@@ -73,6 +74,13 @@ impl SourceFile {
 
     pub fn code(&self) -> &str {
         self.code.as_str()
+    }
+
+    /// Format a location within this source file for display to the user
+    pub fn format_source_location(&self, location: LineColumn) -> String {
+        let source_file = self.tree_relative_slashes();
+        let LineColumn { line, column } = location;
+        format!("{source_file}:{line}:{column}")
     }
 }
 

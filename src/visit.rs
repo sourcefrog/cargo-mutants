@@ -23,7 +23,7 @@ use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
-use crate::span::Span;
+use crate::span::{LineColumn, Span};
 use crate::*;
 
 /// Mutants and files discovered in a source tree.
@@ -143,6 +143,8 @@ struct ModNamespace {
     /// Note that `mod foo { ... }` blocks can also have a file location specified,
     /// which affects the filesystem location of all child `mod bar;` statements.
     path_attribute: Option<Utf8PathBuf>,
+    /// Location of the module definition in the source file
+    source_location: LineColumn,
 }
 impl ModNamespace {
     /// Returns the name of the module for filesystem purposes
@@ -415,6 +417,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         let mod_namespace = ModNamespace {
             name: mod_name,
             path_attribute,
+            source_location: node.mod_token.span().start().into(),
         };
         self.mod_namespace_stack.push(mod_namespace.clone());
 
@@ -573,7 +576,8 @@ fn find_mod_source(
         }
     }
     let mod_name = &mod_child.name;
-    warn!(?parent_path, %mod_name, ?tried_paths, "referent of mod not found");
+    let definition_site = parent.format_source_location(mod_child.source_location);
+    warn!(?definition_site, %mod_name, ?tried_paths, "referent of mod not found");
     Ok(None)
 }
 

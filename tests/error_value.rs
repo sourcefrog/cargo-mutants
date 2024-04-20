@@ -95,6 +95,21 @@ fn warn_if_error_value_starts_with_err() {
 }
 
 #[test]
+fn warn_unresolved_module() {
+    let tmp_src_dir = copy_of_testdata("dangling_mod");
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--no-config", "--list"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            r#"referent of mod not found definition_site="src/main.rs:5:1" mod_name=nonexistent"#,
+        ));
+}
+
+#[test]
 fn fail_when_error_value_does_not_parse() {
     let tmp_src_dir = copy_of_testdata("error_value");
     run()
