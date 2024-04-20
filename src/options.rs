@@ -46,6 +46,16 @@ pub struct Options {
     /// The time multiplier for test tasks, if set (relative to baseline test duration).
     pub test_timeout_multiplier: Option<f64>,
 
+    /// The time limit for build tasks, if set.
+    ///
+    /// If this is not set by the user it's None, in which case there is no time limit
+    /// on the baseline build, and then the mutated builds get a multiple of the time
+    /// taken by the baseline build.
+    pub build_timeout: Option<Duration>,
+
+    /// The time multiplier for build tasks, if set (relative to baseline build duration).
+    pub build_timeout_multiplier: Option<f64>,
+
     /// The minimum test timeout, as a floor on the autoset value.
     pub minimum_test_timeout: Duration,
 
@@ -212,6 +222,10 @@ impl Options {
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: config.timeout_multiplier.or(args.timeout_multiplier),
+            build_timeout: args.build_timeout.map(Duration::from_secs_f64),
+            build_timeout_multiplier: config
+                .build_timeout_multiplier
+                .or(args.build_timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         options.error_values.iter().for_each(|e| {
@@ -278,6 +292,29 @@ mod test {
         let args = Args::parse_from(["mutants"]);
         let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Run);
+    }
+
+    #[test]
+    fn options_from_timeout_args() {
+        let args = Args::parse_from(["mutants", "--timeout=2.0"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_timeout, Some(Duration::from_secs(2)));
+
+        let args = Args::parse_from(["mutants", "--timeout-multiplier=2.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_timeout_multiplier, Some(2.5));
+
+        let args = Args::parse_from(["mutants", "--minimum-test-timeout=60.0"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.minimum_test_timeout, Duration::from_secs(60));
+
+        let args = Args::parse_from(["mutants", "--build-timeout=3.0"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.build_timeout, Some(Duration::from_secs(3)));
+
+        let args = Args::parse_from(["mutants", "--build-timeout-multiplier=3.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.build_timeout_multiplier, Some(3.5));
     }
 
     #[test]

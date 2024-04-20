@@ -135,14 +135,15 @@ src/lib.rs:21:53: replace * with / in controlled_loop
 ## testdata/hang_when_mutated
 
 ```
-src/lib.rs:13:5: replace should_stop -> bool with true
-src/lib.rs:13:5: replace should_stop -> bool with false
-src/lib.rs:26:5: replace controlled_loop -> usize with 0
-src/lib.rs:26:5: replace controlled_loop -> usize with 1
-src/lib.rs:33:28: replace > with == in controlled_loop
-src/lib.rs:33:28: replace > with < in controlled_loop
-src/lib.rs:33:53: replace * with + in controlled_loop
-src/lib.rs:33:53: replace * with / in controlled_loop
+src/lib.rs:12:5: replace should_stop_const -> bool with false
+src/lib.rs:25:5: replace should_stop -> bool with true
+src/lib.rs:25:5: replace should_stop -> bool with false
+src/lib.rs:38:5: replace controlled_loop -> usize with 0
+src/lib.rs:38:5: replace controlled_loop -> usize with 1
+src/lib.rs:45:28: replace > with == in controlled_loop
+src/lib.rs:45:28: replace > with < in controlled_loop
+src/lib.rs:45:53: replace * with + in controlled_loop
+src/lib.rs:45:53: replace * with / in controlled_loop
 ```
 
 ## testdata/insta

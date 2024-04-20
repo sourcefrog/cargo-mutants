@@ -162,8 +162,11 @@ fn test_small_well_tested_tree_with_baseline_skip() {
         }))
         .stderr(
             predicate::str::contains(
-                "An explicit timeout is recommended when using --baseline=skip",
+                "An explicit test timeout is recommended when using --baseline=skip",
             )
+            .and(predicate::str::contains(
+                "An explicit build timeout is recommended when using --baseline=skip",
+            ))
             .and(predicate::str::contains("Unmutated baseline in").not()),
         );
     assert!(!tmp_src_dir
@@ -734,31 +737,30 @@ fn interrupt_caught_and_kills_children() {
 /// * `should_stop` could change to always return `false`, in which case
 ///   the loop will never stop, but the test should eventually be killed
 ///   by a timeout.
+///
+/// * `should_stop_const` could change to always return `false`, in which
+///   case the loop in the block for the const `VAL` will never stop, but
+///   the build should eventually be killed by a timeout.
 #[test]
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
     run()
         .arg("mutants")
-        .args([
-            "-t",
-            "8.1",
-            "-v",
-            "--line-col=false",
-            "--",
-            "--",
-            "--nocapture",
-        ])
+        .args(["-t", "8.1"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
         .assert()
-        .code(3) // exit_code::TIMEOUT
-        ;
+        .code(3); // exit_code::TIMEOUT
     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
         .expect("read timeout.txt");
     assert!(
         timeout_txt.contains("replace should_stop -> bool with false"),
+        "expected text not found in:\n{timeout_txt}"
+    );
+    assert!(
+        timeout_txt.contains("replace should_stop_const -> bool with false"),
         "expected text not found in:\n{timeout_txt}"
     );
     let caught_txt = read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt")).unwrap();
@@ -775,7 +777,40 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
             .expect("read outcomes.json")
             .parse()
             .expect("parse outcomes.json");
-    assert_eq!(outcomes_json["timeout"], 1);
+    assert_eq!(outcomes_json["timeout"], 2);
+
+    let phases_for_const_fn = outcomes_json["outcomes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|outcome| {
+            outcome["scenario"]["Mutant"]["function"]["function_name"] == "should_stop_const"
+        })
+        .flat_map(|outcome| outcome["phase_results"].as_array())
+        .next()
+        .expect("Failed to find phase_results for 'should_stop_const' fn");
+
+    assert_eq!(phases_for_const_fn.len(), 1);
+    assert_eq!(phases_for_const_fn[0]["phase"], "Build");
+}
+
+#[test]
+fn mutants_causing_check_to_timeout_are_stopped_by_manual_timeout() {
+    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    run()
+        .arg("mutants")
+        .args(["--check", "--build-timeout=4"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .code(3); // exit_code::TIMEOUT
+    let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
+        .expect("read timeout.txt");
+    assert!(
+        timeout_txt.contains("replace should_stop_const -> bool with false"),
+        "expected text not found in:\n{timeout_txt}"
+    );
 }
 
 #[test]

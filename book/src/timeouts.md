@@ -16,21 +16,35 @@ file](filter_mutants.md).
 
 ## Timeouts
 
-To avoid hangs, cargo-mutants will kill the test suite after a timeout and
+To avoid hangs, cargo-mutants will kill the build or test after a timeout and
 continue to the next mutant.
 
-By default, the timeout is set automatically. cargo-mutants measures the time to
-run the test suite in the unmodified tree, and then sets a timeout for mutated
-tests at 5x the time to run tests with no mutations, and a minimum of 20
-seconds.
+By default, the timeouts are set automatically, relative to the times taken to
+build and test the unmodified tree (baseline).
 
-The minimum of 20 seconds can be overridden by the
-`CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` environment variable, measured in seconds.
+The default timeouts are:
+- `cargo build`/`cargo check`: 2 times the baseline build time
+- `cargo test`: 5 times baseline test time (with a minimum of 20 seconds)
 
-You can also set an explicit timeout with the `--timeout` option, also measured
-in seconds. If this option is specified then the timeout is also applied to the
-unmutated tests.
+The minimum of 20 seconds for the test timeout can be overridden by the
+`--minimum-test-timeout` option or the `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` 
+environment variable, measured in seconds.
 
-You can set a timeout multiplier that is relative to the duration of the unmutated tests with `--timeout-multiplier` or setting `timeout_multiplier` in `.cargo/mutants.toml` (`timeout-multiplier = 1.5`). This option is only applied if the baseline is not skipped and no `--timeout` option is specified, otherwise it is ignored.
+You can set explicit timeouts with the `--build-timeout`, and `--timeout`
+options, also measured in seconds. If these options are specified then they 
+are applied to the baseline build and test as well.
 
-The timeout does not apply to `cargo check` or `cargo build`, only `cargo test`.
+You can set timeout multipliers that are relative to the duration of the
+baseline build or test with `--build-timeout-multiplier` and
+`--timeout-multiplier`, respectively.  Additionally, these can be configured
+with `build_timeout_multiplier` and `timeout_multiplier` in
+`.cargo/mutants.toml` (e.g. `timeout-multiplier = 1.5`).  These options are only
+applied if the baseline is not skipped and no corresponding
+`--build-timeout`/`--timeout` option is specified, otherwise they are ignored.
+
+## Exceptions
+
+The multiplier timeout options cannot be used when the baseline is skipped
+(`--baseline=skip`), or when the build is in-place (`--in-place`). If no 
+explicit timeouts is provided in these cases, then a default of 300 seconds
+will be used.

@@ -47,6 +47,8 @@ pub struct Config {
     pub test_tool: Option<TestTool>,
     /// Timeout multiplier, relative to the baseline 'cargo test'.
     pub timeout_multiplier: Option<f64>,
+    /// Build timeout multiplier, relative to the baseline 'cargo build'.
+    pub build_timeout_multiplier: Option<f64>,
 }
 
 impl Config {
