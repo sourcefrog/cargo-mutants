@@ -116,6 +116,7 @@ exclude = [
     "testdata/cfg_attr_test_skip",
     "testdata/cfg_test_inner",
     "testdata/custom_top_file",
+    "testdata/dangling_mod",
     "testdata/dependency",
     "testdata/diff0",
     "testdata/diff1",

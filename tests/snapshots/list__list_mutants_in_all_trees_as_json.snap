@@ -716,6 +716,43 @@ expression: buf
 ]
 ```
 
+## testdata/dangling_mod
+
+```json
+[
+  {
+    "file": "src/main.rs",
+    "function": {
+      "function_name": "verify_continue::always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 10
+        },
+        "start": {
+          "column": 5,
+          "line": 8
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-dangling-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 9
+      },
+      "start": {
+        "column": 9,
+        "line": 9
+      }
+    }
+  }
+]
+```
+
 ## testdata/dependency
 
 ```json
