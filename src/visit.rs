@@ -404,26 +404,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
 
         // Extract path attribute value, if any (e.g. `#[path="..."]`)
-        let path_attribute = node.attrs.iter().find_map(|attr| match &attr.meta {
-            syn::Meta::NameValue(meta) if meta.path.is_ident("path") => {
-                let syn::Expr::Lit(expr_lit) = &meta.value else {
-                    return None;
-                };
-                let syn::Lit::Str(lit_str) = &expr_lit.lit else {
-                    return None;
-                };
-                let path = lit_str.value();
-
-                // refuse to follow paths containing ".." and "/"
-                if path.contains("..") || path.starts_with('/') {
-                    Some(Err(path))
-                } else {
-                    Some(Ok(Utf8PathBuf::from(path)))
-                }
-            }
-            _ => None,
-        });
-        let path_attribute = match path_attribute.transpose() {
+        let path_attribute = match find_path_attribute(&node.attrs) {
             Ok(path) => path,
             Err(path_attribute) => {
                 error!(?path_attribute, %mod_name, "invalid filesystem traversal in mod path attribute");
@@ -679,6 +660,36 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     skip
 }
 
+/// Finds the first path attribute (`#[path = "..."]`)
+///
+/// # Errors
+/// Returns an error if the value of the path attribute contains dubious path elements
+/// (containing `..` or a leading `/`)
+fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8PathBuf>, String> {
+    attrs
+        .iter()
+        .find_map(|attr| match &attr.meta {
+            syn::Meta::NameValue(meta) if meta.path.is_ident("path") => {
+                let syn::Expr::Lit(expr_lit) = &meta.value else {
+                    return None;
+                };
+                let syn::Lit::Str(lit_str) = &expr_lit.lit else {
+                    return None;
+                };
+                let path = lit_str.value();
+
+                // refuse to follow paths containing ".." and "/"
+                if path.contains("..") || path.starts_with('/') {
+                    Some(Err(path))
+                } else {
+                    Some(Ok(Utf8PathBuf::from(path)))
+                }
+            }
+            _ => None,
+        })
+        .transpose()
+}
+
 #[cfg(test)]
 mod test {
     use indoc::indoc;
@@ -723,5 +734,75 @@ mod test {
             .discover(&PackageFilter::All, &options, &console)
             .unwrap();
         assert_eq!(discovered.mutants.as_slice(), &[]);
+    }
+
+    /// Helper function for `find_path_attribute` tests
+    fn run_find_path_attribute(
+        token_stream: TokenStream,
+    ) -> std::result::Result<Option<Utf8PathBuf>, String> {
+        let token_string = token_stream.to_string();
+        let item_mod = syn::parse_str::<syn::ItemMod>(&token_string).unwrap_or_else(|err| {
+            panic!("Failed to parse test case token stream: {token_string}\n{err}")
+        });
+        find_path_attribute(&item_mod.attrs)
+    }
+
+    #[test]
+    fn find_path_attribute_on_module_item() {
+        let outer = run_find_path_attribute(quote! {
+            #[path = "foo_file.rs"]
+            mod foo;
+        });
+        assert_eq!(outer, Ok(Some(Utf8PathBuf::from("foo_file.rs"))));
+
+        let inner = run_find_path_attribute(quote! {
+            mod foo {
+                #![path = "foo_folder"]
+
+                #[path = "file_for_bar.rs"]
+                mod bar;
+            }
+        });
+        assert_eq!(inner, Ok(Some(Utf8PathBuf::from("foo_folder"))));
+    }
+
+    #[test]
+    fn reject_invalid_path_attribute_on_module_item() {
+        let dots = run_find_path_attribute(quote! {
+            #[path = "contains_.._dots.rs"]
+            mod dots;
+        });
+        assert_eq!(dots, Err("contains_.._dots.rs".to_owned()));
+
+        let dots_inner = run_find_path_attribute(quote! {
+            mod dots_in_path {
+                #![path = "contains/../dots"]
+            }
+        });
+        assert_eq!(dots_inner, Err("contains/../dots".to_owned()));
+
+        let leading_slash = run_find_path_attribute(quote! {
+            #[path = "/leading_slash.rs"]
+            mod dots;
+        });
+        assert_eq!(leading_slash, Err("/leading_slash.rs".to_owned()));
+
+        let allow_other_slashes = run_find_path_attribute(quote! {
+            #[path = "foo/other/slashes/are/allowed.rs"]
+            mod dots;
+        });
+        assert_eq!(
+            allow_other_slashes,
+            Ok(Some(Utf8PathBuf::from("foo/other/slashes/are/allowed.rs")))
+        );
+
+        let leading_slash_and_dots = run_find_path_attribute(quote! {
+            #[path = "/leading_slash/../and_dots.rs"]
+            mod dots;
+        });
+        assert_eq!(
+            leading_slash_and_dots,
+            Err("/leading_slash/../and_dots.rs".to_owned())
+        );
     }
 }
