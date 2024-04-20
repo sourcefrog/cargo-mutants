@@ -70,17 +70,35 @@ fn cargo_argv(
     options: &Options,
 ) -> Vec<String> {
     let mut cargo_args = vec![cargo_bin()];
-    if phase == Phase::Test {
-        match &options.test_tool {
+    match phase {
+        Phase::Test => match &options.test_tool {
             TestTool::Cargo => cargo_args.push("test".to_string()),
             TestTool::Nextest => {
                 cargo_args.push("nextest".to_string());
                 cargo_args.push("run".to_string());
             }
+        },
+        Phase::Build => {
+            match &options.test_tool {
+                TestTool::Cargo => {
+                    // These invocations default to the test profile, and might
+                    // have other differences? Generally we want to do everything
+                    // to make the tests build, but not actually run them.
+                    // See <https://github.com/sourcefrog/cargo-mutants/issues/237>.
+                    cargo_args.push("test".to_string());
+                    cargo_args.push("--no-run".to_string());
+                }
+                TestTool::Nextest => {
+                    cargo_args.push("nextest".to_string());
+                    cargo_args.push("run".to_string());
+                    cargo_args.push("--no-run".to_string());
+                }
+            }
         }
-    } else {
-        cargo_args.push(phase.name().to_string());
-        cargo_args.push("--tests".to_string());
+        Phase::Check => {
+            cargo_args.push("check".to_string());
+            cargo_args.push("--tests".to_string());
+        }
     }
     if let Some([package]) = packages {
         // Use the unambiguous form for this case; it works better when the same
@@ -168,7 +186,7 @@ mod test {
         );
         assert_eq!(
             cargo_argv(build_dir, None, Phase::Build, &options)[1..],
-            ["build", "--tests", "--workspace"]
+            ["test", "--no-run", "--workspace"]
         );
         assert_eq!(
             cargo_argv(build_dir, None, Phase::Test, &options)[1..],
@@ -202,8 +220,8 @@ mod test {
         assert_eq!(
             cargo_argv(build_dir, Some(&[&package]), Phase::Build, &options)[1..],
             [
-                "build",
-                "--tests",
+                "test",
+                "--no-run",
                 "--manifest-path",
                 build_manifest_path.as_str(),
             ]
@@ -236,7 +254,7 @@ mod test {
         );
         assert_eq!(
             cargo_argv(build_dir, None, Phase::Build, &options)[1..],
-            ["build", "--tests", "--workspace", "--release"]
+            ["test", "--no-run", "--workspace", "--release"]
         );
         assert_eq!(
             cargo_argv(build_dir, None, Phase::Test, &options)[1..],

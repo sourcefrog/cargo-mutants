@@ -406,7 +406,7 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
     println!("{log_content}");
-    regex::Regex::new(r"cargo.* build --tests --manifest-path .* --release")
+    regex::Regex::new(r"cargo.* test --no-run --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
@@ -570,7 +570,7 @@ fn source_tree_typecheck_fails() {
                 .name("The problem source line"),
         )
         .stdout(contains("*** baseline"))
-        .stdout(contains("build --tests")) // Caught at the check phase
+        .stdout(contains("test --no-run"))
         .stdout(contains("lib.rs:6"))
         .stdout(contains("*** result: "))
         .stderr(contains(

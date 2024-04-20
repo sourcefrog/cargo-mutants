@@ -2,13 +2,15 @@
 
 ## Unreleased
 
+- Changes: Baselines and mutants are now built with `cargo test --no-run` rather than `cargo build --tests` as previously. This avoids wasted build effort if the `dev` and `test` Cargo profiles are not the same, and may better distinguish build failures from test failures. With `--test-tool=nextest`, the corresponding `cargo nextest run --no-run` is used.
+
 - Fixed: `.ignore` files can no longer affect source tree copying, so test files listed in a `.ignore` (e.g. `*.snap` for Insta snapshots) are now correctly copied into temporary build directories.
 
 - Fixed: Don't visit files marked with `#![cfg(test)]` (or other inner attributes that generally cause code to be skipped.)
 
 - Fixed: Paths to module files nested within `mod` blocks are now correctly resolved.
 
-- Document stability policy in the manual.
+- Added: Document stability policy in the manual.
 
 - New: Generate mutations that delete the `!` and `-` unary operators.
 
