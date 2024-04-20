@@ -10,6 +10,8 @@
 
 - Document stability policy in the manual.
 
+- New: Generate mutations that delete the `!` and `-` unary operators.
+
 ## 24.3.0
 
 - Fixed: `cargo install cargo-mutants` without `--locked` was failing due to breaking API changes in some unstable dependencies.

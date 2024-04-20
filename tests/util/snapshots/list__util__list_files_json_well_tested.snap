@@ -13,6 +13,10 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   },
   {
     "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/booleans.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
     "path": "src/empty_fns.rs"
   },
   {
