@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! A `mutants.out` directory holding logs and other output.
 
@@ -229,12 +229,12 @@ mod test {
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
-    use tempfile::TempDir;
+    use tempfile::{tempdir, TempDir};
 
     use super::*;
 
     fn minimal_source_tree() -> TempDir {
-        let tmp = tempfile::tempdir().unwrap();
+        let tmp = tempdir().unwrap();
         let path = tmp.path();
         fs::write(
             path.join("Cargo.toml"),
