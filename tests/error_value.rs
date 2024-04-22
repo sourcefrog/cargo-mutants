@@ -105,7 +105,50 @@ fn warn_unresolved_module() {
         .assert()
         .code(0)
         .stderr(predicate::str::contains(
-            r#"referent of mod not found definition_site="src/main.rs:5:1" mod_name=nonexistent"#,
+            r#"referent of mod not found definition_site="src/main.rs:3:1" mod_name=nonexistent"#,
+        ));
+}
+#[test]
+fn warn_module_outside_of_tree() {
+    // manually copy tree, so that external path still resolves correctly for `cargo`
+    //
+    // [TEMP]/dangling_mod/*
+    // [TEMP]/nested_mod/src/paths_in_main/a/foo.rs
+    //
+    let tree_name = "dangling_mod";
+    let tmp_src_dir_parent = tempfile::tempdir().unwrap();
+    let tmp_src_dir = tmp_src_dir_parent.path().join("dangling_mod");
+    cp_r::CopyOptions::new()
+        .filter(|path, _stat| {
+            Ok(["target", "mutants.out", "mutants.out.old"]
+                .iter()
+                .all(|p| !path.starts_with(p)))
+        })
+        .copy_tree(
+            std::path::Path::new("testdata").join(tree_name),
+            &tmp_src_dir,
+        )
+        .unwrap();
+
+    let external_file_path = tmp_src_dir_parent
+        .path()
+        .join("nested_mod/src/paths_in_main/a");
+    std::fs::create_dir_all(&external_file_path).unwrap();
+    std::fs::copy(
+        std::path::Path::new("testdata/nested_mod/src/paths_in_main/a/foo.rs"),
+        external_file_path.join("foo.rs"),
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--no-config", "--list"])
+        .arg("-d")
+        .arg(tmp_src_dir)
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            r#"skipping source outside of tree: "src/../../nested_mod/src/paths_in_main/a/foo.rs""#,
         ));
 }
 

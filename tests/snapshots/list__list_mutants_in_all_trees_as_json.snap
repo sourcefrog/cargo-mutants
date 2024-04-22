@@ -728,11 +728,11 @@ expression: buf
       "span": {
         "end": {
           "column": 6,
-          "line": 10
+          "line": 14
         },
         "start": {
           "column": 5,
-          "line": 8
+          "line": 12
         }
       }
     },
@@ -742,11 +742,11 @@ expression: buf
     "span": {
       "end": {
         "column": 13,
-        "line": 9
+        "line": 13
       },
       "start": {
         "column": 9,
-        "line": 9
+        "line": 13
       }
     }
   }
@@ -3706,6 +3706,36 @@ expression: buf
   },
   {
     "file": "src/paths_in_lib/a_mod_file/inline/other.rs",
+    "function": {
+      "function_name": "always_true",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-nested-mod",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/paths_in_lib/../upward_traversal_file_for_lib.rs",
     "function": {
       "function_name": "always_true",
       "return_type": "-> bool",

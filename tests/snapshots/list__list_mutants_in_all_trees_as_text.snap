@@ -67,7 +67,7 @@ src/custom_top.rs:2:7: replace % with + in is_even
 ## testdata/dangling_mod
 
 ```
-src/main.rs:9:9: replace verify_continue::always_true -> bool with false
+src/main.rs:13:9: replace verify_continue::always_true -> bool with false
 ```
 
 ## testdata/dependency
@@ -239,6 +239,7 @@ src/paths_in_lib/a/foo.rs:2:5: replace always_true -> bool with false
 src/paths_in_lib/a/b/inline/other.rs:2:5: replace always_true -> bool with false
 src/paths_in_lib/a_mod_file/foo.rs:2:5: replace always_true -> bool with false
 src/paths_in_lib/a_mod_file/inline/other.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/../upward_traversal_file_for_lib.rs:2:5: replace always_true -> bool with false
 src/block_in_main/a/b/c_file/d/e/f_file.rs:2:5: replace always_true -> bool with false
 src/paths_in_main/a/foo.rs:2:5: replace always_true -> bool with false
 src/paths_in_main/a/b/inline/other.rs:2:5: replace always_true -> bool with false

@@ -7,7 +7,7 @@ use camino::Utf8Path;
 /// Measures how far above its starting point a path ascends.
 ///
 /// If in following this path you would ever ascend above the starting point,
-/// this returns a whole number indicating the number of steps above the
+/// this returns a positive number indicating the number of steps above the
 /// starting point.
 ///
 /// This only considers the textual content of the path, and does not look at

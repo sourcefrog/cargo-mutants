@@ -10,7 +10,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use tracing::{debug, info, warn};
 
 use crate::package::Package;
-use crate::path::Utf8PathSlashes;
+use crate::path::{ascent, Utf8PathSlashes};
 use crate::span::LineColumn;
 
 /// A Rust source file within a source tree.
@@ -48,19 +48,23 @@ impl SourceFile {
         tree_relative_path: Utf8PathBuf,
         package: &Arc<Package>,
         is_top: bool,
-    ) -> Result<SourceFile> {
+    ) -> Result<Option<SourceFile>> {
+        if ascent(&tree_relative_path) > 0 {
+            warn!("skipping source outside of tree: {tree_relative_path:?}");
+            return Ok(None);
+        }
         let full_path = tree_path.join(&tree_relative_path);
         let code = Arc::new(
             std::fs::read_to_string(&full_path)
                 .with_context(|| format!("failed to read source of {full_path:?}"))?
                 .replace("\r\n", "\n"),
         );
-        Ok(SourceFile {
+        Ok(Some(SourceFile {
             tree_relative_path,
             code,
             package: Arc::clone(package),
             is_top,
-        })
+        }))
     }
 
     /// Return the path of this file relative to the tree root, with forward slashes.
@@ -112,7 +116,23 @@ mod test {
             }),
             true,
         )
+        .unwrap()
         .unwrap();
         assert_eq!(source_file.code(), "fn main() {\n    640 << 10;\n}\n");
+    }
+
+    #[test]
+    fn skips_files_outside_of_workspace() {
+        let source_file = SourceFile::new(
+            &Utf8PathBuf::from("unimportant"),
+            "../outside_workspace.rs".parse().unwrap(),
+            &Arc::new(Package {
+                name: "imaginary-package".to_owned(),
+                relative_manifest_path: "whatever/Cargo.toml".into(),
+            }),
+            true,
+        )
+        .unwrap();
+        assert_eq!(source_file, None);
     }
 }

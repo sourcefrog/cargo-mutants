@@ -23,7 +23,7 @@ use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
-use crate::span::{LineColumn, Span};
+use crate::span::Span;
 use crate::*;
 
 /// Mutants and files discovered in a source tree.
@@ -64,7 +64,7 @@ pub fn walk_tree(
         // `--list-files`.
         for mod_namespace in &external_mods {
             if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace)? {
-                file_queue.push_back(SourceFile::new(
+                file_queue.extend(SourceFile::new(
                     workspace_dir,
                     mod_path,
                     &source_file.package,
@@ -117,14 +117,9 @@ fn walk_file(
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
         source_file: source_file.clone(),
-        failed: false,
     };
     visitor.visit_file(&syn_file);
-    if visitor.failed {
-        anyhow::bail!("failed to walk {:?}", source_file.tree_relative_path)
-    } else {
-        Ok((visitor.mutants, visitor.external_mods))
-    }
+    Ok((visitor.mutants, visitor.external_mods))
 }
 
 /// Namespace for a module defined in a `mod foo { ... }` block or `mod foo;` statement
@@ -144,7 +139,7 @@ struct ModNamespace {
     /// which affects the filesystem location of all child `mod bar;` statements.
     path_attribute: Option<Utf8PathBuf>,
     /// Location of the module definition in the source file
-    source_location: LineColumn,
+    source_location: Span,
 }
 impl ModNamespace {
     /// Returns the name of the module for filesystem purposes
@@ -196,9 +191,6 @@ struct DiscoveryVisitor<'o> {
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
-
-    /// Set to `true` when a fatal error occurred, preventing traversal of the entire tree
-    failed: bool,
 }
 
 impl<'o> DiscoveryVisitor<'o> {
@@ -405,19 +397,23 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
 
+        let source_location = Span::from(node.span());
+
         // Extract path attribute value, if any (e.g. `#[path="..."]`)
         let path_attribute = match find_path_attribute(&node.attrs) {
             Ok(path) => path,
             Err(path_attribute) => {
-                error!(?path_attribute, %mod_name, "invalid filesystem traversal in mod path attribute");
-                self.failed = true;
+                let definition_site = self
+                    .source_file
+                    .format_source_location(source_location.start);
+                error!(?path_attribute, ?definition_site, %mod_name, "invalid filesystem traversal in mod path attribute");
                 return;
             }
         };
         let mod_namespace = ModNamespace {
             name: mod_name,
             path_attribute,
-            source_location: node.mod_token.span().start().into(),
+            source_location,
         };
         self.mod_namespace_stack.push(mod_namespace.clone());
 
@@ -599,7 +595,7 @@ fn find_mod_source(
         }
     }
     let mod_name = &mod_child.name;
-    let definition_site = parent.format_source_location(mod_child.source_location);
+    let definition_site = parent.format_source_location(mod_child.source_location.start);
     warn!(?definition_site, %mod_name, ?tried_paths, "referent of mod not found");
     Ok(None)
 }
@@ -690,8 +686,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 /// Finds the first path attribute (`#[path = "..."]`)
 ///
 /// # Errors
-/// Returns an error if the value of the path attribute contains dubious path elements
-/// (containing `..` or a leading `/`)
+/// Returns an error if the path attribute contains a dubious path (leading `/`)
 fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8PathBuf>, String> {
     attrs
         .iter()
@@ -705,8 +700,8 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
                 };
                 let path = lit_str.value();
 
-                // refuse to follow paths containing ".." and "/"
-                if path.contains("..") || path.starts_with('/') {
+                // refuse to follow absolute paths
+                if path.starts_with('/') {
                     Some(Err(path))
                 } else {
                     Some(Ok(Utf8PathBuf::from(path)))
@@ -794,19 +789,20 @@ mod test {
     }
 
     #[test]
-    fn reject_invalid_path_attribute_on_module_item() {
+    fn reject_module_path_absolute() {
+        // dots are valid
         let dots = run_find_path_attribute(quote! {
-            #[path = "contains_.._dots.rs"]
+            #[path = "contains/../dots.rs"]
             mod dots;
         });
-        assert_eq!(dots, Err("contains_.._dots.rs".to_owned()));
+        assert_eq!(dots, Ok(Some(Utf8PathBuf::from("contains/../dots.rs"))));
 
         let dots_inner = run_find_path_attribute(quote! {
             mod dots_in_path {
                 #![path = "contains/../dots"]
             }
         });
-        assert_eq!(dots_inner, Err("contains/../dots".to_owned()));
+        assert_eq!(dots_inner, Ok(Some(Utf8PathBuf::from("contains/../dots"))));
 
         let leading_slash = run_find_path_attribute(quote! {
             #[path = "/leading_slash.rs"]
@@ -823,12 +819,12 @@ mod test {
             Ok(Some(Utf8PathBuf::from("foo/other/slashes/are/allowed.rs")))
         );
 
-        let leading_slash_and_dots = run_find_path_attribute(quote! {
+        let leading_slash2 = run_find_path_attribute(quote! {
             #[path = "/leading_slash/../and_dots.rs"]
             mod dots;
         });
         assert_eq!(
-            leading_slash_and_dots,
+            leading_slash2,
             Err("/leading_slash/../and_dots.rs".to_owned())
         );
     }
