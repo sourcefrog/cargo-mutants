@@ -30,6 +30,8 @@ pub mod paths_in_lib {
         #[path = "tls.rs"]
         pub mod local_data;
     }
+
+    pub mod upward_traversal;
 }
 
 #[path = "toplevel_file_in_lib.rs"]
@@ -50,6 +52,8 @@ mod tests {
 
         assert!(crate::paths_in_lib::thread::local_data::always_true());
         assert!(crate::paths_in_lib::thread_inner_attr::local_data::always_true());
+
+        assert!(crate::paths_in_lib::upward_traversal::target::always_true());
 
         assert!(crate::toplevel_in_lib::always_true());
     }
