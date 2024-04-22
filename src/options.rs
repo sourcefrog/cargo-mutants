@@ -221,11 +221,11 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
-            test_timeout_multiplier: config.timeout_multiplier.or(args.timeout_multiplier),
+            test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
             build_timeout: args.build_timeout.map(Duration::from_secs_f64),
-            build_timeout_multiplier: config
+            build_timeout_multiplier: args
                 .build_timeout_multiplier
-                .or(args.build_timeout_multiplier),
+                .or(config.build_timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         options.error_values.iter().for_each(|e| {
@@ -315,6 +315,26 @@ mod test {
         let args = Args::parse_from(["mutants", "--build-timeout-multiplier=3.5"]);
         let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(options.build_timeout_multiplier, Some(3.5));
+    }
+
+    #[test]
+    fn cli_timeout_multiplier_overrides_config() {
+        let config = indoc! { r#"
+            timeout_multiplier = 1.0
+            build_timeout_multiplier = 2.0
+        "#};
+        let mut config_file = NamedTempFile::new().unwrap();
+        config_file.write_all(config.as_bytes()).unwrap();
+        let args = Args::parse_from([
+            "mutants",
+            "--timeout-multiplier=2.0",
+            "--build-timeout-multiplier=1.0",
+        ]);
+        let config = Config::read_file(config_file.path()).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, Some(2.0));
+        assert_eq!(options.build_timeout_multiplier, Some(1.0));
     }
 
     #[test]
