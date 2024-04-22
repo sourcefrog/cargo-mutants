@@ -338,6 +338,26 @@ mod test {
     }
 
     #[test]
+    fn conflicting_timeout_options() {
+        let args = Args::try_parse_from(["mutants", "--timeout=1", "--timeout-multiplier=1"])
+            .expect_err("--timeout and --timeout-multiplier should conflict");
+        let rendered = format!("{}", args.render());
+        assert!(rendered.contains("error: the argument '--timeout <TIMEOUT>' cannot be used with '--timeout-multiplier <TIMEOUT_MULTIPLIER>'"));
+    }
+
+    #[test]
+    fn conflicting_build_timeout_options() {
+        let args = Args::try_parse_from([
+            "mutants",
+            "--build-timeout=1",
+            "--build-timeout-multiplier=1",
+        ])
+        .expect_err("--build-timeout and --build-timeout-multiplier should conflict");
+        let rendered = format!("{}", args.render());
+        assert!(rendered.contains("error: the argument '--build-timeout <BUILD_TIMEOUT>' cannot be used with '--build-timeout-multiplier <BUILD_TIMEOUT_MULTIPLIER>'"));
+    }
+
+    #[test]
     fn test_tool_from_config() {
         let config = indoc! { r#"
             test_tool = "nextest"

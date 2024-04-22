@@ -289,7 +289,7 @@ pub struct Args {
     timeout: Option<f64>,
 
     /// Test timeout multiplier (relative to base test time).
-    #[arg(long, help_heading = "Execution")]
+    #[arg(long, help_heading = "Execution", conflicts_with = "timeout")]
     timeout_multiplier: Option<f64>,
 
     /// Maximum run time for cargo build command, in seconds.
@@ -297,7 +297,7 @@ pub struct Args {
     build_timeout: Option<f64>,
 
     /// Build timeout multiplier (relative to base build time).
-    #[arg(long, help_heading = "Execution")]
+    #[arg(long, help_heading = "Execution", conflicts_with = "build_timeout")]
     build_timeout_multiplier: Option<f64>,
 
     /// Print mutations that failed to check or build.
