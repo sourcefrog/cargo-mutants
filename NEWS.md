@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 24.4.0
+
 - Changes: Baselines and mutants are now built with `cargo test --no-run` rather than `cargo build --tests` as previously. This avoids wasted build effort if the `dev` and `test` Cargo profiles are not the same, and may better distinguish build failures from test failures. With `--test-tool=nextest`, the corresponding `cargo nextest run --no-run` is used.
 
 - Fixed: `.ignore` files can no longer affect source tree copying, so test files listed in a `.ignore` (e.g. `*.snap` for Insta snapshots) are now correctly copied into temporary build directories.
