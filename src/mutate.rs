@@ -27,6 +27,7 @@ pub enum Genre {
     FnValue,
     /// Replace `==` with `!=` and so on.
     BinaryOperator,
+    UnaryOperator,
 }
 
 /// A mutation applied to source code.
@@ -119,8 +120,8 @@ impl Mutant {
             style(s.to_string())
         }
         let mut v: Vec<StyledObject<String>> = Vec::new();
-        v.push(s("replace "));
         if self.genre == Genre::FnValue {
+            v.push(s("replace "));
             let function = self
                 .function
                 .as_ref()
@@ -133,9 +134,16 @@ impl Mutant {
             v.push(s(" with "));
             v.push(s(self.replacement_text()).yellow());
         } else {
+            if self.replacement.is_empty() {
+                v.push(s("delete "));
+            } else {
+                v.push(s("replace "));
+            }
             v.push(s(self.original_text()).yellow());
-            v.push(s(" with "));
-            v.push(s(&self.replacement).bright().yellow());
+            if !self.replacement.is_empty() {
+                v.push(s(" with "));
+                v.push(s(&self.replacement).bright().yellow());
+            }
             if let Some(function) = &self.function {
                 v.push(s(" in "));
                 v.push(s(&function.function_name).bright().magenta());

@@ -2,10 +2,23 @@
 source: tests/main.rs
 expression: stdout
 ---
-Found 66 mutants to test
+Found 94 mutants to test
 ok       Unmutated baseline
 caught   src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(String::new())
 caught   src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into())
+caught   src/booleans.rs:2:5: replace and -> bool with true
+caught   src/booleans.rs:2:5: replace and -> bool with false
+caught   src/booleans.rs:2:7: replace && with || in and
+caught   src/booleans.rs:6:5: replace or -> bool with true
+caught   src/booleans.rs:6:5: replace or -> bool with false
+caught   src/booleans.rs:6:7: replace || with && in or
+caught   src/booleans.rs:10:5: replace xor -> bool with true
+caught   src/booleans.rs:10:5: replace xor -> bool with false
+caught   src/booleans.rs:10:7: replace ^ with | in xor
+caught   src/booleans.rs:10:7: replace ^ with & in xor
+caught   src/booleans.rs:14:5: replace not -> bool with true
+caught   src/booleans.rs:14:5: replace not -> bool with false
+caught   src/booleans.rs:14:5: delete ! in not
 caught   src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with ""
 caught   src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with "xyzzy"
 caught   src/methods.rs:17:9: replace Foo::double with ()
@@ -29,6 +42,21 @@ caught   src/numbers.rs:6:5: replace is_double -> bool with false
 caught   src/numbers.rs:6:7: replace == with != in is_double
 caught   src/numbers.rs:6:12: replace * with + in is_double
 caught   src/numbers.rs:6:12: replace * with / in is_double
+caught   src/numbers.rs:10:5: replace negate_i32 -> i32 with 0
+caught   src/numbers.rs:10:5: replace negate_i32 -> i32 with 1
+caught   src/numbers.rs:10:5: replace negate_i32 -> i32 with -1
+caught   src/numbers.rs:10:5: delete - in negate_i32
+caught   src/numbers.rs:14:5: replace negate_f32 -> f32 with 0.0
+caught   src/numbers.rs:14:5: replace negate_f32 -> f32 with 1.0
+caught   src/numbers.rs:14:5: replace negate_f32 -> f32 with -1.0
+caught   src/numbers.rs:14:5: delete - in negate_f32
+caught   src/numbers.rs:18:5: replace bitwise_not_i32 -> i32 with 0
+caught   src/numbers.rs:18:5: replace bitwise_not_i32 -> i32 with 1
+caught   src/numbers.rs:18:5: replace bitwise_not_i32 -> i32 with -1
+caught   src/numbers.rs:18:5: delete ! in bitwise_not_i32
+caught   src/numbers.rs:22:5: replace bitwise_not_u32 -> u32 with 0
+caught   src/numbers.rs:22:5: replace bitwise_not_u32 -> u32 with 1
+caught   src/numbers.rs:22:5: delete ! in bitwise_not_u32
 caught   src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("")
 caught   src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("xyzzy")
 caught   src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(())
@@ -70,5 +98,4 @@ caught   src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize w
 caught   src/traits.rs:5:9: replace Something::is_three -> bool with true
 caught   src/traits.rs:5:9: replace Something::is_three -> bool with false
 caught   src/traits.rs:5:11: replace == with != in Something::is_three
-66 mutants tested: 66 caught
-
+94 mutants tested: 94 caught

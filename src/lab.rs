@@ -3,6 +3,7 @@
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::{max, min};
+use std::panic::resume_unwind;
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -107,42 +108,72 @@ pub fn test_mutants(
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
     // scenario to test off the queue, and then exits when there are no more left.
     console.start_testing_mutants(mutants.len());
-    let numbered_mutants = Mutex::new(mutants.into_iter().enumerate());
-    thread::scope(|scope| {
+    let pending = Mutex::new(mutants.into_iter());
+    thread::scope(|scope| -> crate::Result<()> {
         let mut threads = Vec::new();
         // TODO: Maybe, make the copies in parallel on each thread, rather than up front?
         for build_dir in build_dirs {
-            threads.push(scope.spawn(|| {
+            threads.push(scope.spawn(|| -> crate::Result<()> {
                 let build_dir = build_dir; // move it into this thread
                 trace!(thread_id = ?thread::current().id(), ?build_dir, "start thread");
                 loop {
-                    // Not a while loop so that it only holds the lock briefly.
-                    let next = numbered_mutants.lock().expect("lock mutants queue").next();
-                    if let Some((mutant_id, mutant)) = next {
-                        let _span = debug_span!("mutant", id = mutant_id).entered();
-                        let package = mutant.package().clone();
-                        // We don't care about the outcome; it's been collected into the output_dir.
-                        let _outcome = test_scenario(
-                            &build_dir,
-                            &output_mutex,
-                            &Scenario::Mutant(mutant),
-                            &[&package],
-                            test_timeout,
-                            &options,
-                            console,
-                        )
-                        .expect("scenario test");
-                    } else {
-                        trace!("no more work");
-                        break;
+                    // Extract the mutant in a separate statement so that we don't hold the
+                    // lock while testing it.
+                    let next = pending.lock().map(|mut s| s.next());
+                    match next {
+                        Err(err) => {
+                            // PoisonError is not Send so we can't pass it directly.
+                            return Err(anyhow!("Lock pending work queue: {}", err));
+                        }
+                        Ok(Some(mutant)) => {
+                            let _span =
+                                debug_span!("mutant", name = mutant.name(false, false)).entered();
+                            let package = mutant.package().clone();
+                            test_scenario(
+                                &build_dir,
+                                &output_mutex,
+                                &Scenario::Mutant(mutant),
+                                &[&package],
+                                test_timeout,
+                                &options,
+                                console,
+                            )?;
+                        }
+                        Ok(None) => {
+                            trace!("no more work");
+                            return Ok(());
+                        }
                     }
                 }
             }));
         }
-        for thread in threads {
-            thread.join().expect("join thread");
+        // The errors potentially returned from `join` are a special `std::thread::Result`
+        // that does not implement error, indicating that the thread panicked.
+        // Probably the most useful thing is to `resume_unwind` it.
+        // Inside that, there's an actual Mutants error indicating a non-panic error.
+        // Most likely, this would be "interrupted" but it might be some IO error
+        // etc. In that case, print them all and return the first.
+        let errors = threads
+            .into_iter()
+            .flat_map(|thread| match thread.join() {
+                Err(panic) => resume_unwind(panic),
+                Ok(Ok(())) => None,
+                Ok(Err(err)) => {
+                    // To avoid spam, as a special case, don't print "interrupted" errors for each thread,
+                    // since that should have been printed by check_interrupted: but, do return them.
+                    if err.to_string() != "interrupted" {
+                        error!("Worker thread failed: {:?}", err);
+                    }
+                    Some(err)
+                }
+            })
+            .collect_vec(); // print/process them all
+        if let Some(first_err) = errors.into_iter().next() {
+            Err(first_err)
+        } else {
+            Ok(())
         }
-    });
+    })?;
 
     let output_dir = output_mutex
         .into_inner()

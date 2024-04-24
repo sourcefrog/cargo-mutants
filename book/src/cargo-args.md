@@ -1,6 +1,6 @@
 # Passing options to Cargo
 
-cargo-mutants runs `cargo build` and `cargo test` (or, with `--check`, it runs
+cargo-mutants runs `cargo test` to build and run tests. (With `--check`, it runs
 `cargo check`.) Additional options can be passed in three different ways: to all
 `cargo` commands; to `cargo test` only; and to the test binaries run by `cargo
 test`.
@@ -9,7 +9,7 @@ There is not yet a way to pass options only to `cargo build` but not to `cargo t
 
 ## Feature flags
 
-The `--features`, `--all-features`, and `--no-default-features` flags can be given to cargo-mutants and they will be passed down to `cargo build` and `cargo test`.
+The `--features`, `--all-features`, and `--no-default-features` flags can be given to cargo-mutants and they will be passed down to cargo invocations.
 
 For example, this can be useful if you have tests that are only enabled with a feature flag:
 

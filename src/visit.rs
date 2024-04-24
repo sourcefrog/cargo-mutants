@@ -16,7 +16,7 @@ use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Attribute, BinOp, Block, Expr, File, ItemFn, ReturnType, Signature};
+use syn::{Attribute, BinOp, Block, Expr, File, ItemFn, ReturnType, Signature, UnOp};
 use tracing::{debug, debug_span, error, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
@@ -487,6 +487,29 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             .into_iter()
             .for_each(|rep| self.collect_mutant(i.op.span().into(), rep, Genre::BinaryOperator));
         syn::visit::visit_expr_binary(self, i);
+    }
+
+    fn visit_expr_unary(&mut self, i: &'ast syn::ExprUnary) {
+        let _span = trace_span!("unary", line = i.op.span().start().line).entered();
+        trace!("visit unary operator");
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        let replacements = match i.op {
+            UnOp::Not(_) => vec![quote! {}],
+            UnOp::Neg(_) => vec![quote! {}],
+            _ => {
+                trace!(
+                    op = i.op.to_pretty_string(),
+                    "No mutants generated for this unary operator"
+                );
+                Vec::new()
+            }
+        };
+        replacements
+            .into_iter()
+            .for_each(|rep| self.collect_mutant(i.op.span().into(), rep, Genre::UnaryOperator));
+        syn::visit::visit_expr_unary(self, i);
     }
 }
 

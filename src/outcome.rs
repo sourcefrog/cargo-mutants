@@ -140,7 +140,6 @@ impl LabOutcome {
 
 /// The result of running one mutation scenario.
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[must_use]
 pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?

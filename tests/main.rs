@@ -406,7 +406,7 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
     println!("{log_content}");
-    regex::Regex::new(r"cargo.* build --tests --manifest-path .* --release")
+    regex::Regex::new(r"cargo.* test --no-run --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
@@ -570,7 +570,7 @@ fn source_tree_typecheck_fails() {
                 .name("The problem source line"),
         )
         .stdout(contains("*** baseline"))
-        .stdout(contains("build --tests")) // Caught at the check phase
+        .stdout(contains("test --no-run"))
         .stdout(contains("lib.rs:6"))
         .stdout(contains("*** result: "))
         .stderr(contains(
@@ -635,27 +635,40 @@ fn timeout_when_unmutated_tree_test_hangs() {
 #[test]
 #[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
 fn interrupt_caught_and_kills_children() {
-    let tmp_src_dir = copy_of_testdata("already_hangs");
+    // Test a tree that has enough tests that we'll probably kill it before it completes.
+    let tmp_src_dir = copy_of_testdata("well_tested");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
     // which doesn't give it a chance to clean up. And, `std::process::Command` only
     // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
+
+    // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
+    // and we want to check that the process does not panic.
+    let env = Some(
+        env::vars_os()
+            .filter(|(k, _)| k != "RUST_BACKTRACE")
+            .collect::<Vec<_>>(),
+    );
     let config = PopenConfig {
         stdout: Redirection::Pipe,
         stderr: Redirection::Pipe,
         cwd: Some(tmp_src_dir.path().as_os_str().to_owned()),
+        env,
         ..Default::default()
     };
+    // Skip baseline because firstly it should already pass but more importantly
+    // #333 exhibited only during non-baseline scenarios.
     let args = [
         MAIN_BINARY.to_str().unwrap(),
         "mutants",
         "--timeout=300",
+        "--baseline=skip",
         "--level=trace",
     ];
 
     println!("Running: {args:?}");
     let mut child = Popen::create(&args, config).expect("spawn child");
     // TODO: Watch the output, maybe using `subprocess`, rather than just guessing how long it needs.
-    sleep(Duration::from_secs(4)); // Let it get started
+    sleep(Duration::from_secs(2)); // Let it get started
     assert!(child.poll().is_none(), "child exited early");
 
     println!("Sending terminate to cargo-mutants...");
@@ -696,6 +709,10 @@ fn interrupt_caught_and_kills_children() {
     // Also because of `--level=trace` we see some debug details.
     assert!(stderr.contains("terminating child process"));
     assert!(stderr.contains("terminated child exit status"));
+    // This shouldn't cause a panic though (#333)
+    assert!(!stderr.contains("panic"));
+    // And we don't want duplicate messages about workers failing.
+    assert!(!stderr.contains("Worker thread failed"));
 }
 
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants

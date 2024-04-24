@@ -26,7 +26,7 @@ The basic approach is:
 
 - For each mutation:
   - Apply the mutation to the scratch tree by patching the affected file.
-  - Run `cargo build`: if this fails, the mutant is unviable, and that's ok.
+  - Run `cargo test --no-run`: if this fails, the mutant is unviable, and that's ok.
   - Run `cargo test` in the tree, saving output to a log file.
   - If the the tests fail, that's good: the mutation was somehow
     caught.
