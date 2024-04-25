@@ -50,7 +50,10 @@ impl SourceFile {
         is_top: bool,
     ) -> Result<Option<SourceFile>> {
         if ascent(&tree_relative_path) > 0 {
-            warn!("skipping source outside of tree: {tree_relative_path:?}");
+            warn!(
+                "skipping source outside of tree: {:?}",
+                tree_relative_path.to_slash_path()
+            );
             return Ok(None);
         }
         let full_path = tree_path.join(&tree_relative_path);
