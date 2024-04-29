@@ -64,6 +64,12 @@ src/custom_top.rs:2:7: replace % with / in is_even
 src/custom_top.rs:2:7: replace % with + in is_even
 ```
 
+## testdata/dangling_mod
+
+```
+src/main.rs:13:9: replace verify_continue::always_true -> bool with false
+```
+
 ## testdata/dependency
 
 ```
@@ -223,8 +229,23 @@ src/lib.rs:2:5: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(1))
 ## testdata/nested_mod
 
 ```
+src/paths_in_lib/thread_files/tls.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/thread_files_inner_attr/tls.rs:2:5: replace always_true -> bool with false
+src/toplevel_file_in_lib.rs:2:5: replace always_true -> bool with false
+src/paths_in_main/thread_files/tls.rs:2:5: replace always_true -> bool with false
+src/paths_in_main/thread_files_inner_attr/tls.rs:2:5: replace always_true -> bool with false
+src/toplevel_file_in_main.rs:2:5: replace always_true -> bool with false
 src/block_in_lib/a/b/c_file/d/e/f_file.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/a/foo.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/a/b/inline/other.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/a_mod_file/foo.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/a_mod_file/inline/other.rs:2:5: replace always_true -> bool with false
+src/paths_in_lib/../upward_traversal_file_for_lib.rs:2:5: replace always_true -> bool with false
 src/block_in_main/a/b/c_file/d/e/f_file.rs:2:5: replace always_true -> bool with false
+src/paths_in_main/a/foo.rs:2:5: replace always_true -> bool with false
+src/paths_in_main/a/b/inline/other.rs:2:5: replace always_true -> bool with false
+src/paths_in_main/a_mod_file/foo.rs:2:5: replace always_true -> bool with false
+src/paths_in_main/a_mod_file/inline/other.rs:2:5: replace always_true -> bool with false
 src/file_in_lib/a/b/c_file/d/e/f_file.rs:2:5: replace always_true -> bool with false
 src/file_in_main/a/b/c_file/d/e/f_file.rs:2:5: replace always_true -> bool with false
 ```

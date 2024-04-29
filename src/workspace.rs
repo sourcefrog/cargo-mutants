@@ -190,7 +190,7 @@ impl Workspace {
         } in self.package_tops(package_filter)?
         {
             for source_path in top_sources {
-                sources.push(SourceFile::new(
+                sources.extend(SourceFile::new(
                     &self.dir,
                     source_path.to_owned(),
                     &package,
