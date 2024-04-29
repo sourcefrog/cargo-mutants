@@ -23,15 +23,16 @@ By default, the timeouts are set automatically, relative to the times taken to
 build and test the unmodified tree (baseline).
 
 The default timeouts are:
-- `cargo build`/`cargo check`: 2 times the baseline build time
+
+- `cargo build`/`cargo check`: 2 times the baseline build time (with a minimum of 20 seconds)
 - `cargo test`: 5 times baseline test time (with a minimum of 20 seconds)
 
 The minimum of 20 seconds for the test timeout can be overridden by the
-`--minimum-test-timeout` option or the `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` 
+`--minimum-test-timeout` option or the `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT`
 environment variable, measured in seconds.
 
 You can set explicit timeouts with the `--build-timeout`, and `--timeout`
-options, also measured in seconds. If these options are specified then they 
+options, also measured in seconds. If these options are specified then they
 are applied to the baseline build and test as well.
 
 You can set timeout multipliers that are relative to the duration of the
@@ -45,6 +46,6 @@ applied if the baseline is not skipped and no corresponding
 ## Exceptions
 
 The multiplier timeout options cannot be used when the baseline is skipped
-(`--baseline=skip`), or when the build is in-place (`--in-place`). If no 
+(`--baseline=skip`), or when the build is in-place (`--in-place`). If no
 explicit timeouts is provided in these cases, then a default of 300 seconds
 will be used.
