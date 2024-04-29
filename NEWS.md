@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed: Follow `path` attributes on `mod` statements.
+
 - New: `--build-timeout` and `--build-timeout-multiplier` options for setting timeouts for the `build` and `check` cargo phases.
 
 - Changed: `--timeout-multiplier` now overrides `timeout_multiplier` from `.cargo/mutants.toml`.
