@@ -264,7 +264,7 @@ fn build_timeout(baseline_duration: Option<Duration>, options: &Options) -> Dura
         Phase::Build,
         options.build_timeout,
         baseline_duration,
-        Duration::ZERO,
+        Duration::from_secs(20),
         options.build_timeout_multiplier.unwrap_or(2.0),
         options,
     )
