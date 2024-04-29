@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- New: `--build-timeout` and `--build-timeout-multiplier` options for setting timeouts for the `build` and `check` cargo phases.
+
+- Changed: `--timeout-multiplier` now overrides `timeout_multiplier` from `.cargo/mutants.toml`.
+
+- Changed: `--timeout` and `--timeout-multiplier` are now conflicting options.
+
 ## 24.4.0
 
 - Changes: Baselines and mutants are now built with `cargo test --no-run` rather than `cargo build --tests` as previously. This avoids wasted build effort if the `dev` and `test` Cargo profiles are not the same, and may better distinguish build failures from test failures. With `--test-tool=nextest`, the corresponding `cargo nextest run --no-run` is used.

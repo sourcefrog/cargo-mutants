@@ -46,6 +46,16 @@ pub struct Options {
     /// The time multiplier for test tasks, if set (relative to baseline test duration).
     pub test_timeout_multiplier: Option<f64>,
 
+    /// The time limit for build tasks, if set.
+    ///
+    /// If this is not set by the user it's None, in which case there is no time limit
+    /// on the baseline build, and then the mutated builds get a multiple of the time
+    /// taken by the baseline build.
+    pub build_timeout: Option<Duration>,
+
+    /// The time multiplier for build tasks, if set (relative to baseline build duration).
+    pub build_timeout_multiplier: Option<f64>,
+
     /// The minimum test timeout, as a floor on the autoset value.
     pub minimum_test_timeout: Duration,
 
@@ -211,7 +221,11 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
-            test_timeout_multiplier: config.timeout_multiplier.or(args.timeout_multiplier),
+            test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
+            build_timeout: args.build_timeout.map(Duration::from_secs_f64),
+            build_timeout_multiplier: args
+                .build_timeout_multiplier
+                .or(config.build_timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         options.error_values.iter().for_each(|e| {
@@ -278,6 +292,69 @@ mod test {
         let args = Args::parse_from(["mutants"]);
         let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Run);
+    }
+
+    #[test]
+    fn options_from_timeout_args() {
+        let args = Args::parse_from(["mutants", "--timeout=2.0"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_timeout, Some(Duration::from_secs(2)));
+
+        let args = Args::parse_from(["mutants", "--timeout-multiplier=2.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_timeout_multiplier, Some(2.5));
+
+        let args = Args::parse_from(["mutants", "--minimum-test-timeout=60.0"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.minimum_test_timeout, Duration::from_secs(60));
+
+        let args = Args::parse_from(["mutants", "--build-timeout=3.0"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.build_timeout, Some(Duration::from_secs(3)));
+
+        let args = Args::parse_from(["mutants", "--build-timeout-multiplier=3.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.build_timeout_multiplier, Some(3.5));
+    }
+
+    #[test]
+    fn cli_timeout_multiplier_overrides_config() {
+        let config = indoc! { r#"
+            timeout_multiplier = 1.0
+            build_timeout_multiplier = 2.0
+        "#};
+        let mut config_file = NamedTempFile::new().unwrap();
+        config_file.write_all(config.as_bytes()).unwrap();
+        let args = Args::parse_from([
+            "mutants",
+            "--timeout-multiplier=2.0",
+            "--build-timeout-multiplier=1.0",
+        ]);
+        let config = Config::read_file(config_file.path()).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+
+        assert_eq!(options.test_timeout_multiplier, Some(2.0));
+        assert_eq!(options.build_timeout_multiplier, Some(1.0));
+    }
+
+    #[test]
+    fn conflicting_timeout_options() {
+        let args = Args::try_parse_from(["mutants", "--timeout=1", "--timeout-multiplier=1"])
+            .expect_err("--timeout and --timeout-multiplier should conflict");
+        let rendered = format!("{}", args.render());
+        assert!(rendered.contains("error: the argument '--timeout <TIMEOUT>' cannot be used with '--timeout-multiplier <TIMEOUT_MULTIPLIER>'"));
+    }
+
+    #[test]
+    fn conflicting_build_timeout_options() {
+        let args = Args::try_parse_from([
+            "mutants",
+            "--build-timeout=1",
+            "--build-timeout-multiplier=1",
+        ])
+        .expect_err("--build-timeout and --build-timeout-multiplier should conflict");
+        let rendered = format!("{}", args.render());
+        assert!(rendered.contains("error: the argument '--build-timeout <BUILD_TIMEOUT>' cannot be used with '--build-timeout-multiplier <BUILD_TIMEOUT_MULTIPLIER>'"));
     }
 
     #[test]

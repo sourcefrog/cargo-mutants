@@ -65,7 +65,10 @@ pub fn test_mutants(
                 &output_mutex,
                 &Scenario::Baseline,
                 &all_packages,
-                options.test_timeout.unwrap_or(Duration::MAX),
+                Timeouts {
+                    test: options.test_timeout.unwrap_or(Duration::MAX),
+                    build: options.build_timeout.unwrap_or(Duration::MAX),
+                },
                 &options,
                 console,
             )?;
@@ -86,12 +89,17 @@ pub fn test_mutants(
         BaselineStrategy::Skip => None,
     };
     let mut build_dirs = vec![build_dir];
-    let baseline_test_duration = baseline_outcome
-        .as_ref()
-        .and_then(|so| so.phase_result(Phase::Test))
-        .map(|pr| pr.duration);
 
-    let test_timeout = test_timeout(baseline_test_duration, &options);
+    let baseline_duration_by_phase = |phase| {
+        baseline_outcome
+            .as_ref()
+            .and_then(|so| so.phase_result(phase))
+            .map(|pr| pr.duration)
+    };
+    let timeouts = Timeouts {
+        build: build_timeout(baseline_duration_by_phase(Phase::Build), &options),
+        test: test_timeout(baseline_duration_by_phase(Phase::Test), &options),
+    };
 
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     for i in 1..jobs {
@@ -134,7 +142,7 @@ pub fn test_mutants(
                                 &output_mutex,
                                 &Scenario::Mutant(mutant),
                                 &[&package],
-                                test_timeout,
+                                timeouts,
                                 &options,
                                 console,
                             )?;
@@ -190,31 +198,76 @@ pub fn test_mutants(
     Ok(lab_outcome)
 }
 
-fn test_timeout(baseline_test_duration: Option<Duration>, options: &Options) -> Duration {
-    if let Some(timeout) = options.test_timeout {
-        timeout
-    } else if options.check_only {
-        Duration::ZERO
-    } else if let Some(baseline_test_duration) = baseline_test_duration {
-        let timeout = max(
-            options.minimum_test_timeout,
-            Duration::from_secs(
-                (baseline_test_duration.as_secs_f64()
-                    * options.test_timeout_multiplier.unwrap_or(5.0))
-                .round() as u64,
-            ),
-        );
-        if options.show_times {
-            info!(
-                "Auto-set test timeout to {}",
-                humantime::format_duration(timeout)
-            );
-        }
-        timeout
-    } else {
-        warn!("An explicit timeout is recommended when using --baseline=skip; using 300 seconds by default");
-        Duration::from_secs(300)
+#[derive(Copy, Clone)]
+struct Timeouts {
+    build: Duration,
+    test: Duration,
+}
+
+fn phase_timeout(
+    phase: Phase,
+    explicit_timeout: Option<Duration>,
+    baseline_duration: Option<Duration>,
+    minimum: Duration,
+    multiplier: f64,
+    options: &Options,
+) -> Duration {
+    const FALLBACK_TIMEOUT_SECS: u64 = 300;
+    fn warn_fallback_timeout(phase_name: &str, option: &str) {
+        warn!("An explicit {phase_name} timeout is recommended when using {option}; using {FALLBACK_TIMEOUT_SECS} seconds by default");
     }
+
+    if let Some(timeout) = explicit_timeout {
+        return timeout;
+    }
+
+    match baseline_duration {
+        Some(_) if options.in_place && phase != Phase::Test => {
+            warn_fallback_timeout(phase.name(), "--in-place");
+            Duration::from_secs(FALLBACK_TIMEOUT_SECS)
+        }
+        Some(baseline_duration) => {
+            let timeout = max(
+                minimum,
+                Duration::from_secs((baseline_duration.as_secs_f64() * multiplier).ceil() as u64),
+            );
+
+            if options.show_times {
+                info!(
+                    "Auto-set {} timeout to {}",
+                    phase.name(),
+                    humantime::format_duration(timeout)
+                );
+            }
+            timeout
+        }
+        None => {
+            warn_fallback_timeout(phase.name(), "--baseline=skip");
+            Duration::from_secs(FALLBACK_TIMEOUT_SECS)
+        }
+    }
+}
+
+fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Duration {
+    phase_timeout(
+        Phase::Test,
+        options.test_timeout,
+        baseline_duration,
+        options.minimum_test_timeout,
+        options.test_timeout_multiplier.unwrap_or(5.0),
+        options,
+    )
+}
+
+fn build_timeout(baseline_duration: Option<Duration>, options: &Options) -> Duration {
+    phase_timeout(
+        Phase::Build,
+        options.build_timeout,
+        baseline_duration,
+        Duration::ZERO,
+        options.build_timeout_multiplier.unwrap_or(2.0),
+        options,
+    )
 }
 
 /// Test various phases of one scenario in a build dir.
@@ -226,7 +279,7 @@ fn test_scenario(
     output_mutex: &Mutex<OutputDir>,
     scenario: &Scenario,
     test_packages: &[&Package],
-    test_timeout: Duration,
+    timeouts: Timeouts,
     options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
@@ -255,8 +308,8 @@ fn test_scenario(
     for &phase in phases {
         console.scenario_phase_started(scenario, phase);
         let timeout = match phase {
-            Phase::Test => test_timeout,
-            _ => Duration::MAX,
+            Phase::Test => timeouts.test,
+            Phase::Build | Phase::Check => timeouts.build,
         };
         let phase_result = run_cargo(
             build_dir,
@@ -307,6 +360,40 @@ mod test {
     }
 
     #[test]
+    fn test_timeout_unaffected_by_in_place_build() {
+        let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5", "--in-place"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(
+            test_timeout(Some(Duration::from_secs(40)), &options),
+            Duration::from_secs(60),
+        );
+    }
+
+    #[test]
+    fn build_timeout_multiplier_from_option() {
+        let args = Args::parse_from(["mutants", "--build-timeout-multiplier", "1.5"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.build_timeout_multiplier, Some(1.5));
+        assert_eq!(
+            build_timeout(Some(Duration::from_secs(40)), &options),
+            Duration::from_secs(60),
+        );
+    }
+
+    #[test]
+    fn build_timeout_is_affected_by_in_place_build() {
+        let args = Args::parse_from(["mutants", "--build-timeout-multiplier", "1.5", "--in-place"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(
+            build_timeout(Some(Duration::from_secs(40)), &options),
+            Duration::from_secs(300),
+        );
+    }
+
+    #[test]
     fn timeout_multiplier_from_config() {
         let args = Args::parse_from(["mutants"]);
         let config = Config::from_str(indoc! {r#"
@@ -318,6 +405,22 @@ mod test {
         assert_eq!(options.test_timeout_multiplier, Some(2.0));
         assert_eq!(
             test_timeout(Some(Duration::from_secs(42)), &options),
+            Duration::from_secs(42 * 2),
+        );
+    }
+
+    #[test]
+    fn build_timeout_multiplier_from_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(indoc! {r#"
+            build_timeout_multiplier = 2.0
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+
+        assert_eq!(options.build_timeout_multiplier, Some(2.0));
+        assert_eq!(
+            build_timeout(Some(Duration::from_secs(42)), &options),
             Duration::from_secs(42 * 2),
         );
     }
@@ -335,6 +438,34 @@ mod test {
     }
 
     #[test]
+    fn build_timeout_multiplier_default() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.build_timeout_multiplier, None);
+        assert_eq!(
+            build_timeout(Some(Duration::from_secs(42)), &options),
+            Duration::from_secs(42 * 2),
+        );
+    }
+
+    #[test]
+    fn timeout_from_option() {
+        let args = Args::parse_from(["mutants", "--timeout=8"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.test_timeout, Some(Duration::from_secs(8)));
+    }
+
+    #[test]
+    fn build_timeout_from_option() {
+        let args = Args::parse_from(["mutants", "--build-timeout=4"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.build_timeout, Some(Duration::from_secs(4)));
+    }
+
+    #[test]
     fn timeout_multiplier_default_with_baseline_skip() {
         // The --baseline option is not used to set the timeout but it's
         // indicative of the realistic situation.
@@ -343,5 +474,16 @@ mod test {
 
         assert_eq!(options.test_timeout_multiplier, None);
         assert_eq!(test_timeout(None, &options), Duration::from_secs(300),);
+    }
+
+    #[test]
+    fn build_timeout_multiplier_default_with_baseline_skip() {
+        // The --baseline option is not used to set the timeout but it's
+        // indicative of the realistic situation.
+        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+
+        assert_eq!(options.build_timeout_multiplier, None);
+        assert_eq!(build_timeout(None, &options), Duration::from_secs(300),);
     }
 }

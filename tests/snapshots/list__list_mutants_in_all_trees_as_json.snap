@@ -1618,42 +1618,12 @@ expression: buf
   {
     "file": "src/lib.rs",
     "function": {
-      "function_name": "should_stop",
+      "function_name": "should_stop_const",
       "return_type": "-> bool",
       "span": {
         "end": {
           "column": 2,
-          "line": 18
-        },
-        "start": {
-          "column": 1,
-          "line": 11
-        }
-      }
-    },
-    "genre": "FnValue",
-    "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "true",
-    "span": {
-      "end": {
-        "column": 10,
-        "line": 17
-      },
-      "start": {
-        "column": 5,
-        "line": 13
-      }
-    }
-  },
-  {
-    "file": "src/lib.rs",
-    "function": {
-      "function_name": "should_stop",
-      "return_type": "-> bool",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 18
+          "line": 13
         },
         "start": {
           "column": 1,
@@ -1666,12 +1636,72 @@ expression: buf
     "replacement": "false",
     "span": {
       "end": {
-        "column": 10,
-        "line": 17
+        "column": 9,
+        "line": 12
       },
       "start": {
         "column": 5,
-        "line": 13
+        "line": 12
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "should_stop",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 30
+        },
+        "start": {
+          "column": 1,
+          "line": 23
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-hang-when-mutated",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 29
+      },
+      "start": {
+        "column": 5,
+        "line": 25
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "should_stop",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 30
+        },
+        "start": {
+          "column": 1,
+          "line": 23
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-hang-when-mutated",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 29
+      },
+      "start": {
+        "column": 5,
+        "line": 25
       }
     }
   },
@@ -1683,11 +1713,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 38
+          "line": 50
         },
         "start": {
           "column": 1,
-          "line": 20
+          "line": 32
         }
       }
     },
@@ -1697,11 +1727,11 @@ expression: buf
     "span": {
       "end": {
         "column": 20,
-        "line": 37
+        "line": 49
       },
       "start": {
         "column": 5,
-        "line": 26
+        "line": 38
       }
     }
   },
@@ -1713,11 +1743,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 38
+          "line": 50
         },
         "start": {
           "column": 1,
-          "line": 20
+          "line": 32
         }
       }
     },
@@ -1727,11 +1757,11 @@ expression: buf
     "span": {
       "end": {
         "column": 20,
-        "line": 37
+        "line": 49
       },
       "start": {
         "column": 5,
-        "line": 26
+        "line": 38
       }
     }
   },
@@ -1743,11 +1773,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 38
+          "line": 50
         },
         "start": {
           "column": 1,
-          "line": 20
+          "line": 32
         }
       }
     },
@@ -1757,11 +1787,11 @@ expression: buf
     "span": {
       "end": {
         "column": 29,
-        "line": 33
+        "line": 45
       },
       "start": {
         "column": 28,
-        "line": 33
+        "line": 45
       }
     }
   },
@@ -1773,11 +1803,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 38
+          "line": 50
         },
         "start": {
           "column": 1,
-          "line": 20
+          "line": 32
         }
       }
     },
@@ -1787,11 +1817,11 @@ expression: buf
     "span": {
       "end": {
         "column": 29,
-        "line": 33
+        "line": 45
       },
       "start": {
         "column": 28,
-        "line": 33
+        "line": 45
       }
     }
   },
@@ -1803,11 +1833,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 38
+          "line": 50
         },
         "start": {
           "column": 1,
-          "line": 20
+          "line": 32
         }
       }
     },
@@ -1817,11 +1847,11 @@ expression: buf
     "span": {
       "end": {
         "column": 54,
-        "line": 33
+        "line": 45
       },
       "start": {
         "column": 53,
-        "line": 33
+        "line": 45
       }
     }
   },
@@ -1833,11 +1863,11 @@ expression: buf
       "span": {
         "end": {
           "column": 2,
-          "line": 38
+          "line": 50
         },
         "start": {
           "column": 1,
-          "line": 20
+          "line": 32
         }
       }
     },
@@ -1847,11 +1877,11 @@ expression: buf
     "span": {
       "end": {
         "column": 54,
-        "line": 33
+        "line": 45
       },
       "start": {
         "column": 53,
-        "line": 33
+        "line": 45
       }
     }
   }
