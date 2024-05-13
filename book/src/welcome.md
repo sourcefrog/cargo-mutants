@@ -1,7 +1,7 @@
 # Welcome to cargo-mutants
 
 cargo-mutants is a mutation testing tool for Rust. It helps you improve your
-program's quality by finding places where bugs can be inserted
+program's quality by finding places where bugs can be inserted without
 causing any tests to fail.
 
 **The goal of cargo-mutants is to be _easy_ to run on any Rust source tree, and
