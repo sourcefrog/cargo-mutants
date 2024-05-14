@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 24.5.0
 
 - Fixed: Follow `path` attributes on `mod` statements.
 
