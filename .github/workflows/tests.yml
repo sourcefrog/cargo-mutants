@@ -80,6 +80,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly -Zdirect-minimal-versions update
       - run: cargo build --all-targets
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
       - run: cargo test
 
   # Install from a checkout of the source, to find broken dependencies etc.
