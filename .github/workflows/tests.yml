@@ -69,7 +69,7 @@ jobs:
       - run: cargo update
       - run: cargo build --all-targets
 
-  build-minimal-versions:
+  minimal-versions:
     strategy:
       matrix:
         os: [macOS-latest, ubuntu-latest, windows-latest]
