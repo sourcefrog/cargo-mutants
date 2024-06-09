@@ -33,10 +33,10 @@ eula = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
-camino = "1.0"
+anyhow = "1.0.86"
+camino = "1.1.6"
 cargo_metadata = "0.18"
-clap = { version = "4.4", features = [
+clap = { version = "4.4.1", features = [
     "deprecated",
     "derive",
     "env",
@@ -48,7 +48,7 @@ console = "0.15"
 ctrlc = { version = "3.2.1", features = ["termination"] }
 fastrand = "2"
 fs2 = "0.4"
-globset = "0.4.8"
+globset = "0.4.10"
 humantime = "2.1.0"
 ignore = "0.4.20"
 indoc = "2.0.0"
@@ -57,18 +57,18 @@ mutants = "0.0.3"
 nextest-metadata = "0.10"
 patch = "0.7"
 path-slash = "0.2"
-quote = "1.0"
+quote = "1.0.35"
 regex = "1.10"
-serde_json = "1"
-similar = "2.0"
+serde_json = "1.0.117"
+similar = "2.1"
 strum = { version = "0.26", features = ["derive"] }
 subprocess = "0.2.8"
 tempfile = "3.2"
 time = "0.3"
 toml = "0.8"
-tracing = "0.1"
+tracing = "0.1.40"
 tracing-appender = "0.2"
-tracing-subscriber = "0.3"
+tracing-subscriber = "0.3.18"
 whoami = "1.5"
 
 [dependencies.nutmeg]
@@ -77,14 +77,14 @@ version = "0.1.4"
 
 [dependencies.proc-macro2]
 features = ["span-locations"]
-version = "1.0.29"
+version = "1.0.74"
 
 [dependencies.serde]
-version = "1"
+version = "1.0.194"
 features = ["derive"]
 
 [dependencies.syn]
-version = "2"
+version = "2.0.46"
 features = ["full", "extra-traits", "visit"]
 
 [target.'cfg(unix)'.dependencies]
@@ -97,9 +97,8 @@ insta = "1.12"
 lazy_static = "1.4"
 predicates = "3"
 pretty_assertions = "1"
-regex = "1.5"
 rusty-fork = "0.3"
-walkdir = "2.3"
+walkdir = "2.5"
 
 [workspace]
 members = ["mutants_attrs"]
