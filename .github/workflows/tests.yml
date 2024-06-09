@@ -80,6 +80,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly -Zdirect-minimal-versions update
       - run: cargo build --all-targets
+      - run: cargo test
 
   # Install from a checkout of the source, to find broken dependencies etc.
   # We run this on various versions because some dependencies might have changed
