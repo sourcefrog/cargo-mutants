@@ -10,19 +10,6 @@ homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
 rust-version = "1.74"
-exclude = [
-    ".codespell*",
-    ".markdownlint*",
-    "*.md",
-    ".devcontainer",
-    ".gitattributes",
-    ".gitignore",
-    ".github",
-    "mutants.out*",
-    ".vscode",
-    "book",
-    "testdata",
-]
 
 [package.metadata.wix]
 upgrade-guid = "CA7BFE8D-F3A7-4D1D-AE43-B7749110FA90"
