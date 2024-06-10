@@ -10,7 +10,9 @@ use util::{copy_of_testdata, outcome_json_counts, run};
 
 #[test]
 fn small_well_tested_tree_check_only() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-shuffle", "--no-times"])
         .current_dir(tmp_src_dir.path())
@@ -44,7 +46,9 @@ fn small_well_tested_tree_check_only() {
 
 #[test]
 fn small_well_tested_tree_check_only_shuffled() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-times", "--shuffle"])
         .current_dir(tmp_src_dir.path())
@@ -66,7 +70,9 @@ fn small_well_tested_tree_check_only_shuffled() {
 
 #[test]
 fn warning_when_no_mutants_found() {
-    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    let Some(tmp_src_dir) = copy_of_testdata("everything_skipped") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
@@ -82,7 +88,9 @@ fn warning_when_no_mutants_found() {
 #[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
-    let tmp_src_dir = copy_of_testdata("already_failing_tests");
+    let Some(tmp_src_dir) = copy_of_testdata("already_failing_tests") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
@@ -116,7 +124,9 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
 
 #[test]
 fn check_tree_with_mutants_skip() {
-    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
+    let Some(tmp_src_dir) = copy_of_testdata("hang_avoided_by_attr") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--check", "--no-times", "--no-shuffle"])
@@ -152,7 +162,9 @@ fn check_tree_with_mutants_skip() {
 
 #[test]
 fn check_tree_where_build_fails() {
-    let tmp_src_dir = copy_of_testdata("typecheck_fails");
+    let Some(tmp_src_dir) = copy_of_testdata("typecheck_fails") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--check", "--no-times", "--no-shuffle"])
@@ -176,7 +188,9 @@ fn check_tree_where_build_fails() {
 
 #[test]
 fn unviable_mutation_of_struct_with_no_default() {
-    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
+    let Some(tmp_src_dir) = copy_of_testdata("struct_with_no_default") else {
+        return;
+    };
     run()
         .args([
             "mutants",

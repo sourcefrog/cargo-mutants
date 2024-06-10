@@ -15,7 +15,9 @@ use util::{copy_of_testdata, run};
 /// debug log looks like it's using multiple threads.
 #[test]
 fn jobs_option_accepted_and_causes_multiple_threads() {
-    let testdata = copy_of_testdata("small_well_tested");
+    let Some(testdata) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("-d")

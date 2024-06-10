@@ -10,10 +10,15 @@ use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
 mod util;
-use util::{all_testdata_tree_paths, copy_of_testdata, run, CommandInstaExt, OUTER_TIMEOUT};
+use util::{
+    all_testdata_tree_paths, copy_of_testdata, has_testdata, run, CommandInstaExt, OUTER_TIMEOUT,
+};
 
 #[test]
 fn list_diff_json_contains_diffs() {
+    if !has_testdata() {
+        return;
+    }
     let cmd = run()
         .args([
             "mutants",
@@ -43,6 +48,9 @@ fn list_mutants_in_all_trees_as_json() {
     // containing JSON fragments. This might seem a bit weird for easier
     // review I want just a single snapshot, and json-inside-json has quoting
     // that makes it harder to review.
+    if !has_testdata() {
+        return;
+    }
     let mut buf = String::new();
     for dir_path in all_testdata_tree_paths() {
         writeln!(buf, "## {}\n", dir_path.to_slash_lossy()).unwrap();
@@ -99,7 +107,9 @@ fn list_mutants_in_factorial_json() {
 
 #[test]
 fn list_mutants_in_cfg_attr_mutants_skip() {
-    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    let Some(tmp_src_dir) = copy_of_testdata("cfg_attr_mutants_skip") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("--list")
@@ -109,7 +119,9 @@ fn list_mutants_in_cfg_attr_mutants_skip() {
 
 #[test]
 fn list_mutants_in_cfg_attr_mutants_skip_json() {
-    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    let Some(tmp_src_dir) = copy_of_testdata("cfg_attr_mutants_skip") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("--list")
@@ -120,7 +132,9 @@ fn list_mutants_in_cfg_attr_mutants_skip_json() {
 
 #[test]
 fn list_mutants_in_cfg_attr_test_skip() {
-    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    let Some(tmp_src_dir) = copy_of_testdata("cfg_attr_test_skip") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("--list")
@@ -130,7 +144,9 @@ fn list_mutants_in_cfg_attr_test_skip() {
 
 #[test]
 fn list_mutants_in_cfg_attr_test_skip_json() {
-    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    let Some(tmp_src_dir) = copy_of_testdata("cfg_attr_test_skip") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("--list")
@@ -307,7 +323,9 @@ fn list_files_json_well_tested() {
 
 #[test]
 fn no_mutants_in_tree_everything_skipped() {
-    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    let Some(tmp_src_dir) = copy_of_testdata("everything_skipped") else {
+        return;
+    };
     run()
         .args(["mutants", "--list"])
         .arg("--dir")

@@ -19,7 +19,7 @@ use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::TempDir;
 
 mod util;
-use util::{copy_of_testdata, run, MAIN_BINARY, OUTER_TIMEOUT};
+use util::{copy_of_testdata, has_testdata, run, MAIN_BINARY, OUTER_TIMEOUT};
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -50,7 +50,9 @@ fn show_version() {
 
 #[test]
 fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("well_tested") else {
+        return;
+    };
     let bogus_cargo = "NOTHING_NONEXISTENT_VOID";
     run()
         .env("CARGO", bogus_cargo)
@@ -73,7 +75,9 @@ fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
 
 #[test]
 fn tree_with_child_directories_is_well_tested() {
-    let tmp_src_dir = copy_of_testdata("with_child_directories");
+    let Some(tmp_src_dir) = copy_of_testdata("with_child_directories") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("-d")
@@ -93,7 +97,9 @@ fn tree_with_child_directories_is_well_tested() {
 fn copy_testdata_doesnt_include_build_artifacts() {
     // If there is a target or mutants.out in the source directory, we don't want it in the copy,
     // so that the tests are (more) hermetic.
-    let tmp_src_dir = copy_of_testdata("factorial");
+    let Some(tmp_src_dir) = copy_of_testdata("factorial") else {
+        return;
+    };
     assert!(!tmp_src_dir.path().join("mutants.out").exists());
     assert!(!tmp_src_dir.path().join("target").exists());
     assert!(!tmp_src_dir.path().join("mutants.out.old").exists());
@@ -102,7 +108,9 @@ fn copy_testdata_doesnt_include_build_artifacts() {
 
 #[test]
 fn small_well_tested_tree_is_clean() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--no-times", "--no-shuffle", "-v", "-V"])
@@ -148,7 +156,9 @@ fn small_well_tested_tree_is_clean() {
 
 #[test]
 fn test_small_well_tested_tree_with_baseline_skip() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--no-times", "--no-shuffle", "-v", "-V", "--baseline=skip"])
@@ -177,7 +187,9 @@ fn test_small_well_tested_tree_with_baseline_skip() {
 
 #[test]
 fn cdylib_tree_is_well_tested() {
-    let tmp_src_dir = copy_of_testdata("cdylib");
+    let Some(tmp_src_dir) = copy_of_testdata("cdylib") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--no-times", "--no-shuffle", "-v", "-V"])
@@ -192,7 +204,9 @@ fn cdylib_tree_is_well_tested() {
 
 #[test]
 fn well_tested_tree_finds_no_problems() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("well_tested") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--no-times", "--caught", "--unviable", "--no-shuffle"])
@@ -223,7 +237,9 @@ fn well_tested_tree_finds_no_problems() {
 
 #[test]
 fn well_tested_tree_check_only() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("well_tested") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-shuffle", "--no-times"])
         .current_dir(tmp_src_dir.path())
@@ -237,7 +253,9 @@ fn well_tested_tree_check_only() {
 
 #[test]
 fn well_tested_tree_check_only_shuffled() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("well_tested") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-times", "--shuffle"])
         .current_dir(tmp_src_dir.path())
@@ -248,7 +266,9 @@ fn well_tested_tree_check_only_shuffled() {
 
 #[test]
 fn unviable_mutation_of_struct_with_no_default() {
-    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
+    let Some(tmp_src_dir) = copy_of_testdata("struct_with_no_default") else {
+        return;
+    };
     run()
         .args([
             "mutants",
@@ -276,7 +296,9 @@ fn unviable_mutation_of_struct_with_no_default() {
 
 #[test]
 fn integration_test_source_is_not_mutated() {
-    let tmp_src_dir = copy_of_testdata("integration_tests");
+    let Some(tmp_src_dir) = copy_of_testdata("integration_tests") else {
+        return;
+    };
     run()
         .args(["mutants", "--no-times", "--no-shuffle", "--list-files"])
         .current_dir(tmp_src_dir.path())
@@ -293,7 +315,9 @@ fn integration_test_source_is_not_mutated() {
 
 #[test]
 fn uncaught_mutant_in_factorial() {
-    let tmp_src_dir = copy_of_testdata("factorial");
+    let Some(tmp_src_dir) = copy_of_testdata("factorial") else {
+        return;
+    };
 
     run()
         .arg("mutants")
@@ -334,7 +358,9 @@ fn uncaught_mutant_in_factorial() {
 fn factorial_mutants_with_all_logs() {
     // The log contains a lot of build output, which is hard to deal with, but let's check that
     // some key lines are there.
-    let tmp_src_dir = copy_of_testdata("factorial");
+    let Some(tmp_src_dir) = copy_of_testdata("factorial") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("--all-logs")
@@ -358,7 +384,9 @@ fn factorial_mutants_with_all_logs() {
 
 #[test]
 fn factorial_mutants_with_all_logs_and_nocapture() {
-    let tmp_src_dir = copy_of_testdata("factorial");
+    let Some(tmp_src_dir) = copy_of_testdata("factorial") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--all-logs", "-v", "-V"])
@@ -374,7 +402,9 @@ fn factorial_mutants_with_all_logs_and_nocapture() {
 
 #[test]
 fn factorial_mutants_no_copy_target() {
-    let tmp_src_dir = copy_of_testdata("factorial");
+    let Some(tmp_src_dir) = copy_of_testdata("factorial") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--no-times"])
@@ -391,7 +421,9 @@ fn factorial_mutants_no_copy_target() {
 
 #[test]
 fn small_well_tested_mutants_with_cargo_arg_release() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--no-times", "--cargo-arg", "--release"])
@@ -424,7 +456,9 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
 /// creates `mutants.out` within it. `mutants.out` is not created in the
 /// source directory in this case.
 fn output_option() {
-    let tmp_src_dir = copy_of_testdata("factorial");
+    let Some(tmp_src_dir) = copy_of_testdata("factorial") else {
+        return;
+    };
     let output_tmpdir = TempDir::new().unwrap();
     let output_parent = output_tmpdir.path().join("output_parent");
     assert!(
@@ -462,7 +496,9 @@ fn output_option() {
 #[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
-    let tmp_src_dir = copy_of_testdata("already_failing_tests");
+    let Some(tmp_src_dir) = copy_of_testdata("already_failing_tests") else {
+        return;
+    };
     run()
         .args(["mutants", "--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
@@ -477,7 +513,9 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
 
 #[test]
 fn check_tree_with_mutants_skip() {
-    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
+    let Some(tmp_src_dir) = copy_of_testdata("hang_avoided_by_attr") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--check", "--no-times", "--no-shuffle"])
@@ -493,7 +531,9 @@ fn check_tree_with_mutants_skip() {
 
 #[test]
 fn already_failing_tests_are_detected_before_running_mutants() {
-    let tmp_src_dir = copy_of_testdata("already_failing_tests");
+    let Some(tmp_src_dir) = copy_of_testdata("already_failing_tests") else {
+        return;
+    };
     run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
@@ -518,7 +558,9 @@ fn already_failing_tests_are_detected_before_running_mutants() {
 
 #[test]
 fn already_failing_doctests_are_detected() {
-    let tmp_src_dir = copy_of_testdata("already_failing_doctests");
+    let Some(tmp_src_dir) = copy_of_testdata("already_failing_doctests") else {
+        return;
+    };
     run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
@@ -536,7 +578,9 @@ fn already_failing_doctests_are_detected() {
 
 #[test]
 fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
-    let tmp_src_dir = copy_of_testdata("already_failing_doctests");
+    let Some(tmp_src_dir) = copy_of_testdata("already_failing_doctests") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--", "--all-targets"])
@@ -548,7 +592,9 @@ fn already_failing_doctests_can_be_skipped_with_cargo_arg() {
 
 #[test]
 fn source_tree_parse_fails() {
-    let tmp_src_dir = copy_of_testdata("parse_fails");
+    let Some(tmp_src_dir) = copy_of_testdata("parse_fails") else {
+        return;
+    };
     run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
@@ -560,7 +606,9 @@ fn source_tree_parse_fails() {
 
 #[test]
 fn source_tree_typecheck_fails() {
-    let tmp_src_dir = copy_of_testdata("typecheck_fails");
+    let Some(tmp_src_dir) = copy_of_testdata("typecheck_fails") else {
+        return;
+    };
     run()
         .arg("mutants")
         .current_dir(tmp_src_dir.path())
@@ -584,7 +632,9 @@ fn source_tree_typecheck_fails() {
 /// `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT` overrides the detected minimum timeout.
 #[test]
 fn minimum_test_timeout_from_env() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     run()
         .arg("mutants")
         .env("CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT", "1234")
@@ -605,7 +655,9 @@ fn minimum_test_timeout_from_env() {
 /// All these timeouts are a little brittle if the test machine is very slow.
 #[test]
 fn timeout_when_unmutated_tree_test_hangs() {
-    let tmp_src_dir = copy_of_testdata("already_hangs");
+    let Some(tmp_src_dir) = copy_of_testdata("already_hangs") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--timeout", "2.9"])
@@ -639,7 +691,9 @@ fn timeout_when_unmutated_tree_test_hangs() {
 #[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
 fn interrupt_caught_and_kills_children() {
     // Test a tree that has enough tests that we'll probably kill it before it completes.
-    let tmp_src_dir = copy_of_testdata("well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("well_tested") else {
+        return;
+    };
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
     // which doesn't give it a chance to clean up. And, `std::process::Command` only
     // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
@@ -743,7 +797,9 @@ fn interrupt_caught_and_kills_children() {
 ///   the build should eventually be killed by a timeout.
 #[test]
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
-    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    let Some(tmp_src_dir) = copy_of_testdata("hang_when_mutated") else {
+        return;
+    };
     // Also test that it accepts decimal seconds
     run()
         .arg("mutants")
@@ -796,7 +852,9 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
 
 #[test]
 fn mutants_causing_check_to_timeout_are_stopped_by_manual_timeout() {
-    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    let Some(tmp_src_dir) = copy_of_testdata("hang_when_mutated") else {
+        return;
+    };
     run()
         .arg("mutants")
         .args(["--check", "--build-timeout=4"])
@@ -816,7 +874,9 @@ fn mutants_causing_check_to_timeout_are_stopped_by_manual_timeout() {
 #[test]
 fn log_file_names_are_short_and_dont_collide() {
     // The "well_tested" tree can generate multiple mutants from single lines. They get distinct file names.
-    let tmp_src_dir = copy_of_testdata("well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("well_tested") else {
+        return;
+    };
     let cmd_assert = run()
         .arg("mutants")
         .args(["--check", "-v", "-V"])
@@ -851,6 +911,9 @@ fn log_file_names_are_short_and_dont_collide() {
 fn cargo_mutants_in_override_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
+    if !has_testdata() {
+        return;
+    }
     run()
         .arg("mutants")
         .arg("--no-times")
@@ -869,6 +932,9 @@ fn cargo_mutants_in_override_dependency_tree_passes() {
 fn cargo_mutants_in_relative_dependency_tree_passes() {
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
+    if !has_testdata() {
+        return;
+    }
     run()
         .arg("mutants")
         .arg("--no-times")
@@ -885,6 +951,9 @@ fn cargo_mutants_in_relative_dependency_tree_passes() {
 
 #[test]
 fn cargo_mutants_in_replace_dependency_tree_passes() {
+    if !has_testdata() {
+        return;
+    }
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
     run()
@@ -903,6 +972,9 @@ fn cargo_mutants_in_replace_dependency_tree_passes() {
 
 #[test]
 fn cargo_mutants_in_patch_dependency_tree_passes() {
+    if !has_testdata() {
+        return;
+    }
     // Run against the testdata directory directly, without copying it, so that the
     // relative dependency `../dependency` is still used.
     run()
@@ -928,7 +1000,9 @@ fn cargo_mutants_in_patch_dependency_tree_passes() {
 fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
     // This needs --no-shuffle because failure to unapply will show up when the
     // uncaught mutant is not the first file tested.
-    let tmp_src_dir = copy_of_testdata("unapply");
+    let Some(tmp_src_dir) = copy_of_testdata("unapply") else {
+        return;
+    };
     run()
         .args(["mutants", "--no-times", "--no-shuffle"])
         .arg("-d")
@@ -943,7 +1017,9 @@ fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
 
 #[test]
 fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
-    let tmp_src_dir = copy_of_testdata("strict_warnings");
+    let Some(tmp_src_dir) = copy_of_testdata("strict_warnings") else {
+        return;
+    };
     run()
         .arg("mutants")
         .arg("--check")

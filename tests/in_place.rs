@@ -2,17 +2,20 @@
 
 //! Test `--in-place` behavior.
 
-use std::path::Path;
-
 use anyhow::Result;
 use tempfile::TempDir;
 
 mod util;
-use util::{copy_of_testdata, run};
+use util::{copy_of_testdata, run, testdata_path};
 
 #[test]
 fn in_place_check_leaves_no_changes() -> Result<()> {
-    let tmp = copy_of_testdata("small_well_tested");
+    let Some(tmp) = copy_of_testdata("small_well_tested") else {
+        return Ok(());
+    };
+    let Some(orig_path) = testdata_path("small_well_tested") else {
+        return Ok(());
+    };
     let output_tmp = TempDir::new().unwrap();
     let cmd = run()
         .args(["mutants", "--in-place", "--check", "-d"])
@@ -29,7 +32,6 @@ fn in_place_check_leaves_no_changes() -> Result<()> {
         "stderr:\n{}",
         String::from_utf8_lossy(&cmd.get_output().stderr)
     );
-    let orig_path = Path::new("testdata/small_well_tested");
     for filename in ["Cargo.toml", "src/lib.rs"] {
         println!("comparing {filename}");
         assert_eq!(

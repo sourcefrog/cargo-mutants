@@ -22,7 +22,9 @@ fn write_config_file(tempdir: &TempDir, config: &str) {
 
 #[test]
 fn invalid_toml_rejected() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"what even is this?
@@ -38,7 +40,9 @@ fn invalid_toml_rejected() {
 
 #[test]
 fn invalid_field_rejected() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"wobble = false
@@ -57,7 +61,9 @@ fn invalid_field_rejected() {
 
 #[test]
 fn list_with_config_file_exclusion() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"exclude_globs = ["src/*_mod.rs"]
@@ -79,7 +85,9 @@ fn list_with_config_file_exclusion() {
 
 #[test]
 fn list_with_config_file_inclusion() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"examine_globs = ["src/*_mod.rs"]
@@ -104,7 +112,9 @@ fn list_with_config_file_inclusion() {
 
 #[test]
 fn file_argument_overrides_config_examine_globs_key() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     // This config key has no effect because the command line argument
     // takes precedence.
     write_config_file(
@@ -125,7 +135,9 @@ fn file_argument_overrides_config_examine_globs_key() {
 
 #[test]
 fn exclude_file_argument_overrides_config() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     // This config key has no effect because the command line argument
     // takes precedence.
     write_config_file(
@@ -157,7 +169,9 @@ fn exclude_file_argument_overrides_config() {
 
 #[test]
 fn list_with_config_file_regexps() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"
@@ -184,7 +198,9 @@ fn list_with_config_file_regexps() {
 
 #[test]
 fn exclude_re_overrides_config() {
-    let testdata = copy_of_testdata("well_tested");
+    let Some(testdata) = copy_of_testdata("well_tested") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"
@@ -221,7 +237,9 @@ fn exclude_re_overrides_config() {
 fn tree_fails_without_needed_feature() {
     // The point of this tree is to check that Cargo features can be turned on,
     // but let's make sure it does fail as intended if they're not.
-    let testdata = copy_of_testdata("fails_without_feature");
+    let Some(testdata) = copy_of_testdata("fails_without_feature") else {
+        return;
+    };
     run()
         .args(["mutants", "-d"])
         .arg(testdata.path())
@@ -234,7 +252,9 @@ fn tree_fails_without_needed_feature() {
 
 #[test]
 fn additional_cargo_args() {
-    let testdata = copy_of_testdata("fails_without_feature");
+    let Some(testdata) = copy_of_testdata("fails_without_feature") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"
@@ -250,7 +270,9 @@ fn additional_cargo_args() {
 
 #[test]
 fn additional_cargo_test_args() {
-    let testdata = copy_of_testdata("fails_without_feature");
+    let Some(testdata) = copy_of_testdata("fails_without_feature") else {
+        return;
+    };
     write_config_file(
         &testdata,
         r#"

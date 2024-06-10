@@ -13,7 +13,9 @@ use util::{copy_of_testdata, run};
 fn insta_test_failures_are_detected() {
     for insta_update in ["auto", "always"] {
         println!("INSTA_UPDATE={insta_update}");
-        let tmp_src_dir = copy_of_testdata("insta");
+        let Some(tmp_src_dir) = copy_of_testdata("insta") else {
+            return;
+        };
         run()
             .arg("mutants")
             .args(["--no-times", "--no-shuffle", "--caught", "-Ltrace"])

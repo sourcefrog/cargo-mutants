@@ -14,6 +14,9 @@ use util::run;
 fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
     // This could be written more simply as `--exclude module` but we want to
     // test that backslash is accepted.
+    if !has_testdata() {
+        return;
+    }
     run()
         .arg("mutants")
         .args(["--list", "--exclude", "**\\module\\**\\*.rs"])

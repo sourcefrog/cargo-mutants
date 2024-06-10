@@ -1,4 +1,4 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023, 2024 Martin Pool
 
 use std::fs::read_to_string;
 use std::io::Write;
@@ -8,12 +8,14 @@ use similar::TextDiff;
 use tempfile::NamedTempFile;
 
 mod util;
-use util::{copy_of_testdata, run};
+use util::{copy_of_testdata, run, testdata_path};
 
 #[test]
 fn diff_trees_well_tested() {
     for name in &["diff0", "diff1"] {
-        let tmp = copy_of_testdata(name);
+        let Some(tmp) = copy_of_testdata(name) else {
+            return;
+        };
         run()
             .args(["mutants", "-d"])
             .arg(tmp.path())
@@ -24,6 +26,9 @@ fn diff_trees_well_tested() {
 
 #[test]
 fn list_mutants_changed_in_diff1() {
+    if testdata_path("diff0").is_none() {
+        return;
+    }
     let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
     let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
     let diff = TextDiff::from_lines(&src0, &src1)
@@ -36,7 +41,9 @@ fn list_mutants_changed_in_diff1() {
     let mut diff_file = NamedTempFile::new().unwrap();
     diff_file.write_all(diff.as_bytes()).unwrap();
 
-    let tmp = copy_of_testdata("diff1");
+    let Some(tmp) = copy_of_testdata("diff1") else {
+        return;
+    };
 
     run()
         .args(["mutants", "--no-shuffle", "-d"])
@@ -71,6 +78,9 @@ fn list_mutants_changed_in_diff1() {
 /// If the text in the diff doesn't look like the tree then error out.
 #[test]
 fn mismatched_diff_causes_error() {
+    if testdata_path("diff0").is_none() {
+        return;
+    }
     let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
     let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
     let diff = TextDiff::from_lines(&src0, &src1)
@@ -84,7 +94,9 @@ fn mismatched_diff_causes_error() {
     let mut diff_file = NamedTempFile::new().unwrap();
     diff_file.write_all(diff.as_bytes()).unwrap();
 
-    let tmp = copy_of_testdata("diff1");
+    let Some(tmp) = copy_of_testdata("diff1") else {
+        return;
+    };
 
     run()
         .args(["mutants", "--no-shuffle", "-d"])
@@ -123,7 +135,9 @@ fn diff_with_multiple_deletions_is_ok() {
     let mut diff_file = NamedTempFile::new().unwrap();
     diff_file.write_all(diff.as_bytes()).unwrap();
 
-    let tmp = copy_of_testdata("diff1");
+    let Some(tmp) = copy_of_testdata("diff1") else {
+        return;
+    };
 
     run()
         .args(["mutants", "--no-shuffle", "-d"])

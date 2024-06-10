@@ -1,14 +1,17 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023, 2024 Martin Pool
 
 //! Tests for trace from the cargo-mutants CLI.
 
 use predicates::prelude::*;
 
 mod util;
-use util::run;
+use util::{has_testdata, run};
 
 #[test]
 fn env_var_controls_trace() {
+    if !has_testdata() {
+        return;
+    }
     run()
         .env("CARGO_MUTANTS_TRACE_LEVEL", "trace")
         .args(["mutants", "--list"])

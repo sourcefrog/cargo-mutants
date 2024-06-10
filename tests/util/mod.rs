@@ -63,8 +63,29 @@ impl CommandInstaExt for assert_cmd::Command {
     }
 }
 
-// Copy the source because output is written into mutants.out.
-pub fn copy_of_testdata(tree_name: &str) -> TempDir {
+pub fn has_testdata() -> bool {
+    Path::new("testdata").is_dir()
+}
+
+/// Return the path of a testdata directory, for read-only access, if the testdata is present.
+pub fn testdata_path(tree_name: &str) -> Option<PathBuf> {
+    let testdata = Path::new("testdata");
+    if !testdata.is_dir() {
+        return None;
+    }
+    Some(testdata.join(tree_name))
+}
+
+/// Return a TempDir containing a copy of one of the trees from under `testdata`
+/// in the source.
+///
+/// This returns None if `testdata` does not exist, which is expected when running
+/// tests from the package downloaded from crates.io, because it excludes the subdirectory
+/// crates comprising the testdata.
+///
+/// This assumes the cwd is the top source directory, which is where `cargo test` runs tests.
+pub fn copy_of_testdata(tree_name: &str) -> Option<TempDir> {
+    let source = testdata_path(tree_name)?;
     let tmp_src_dir = tempdir().unwrap();
     cp_r::CopyOptions::new()
         .filter(|path, _stat| {
@@ -72,9 +93,9 @@ pub fn copy_of_testdata(tree_name: &str) -> TempDir {
                 .iter()
                 .all(|p| !path.starts_with(p)))
         })
-        .copy_tree(Path::new("testdata").join(tree_name), &tmp_src_dir)
+        .copy_tree(source, tmp_src_dir.path())
         .unwrap();
-    tmp_src_dir
+    Some(tmp_src_dir)
 }
 
 /// Assert that some bytes, when parsed as json, equal a json value.

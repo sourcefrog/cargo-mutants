@@ -5,12 +5,15 @@
 use itertools::Itertools;
 
 mod util;
-use util::run;
+use util::{has_testdata, run};
 
 #[test]
 fn shard_divides_all_mutants() {
     // For speed, this only lists the mutants, trusting that the mutants
     // that are listed are the ones that are run.
+    if !has_testdata() {
+        return;
+    }
     let common_args = ["mutants", "--list", "-d", "testdata/well_tested"];
     let full_list = String::from_utf8(
         run()

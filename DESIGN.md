@@ -222,6 +222,8 @@ To make a new tree you can copy an existing tree, but make sure to change the pa
 
 All the trees need to be excluded from the overall workspace in the top-level `Cargo.toml`.
 
+Testdata trees are not included in the package tarball uploaded to crates.io because they contain other Rust packages, so the tests succeed early if the testdata is missing.
+
 ### `--list` tests
 
 There is a general test that runs `cargo mutants --list` on each tree and compares the result to an Insta snapshot, for both the text and json output formats.

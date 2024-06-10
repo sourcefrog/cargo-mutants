@@ -9,7 +9,9 @@ use util::{copy_of_testdata, run};
 
 #[test]
 fn test_with_nextest_on_small_tree() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let Some(tmp_src_dir) = copy_of_testdata("small_well_tested") else {
+        return;
+    };
     let assert = run()
         .args(["mutants", "--test-tool", "nextest", "-vV", "--no-shuffle"])
         .arg("-d")

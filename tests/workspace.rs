@@ -9,10 +9,13 @@ use itertools::Itertools;
 use serde_json::json;
 
 mod util;
-use util::{assert_bytes_eq_json, copy_of_testdata, run};
+use util::{assert_bytes_eq_json, copy_of_testdata, has_testdata, run};
 
 #[test]
 fn open_by_manifest_path() {
+    if !has_testdata() {
+        return;
+    }
     run()
         .args([
             "mutants",
@@ -30,6 +33,9 @@ fn open_by_manifest_path() {
 
 #[test]
 fn list_warns_about_unmatched_packages() {
+    if !has_testdata() {
+        return;
+    }
     run()
         .args([
             "mutants",
@@ -49,6 +55,9 @@ fn list_warns_about_unmatched_packages() {
 #[test]
 fn list_files_json_workspace() {
     // Demonstrates that we get package names in the json listing.
+    if !has_testdata() {
+        return;
+    }
     let cmd = run()
         .args(["mutants", "--list-files", "--json"])
         .current_dir("testdata/workspace")
@@ -77,6 +86,9 @@ fn list_files_json_workspace() {
 
 #[test]
 fn list_files_as_json_in_workspace_subdir() {
+    if !has_testdata() {
+        return;
+    }
     let cmd = run()
         .args(["mutants", "--list-files", "--json", "--workspace"])
         .current_dir("testdata/workspace/main2")
@@ -105,7 +117,9 @@ fn list_files_as_json_in_workspace_subdir() {
 
 #[test]
 fn workspace_tree_is_well_tested() {
-    let tmp_src_dir = copy_of_testdata("workspace");
+    let Some(tmp_src_dir) = copy_of_testdata("workspace") else {
+        return;
+    };
     run()
         .args(["mutants", "-d"])
         .arg(tmp_src_dir.path())
@@ -194,7 +208,9 @@ fn workspace_tree_is_well_tested() {
 /// be mutated.
 /// See <https://github.com/sourcefrog/cargo-mutants/issues/151>
 fn in_workspace_only_relevant_packages_included_in_baseline_tests_by_file_filter() {
-    let tmp = copy_of_testdata("package_fails");
+    let Some(tmp) = copy_of_testdata("package_fails") else {
+        return;
+    };
     run()
         .args(["mutants", "-f", "passing/src/lib.rs", "--no-shuffle", "-d"])
         .arg(tmp.path())
@@ -226,7 +242,9 @@ fn in_workspace_only_relevant_packages_included_in_baseline_tests_by_file_filter
 /// so it doesn't fail if some packages don't build.
 #[test]
 fn baseline_test_respects_package_options() {
-    let tmp = copy_of_testdata("package_fails");
+    let Some(tmp) = copy_of_testdata("package_fails") else {
+        return;
+    };
     run()
         .args([
             "mutants",
