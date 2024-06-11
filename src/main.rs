@@ -46,6 +46,7 @@ use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use color_print::cstr;
+use output::{load_previously_caught, OutputDir};
 use tracing::debug;
 
 use crate::build_dir::BuildDir;
@@ -193,7 +194,7 @@ pub struct Args {
     )]
     in_place: bool,
 
-    /// Skip mutants that were caught in the previous run.
+    /// Skip mutants that were caught in previous runs.
     #[arg(long, help_heading = "Filters")]
     iterate: bool,
 
@@ -407,7 +408,22 @@ fn main() -> Result<()> {
     } else {
         PackageFilter::Auto(start_dir.to_owned())
     };
-    let discovered = workspace.discover(&package_filter, &options, &console)?;
+
+    let output_parent_dir = options
+        .output_in_dir
+        .clone()
+        .unwrap_or_else(|| workspace.dir.clone());
+
+    let mut discovered = workspace.discover(&package_filter, &options, &console)?;
+
+    let previously_caught = if args.iterate {
+        let previously_caught = load_previously_caught(&output_parent_dir)?;
+        discovered.remove_previously_caught(&previously_caught);
+        Some(previously_caught)
+    } else {
+        None
+    };
+
     console.clear();
     if args.list_files {
         list_files(FmtToIoWrite::new(io::stdout()), &discovered.files, &options)?;
@@ -426,7 +442,12 @@ fn main() -> Result<()> {
     if args.list {
         list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
     } else {
-        let lab_outcome = test_mutants(mutants, &workspace.dir, options, &console)?;
+        let output_dir = OutputDir::new(&output_parent_dir)?;
+        if let Some(previously_caught) = previously_caught {
+            output_dir.write_previously_caught(&previously_caught)?;
+        }
+        console.set_debug_log(output_dir.open_debug_log()?);
+        let lab_outcome = test_mutants(mutants, &workspace.dir, output_dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

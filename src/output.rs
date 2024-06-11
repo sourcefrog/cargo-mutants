@@ -13,7 +13,7 @@ use path_slash::PathExt;
 use serde::Serialize;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use tracing::info;
+use tracing::{info, trace};
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::*;
@@ -22,6 +22,9 @@ const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
 const LOCK_JSON: &str = "lock.json";
 const LOCK_POLL: Duration = Duration::from_millis(100);
+static CAUGHT_TXT: &str = "caught.txt";
+static PREVIOUSLY_CAUGHT_TXT: &str = "previously_caught.txt";
+static UNVIABLE_TXT: &str = "unviable.txt";
 
 /// The contents of a `lock.json` written into the output directory and used as
 /// a lock file to ensure that two cargo-mutants invocations don't try to write
@@ -139,10 +142,10 @@ impl OutputDir {
             .open(output_dir.join("missed.txt"))
             .context("create missed.txt")?;
         let caught_list = list_file_options
-            .open(output_dir.join("caught.txt"))
+            .open(output_dir.join(CAUGHT_TXT))
             .context("create caught.txt")?;
         let unviable_list = list_file_options
-            .open(output_dir.join("unviable.txt"))
+            .open(output_dir.join(UNVIABLE_TXT))
             .context("create unviable.txt")?;
         let timeout_list = list_file_options
             .open(output_dir.join("timeout.txt"))
@@ -222,10 +225,49 @@ impl OutputDir {
     pub fn take_lab_outcome(self) -> LabOutcome {
         self.lab_outcome
     }
+
+    pub fn write_previously_caught(&self, caught: &[String]) -> Result<()> {
+        let p = self.path.join(PREVIOUSLY_CAUGHT_TXT);
+        // TODO: with_capacity when mutants knows to skip that; https://github.com/sourcefrog/cargo-mutants/issues/315
+        // let mut b = String::with_capacity(caught.iter().map(|l| l.len() + 1).sum());
+        let mut b = String::new();
+        for l in caught {
+            b.push_str(l);
+            b.push('\n');
+        }
+        File::options()
+            .create_new(true)
+            .write(true)
+            .open(&p)
+            .and_then(|mut f| f.write_all(b.as_bytes()))
+            .with_context(|| format!("Write {p:?}"))
+    }
+}
+
+/// Return the string names of mutants previously caught in this output directory, including
+/// unviable mutants.
+///
+/// Returns an empty vec if there are none.
+pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String>> {
+    let mut r = Vec::new();
+    for filename in [CAUGHT_TXT, UNVIABLE_TXT, PREVIOUSLY_CAUGHT_TXT] {
+        let p = output_parent_dir.join(OUTDIR_NAME).join(filename);
+        trace!(?p, "read previously caught");
+        if p.is_file() {
+            r.extend(
+                read_to_string(&p)
+                    .with_context(|| format!("Read previously caught mutants from {p:?}"))?
+                    .lines()
+                    .map(|s| s.to_owned()),
+            );
+        }
+    }
+    Ok(r)
 }
 
 #[cfg(test)]
 mod test {
+    use fs::write;
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
@@ -297,7 +339,7 @@ mod test {
 
     #[test]
     fn rotate() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
@@ -337,5 +379,46 @@ mod test {
             .path()
             .join("mutants.out.old/log/baseline.log")
             .is_file());
+    }
+
+    #[test]
+    fn track_previously_caught() {
+        let temp_dir = TempDir::new().unwrap();
+        let parent = Utf8Path::from_path(temp_dir.path()).unwrap();
+
+        let example = "src/process.rs:213:9: replace ProcessStatus::is_success -> bool with true
+src/process.rs:248:5: replace get_command_output -> Result<String> with Ok(String::new())
+";
+
+        // Read from an empty dir: succeeds.
+        assert!(load_previously_caught(parent)
+            .expect("load succeeds")
+            .is_empty());
+
+        let output_dir = OutputDir::new(parent).unwrap();
+        assert!(load_previously_caught(parent)
+            .expect("load succeeds")
+            .is_empty());
+
+        write(parent.join("mutants.out/caught.txt"), example.as_bytes()).unwrap();
+        let previously_caught = load_previously_caught(parent).expect("load succeeds");
+        assert_eq!(
+            previously_caught.iter().collect_vec(),
+            example.lines().collect_vec()
+        );
+
+        // make a new output dir, moving away the old one, and write this
+        drop(output_dir);
+        let output_dir = OutputDir::new(parent).unwrap();
+        output_dir
+            .write_previously_caught(&previously_caught)
+            .unwrap();
+        assert_eq!(
+            read_to_string(parent.join("mutants.out/caught.txt")).expect("read caught.txt"),
+            ""
+        );
+        assert!(parent.join("mutants.out/previously_caught.txt").is_file());
+        let now = load_previously_caught(parent).expect("load succeeds");
+        assert_eq!(now.iter().collect_vec(), example.lines().collect_vec());
     }
 }

@@ -35,6 +35,19 @@ pub struct Discovered {
     pub files: Vec<SourceFile>,
 }
 
+impl Discovered {
+    pub(crate) fn remove_previously_caught(&mut self, previously_caught: &[String]) {
+        self.mutants.retain(|m| {
+            let name = m.name(true, false);
+            let c = previously_caught.contains(&name);
+            if c {
+                trace!(?name, "skip previously caught mutant");
+            }
+            !c
+        })
+    }
+}
+
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
