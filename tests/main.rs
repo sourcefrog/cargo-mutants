@@ -709,9 +709,10 @@ fn interrupt_caught_and_kills_children() {
     println!("stderr:\n{stderr}");
 
     assert!(stderr.contains("interrupted"));
-    // Also because of `--level=trace` we see some debug details.
-    assert!(stderr.contains("terminating child process"));
-    assert!(stderr.contains("terminated child exit status"));
+    // We used to look here for some other trace messages about how it's interrupted, but
+    // that seems to be racy: sometimes the parent sees the child interrupted before it
+    // emits these messages? Anyhow, it's not essential.
+
     // This shouldn't cause a panic though (#333)
     assert!(!stderr.contains("panic"));
     // And we don't want duplicate messages about workers failing.

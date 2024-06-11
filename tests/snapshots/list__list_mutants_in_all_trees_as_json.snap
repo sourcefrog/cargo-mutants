@@ -1861,66 +1861,6 @@ expression: buf
         "line": 45
       }
     }
-  },
-  {
-    "file": "src/lib.rs",
-    "function": {
-      "function_name": "controlled_loop",
-      "return_type": "-> usize",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 50
-        },
-        "start": {
-          "column": 1,
-          "line": 32
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "+",
-    "span": {
-      "end": {
-        "column": 54,
-        "line": 45
-      },
-      "start": {
-        "column": 53,
-        "line": 45
-      }
-    }
-  },
-  {
-    "file": "src/lib.rs",
-    "function": {
-      "function_name": "controlled_loop",
-      "return_type": "-> usize",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 50
-        },
-        "start": {
-          "column": 1,
-          "line": 32
-        }
-      }
-    },
-    "genre": "BinaryOperator",
-    "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "/",
-    "span": {
-      "end": {
-        "column": 54,
-        "line": 45
-      },
-      "start": {
-        "column": 53,
-        "line": 45
-      }
-    }
   }
 ]
 ```

@@ -42,7 +42,7 @@ pub fn controlled_loop() -> usize {
             return i;
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
-        if start.elapsed() > Duration::from_secs(60 * 5) {
+        if start.elapsed() > Duration::from_secs(60) {
             panic!("timed out");
         }
     }
