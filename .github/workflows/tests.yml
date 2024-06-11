@@ -175,7 +175,7 @@ jobs:
     strategy:
       fail-fast: false # We want to get all the mutant failures
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         test_tool: [cargo]
     steps:
       - uses: actions/checkout@v4
@@ -197,7 +197,7 @@ jobs:
       - name: Mutants
         # Skip baselines because this job only runs after the baseline has been separately run.
         run: >
-          cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/8
+          cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/10
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=500
           --build-timeout=500 --in-place
       - name: Archive mutants.out
