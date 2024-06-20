@@ -47,7 +47,7 @@ use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use color_print::cstr;
 use output::{load_previously_caught, OutputDir};
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::build_dir::BuildDir;
 use crate::console::Console;
@@ -418,6 +418,10 @@ fn main() -> Result<()> {
 
     let previously_caught = if args.iterate {
         let previously_caught = load_previously_caught(&output_parent_dir)?;
+        info!(
+            "Iteration excludes {} previously caught or unviable mutants",
+            previously_caught.len()
+        );
         discovered.remove_previously_caught(&previously_caught);
         Some(previously_caught)
     } else {
