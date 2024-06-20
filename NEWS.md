@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: `--iterate` option allows more easily re-testing only the previously missed mutants.
+
 ## 24.5.0
 
 - Fixed: Follow `path` attributes on `mod` statements.
