@@ -2,6 +2,8 @@
 
 //! A directory containing mutated source to run cargo builds and tests.
 
+use std::fmt::{self, Debug};
+
 use tempfile::TempDir;
 use tracing::info;
 
@@ -13,7 +15,6 @@ use crate::*;
 ///
 /// Depending on how its constructed, this might be a copy in a tempdir
 /// or the original source directory.
-#[derive(Debug)]
 pub struct BuildDir {
     /// The path of the root of the build directory.
     path: Utf8PathBuf,
@@ -21,6 +22,14 @@ pub struct BuildDir {
     /// object is dropped. If None, there's nothing to clean up.
     #[allow(dead_code)]
     temp_dir: Option<TempDir>,
+}
+
+impl Debug for BuildDir {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BuildDir")
+            .field("path", &self.path)
+            .finish()
+    }
 }
 
 impl BuildDir {

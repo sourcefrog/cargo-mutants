@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
@@ -9,9 +9,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use itertools::Itertools;
-use tracing::warn;
-#[allow(unused)]
-use tracing::{debug, debug_span, error, info, trace};
+use tracing::{debug, debug_span, error, info, trace, warn};
 
 use crate::cargo::run_cargo;
 use crate::outcome::LabOutcome;
@@ -29,16 +27,11 @@ use crate::*;
 pub fn test_mutants(
     mut mutants: Vec<Mutant>,
     workspace_dir: &Utf8Path,
+    output_dir: OutputDir,
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let output_in_dir: &Utf8Path = options
-        .output_in_dir
-        .as_ref()
-        .map_or(workspace_dir, |p| p.as_path());
-    let output_dir = OutputDir::new(output_in_dir)?;
-    console.set_debug_log(output_dir.open_debug_log()?);
 
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
@@ -148,7 +141,7 @@ pub fn test_mutants(
                             )?;
                         }
                         Ok(None) => {
-                            trace!("no more work");
+                            trace!("no more work for this thread");
                             return Ok(());
                         }
                     }

@@ -25,6 +25,8 @@ The output directory contains:
 
 * `caught.txt`, `missed.txt`, `timeout.txt`, `unviable.txt`, each listing mutants with the corresponding outcome.
 
+* `previously_caught.txt` accumulates a list of mutants caught in previous runs with [`--iterate`](iterate.md).
+
 The contents of the directory and the format of these files is subject to change in future versions.
 
 These files are incrementally updated while cargo-mutants runs, so other programs can read them to follow progress.
