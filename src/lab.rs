@@ -1,9 +1,10 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
+use std::path::Path;
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -49,7 +50,14 @@ pub fn test_mutants(
         warn!("No mutants found under the active filters");
         return Ok(LabOutcome::default());
     }
-    let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
+    let all_packages = mutants
+        .iter()
+        .map(|m| m.package())
+        .unique()
+        .cloned()
+        .collect_vec();
+    let all_package_vec = all_packages.iter().collect_vec(); // hold
+    let all_package_refs = all_package_vec.as_slice();
     debug!(?all_packages);
 
     let output_mutex = Mutex::new(output_dir);
@@ -58,17 +66,24 @@ pub fn test_mutants(
     } else {
         BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?
     };
+    let phases: &[Phase] = if options.check_only {
+        &[Phase::Check]
+    } else {
+        &[Phase::Build, Phase::Test]
+    };
+    let baseline_timeouts = Timeouts {
+        test: options.test_timeout.unwrap_or(Duration::MAX),
+        build: options.build_timeout.unwrap_or(Duration::MAX),
+    };
     let baseline_outcome = match options.baseline {
         BaselineStrategy::Run => {
             let outcome = test_scenario(
                 &build_dir,
                 &output_mutex,
                 &Scenario::Baseline,
-                &all_packages,
-                Timeouts {
-                    test: options.test_timeout.unwrap_or(Duration::MAX),
-                    build: options.build_timeout.unwrap_or(Duration::MAX),
-                },
+                all_package_refs,
+                baseline_timeouts,
+                phases,
                 &options,
                 console,
             )?;
@@ -88,7 +103,6 @@ pub fn test_mutants(
         }
         BaselineStrategy::Skip => None,
     };
-    let mut build_dirs = vec![build_dir];
 
     let baseline_duration_by_phase = |phase| {
         baseline_outcome
@@ -101,29 +115,55 @@ pub fn test_mutants(
         test: test_timeout(baseline_duration_by_phase(Phase::Test), &options),
     };
 
-    let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
-    for i in 1..jobs {
-        debug!("copy build dir {i}");
-        build_dirs.push(BuildDir::copy_from(
-            workspace_dir,
-            options.gitignore,
-            options.leak_dirs,
-            console,
-        )?);
-    }
-    debug!(build_dirs = ?build_dirs);
-
+    let build_dir_0 = Mutex::new(Some(build_dir));
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
     // scenario to test off the queue, and then exits when there are no more left.
     console.start_testing_mutants(mutants.len());
+    let n_threads = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     let pending = Mutex::new(mutants.into_iter());
     thread::scope(|scope| -> crate::Result<()> {
         let mut threads = Vec::new();
-        // TODO: Maybe, make the copies in parallel on each thread, rather than up front?
-        for build_dir in build_dirs {
+        for _i_thread in 0..n_threads {
             threads.push(scope.spawn(|| -> crate::Result<()> {
-                let build_dir = build_dir; // move it into this thread
-                trace!(thread_id = ?thread::current().id(), ?build_dir, "start thread");
+                trace!(thread_id = ?thread::current().id(), "start thread");
+                // First thread to start can use the initial build dir; others need to copy a new one
+                let build_dir_0 = build_dir_0.lock().expect("lock build dir 0").take();
+                let build_dir = match build_dir_0 {
+                    Some(d) => d,
+                    None => {
+                        debug!("copy build dir");
+                        let build_dir = BuildDir::copy_from(
+                            workspace_dir,
+                            options.gitignore,
+                            options.leak_dirs,
+                            console,
+                        )?;
+                        // Also do a baseline build unless they're skipped, so that the slower initial
+                        // build won't be at risk of hitting the build timeout.
+                        let phases = if options.check_only {
+                            &[Phase::Check]
+                        } else {
+                            &[Phase::Build]
+                        };
+                        let dir_baseline_outcome = test_scenario(
+                            &build_dir,
+                            &output_mutex,
+                            &Scenario::Baseline,
+                            all_package_refs,
+                            baseline_timeouts,
+                            phases,
+                            &options,
+                            console,
+                        )?;
+                        if !dir_baseline_outcome.success() {
+                            error!("initial build in copied directory failed");
+                            return Err(anyhow!("initial build in copied directory failed"));
+                        }
+                        build_dir
+                    }
+                };
+                let _thread_span =
+                    debug_span!("worker thread", build_dir = ?build_dir.path()).entered();
                 loop {
                     // Extract the mutant in a separate statement so that we don't hold the
                     // lock while testing it.
@@ -143,13 +183,13 @@ pub fn test_mutants(
                                 &Scenario::Mutant(mutant),
                                 &[&package],
                                 timeouts,
+                                phases,
                                 &options,
                                 console,
                             )?;
                         }
                         Ok(None) => {
-                            trace!("no more work");
-                            return Ok(());
+                            return Ok(()); // no more work for this thread
                         }
                     }
                 }
@@ -274,12 +314,14 @@ fn build_timeout(baseline_duration: Option<Duration>, options: &Options) -> Dura
 ///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
+#[allow(clippy::too_many_arguments)] // it's a lot, but not yet obvious how to avoid it
 fn test_scenario(
     build_dir: &BuildDir,
     output_mutex: &Mutex<OutputDir>,
     scenario: &Scenario,
     test_packages: &[&Package],
     timeouts: Timeouts,
+    phases: &[Phase],
     options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
@@ -297,16 +339,12 @@ fn test_scenario(
             mutant.apply(build_dir)
         })
         .transpose()?;
-    console.scenario_started(scenario, log_file.path())?;
+    let dir: &Path = build_dir.path().as_ref();
+    console.scenario_started(dir, scenario, log_file.path())?;
 
     let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
-    let phases: &[Phase] = if options.check_only {
-        &[Phase::Check]
-    } else {
-        &[Phase::Build, Phase::Test]
-    };
     for &phase in phases {
-        console.scenario_phase_started(scenario, phase);
+        console.scenario_phase_started(dir, phase);
         let timeout = match phase {
             Phase::Test => timeouts.test,
             Phase::Build | Phase::Check => timeouts.build,
@@ -322,7 +360,7 @@ fn test_scenario(
         )?;
         let success = phase_result.is_success(); // so we can move it away
         outcome.add_phase_result(phase_result);
-        console.scenario_phase_finished(scenario, phase);
+        console.scenario_phase_finished(dir, phase);
         if !success {
             break;
         }
@@ -333,7 +371,7 @@ fn test_scenario(
         .expect("lock output dir to add outcome")
         .add_scenario_outcome(&outcome)?;
     debug!(outcome = ?outcome.summary());
-    console.scenario_finished(scenario, &outcome, options);
+    console.scenario_finished(dir, scenario, &outcome, options);
 
     Ok(outcome)
 }

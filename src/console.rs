@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Print messages and progress bars on the terminal.
 
@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use std::fmt::Write;
 use std::fs::File;
 use std::io;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -70,9 +71,14 @@ impl Console {
     }
 
     /// Update that a cargo task is starting.
-    pub fn scenario_started(&self, scenario: &Scenario, log_file: &Utf8Path) -> Result<()> {
+    pub fn scenario_started(
+        &self,
+        dir: &Path,
+        scenario: &Scenario,
+        log_file: &Utf8Path,
+    ) -> Result<()> {
         let start = Instant::now();
-        let scenario_model = ScenarioModel::new(scenario, start, log_file)?;
+        let scenario_model = ScenarioModel::new(dir, scenario, start, log_file)?;
         self.view.update(|model| {
             model.scenario_models.push(scenario_model);
         });
@@ -82,6 +88,7 @@ impl Console {
     /// Update that cargo finished.
     pub fn scenario_finished(
         &self,
+        dir: &Path,
         scenario: &Scenario,
         outcome: &ScenarioOutcome,
         options: &Options,
@@ -96,7 +103,7 @@ impl Console {
                 SummaryOutcome::Success => model.successes += 1,
                 SummaryOutcome::Failure => model.failures += 1,
             }
-            model.remove_scenario(scenario);
+            model.remove_scenario(dir);
         });
 
         if (outcome.mutant_caught() && !options.print_caught)
@@ -142,24 +149,29 @@ impl Console {
         self.message(&s);
     }
 
-    pub fn start_copy(&self) {
+    pub fn start_copy(&self, dir: &Path) {
         self.view.update(|model| {
-            assert!(model.copy_model.is_none());
-            model.copy_model = Some(CopyModel::new());
+            model.copy_models.push(CopyModel::new(dir.to_owned()));
         });
     }
 
-    pub fn finish_copy(&self) {
+    pub fn finish_copy(&self, dir: &Path) {
         self.view.update(|model| {
-            model.copy_model = None;
+            let idx = model
+                .copy_models
+                .iter()
+                .position(|m| m.dest == dir)
+                .expect("copy model not found");
+            model.copy_models.swap_remove(idx);
         });
     }
 
-    pub fn copy_progress(&self, total_bytes: u64) {
+    pub fn copy_progress(&self, dest: &Path, total_bytes: u64) {
         self.view.update(|model| {
             model
-                .copy_model
-                .as_mut()
+                .copy_models
+                .iter_mut()
+                .find(|m| m.dest == dest)
                 .expect("copy in progress")
                 .bytes_copied(total_bytes)
         });
@@ -185,15 +197,15 @@ impl Console {
     }
 
     /// A new phase of this scenario started.
-    pub fn scenario_phase_started(&self, scenario: &Scenario, phase: Phase) {
+    pub fn scenario_phase_started(&self, dir: &Path, phase: Phase) {
         self.view.update(|model| {
-            model.find_scenario_mut(scenario).phase_started(phase);
+            model.find_scenario_mut(dir).phase_started(phase);
         })
     }
 
-    pub fn scenario_phase_finished(&self, scenario: &Scenario, phase: Phase) {
+    pub fn scenario_phase_finished(&self, dir: &Path, phase: Phase) {
         self.view.update(|model| {
-            model.find_scenario_mut(scenario).phase_finished(phase);
+            model.find_scenario_mut(dir).phase_finished(phase);
         })
     }
 
@@ -342,10 +354,11 @@ impl io::Write for DebugLogWriter {
 #[derive(Default)]
 struct LabModel {
     walk_tree: Option<WalkModel>,
-    copy_model: Option<CopyModel>,
+    /// Copy jobs in progress
+    copy_models: Vec<CopyModel>,
     scenario_models: Vec<ScenarioModel>,
     lab_start_time: Option<Instant>,
-    // The instant when we started trying mutation scenarios, after running the baseline.
+    /// The instant when we started trying mutation scenarios, after running the baseline.
     mutants_start_time: Option<Instant>,
     mutants_done: usize,
     n_mutants: usize,
@@ -363,11 +376,11 @@ impl nutmeg::Model for LabModel {
         if let Some(walk_tree) = &mut self.walk_tree {
             s += &walk_tree.render(width);
         }
-        if let Some(copy) = self.copy_model.as_mut() {
-            s.push_str(&copy.render(width));
-        }
-        if !s.is_empty() {
-            s.push('\n')
+        for copy_model in self.copy_models.iter_mut() {
+            if !s.is_empty() {
+                s.push('\n')
+            }
+            s.push_str(&copy_model.render(width));
         }
         for sm in self.scenario_models.iter_mut() {
             s.push_str(&sm.render(width));
@@ -438,15 +451,15 @@ impl nutmeg::Model for LabModel {
 }
 
 impl LabModel {
-    fn find_scenario_mut(&mut self, scenario: &Scenario) -> &mut ScenarioModel {
+    fn find_scenario_mut(&mut self, dir: &Path) -> &mut ScenarioModel {
         self.scenario_models
             .iter_mut()
-            .find(|sm| sm.scenario == *scenario)
-            .expect("scenario is in progress")
+            .find(|sm| sm.dir == *dir)
+            .expect("scenario directory not found")
     }
 
-    fn remove_scenario(&mut self, scenario: &Scenario) {
-        self.scenario_models.retain(|sm| sm.scenario != *scenario);
+    fn remove_scenario(&mut self, dir: &Path) {
+        self.scenario_models.retain(|sm| sm.dir != *dir);
     }
 }
 
@@ -474,7 +487,8 @@ impl nutmeg::Model for WalkModel {
 ///
 /// It draws the command and some description of what scenario is being tested.
 struct ScenarioModel {
-    scenario: Scenario,
+    /// The directory where this is being built: unique across all models.
+    dir: PathBuf,
     name: Cow<'static, str>,
     phase_start: Instant,
     phase: Option<Phase>,
@@ -484,10 +498,15 @@ struct ScenarioModel {
 }
 
 impl ScenarioModel {
-    fn new(scenario: &Scenario, start: Instant, log_file: &Utf8Path) -> Result<ScenarioModel> {
+    fn new(
+        dir: &Path,
+        scenario: &Scenario,
+        start: Instant,
+        log_file: &Utf8Path,
+    ) -> Result<ScenarioModel> {
         let log_tail = TailFile::new(log_file).context("Failed to open log file")?;
         Ok(ScenarioModel {
-            scenario: scenario.clone(),
+            dir: dir.to_owned(),
             name: style_scenario(scenario, true),
             phase: None,
             phase_start: start,
@@ -537,14 +556,15 @@ impl nutmeg::Model for ScenarioModel {
 
 /// A Nutmeg model for progress in copying a tree.
 struct CopyModel {
+    dest: PathBuf,
     bytes_copied: u64,
     start: Instant,
 }
 
 impl CopyModel {
-    #[allow(dead_code)]
-    fn new() -> CopyModel {
+    fn new(dest: PathBuf) -> CopyModel {
         CopyModel {
+            dest,
             start: Instant::now(),
             bytes_copied: 0,
         }
