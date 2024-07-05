@@ -1,4 +1,4 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023 - 2024 Martin Pool
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
@@ -39,7 +39,6 @@ pub fn copy_tree(
     gitignore: bool,
     console: &Console,
 ) -> Result<TempDir> {
-    console.start_copy();
     let mut total_bytes = 0;
     let mut total_files = 0;
     let temp_dir = tempfile::Builder::new()
@@ -47,6 +46,8 @@ pub fn copy_tree(
         .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
+    let dest = temp_dir.path();
+    console.start_copy(dest);
     for entry in WalkBuilder::new(from_path)
         .standard_filters(gitignore)
         .hidden(false)
@@ -80,7 +81,7 @@ pub fn copy_tree(
             })?;
             total_bytes += bytes_copied;
             total_files += 1;
-            console.copy_progress(total_bytes);
+            console.copy_progress(dest, total_bytes);
         } else if ft.is_dir() {
             std::fs::create_dir_all(&dest_path)
                 .with_context(|| format!("Failed to create directory {dest_path:?}"))?;
@@ -97,8 +98,8 @@ pub fn copy_tree(
             warn!("Unexpected file type: {:?}", entry.path());
         }
     }
-    console.finish_copy();
-    debug!(?total_bytes, ?total_files, "Copied source tree");
+    console.finish_copy(dest);
+    debug!(?total_bytes, ?total_files, temp_dir = ?temp_dir.path(), "Copied source tree");
     Ok(temp_dir)
 }
 

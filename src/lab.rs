@@ -1,9 +1,10 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Successively apply mutations to the source code and run cargo to check, build, and test them.
 
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
+use std::path::Path;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Instant;
@@ -34,11 +35,12 @@ pub fn test_mutants(
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let output_in_dir: &Utf8Path = options
-        .output_in_dir
-        .as_ref()
-        .map_or(workspace_dir, |p| p.as_path());
-    let output_dir = OutputDir::new(output_in_dir)?;
+    let output_dir = OutputDir::new(
+        options
+            .output_in_dir
+            .as_ref()
+            .map_or(workspace_dir, |p| p.as_path()),
+    )?;
     console.set_debug_log(output_dir.open_debug_log()?);
 
     if options.shuffle {
@@ -50,21 +52,22 @@ pub fn test_mutants(
         warn!("No mutants found under the active filters");
         return Ok(LabOutcome::default());
     }
-    let all_packages = mutants.iter().map(|m| m.package()).unique().collect_vec();
-    debug!(?all_packages);
+    let mutant_packages = mutants.iter().map(|m| m.package()).unique().collect_vec(); // hold
+    debug!(?mutant_packages);
 
     let output_mutex = Mutex::new(output_dir);
     let build_dir = match options.in_place {
         true => BuildDir::in_place(workspace_dir)?,
         false => BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?,
     };
+
     let timeouts = match options.baseline {
         BaselineStrategy::Run => {
             let outcome = test_scenario(
                 &build_dir,
                 &output_mutex,
                 &Scenario::Baseline,
-                &all_packages,
+                &mutant_packages,
                 Timeouts::for_baseline(&options),
                 &options,
                 console,
@@ -86,34 +89,38 @@ pub fn test_mutants(
         BaselineStrategy::Skip => Timeouts::without_baseline(&options),
     };
     debug!(?timeouts);
-    let mut build_dirs = vec![build_dir];
-    let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
-    for i in 1..jobs {
-        debug!("copy build dir {i}");
-        build_dirs.push(BuildDir::copy_from(
-            workspace_dir,
-            options.gitignore,
-            options.leak_dirs,
-            console,
-        )?);
-    }
-    debug!(build_dirs = ?build_dirs);
 
+    let build_dir_0 = Mutex::new(Some(build_dir));
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
     // scenario to test off the queue, and then exits when there are no more left.
     console.start_testing_mutants(mutants.len());
+    let n_threads = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     let pending = Mutex::new(mutants.into_iter());
     thread::scope(|scope| -> crate::Result<()> {
         let mut threads = Vec::new();
-        // TODO: Maybe, make the copies in parallel on each thread, rather than up front?
-        for build_dir in build_dirs {
+        for _i_thread in 0..n_threads {
             threads.push(scope.spawn(|| -> crate::Result<()> {
-                let build_dir = build_dir; // move it into this thread
-                trace!(thread_id = ?thread::current().id(), ?build_dir, "start thread");
+                trace!(thread_id = ?thread::current().id(), "start thread");
+                // First thread to start can use the initial build dir; others need to copy a new one
+                let build_dir_0 = build_dir_0.lock().expect("lock build dir 0").take(); // separate for lock
+                let build_dir = match build_dir_0 {
+                    Some(d) => d,
+                    None => {
+                        debug!("copy build dir");
+                        BuildDir::copy_from(
+                            workspace_dir,
+                            options.gitignore,
+                            options.leak_dirs,
+                            console,
+                        )?
+                    }
+                };
+                let _thread_span =
+                    debug_span!("worker thread", build_dir = ?build_dir.path()).entered();
                 loop {
                     // Extract the mutant in a separate statement so that we don't hold the
                     // lock while testing it.
-                    let next = pending.lock().map(|mut s| s.next());
+                    let next = pending.lock().map(|mut s| s.next()); // separate for lock
                     match next {
                         Err(err) => {
                             // PoisonError is not Send so we can't pass it directly.
@@ -122,7 +129,7 @@ pub fn test_mutants(
                         Ok(Some(mutant)) => {
                             let _span =
                                 debug_span!("mutant", name = mutant.name(false, false)).entered();
-                            let package = mutant.package().clone();
+                            let package = mutant.package().clone(); // hold
                             test_scenario(
                                 &build_dir,
                                 &output_mutex,
@@ -134,8 +141,7 @@ pub fn test_mutants(
                             )?;
                         }
                         Ok(None) => {
-                            trace!("no more work");
-                            return Ok(());
+                            return Ok(()); // no more work for this thread
                         }
                     }
                 }
@@ -202,6 +208,11 @@ fn test_scenario(
         .expect("lock output_dir to create log")
         .create_log(scenario)?;
     log_file.message(&scenario.to_string());
+    let phases: &[Phase] = if options.check_only {
+        &[Phase::Check]
+    } else {
+        &[Phase::Build, Phase::Test]
+    };
     let applied = scenario
         .mutant()
         .map(|mutant| {
@@ -211,16 +222,12 @@ fn test_scenario(
             mutant.apply(build_dir)
         })
         .transpose()?;
-    console.scenario_started(scenario, log_file.path())?;
+    let dir: &Path = build_dir.path().as_ref();
+    console.scenario_started(dir, scenario, log_file.path())?;
 
     let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
-    let phases: &[Phase] = if options.check_only {
-        &[Phase::Check]
-    } else {
-        &[Phase::Build, Phase::Test]
-    };
     for &phase in phases {
-        console.scenario_phase_started(scenario, phase);
+        console.scenario_phase_started(dir, phase);
         let timeout = match phase {
             Phase::Test => timeouts.test,
             Phase::Build | Phase::Check => timeouts.build,
@@ -236,7 +243,7 @@ fn test_scenario(
         )?;
         let success = phase_result.is_success(); // so we can move it away
         outcome.add_phase_result(phase_result);
-        console.scenario_phase_finished(scenario, phase);
+        console.scenario_phase_finished(dir, phase);
         if !success {
             break;
         }
@@ -247,7 +254,7 @@ fn test_scenario(
         .expect("lock output dir to add outcome")
         .add_scenario_outcome(&outcome)?;
     debug!(outcome = ?outcome.summary());
-    console.scenario_finished(scenario, &outcome, options);
+    console.scenario_finished(dir, scenario, &outcome, options);
 
     Ok(outcome)
 }
