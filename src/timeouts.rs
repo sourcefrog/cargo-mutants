@@ -62,7 +62,6 @@ fn phase_timeout(
     if let Some(timeout) = explicit_timeout {
         return timeout;
     }
-
     match baseline_duration {
         Some(_) if options.in_place && phase != Phase::Test => {
             warn_fallback_timeout(phase.name(), "--in-place");
@@ -73,7 +72,6 @@ fn phase_timeout(
                 minimum,
                 Duration::from_secs((baseline_duration.as_secs_f64() * multiplier).ceil() as u64),
             );
-
             if options.show_times {
                 info!(
                     "Auto-set {} timeout to {}",
@@ -107,7 +105,9 @@ fn build_timeout(baseline_duration: Option<Duration>, options: &Options) -> Dura
         options.build_timeout,
         baseline_duration,
         Duration::from_secs(20),
-        options.build_timeout_multiplier.unwrap_or(2.0),
+        options
+            .build_timeout_multiplier
+            .unwrap_or(2.0 * options.jobs.unwrap_or(1) as f64),
         options,
     )
 }
@@ -154,6 +154,16 @@ mod test {
         assert_eq!(
             build_timeout(Some(Duration::from_secs(40)), &options),
             Duration::from_secs(60),
+        );
+    }
+
+    #[test]
+    fn mutant_build_timeout_with_multiple_jobs() {
+        let args = Args::parse_from(["mutants", "--jobs=4"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(
+            build_timeout(Some(Duration::from_secs(40)), &options),
+            Duration::from_secs(40 * 2 * 4),
         );
     }
 

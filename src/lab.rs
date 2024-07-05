@@ -85,6 +85,7 @@ pub fn test_mutants(
         }
         BaselineStrategy::Skip => Timeouts::without_baseline(&options),
     };
+    debug!(?timeouts);
     let mut build_dirs = vec![build_dir];
     let jobs = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
     for i in 1..jobs {

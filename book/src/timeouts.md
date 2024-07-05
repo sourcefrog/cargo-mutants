@@ -24,8 +24,10 @@ build and test the unmodified tree (baseline).
 
 The default timeouts are:
 
-- `cargo build`/`cargo check`: 2 times the baseline build time (with a minimum of 20 seconds)
+- `cargo build`/`cargo check`: 2 times the baseline build time times the number of jobs (with a minimum of 20 seconds)
 - `cargo test`: 5 times baseline test time (with a minimum of 20 seconds)
+
+The build timeout scales with the number of jobs to reflect that cargo often spawns many jobs, and so builds run in parallel are likely to take longer than the baseline, which has no external parallelism.
 
 The minimum of 20 seconds for the test timeout can be overridden by the
 `--minimum-test-timeout` option or the `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT`
