@@ -3,6 +3,7 @@ name: Release book
 on:
   release:
     types:
+      - published
       - released
   workflow_dispatch:
 
