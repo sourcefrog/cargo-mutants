@@ -158,6 +158,10 @@ pr-run-mode = "plan"
 inherits = "release"
 lto = "thin"
 
+[profile.mutants]
+inherits = "test"
+debug = "none"
+
 # Config for <https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md>
 [workspace.metadata.release]
 pre-release-replacements = [
