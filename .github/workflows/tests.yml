@@ -162,6 +162,7 @@ jobs:
         # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
         run: >
           cargo mutants --no-shuffle -vV --in-diff git.diff --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
+          --cargo-arg=--profile=mutants
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
@@ -200,6 +201,7 @@ jobs:
           cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/10
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=500
           --build-timeout=500 --in-place
+          --cargo-arg=--profile=mutants
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
