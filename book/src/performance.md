@@ -16,13 +16,33 @@ test binary. If you're using doctests only as testable documentation and not to
 assert correctness of the code, you can skip them with `cargo mutants --
 --all-targets`.
 
-## Optimized builds
+## Choosing a cargo profile
 
-On _some but not all_ projects, cargo-mutants can be faster if you use `-C --release`, which will make the build slower but may make the tests faster. Typically this will help on projects with very long CPU-intensive test suites.
+[Cargo profiles](https://doc.rust-lang.org/cargo/reference/profiles.html) provide a way to configure compiler settings including several that influence build and runtime performance.
+
+By default, cargo-mutants will use the default profile selected for `cargo test`, which is also called `test`. This includes debug symbols but disables optimization.
+
+You can select a different profile using the `--profile` option or the `profile` configuration key.
+
+You may wish to define a `mutants` profile in `Cargo.toml`, such as:
+
+```toml
+[profile.mutants]
+inherits = "test"
+debug = "none"
+```
+
+and then configure this as the default in `.cargo/mutants.toml`:
+
+```toml
+profile = "mutants"
+```
+
+Turning off debug symbols will make the builds faster, at the expense of possibly giving less useful output when a test fails. In general, since mutants are expected to cause tests to fail, debug symbols may not be worth cost.
+
+If your project's tests take a long time to run then it may be worth experimenting with increasing the `opt` level or other optimization parameters in the profile, to trade off longer builds for faster test runs.
 
 cargo-mutants now shows the breakdown of build versus test time which may help you work out if this will help: if the tests are much slower than the build it's worth trying more more compiler optimizations.
-
-On projects like this you might also choose just to turn up optimization for all debug builds in [`.cargo/config.toml`](https://doc.rust-lang.org/cargo/reference/config.html).
 
 ## Ramdisks
 
