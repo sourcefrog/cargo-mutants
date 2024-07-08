@@ -101,6 +101,9 @@ fn cargo_argv(
             cargo_args.push("--tests".to_string());
         }
     }
+    if let Some(profile) = &options.profile {
+        cargo_args.push(format!("--profile={profile}"));
+    }
     if let Some([package]) = packages {
         // Use the unambiguous form for this case; it works better when the same
         // package occurs multiple times in the tree with different versions?
@@ -311,6 +314,16 @@ mod test {
         );
     }
 
+    #[test]
+    fn profile_arg_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--profile", "mutants"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--profile=mutants", "--workspace",]
+        );
+    }
     rusty_fork_test! {
         #[test]
         fn rustflags_with_no_environment_variables() {
