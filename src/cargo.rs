@@ -141,8 +141,7 @@ fn cargo_argv(
 /// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
 /// <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
 fn rustflags() -> String {
-    let mut rustflags: Vec<String> = if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS")
-    {
+    let rustflags: Vec<String> = if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS") {
         rustflags
             .to_str()
             .expect("CARGO_ENCODED_RUSTFLAGS is not valid UTF-8")
@@ -163,7 +162,7 @@ fn rustflags() -> String {
         // TODO: build.rustflags config value.
         Vec::new()
     };
-    rustflags.push("--cap-lints=allow".to_owned());
+    // rustflags.push("--cap-lints=allow".to_owned());
     // debug!("adjusted rustflags: {:?}", rustflags);
     rustflags.join("\x1f")
 }
@@ -316,21 +315,21 @@ mod test {
         fn rustflags_with_no_environment_variables() {
             env::remove_var("RUSTFLAGS");
             env::remove_var("CARGO_ENCODED_RUSTFLAGS");
-            assert_eq!(rustflags(), "--cap-lints=allow");
+            assert_eq!(rustflags(), "");
         }
 
         #[test]
         fn rustflags_added_to_existing_encoded_rustflags() {
             env::set_var("RUSTFLAGS", "--something\x1f--else");
             env::remove_var("CARGO_ENCODED_RUSTFLAGS");
-            assert_eq!(rustflags(), "--something\x1f--else\x1f--cap-lints=allow");
+            assert_eq!(rustflags(), "--something\x1f--else");
         }
 
         #[test]
         fn rustflags_added_to_existing_rustflags() {
             env::set_var("RUSTFLAGS", "-Dwarnings");
             env::remove_var("CARGO_ENCODED_RUSTFLAGS");
-            assert_eq!(rustflags(), "-Dwarnings\x1f--cap-lints=allow");
+            assert_eq!(rustflags(), "-Dwarnings");
         }
     }
 }
