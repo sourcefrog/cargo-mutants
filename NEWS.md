@@ -4,6 +4,8 @@
 
 - New: `--iterate` option allows more easily re-testing only the previously missed mutants.
 
+- Fixed: The auto-set timeout for building mutants is now 2 times the baseline build time times the number of jobs, with a minimum of 20 seconds. This was changed because builds of mutants contend with each other for access to CPUs and may be slower than the baseline build.
+
 ## 24.5.0
 
 - Fixed: Follow `path` attributes on `mod` statements.

@@ -31,6 +31,7 @@ mod shard;
 mod source;
 mod span;
 mod tail_file;
+mod timeouts;
 mod visit;
 mod workspace;
 
