@@ -42,6 +42,11 @@ pub fn test_mutants(
             .map_or(workspace_dir, |p| p.as_path()),
     )?;
     console.set_debug_log(output_dir.open_debug_log()?);
+    let jobserver = options
+        .jobserver
+        .then(|| jobserver::Client::new(num_cpus::get()))
+        .transpose()
+        .context("Start jobserver")?;
 
     if options.shuffle {
         fastrand::shuffle(&mut mutants);

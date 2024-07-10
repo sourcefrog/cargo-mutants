@@ -207,6 +207,10 @@ pub struct Args {
     )]
     jobs: Option<usize>,
 
+    /// Use a GNU Jobserver to cap concurrency between child processes.
+    #[arg(long, help_heading = "Execution", default_value_t = true)]
+    jobserver: bool,
+
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
     json: bool,

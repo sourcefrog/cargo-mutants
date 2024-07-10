@@ -36,6 +36,9 @@ pub struct Options {
     /// Don't copy at all; run tests in the source directory.
     pub in_place: bool,
 
+    /// Run a jobserver to limit concurrency between child processes.
+    pub jobserver: bool,
+
     /// Don't delete scratch directories.
     pub leak_dirs: bool,
 
@@ -215,6 +218,7 @@ impl Options {
             gitignore: args.gitignore,
             in_place: args.in_place,
             jobs: args.jobs,
+            jobserver: args.jobserver,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
             output_in_dir: args.output.clone(),
