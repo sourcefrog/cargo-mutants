@@ -4,7 +4,6 @@
 
 use std::env;
 use std::fs::{self, read_dir, read_to_string};
-use std::io::Read;
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
@@ -15,7 +14,6 @@ use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
-use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::TempDir;
 
 mod util;
@@ -639,25 +637,21 @@ fn timeout_when_unmutated_tree_test_hangs() {
 #[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
 fn interrupt_caught_and_kills_children() {
     // Test a tree that has enough tests that we'll probably kill it before it completes.
+
+    use std::process::{Command, Stdio};
+
+    use nix::libc::pid_t;
+    use nix::sys::signal::{kill, SIGTERM};
+    use nix::unistd::Pid;
+
     let tmp_src_dir = copy_of_testdata("well_tested");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
     // which doesn't give it a chance to clean up. And, `std::process::Command` only
-    // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
+    // has an abrupt kill.
 
     // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
     // and we want to check that the process does not panic.
-    let env = Some(
-        env::vars_os()
-            .filter(|(k, _)| k != "RUST_BACKTRACE")
-            .collect::<Vec<_>>(),
-    );
-    let config = PopenConfig {
-        stdout: Redirection::Pipe,
-        stderr: Redirection::Pipe,
-        cwd: Some(tmp_src_dir.path().as_os_str().to_owned()),
-        env,
-        ..Default::default()
-    };
+
     // Skip baseline because firstly it should already pass but more importantly
     // #333 exhibited only during non-baseline scenarios.
     let args = [
@@ -669,43 +663,32 @@ fn interrupt_caught_and_kills_children() {
     ];
 
     println!("Running: {args:?}");
-    let mut child = Popen::create(&args, config).expect("spawn child");
-    // TODO: Watch the output, maybe using `subprocess`, rather than just guessing how long it needs.
-    sleep(Duration::from_secs(2)); // Let it get started
-    assert!(child.poll().is_none(), "child exited early");
+    let mut child = Command::new(args[0])
+        .args(&args[1..])
+        .current_dir(&tmp_src_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .env_remove("RUST_BACKTRACE")
+        .spawn()
+        .expect("spawn child");
 
-    println!("Sending terminate to cargo-mutants...");
-    child.terminate().expect("terminate child");
+    sleep(Duration::from_secs(2)); // Let it get started
+    assert!(
+        child.try_wait().expect("try to wait for child").is_none(),
+        "child exited early"
+    );
+
+    println!("Sending SIGTERM to cargo-mutants...");
+    kill(Pid::from_raw(child.id() as pid_t), SIGTERM).expect("send SIGTERM");
 
     println!("Wait for cargo-mutants to exit...");
-    match child.wait_timeout(Duration::from_secs(4)) {
-        Err(e) => panic!("failed to wait for child: {e}"),
-        Ok(None) => {
-            println!("child did not exit after interrupt");
-            child.kill().expect("kill child");
-            child.wait().expect("wait for child after kill");
-        }
-        Ok(Some(status)) => {
-            println!("cargo-mutants exited with status: {status:?}");
-        }
-    }
+    let output = child
+        .wait_with_output()
+        .expect("wait for child after SIGTERM");
 
-    let mut stdout = String::new();
-    child
-        .stdout
-        .as_mut()
-        .unwrap()
-        .read_to_string(&mut stdout)
-        .expect("read stdout");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
     println!("stdout:\n{stdout}");
-
-    let mut stderr = String::new();
-    child
-        .stderr
-        .as_mut()
-        .unwrap()
-        .read_to_string(&mut stderr)
-        .expect("read stderr");
     println!("stderr:\n{stderr}");
 
     assert!(stderr.contains("interrupted"));
