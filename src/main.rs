@@ -116,6 +116,10 @@ pub struct Args {
     #[arg(long, value_enum, default_value_t = BaselineStrategy::Run, help_heading = "Execution")]
     baseline: BaselineStrategy,
 
+    /// Turn off all rustc lints, so that denied warnings won't make mutants unviable.
+    #[arg(long, action = ArgAction::Set, default_value_t = false, help_heading = "Build")]
+    cap_lints: bool,
+
     /// Print mutants that were caught by tests.
     #[arg(long, short = 'v', help_heading = "Output")]
     caught: bool,

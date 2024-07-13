@@ -24,6 +24,9 @@ pub struct Options {
     /// Run tests in an unmutated tree?
     pub baseline: BaselineStrategy,
 
+    /// Turn off all lints.
+    pub cap_lints: bool,
+
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
@@ -196,6 +199,7 @@ impl Options {
                 &config.additional_cargo_test_args,
             ),
             baseline: args.baseline,
+            cap_lints: args.cap_lints,
             check_only: args.check,
             colors: args.colors,
             emit_json: args.json,
