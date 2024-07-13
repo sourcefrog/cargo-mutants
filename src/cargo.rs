@@ -17,7 +17,7 @@ pub fn run_cargo(
     build_dir: &BuildDir,
     packages: Option<&[&Package]>,
     phase: Phase,
-    timeout: Duration,
+    timeout: Option<Duration>,
     log_file: &mut LogFile,
     options: &Options,
     console: &Console,

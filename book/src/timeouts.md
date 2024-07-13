@@ -22,32 +22,31 @@ continue to the next mutant.
 By default, the timeouts are set automatically, relative to the times taken to
 build and test the unmodified tree (baseline).
 
-The default timeouts are:
-
-- `cargo build`/`cargo check`: 2 times the baseline build time times the number of jobs (with a minimum of 20 seconds)
-- `cargo test`: 5 times baseline test time (with a minimum of 20 seconds)
-
-The build timeout scales with the number of jobs to reflect that cargo often spawns many jobs, and so builds run in parallel are likely to take longer than the baseline, which has no external parallelism.
+The default test timeout is 5 times the baseline test time, with a minimum of 20 seconds.
 
 The minimum of 20 seconds for the test timeout can be overridden by the
 `--minimum-test-timeout` option or the `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT`
 environment variable, measured in seconds.
 
-You can set explicit timeouts with the `--build-timeout`, and `--timeout`
-options, also measured in seconds. If these options are specified then they
-are applied to the baseline build and test as well.
+You can set an explicit timeouts with the `--timeout` option, also measured in seconds.
 
-You can set timeout multipliers that are relative to the duration of the
-baseline build or test with `--build-timeout-multiplier` and
-`--timeout-multiplier`, respectively.  Additionally, these can be configured
-with `build_timeout_multiplier` and `timeout_multiplier` in
-`.cargo/mutants.toml` (e.g. `timeout-multiplier = 1.5`).  These options are only
-applied if the baseline is not skipped and no corresponding
-`--build-timeout`/`--timeout` option is specified, otherwise they are ignored.
+You can also set the test timeout as a multiple of the duration of the baseline test, with the `--timeout-multiplier` option and the `timeout_multiplier` configuration key.
+The multiplier only has an effect if the baseline is not skipped and if `--timeout` is not specified.
+
+## Build timeouts
+
+`const` expressions may be evaluated at compile time. In the same way that mutations can cause tests to hang, mutations to const code may potentially cause the compiler to enter an infinite loop.
+
+rustc imposes a time limit on evaluation of const expressions. This is controlled by the `long_running_const_eval` lint, which by default will interrupt compilation: as a result the mutants will be seen as unviable.
+
+If this lint is configured off in your program, or if you use the `--cap-lints=true` option to turn off all lints, then the compiler may hang when constant expressions are mutated.
+
+In this case you can use the `--build-timeout` or `--build-timeout-multiplier` options, or their corresponding configuration keys, to impose a limit on overall build time. However, because build time can be quite variable there's some risk of this causing builds to be flaky, and so it's off by default.
+
+You might also choose to skip mutants that can cause long-running const evaluation.
 
 ## Exceptions
 
 The multiplier timeout options cannot be used when the baseline is skipped
 (`--baseline=skip`), or when the build is in-place (`--in-place`). If no
-explicit timeouts is provided in these cases, then a default of 300 seconds
-will be used.
+explicit timeouts is provided in these cases, then there is no build timeout and the test timeout default of 300 seconds will be used.

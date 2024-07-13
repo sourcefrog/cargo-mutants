@@ -4,6 +4,8 @@
 
 - Fixed: The auto-set timeout for building mutants is now 2 times the baseline build time times the number of jobs, with a minimum of 20 seconds. This was changed because builds of mutants contend with each other for access to CPUs and may be slower than the baseline build.
 
+- Changed: No build timeouts by default. Previously, cargo-mutants set a default build timeout based on the baseline build, but experience showed that this would sometimes make builds flaky, because build times can be quite variable. If mutants cause builds to hang, then you can still set a timeout using `--build-timeout` or `--build-timeout-multiplier`.
+
 ## 24.5.0
 
 - Fixed: Follow `path` attributes on `mod` statements.

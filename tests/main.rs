@@ -164,9 +164,6 @@ fn test_small_well_tested_tree_with_baseline_skip() {
             predicate::str::contains(
                 "An explicit test timeout is recommended when using --baseline=skip",
             )
-            .and(predicate::str::contains(
-                "An explicit build timeout is recommended when using --baseline=skip",
-            ))
             .and(predicate::str::contains("Unmutated baseline in").not()),
         );
     assert!(!tmp_src_dir
@@ -748,7 +745,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     // Also test that it accepts decimal seconds
     run()
         .arg("mutants")
-        .args(["-t", "8.1"])
+        .args(["-t", "8.1", "--build-timeout-multiplier=3"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)

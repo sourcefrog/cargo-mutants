@@ -33,7 +33,7 @@ const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 pub struct Process {
     child: Popen,
     start: Instant,
-    timeout: Duration,
+    timeout: Option<Duration>,
 }
 
 impl Process {
@@ -43,7 +43,7 @@ impl Process {
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
-        timeout: Duration,
+        timeout: Option<Duration>,
         log_file: &mut LogFile,
         console: &Console,
     ) -> Result<ProcessStatus> {
@@ -65,7 +65,7 @@ impl Process {
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
-        timeout: Duration,
+        timeout: Option<Duration>,
         log_file: &mut LogFile,
     ) -> Result<Process> {
         let start = Instant::now();
@@ -99,9 +99,8 @@ impl Process {
     /// Check if the child process has finished; if so, return its status.
     #[mutants::skip] // It's hard to avoid timeouts if this never works...
     pub fn poll(&mut self) -> Result<Option<ProcessStatus>> {
-        let elapsed = self.start.elapsed();
-        if elapsed > self.timeout {
-            debug!(?elapsed, "timeout, terminating child process...",);
+        if self.timeout.map_or(false, |t| self.start.elapsed() > t) {
+            debug!("timeout, terminating child process...",);
             self.terminate()?;
             Ok(Some(ProcessStatus::Timeout))
         } else if let Err(e) = check_interrupted() {
