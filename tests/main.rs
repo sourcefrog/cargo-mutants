@@ -743,7 +743,7 @@ fn interrupt_caught_and_kills_children() {
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
-    run()
+    let out = run()
         .arg("mutants")
         .args(["-t", "8.1", "--build-timeout-multiplier=3"])
         .current_dir(tmp_src_dir.path())
@@ -751,6 +751,10 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .code(3); // exit_code::TIMEOUT
+    println!(
+        "output:\n{}",
+        String::from_utf8_lossy(&out.get_output().stdout)
+    );
     let unviable_txt = read_to_string(tmp_src_dir.path().join("mutants.out/unviable.txt"))
         .expect("read timeout.txt");
     let caught_txt = read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt"))
