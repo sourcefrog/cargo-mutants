@@ -795,24 +795,28 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     assert_eq!(phases_for_const_fn[0]["phase"], "Build");
 }
 
-// #[test]
-// fn mutants_causing_check_to_timeout_are_stopped_by_manual_timeout() {
-//     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
-//     run()
-//         .arg("mutants")
-//         .args(["--check", "--build-timeout=4"])
-//         .current_dir(tmp_src_dir.path())
-//         .env_remove("RUST_BACKTRACE")
-//         .timeout(OUTER_TIMEOUT)
-//         .assert()
-//         .code(3); // exit_code::TIMEOUT
-//     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
-//         .expect("read timeout.txt");
-//     assert!(
-//         timeout_txt.contains("replace should_stop_const -> bool with false"),
-//         "expected text not found in:\n{timeout_txt}"
-//     );
-// }
+#[test]
+fn hang_avoided_by_build_timeout_with_cap_lints() {
+    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    run()
+        .arg("mutants")
+        .args([
+            "--build-timeout-multiplier=4",
+            "--regex=const",
+            "--cap-lints=true",
+        ])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .code(3); // exit_code::TIMEOUT
+    let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
+        .expect("read timeout.txt");
+    assert!(
+        timeout_txt.contains("replace should_stop_const -> bool with false"),
+        "expected text not found in:\n{timeout_txt}"
+    );
+}
 
 #[test]
 fn constfn_mutation_passes_check() {
