@@ -199,7 +199,7 @@ impl Options {
                 &config.additional_cargo_test_args,
             ),
             baseline: args.baseline,
-            cap_lints: args.cap_lints,
+            cap_lints: args.cap_lints.unwrap_or(config.cap_lints),
             check_only: args.check,
             colors: args.colors,
             emit_json: args.json,
@@ -274,6 +274,7 @@ mod test {
         let options = Options::new(&args, &Config::default()).unwrap();
         assert!(!options.check_only);
         assert_eq!(options.test_tool, TestTool::Cargo);
+        assert!(!options.cap_lints);
     }
 
     #[test]
@@ -362,9 +363,10 @@ mod test {
     }
 
     #[test]
-    fn test_tool_from_config() {
+    fn from_config() {
         let config = indoc! { r#"
             test_tool = "nextest"
+            cap_lints = true
         "#};
         let mut config_file = NamedTempFile::new().unwrap();
         config_file.write_all(config.as_bytes()).unwrap();
@@ -372,6 +374,7 @@ mod test {
         let config = Config::read_file(config_file.path()).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
+        assert!(options.cap_lints);
     }
 
     #[test]
