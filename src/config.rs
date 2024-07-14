@@ -27,6 +27,8 @@ use crate::Result;
 #[derive(Debug, Default, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Pass `--cap-lints` to rustc.
+    pub cap_lints: bool,
     /// Generate these error values from functions returning Result.
     pub error_values: Vec<String>,
     /// Generate mutants from source files matching these globs.
