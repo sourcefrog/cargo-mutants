@@ -26,7 +26,7 @@ pub fn run_cargo(
     let start = Instant::now();
     let argv = cargo_argv(build_dir.path(), packages, phase, options);
     let env = vec![
-        ("CARGO_ENCODED_RUSTFLAGS".to_owned(), rustflags()),
+        ("CARGO_ENCODED_RUSTFLAGS".to_owned(), rustflags(options)),
         // The tests might use Insta <https://insta.rs>, and we don't want it to write
         // updates to the source tree, and we *certainly* don't want it to write
         // updates and then let the test pass.
@@ -140,7 +140,7 @@ fn cargo_argv(
 ///
 /// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
 /// <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
-fn rustflags() -> String {
+fn rustflags(options: &Options) -> String {
     let mut rustflags: Vec<String> = if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS")
     {
         rustflags
@@ -163,7 +163,9 @@ fn rustflags() -> String {
         // TODO: build.rustflags config value.
         Vec::new()
     };
-    rustflags.push("--cap-lints=allow".to_owned());
+    if options.cap_lints {
+        rustflags.push("--cap-lints=warn".to_owned());
+    }
     // debug!("adjusted rustflags: {:?}", rustflags);
     rustflags.join("\x1f")
 }
@@ -292,6 +294,17 @@ mod test {
     }
 
     #[test]
+    fn cap_lints_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--cap-lints=true"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--workspace",]
+        );
+    }
+
+    #[test]
     fn feature_args_passed_to_cargo() {
         let args = Args::try_parse_from(
             ["mutants", "--features", "foo", "--features", "bar,baz"].as_slice(),
@@ -316,21 +329,34 @@ mod test {
         fn rustflags_with_no_environment_variables() {
             env::remove_var("RUSTFLAGS");
             env::remove_var("CARGO_ENCODED_RUSTFLAGS");
-            assert_eq!(rustflags(), "--cap-lints=allow");
+            assert_eq!(
+                rustflags(&Options {
+                    cap_lints: true,
+                    ..Default::default()
+                }),
+                "--cap-lints=warn"
+            );
         }
 
         #[test]
         fn rustflags_added_to_existing_encoded_rustflags() {
             env::set_var("RUSTFLAGS", "--something\x1f--else");
             env::remove_var("CARGO_ENCODED_RUSTFLAGS");
-            assert_eq!(rustflags(), "--something\x1f--else\x1f--cap-lints=allow");
+            let options = Options {
+                cap_lints: true,
+                ..Default::default()
+            };
+            assert_eq!(rustflags(&options), "--something\x1f--else\x1f--cap-lints=warn");
         }
 
         #[test]
         fn rustflags_added_to_existing_rustflags() {
             env::set_var("RUSTFLAGS", "-Dwarnings");
             env::remove_var("CARGO_ENCODED_RUSTFLAGS");
-            assert_eq!(rustflags(), "-Dwarnings\x1f--cap-lints=allow");
+            assert_eq!(rustflags(&Options {
+                cap_lints: true,
+                ..Default::default()
+            }), "-Dwarnings\x1f--cap-lints=warn");
         }
     }
 }
