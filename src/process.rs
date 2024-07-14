@@ -122,6 +122,7 @@ impl Process {
     /// Blocks until the subprocess is terminated and then returns the exit status.
     ///
     /// The status might not be Timeout if this raced with a normal exit.
+    #[mutants::skip] // would leak processes from tests if skipped
     fn terminate(&mut self) -> Result<()> {
         let _span = span!(Level::DEBUG, "terminate_child", pid = self.child.id()).entered();
         debug!("terminating child process");
