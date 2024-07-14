@@ -132,7 +132,7 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
             baseline_phases[0]["argv"].as_array().unwrap().iter().map(|v| v.as_str().unwrap()).skip(1).collect_vec().join(" "),
-            "test --no-run --package cargo_mutants_testdata_workspace_utils --package main --package main2"
+            "test --no-run --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2"
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
@@ -144,7 +144,7 @@ fn workspace_tree_is_well_tested() {
                 .skip(1)
                 .collect_vec()
                 .join(" "),
-            "test --package cargo_mutants_testdata_workspace_utils --package main --package main2"
+            "test --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2"
         );
     }
 
@@ -158,13 +158,13 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(mutant_phases.len(), 2);
         assert_eq!(mutant_phases[0]["process_status"], "Success");
         assert_eq!(
-            mutant_phases[0]["argv"].as_array().unwrap()[1..=3],
-            ["test", "--no-run", "--manifest-path"]
+            mutant_phases[0]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--no-run"]
         );
         assert_eq!(mutant_phases[1]["process_status"], json!({"Failure": 101}));
         assert_eq!(
-            mutant_phases[1]["argv"].as_array().unwrap()[1..=2],
-            ["test", "--manifest-path"],
+            mutant_phases[1]["argv"].as_array().unwrap()[1..=3],
+            ["test", "--verbose", "--manifest-path"],
         );
     }
     {
@@ -176,7 +176,7 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
             baseline_phases[0]["argv"].as_array().unwrap()[1..].iter().map(|v| v.as_str().unwrap()).join(" "),
-            "test --no-run --package cargo_mutants_testdata_workspace_utils --package main --package main2",
+            "test --no-run --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
@@ -184,7 +184,7 @@ fn workspace_tree_is_well_tested() {
                 .iter()
                 .map(|v| v.as_str().unwrap())
                 .join(" "),
-            "test --package cargo_mutants_testdata_workspace_utils --package main --package main2",
+            "test --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2",
         );
     }
 }

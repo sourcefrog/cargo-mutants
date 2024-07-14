@@ -404,11 +404,11 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
     println!("{log_content}");
-    regex::Regex::new(r"cargo.* test --no-run --manifest-path .* --release")
+    regex::Regex::new(r"cargo.* test --no-run --verbose --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
-    regex::Regex::new(r"cargo.* test --manifest-path .* --release")
+    regex::Regex::new(r"cargo.* test --verbose --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
