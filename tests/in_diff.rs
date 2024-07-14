@@ -4,6 +4,7 @@ use std::fs::read_to_string;
 use std::io::Write;
 
 use indoc::indoc;
+use predicates::prelude::predicate;
 use similar::TextDiff;
 use tempfile::NamedTempFile;
 
@@ -66,6 +67,22 @@ fn list_mutants_changed_in_diff1() {
             .len(),
         2
     );
+}
+
+#[test]
+fn empty_diff_is_not_an_error_and_matches_nothing() {
+    let diff_file = NamedTempFile::new().unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains("diff file is empty"));
 }
 
 /// If the text in the diff doesn't look like the tree then error out.

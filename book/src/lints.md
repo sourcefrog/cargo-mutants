@@ -6,7 +6,7 @@ For example, mutants that delete code are likely to cause some parameters to be 
 
 There are a few possible solutions:
 
-1.  Define a feature flag for mutation testing, and use `cfg_attr` to enable strict warnings only when not testing mutants.
+1. Define a feature flag for mutation testing, and use `cfg_attr` to enable strict warnings only when not testing mutants.
 2. Use the `cargo mutants --cap-lints=true` command line option, or the `cap_lints = true` config option.
 
 `--cap_lints=true` also disables rustc's detection of long-running const expression evaluation, so may cause some builds to fail. If that happens in your tree, you can set a [build timeout](timeouts.md).
