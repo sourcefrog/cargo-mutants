@@ -10,7 +10,7 @@ use camino::Utf8Path;
 use indoc::formatdoc;
 use itertools::Itertools;
 use patch::{Line, Patch};
-use tracing::{trace, warn};
+use tracing::{info, trace, warn};
 
 use crate::mutate::Mutant;
 use crate::source::SourceFile;
@@ -19,6 +19,10 @@ use crate::Result;
 /// Return only mutants to functions whose source was touched by this diff.
 pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>> {
     // Flatten the error to a string because otherwise it references the diff, and can't be returned.
+    if diff_text.trim().is_empty() {
+        info!("diff file is empty; no mutants will match");
+        return Ok(Vec::new());
+    }
     let patches =
         Patch::from_multiple(diff_text).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
     check_diff_new_text_matches(&patches, &mutants)?;

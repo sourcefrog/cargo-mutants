@@ -4,7 +4,6 @@
 
 use std::env;
 use std::fs::{self, read_dir, read_to_string};
-use std::io::Read;
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
@@ -15,7 +14,6 @@ use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
-use subprocess::{Popen, PopenConfig, Redirection};
 use tempfile::TempDir;
 
 mod util;
@@ -164,9 +162,6 @@ fn test_small_well_tested_tree_with_baseline_skip() {
             predicate::str::contains(
                 "An explicit test timeout is recommended when using --baseline=skip",
             )
-            .and(predicate::str::contains(
-                "An explicit build timeout is recommended when using --baseline=skip",
-            ))
             .and(predicate::str::contains("Unmutated baseline in").not()),
         );
     assert!(!tmp_src_dir
@@ -409,11 +404,11 @@ fn small_well_tested_mutants_with_cargo_arg_release() {
     println!("{}", baseline_log_path.display());
     let log_content = fs::read_to_string(baseline_log_path).unwrap();
     println!("{log_content}");
-    regex::Regex::new(r"cargo.* test --no-run --manifest-path .* --release")
+    regex::Regex::new(r"cargo.* test --no-run --verbose --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
-    regex::Regex::new(r"cargo.* test --manifest-path .* --release")
+    regex::Regex::new(r"cargo.* test --verbose --manifest-path .* --release")
         .unwrap()
         .captures(&log_content)
         .unwrap();
@@ -639,25 +634,21 @@ fn timeout_when_unmutated_tree_test_hangs() {
 #[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
 fn interrupt_caught_and_kills_children() {
     // Test a tree that has enough tests that we'll probably kill it before it completes.
+
+    use std::process::{Command, Stdio};
+
+    use nix::libc::pid_t;
+    use nix::sys::signal::{kill, SIGTERM};
+    use nix::unistd::Pid;
+
     let tmp_src_dir = copy_of_testdata("well_tested");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
     // which doesn't give it a chance to clean up. And, `std::process::Command` only
-    // has an abrupt kill. But `subprocess` has a gentle `terminate` method.
+    // has an abrupt kill.
 
     // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
     // and we want to check that the process does not panic.
-    let env = Some(
-        env::vars_os()
-            .filter(|(k, _)| k != "RUST_BACKTRACE")
-            .collect::<Vec<_>>(),
-    );
-    let config = PopenConfig {
-        stdout: Redirection::Pipe,
-        stderr: Redirection::Pipe,
-        cwd: Some(tmp_src_dir.path().as_os_str().to_owned()),
-        env,
-        ..Default::default()
-    };
+
     // Skip baseline because firstly it should already pass but more importantly
     // #333 exhibited only during non-baseline scenarios.
     let args = [
@@ -669,43 +660,32 @@ fn interrupt_caught_and_kills_children() {
     ];
 
     println!("Running: {args:?}");
-    let mut child = Popen::create(&args, config).expect("spawn child");
-    // TODO: Watch the output, maybe using `subprocess`, rather than just guessing how long it needs.
-    sleep(Duration::from_secs(2)); // Let it get started
-    assert!(child.poll().is_none(), "child exited early");
+    let mut child = Command::new(args[0])
+        .args(&args[1..])
+        .current_dir(&tmp_src_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .env_remove("RUST_BACKTRACE")
+        .spawn()
+        .expect("spawn child");
 
-    println!("Sending terminate to cargo-mutants...");
-    child.terminate().expect("terminate child");
+    sleep(Duration::from_secs(2)); // Let it get started
+    assert!(
+        child.try_wait().expect("try to wait for child").is_none(),
+        "child exited early"
+    );
+
+    println!("Sending SIGTERM to cargo-mutants...");
+    kill(Pid::from_raw(child.id() as pid_t), SIGTERM).expect("send SIGTERM");
 
     println!("Wait for cargo-mutants to exit...");
-    match child.wait_timeout(Duration::from_secs(4)) {
-        Err(e) => panic!("failed to wait for child: {e}"),
-        Ok(None) => {
-            println!("child did not exit after interrupt");
-            child.kill().expect("kill child");
-            child.wait().expect("wait for child after kill");
-        }
-        Ok(Some(status)) => {
-            println!("cargo-mutants exited with status: {status:?}");
-        }
-    }
+    let output = child
+        .wait_with_output()
+        .expect("wait for child after SIGTERM");
 
-    let mut stdout = String::new();
-    child
-        .stdout
-        .as_mut()
-        .unwrap()
-        .read_to_string(&mut stdout)
-        .expect("read stdout");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
     println!("stdout:\n{stdout}");
-
-    let mut stderr = String::new();
-    child
-        .stderr
-        .as_mut()
-        .unwrap()
-        .read_to_string(&mut stderr)
-        .expect("read stderr");
     println!("stderr:\n{stderr}");
 
     assert!(stderr.contains("interrupted"));
@@ -746,14 +726,22 @@ fn interrupt_caught_and_kills_children() {
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
-    run()
+    let out = run()
         .arg("mutants")
-        .args(["-t", "8.1"])
+        .args(["-t", "8.1", "--build-timeout=15.5"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
         .assert()
         .code(3); // exit_code::TIMEOUT
+    println!(
+        "output:\n{}",
+        String::from_utf8_lossy(&out.get_output().stdout)
+    );
+    let unviable_txt = read_to_string(tmp_src_dir.path().join("mutants.out/unviable.txt"))
+        .expect("read timeout.txt");
+    let caught_txt = read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt"))
+        .expect("read timeout.txt");
     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
         .expect("read timeout.txt");
     assert!(
@@ -761,10 +749,9 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         "expected text not found in:\n{timeout_txt}"
     );
     assert!(
-        timeout_txt.contains("replace should_stop_const -> bool with false"),
-        "expected text not found in:\n{timeout_txt}"
+        unviable_txt.contains("replace should_stop_const -> bool with false"),
+        "expected text not found in:\n{unviable_txt}"
     );
-    let caught_txt = read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt")).unwrap();
     assert!(
         caught_txt.contains("replace should_stop -> bool with true"),
         "expected text not found in:\n{caught_txt}"
@@ -778,7 +765,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
             .expect("read outcomes.json")
             .parse()
             .expect("parse outcomes.json");
-    assert_eq!(outcomes_json["timeout"], 2);
+    assert_eq!(outcomes_json["timeout"], 1);
 
     let phases_for_const_fn = outcomes_json["outcomes"]
         .as_array()
@@ -796,11 +783,15 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
 }
 
 #[test]
-fn mutants_causing_check_to_timeout_are_stopped_by_manual_timeout() {
+fn hang_avoided_by_build_timeout_with_cap_lints() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     run()
         .arg("mutants")
-        .args(["--check", "--build-timeout=4"])
+        .args([
+            "--build-timeout-multiplier=4",
+            "--regex=const",
+            "--cap-lints=true",
+        ])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
@@ -812,6 +803,20 @@ fn mutants_causing_check_to_timeout_are_stopped_by_manual_timeout() {
         timeout_txt.contains("replace should_stop_const -> bool with false"),
         "expected text not found in:\n{timeout_txt}"
     );
+}
+
+#[test]
+fn constfn_mutation_passes_check() {
+    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    let cmd = run()
+        .arg("mutants")
+        .args(["--check", "--build-timeout=4"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .code(0);
+    println!("{}", String::from_utf8_lossy(&cmd.get_output().stdout));
 }
 
 #[test]

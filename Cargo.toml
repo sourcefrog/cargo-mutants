@@ -48,7 +48,6 @@ regex = "1.10"
 serde_json = "1.0.117"
 similar = "2.1"
 strum = { version = "0.26", features = ["derive"] }
-subprocess = "0.2.8"
 tempfile = "3.4"
 time = "0.3"
 toml = "0.8"
@@ -157,6 +156,10 @@ pr-run-mode = "plan"
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+[profile.mutants]
+inherits = "test"
+debug = "none"
 
 # Config for <https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md>
 [workspace.metadata.release]
