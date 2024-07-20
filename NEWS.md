@@ -1,14 +1,16 @@
 # cargo-mutants changelog
 
-## 24.7.0
-
-- Fixed: The auto-set timeout for building mutants is now 2 times the baseline build time times the number of jobs, with a minimum of 20 seconds. This was changed because builds of mutants contend with each other for access to CPUs and may be slower than the baseline build.
+## Unreleased
 
 - Changed: No build timeouts by default. Previously, cargo-mutants set a default build timeout based on the baseline build, but experience showed that this would sometimes make builds flaky, because build times can be quite variable. If mutants cause builds to hang, then you can still set a timeout using `--build-timeout` or `--build-timeout-multiplier`.
 
 - Fixed: Don't error if the `--in-diff` file is empty.
 
 - Changed: cargo-mutants no longer passes `--cap-lints=allow` to rustc. This was previously done so that mutants would not unnecessarily be unviable due to triggering compiler warnings in trees configured to deny some lints, but it had the undesirable effect of disabling rustc's detection of long running const evaluations. If your tree treats some lints as errors then the previous behavior can be restored with `--cap-lints=true` (or the equivalent config option), or you can use `cfg_attr` and a feature flag  to accept those warnings when testing under cargo-mutants.
+
+## 24.7.0
+
+- Fixed: The auto-set timeout for building mutants is now 2 times the baseline build time times the number of jobs, with a minimum of 20 seconds. This was changed because builds of mutants contend with each other for access to CPUs and may be slower than the baseline build.
 
 ## 24.5.0
 
