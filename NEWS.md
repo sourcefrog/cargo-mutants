@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 24.7.1
 
 - Changed: No build timeouts by default. Previously, cargo-mutants set a default build timeout based on the baseline build, but experience showed that this would sometimes make builds flaky, because build times can be quite variable. If mutants cause builds to hang, then you can still set a timeout using `--build-timeout` or `--build-timeout-multiplier`.
 
