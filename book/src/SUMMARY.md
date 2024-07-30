@@ -25,6 +25,7 @@
   - [Error values](error-values.md)
 - [Improving performance](performance.md)
   - [Parallelism](parallelism.md)
+  - [Jobserver](jobserver.md)
   - [Sharding](shards.md)
   - [Testing code changed in a diff](in-diff.md)
 - [Integrations](integrations.md)

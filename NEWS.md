@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: cargo-mutants starts a GNU jobserver, shared across all children, so that running multiple `--jobs` does not spawn an excessive number of compiler processes. The jobserver is on by default and can be turned off with `--jobserver false`.
+
 ## 24.7.0
 
 - Fixed: The auto-set timeout for building mutants is now 2 times the baseline build time times the number of jobs, with a minimum of 20 seconds. This was changed because builds of mutants contend with each other for access to CPUs and may be slower than the baseline build.
