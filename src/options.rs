@@ -36,6 +36,12 @@ pub struct Options {
     /// Don't copy at all; run tests in the source directory.
     pub in_place: bool,
 
+    /// Run a jobserver to limit concurrency between child processes.
+    pub jobserver: bool,
+
+    /// Allow this many concurrent jobs, across all child processes. None means NCPU.
+    pub jobserver_tasks: Option<usize>,
+
     /// Don't delete scratch directories.
     pub leak_dirs: bool,
 
@@ -215,6 +221,8 @@ impl Options {
             gitignore: args.gitignore,
             in_place: args.in_place,
             jobs: args.jobs,
+            jobserver: args.jobserver,
+            jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
             output_in_dir: args.output.clone(),
@@ -413,6 +421,30 @@ mod test {
         );
         assert!(options.features.no_default_features);
         assert!(!options.features.all_features);
+    }
+
+    #[test]
+    fn default_jobserver_settings() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.jobserver);
+        assert_eq!(options.jobserver_tasks, None);
+    }
+
+    #[test]
+    fn disable_jobserver() {
+        let args = Args::parse_from(["mutants", "--jobserver=false"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(!options.jobserver);
+        assert_eq!(options.jobserver_tasks, None);
+    }
+
+    #[test]
+    fn jobserver_tasks() {
+        let args = Args::parse_from(["mutants", "--jobserver-tasks=13"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.jobserver);
+        assert_eq!(options.jobserver_tasks, Some(13));
     }
 
     #[test]
