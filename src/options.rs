@@ -39,6 +39,9 @@ pub struct Options {
     /// Run a jobserver to limit concurrency between child processes.
     pub jobserver: bool,
 
+    /// Allow this many concurrent jobs, across all child processes. None means NCPU.
+    pub jobserver_tasks: Option<usize>,
+
     /// Don't delete scratch directories.
     pub leak_dirs: bool,
 
@@ -219,6 +222,7 @@ impl Options {
             in_place: args.in_place,
             jobs: args.jobs,
             jobserver: args.jobserver,
+            jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
             output_in_dir: args.output.clone(),

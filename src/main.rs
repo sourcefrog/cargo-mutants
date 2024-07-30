@@ -211,6 +211,12 @@ pub struct Args {
     #[arg(long, help_heading = "Execution", default_value_t = true)]
     jobserver: bool,
 
+    /// Allow this many jobserver tasks in parallel, across all child processes.
+    ///
+    /// By default, NCPUS.
+    #[arg(long, help_heading = "Execution")]
+    jobserver_tasks: Option<usize>,
+
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
     json: bool,
