@@ -424,6 +424,30 @@ mod test {
     }
 
     #[test]
+    fn default_jobserver_settings() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.jobserver);
+        assert_eq!(options.jobserver_tasks, None);
+    }
+
+    #[test]
+    fn disable_jobserver() {
+        let args = Args::parse_from(["mutants", "--jobserver=false"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(!options.jobserver);
+        assert_eq!(options.jobserver_tasks, None);
+    }
+
+    #[test]
+    fn jobserver_tasks() {
+        let args = Args::parse_from(["mutants", "--jobserver-tasks=13"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.jobserver);
+        assert_eq!(options.jobserver_tasks, Some(13));
+    }
+
+    #[test]
     fn all_features_arg() {
         let args = Args::try_parse_from([
             "mutants",
