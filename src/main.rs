@@ -208,7 +208,7 @@ pub struct Args {
     jobs: Option<usize>,
 
     /// Use a GNU Jobserver to cap concurrency between child processes.
-    #[arg(long, help_heading = "Execution", default_value_t = true)]
+    #[arg(long, action = ArgAction::Set, help_heading = "Execution", default_value_t = true)]
     jobserver: bool,
 
     /// Allow this many jobserver tasks in parallel, across all child processes.
