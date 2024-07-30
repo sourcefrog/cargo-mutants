@@ -20,6 +20,7 @@
   - [Using nextest](nextest.md)
   - [Baseline tests](baseline.md)
   - [Testing in-place](in-place.md)
+  - [Iterating on missed mutants](iterate.md)
   - [Strict lints](lints.md)
 - [Generating mutants](mutants.md)
   - [Error values](error-values.md)
