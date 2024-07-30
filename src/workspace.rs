@@ -12,6 +12,7 @@ use tracing::{debug, debug_span, warn};
 
 use crate::cargo::cargo_bin;
 use crate::console::Console;
+use crate::find_files::find_source_files;
 use crate::interrupt::check_interrupted;
 use crate::mutate::Mutant;
 use crate::options::Options;
@@ -201,6 +202,17 @@ impl Workspace {
         Ok(sources)
     }
 
+    /// Find all the source files in the workspace.
+    fn source_files(
+        &self,
+        package_filter: &PackageFilter,
+        options: &Options,
+        console: &Console,
+    ) -> Result<Vec<SourceFile>> {
+        let top_sources = self.top_sources(package_filter)?;
+        find_source_files(&self.dir, &top_sources, options, console)
+    }
+
     /// Make all the mutants from the filtered packages in this workspace.
     pub fn discover(
         &self,
@@ -358,6 +370,69 @@ mod test {
                 .collect_vec(),
             // ordered by package name
             ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
+        );
+    }
+
+    #[test]
+    fn find_files_in_single_file_tree() {
+        let tree_path = Utf8Path::new("testdata/small_well_tested");
+        let workspace = Workspace::open(tree_path).unwrap();
+        let options = Options::default();
+        let source_files = workspace
+            .source_files(&PackageFilter::All, &options, &Console::new())
+            .unwrap();
+        assert_eq!(source_files.len(), 1);
+        assert_eq!(source_files[0].tree_relative_path, "src/lib.rs");
+    }
+
+    #[test]
+    fn find_files_in_nested_mod_tree() {
+        let tree_path = Utf8Path::new("testdata/nested_mod");
+        let workspace = Workspace::open(tree_path).unwrap();
+        let options = Options::default();
+        let source_files = workspace
+            .source_files(&PackageFilter::All, &options, &Console::new())
+            .unwrap();
+        assert_eq!(
+            source_files
+                .iter()
+                .map(|sf| &sf.tree_relative_path)
+                .sorted()
+                .collect_vec(),
+            [
+                "src/block_in_lib/a/b/c_file/d/e/f_file.rs",
+                "src/block_in_lib/a/b/c_file.rs",
+                "src/block_in_main/a/b/c_file/d/e/f_file.rs",
+                "src/block_in_main/a/b/c_file.rs",
+                "src/file_in_lib/a/b/c_file/d/e/f_file.rs",
+                "src/file_in_lib/a/b/c_file.rs",
+                "src/file_in_lib.rs",
+                "src/file_in_main/a/b/c_file/d/e/f_file.rs",
+                "src/file_in_main/a/b/c_file.rs",
+                "src/file_in_main.rs",
+                "src/lib.rs",
+                "src/main.rs",
+                "src/paths_in_lib/../upward_traversal_file_for_lib.rs",
+                "src/paths_in_lib/a/b/inline/other.rs",
+                "src/paths_in_lib/a/b.rs",
+                "src/paths_in_lib/a/foo.rs",
+                "src/paths_in_lib/a_mod_file/foo.rs",
+                "src/paths_in_lib/a_mod_file/inline/other.rs",
+                "src/paths_in_lib/a_mod_file/mod.rs",
+                "src/paths_in_lib/thread_files/tls.rs",
+                "src/paths_in_lib/thread_files_inner_attr/tls.rs",
+                "src/paths_in_lib/upward_traversal.rs",
+                "src/paths_in_main/a/b/inline/other.rs",
+                "src/paths_in_main/a/b.rs",
+                "src/paths_in_main/a/foo.rs",
+                "src/paths_in_main/a_mod_file/foo.rs",
+                "src/paths_in_main/a_mod_file/inline/other.rs",
+                "src/paths_in_main/a_mod_file/mod.rs",
+                "src/paths_in_main/thread_files/tls.rs",
+                "src/paths_in_main/thread_files_inner_attr/tls.rs",
+                "src/toplevel_file_in_lib.rs",
+                "src/toplevel_file_in_main.rs"
+            ]
         );
     }
 

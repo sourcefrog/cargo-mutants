@@ -10,6 +10,7 @@ mod config;
 mod console;
 mod copy_tree;
 mod exit_code;
+mod find_files;
 mod fnvalue;
 mod glob;
 mod in_diff;

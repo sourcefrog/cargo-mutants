@@ -281,6 +281,18 @@ impl Console {
             .init();
         Ok(())
     }
+
+    pub(crate) fn start_find_files(&self) {
+        todo!()
+    }
+
+    pub(crate) fn find_files_update(&self, len: usize, tree_relative_slashes: &str) {
+        todo!()
+    }
+
+    pub(crate) fn end_find_files(&self) {
+        todo!()
+    }
 }
 
 impl Default for Console {
