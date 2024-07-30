@@ -207,6 +207,16 @@ pub struct Args {
     )]
     jobs: Option<usize>,
 
+    /// Use a GNU Jobserver to cap concurrency between child processes.
+    #[arg(long, action = ArgAction::Set, help_heading = "Execution", default_value_t = true)]
+    jobserver: bool,
+
+    /// Allow this many jobserver tasks in parallel, across all child processes.
+    ///
+    /// By default, NCPUS.
+    #[arg(long, help_heading = "Execution")]
+    jobserver_tasks: Option<usize>,
+
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
     json: bool,

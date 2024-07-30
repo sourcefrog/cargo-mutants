@@ -5,6 +5,8 @@
 //! On Unix, the subprocess runs as its own process group, so that any
 //! grandchild processes are also signalled if it's interrupted.
 
+#![allow(clippy::option_map_unit_fn)] // I don't think it's clearer with if/let.
+
 use std::ffi::OsStr;
 #[cfg(unix)]
 use std::os::unix::process::{CommandExt, ExitStatusExt};
@@ -39,10 +41,11 @@ impl Process {
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
+        jobserver: &Option<jobserver::Client>,
         log_file: &mut LogFile,
         console: &Console,
     ) -> Result<ProcessStatus> {
-        let mut child = Process::start(argv, env, cwd, timeout, log_file)?;
+        let mut child = Process::start(argv, env, cwd, timeout, jobserver, log_file)?;
         let process_status = loop {
             if let Some(exit_status) = child.poll()? {
                 break exit_status;
@@ -61,6 +64,7 @@ impl Process {
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
+        jobserver: &Option<jobserver::Client>,
         log_file: &mut LogFile,
     ) -> Result<Process> {
         let start = Instant::now();
@@ -76,6 +80,7 @@ impl Process {
             .stdout(log_file.open_append()?)
             .stderr(log_file.open_append()?)
             .current_dir(cwd);
+        jobserver.as_ref().map(|js| js.configure(&mut child));
         #[cfg(unix)]
         child.process_group(0);
         let child = child

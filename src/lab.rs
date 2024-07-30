@@ -42,6 +42,15 @@ pub fn test_mutants(
             .map_or(workspace_dir, |p| p.as_path()),
     )?;
     console.set_debug_log(output_dir.open_debug_log()?);
+    let jobserver = options
+        .jobserver
+        .then(|| {
+            let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
+            debug!(n_tasks, "starting jobserver");
+            jobserver::Client::new(n_tasks)
+        })
+        .transpose()
+        .context("Start jobserver")?;
 
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
@@ -66,6 +75,7 @@ pub fn test_mutants(
             let outcome = test_scenario(
                 &build_dir,
                 &output_mutex,
+                &jobserver,
                 &Scenario::Baseline,
                 &mutant_packages,
                 Timeouts::for_baseline(&options),
@@ -133,6 +143,7 @@ pub fn test_mutants(
                             test_scenario(
                                 &build_dir,
                                 &output_mutex,
+                                &jobserver,
                                 &Scenario::Mutant(mutant),
                                 &[&package],
                                 timeouts,
@@ -194,9 +205,11 @@ pub fn test_mutants(
 ///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
+#[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 fn test_scenario(
     build_dir: &BuildDir,
     output_mutex: &Mutex<OutputDir>,
+    jobserver: &Option<jobserver::Client>,
     scenario: &Scenario,
     test_packages: &[&Package],
     timeouts: Timeouts,
@@ -234,6 +247,7 @@ fn test_scenario(
         };
         let phase_result = run_cargo(
             build_dir,
+            jobserver,
             Some(test_packages),
             phase,
             timeout,

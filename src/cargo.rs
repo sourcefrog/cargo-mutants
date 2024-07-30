@@ -13,8 +13,10 @@ use crate::process::{Process, ProcessStatus};
 use crate::*;
 
 /// Run cargo build, check, or test.
+#[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 pub fn run_cargo(
     build_dir: &BuildDir,
+    jobserver: &Option<jobserver::Client>,
     packages: Option<&[&Package]>,
     phase: Phase,
     timeout: Option<Duration>,
@@ -33,7 +35,15 @@ pub fn run_cargo(
         ("INSTA_UPDATE".to_owned(), "no".to_owned()),
         ("INSTA_FORCE_PASS".to_owned(), "0".to_owned()),
     ];
-    let process_status = Process::run(&argv, &env, build_dir.path(), timeout, log_file, console)?;
+    let process_status = Process::run(
+        &argv,
+        &env,
+        build_dir.path(),
+        timeout,
+        jobserver,
+        log_file,
+        console,
+    )?;
     check_interrupted()?;
     debug!(?process_status, elapsed = ?start.elapsed());
     if let ProcessStatus::Failure(code) = process_status {
@@ -147,7 +157,7 @@ fn rustflags(options: &Options) -> String {
         rustflags
             .to_str()
             .expect("CARGO_ENCODED_RUSTFLAGS is not valid UTF-8")
-            .split(|c| c == '\x1f')
+            .split('\x1f')
             .map(|s| s.to_owned())
             .collect()
     } else if let Some(rustflags) = env::var_os("RUSTFLAGS") {
