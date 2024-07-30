@@ -44,7 +44,11 @@ pub fn test_mutants(
     console.set_debug_log(output_dir.open_debug_log()?);
     let jobserver = options
         .jobserver
-        .then(|| jobserver::Client::new(options.jobserver_tasks.unwrap_or_else(num_cpus::get)))
+        .then(|| {
+            let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
+            debug!(n_tasks, "starting jobserver");
+            jobserver::Client::new(n_tasks)
+        })
         .transpose()
         .context("Start jobserver")?;
 
