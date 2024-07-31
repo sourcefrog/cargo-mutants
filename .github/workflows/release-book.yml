@@ -1,11 +1,9 @@
 # Publish the book to https://mutants.rs/ when a new release is created.
 name: Release book
 on:
-  release:
-    types:
-      - published
-      - released
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
