@@ -4,6 +4,7 @@
 //! for example from uncommitted or unmerged changes.
 
 use std::collections::HashMap;
+use std::iter::once;
 
 use anyhow::{anyhow, bail};
 use camino::Utf8Path;
@@ -18,13 +19,22 @@ use crate::Result;
 
 /// Return only mutants to functions whose source was touched by this diff.
 pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>> {
+    // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
+    // the moment; this could be removed if it's fixed in that crate.
+    let fixed_diff = diff_text
+        .lines()
+        .filter(|line| !(line.starts_with("Binary files ") && line.ends_with("differ")))
+        .chain(once(""))
+        .join("\n");
+
     // Flatten the error to a string because otherwise it references the diff, and can't be returned.
-    if diff_text.trim().is_empty() {
+    if fixed_diff.trim().is_empty() {
         info!("diff file is empty; no mutants will match");
         return Ok(Vec::new());
     }
+
     let patches =
-        Patch::from_multiple(diff_text).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
+        Patch::from_multiple(&fixed_diff).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
     check_diff_new_text_matches(&patches, &mutants)?;
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
     for patch in &patches {
