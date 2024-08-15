@@ -203,14 +203,19 @@ impl Workspace {
     }
 
     /// Find all the source files in the workspace.
-    fn source_files(
+    pub fn source_files(
         &self,
         package_filter: &PackageFilter,
         options: &Options,
         console: &Console,
     ) -> Result<Vec<SourceFile>> {
         let top_sources = self.top_sources(package_filter)?;
-        find_source_files(&self.dir, &top_sources, options, console)
+        Ok(
+            find_source_files(&self.dir, &top_sources, options, console)?
+                .into_iter()
+                .map(|with_ast| with_ast.source_file)
+                .collect_vec(),
+        )
     }
 
     /// Make all the mutants from the filtered packages in this workspace.

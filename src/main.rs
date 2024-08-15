@@ -4,6 +4,7 @@
 //!
 //! See <https://mutants.rs> for more information.
 
+mod ast;
 mod build_dir;
 mod cargo;
 mod config;
@@ -409,13 +410,13 @@ fn main() -> Result<()> {
     } else {
         PackageFilter::Auto(start_dir.to_owned())
     };
-    let discovered = workspace.discover(&package_filter, &options, &console)?;
-    console.clear();
     if args.list_files {
-        list_files(FmtToIoWrite::new(io::stdout()), &discovered.files, &options)?;
+        let source_files = workspace.source_files(&package_filter, &options, &console)?;
+        console.clear();
+        list_files(FmtToIoWrite::new(io::stdout()), &source_files, &options)?;
         return Ok(());
     }
-    let mut mutants = discovered.mutants;
+    let mut mutants = workspace.mutants(&package_filter, &options, &console)?;
     if let Some(in_diff) = &args.in_diff {
         mutants = diff_filter(
             mutants,

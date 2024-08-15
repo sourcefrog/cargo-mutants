@@ -12,12 +12,14 @@
 use std::collections::VecDeque;
 use std::vec;
 
+use source::SourceFileWithAst;
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Attribute, File};
 use tracing::{debug, debug_span, error, trace, trace_span, warn};
 
+use crate::ast::attrs_excluded;
 use crate::source::SourceFile;
 use crate::span::Span;
 use crate::*;
@@ -25,20 +27,30 @@ use crate::*;
 /// Discover all mutants and all source files.
 ///
 /// The list of source files includes even those with no mutants.
-///
 pub fn find_source_files(
     workspace_dir: &Utf8Path,
     top_source_files: &[SourceFile],
     options: &Options,
     console: &Console,
-) -> Result<Vec<SourceFile>> {
+) -> Result<Vec<SourceFileWithAst>> {
     // console.start_find_files(); // TODO
     let mut file_queue: VecDeque<SourceFile> = top_source_files.iter().cloned().collect();
-    let mut files: Vec<SourceFile> = Vec::new();
+    let mut files: Vec<SourceFileWithAst> = Vec::new();
     while let Some(source_file) = file_queue.pop_front() {
         // console.find_files_update(files.len(), &source_file.tree_relative_slashes()); // TODO
         check_interrupted()?;
-        let external_mods = walk_file(&source_file)?;
+        let _span =
+            debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
+        debug!("visit source file");
+        let ast = syn::parse_file(&source_file.code)
+            .with_context(|| format!("failed to parse {}", source_file.tree_relative_path))?;
+        let mut visitor = Visitor {
+            external_mods: Vec::new(),
+            mod_namespace_stack: Vec::new(),
+            source_file: source_file.clone(),
+        };
+        visitor.visit_file(&ast);
+        let external_mods = visitor.external_mods;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -66,26 +78,10 @@ pub fn find_source_files(
                 continue;
             }
         }
-        files.push(source_file);
+        files.push(SourceFileWithAst { source_file, ast });
     }
     // console.end_find_files(); // TODO
     Ok(files)
-}
-
-/// Find all modules referenced by a `mod` statement in a source file, which
-/// will need to later be visited.
-fn walk_file(source_file: &SourceFile) -> Result<Vec<Vec<ModNamespace>>> {
-    let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
-    debug!("visit source file");
-    let syn_file = syn::parse_str::<syn::File>(source_file.code())
-        .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
-    let mut visitor = Visitor {
-        external_mods: Vec::new(),
-        mod_namespace_stack: Vec::new(),
-        source_file: source_file.clone(),
-    };
-    visitor.visit_file(&syn_file);
-    Ok(visitor.external_mods)
 }
 
 /// Namespace for a module defined in a `mod foo { ... }` block or `mod foo;` statement
@@ -272,89 +268,6 @@ fn find_mod_source(
     Ok(None)
 }
 
-/// True if the signature of a function is such that it should be excluded.
-fn fn_sig_excluded(sig: &syn::Signature) -> bool {
-    if sig.unsafety.is_some() {
-        trace!("Skip unsafe fn");
-        true
-    } else {
-        false
-    }
-}
-
-/// True if any of the attrs indicate that we should skip this node and everything inside it.
-///
-/// This checks for `#[cfg(test)]`, `#[test]`, and `#[mutants::skip]`.
-fn attrs_excluded(attrs: &[Attribute]) -> bool {
-    attrs
-        .iter()
-        .any(|attr| attr_is_cfg_test(attr) || attr_is_test(attr) || attr_is_mutants_skip(attr))
-}
-
-/// True if the block (e.g. the contents of a function) is empty.
-fn block_is_empty(block: &syn::Block) -> bool {
-    block.stmts.is_empty()
-}
-
-/// True if the attribute looks like `#[cfg(test)]`, or has "test"
-/// anywhere in it.
-fn attr_is_cfg_test(attr: &Attribute) -> bool {
-    if !path_is(attr.path(), &["cfg"]) {
-        return false;
-    }
-    let mut contains_test = false;
-    if let Err(err) = attr.parse_nested_meta(|meta| {
-        if meta.path.is_ident("test") {
-            contains_test = true;
-        }
-        Ok(())
-    }) {
-        debug!(
-            ?err,
-            ?attr,
-            "Attribute is not in conventional form; skipped"
-        );
-        return false;
-    }
-    contains_test
-}
-
-/// True if the attribute is `#[test]`.
-fn attr_is_test(attr: &Attribute) -> bool {
-    attr.path().is_ident("test")
-}
-
-fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
-    path.segments.iter().map(|ps| &ps.ident).eq(idents.iter())
-}
-
-/// True if the attribute contains `mutants::skip`.
-///
-/// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
-fn attr_is_mutants_skip(attr: &Attribute) -> bool {
-    if path_is(attr.path(), &["mutants", "skip"]) {
-        return true;
-    }
-    if !path_is(attr.path(), &["cfg_attr"]) {
-        return false;
-    }
-    let mut skip = false;
-    if let Err(err) = attr.parse_nested_meta(|meta| {
-        if path_is(&meta.path, &["mutants", "skip"]) {
-            skip = true
-        }
-        Ok(())
-    }) {
-        debug!(
-            ?attr,
-            ?err,
-            "Attribute is not a path with attributes; skipping"
-        );
-        return false;
-    }
-    skip
-}
-
 /// Finds the first path attribute (`#[path = "..."]`)
 ///
 /// # Errors
@@ -383,16 +296,12 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
         })
         .transpose()
 }
-
 #[cfg(test)]
 mod test {
-    use indoc::indoc;
-    use itertools::Itertools;
     use proc_macro2::TokenStream;
     use quote::quote;
 
     use super::*;
-    use crate::package::Package;
 
     /// We don't visit functions inside files marked with `#![cfg(test)]`.
     #[test]

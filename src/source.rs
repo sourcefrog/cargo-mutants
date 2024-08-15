@@ -39,6 +39,14 @@ pub struct SourceFile {
     pub is_top: bool,
 }
 
+/// A source file with its AST.
+///
+/// The AST is kept separately because for some reason proc_macro::TokenTree is not Send.
+pub struct SourceFileWithAst {
+    pub source_file: SourceFile,
+    pub ast: syn::File,
+}
+
 impl SourceFile {
     /// Construct a SourceFile representing a file within a tree.
     ///
