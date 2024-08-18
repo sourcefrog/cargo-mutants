@@ -6,6 +6,8 @@
 
 - New: cargo-mutants starts a GNU jobserver, shared across all children, so that running multiple `--jobs` does not spawn an excessive number of compiler processes. The jobserver is on by default and can be turned off with `--jobserver false`.
 
+- Fixed: Don't error on diffs containing a "Binary files differ" message.
+
 ## 24.7.1
 
 - Changed: No build timeouts by default. Previously, cargo-mutants set a default build timeout based on the baseline build, but experience showed that this would sometimes make builds flaky, because build times can be quite variable. If mutants cause builds to hang, then you can still set a timeout using `--build-timeout` or `--build-timeout-multiplier`.
