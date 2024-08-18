@@ -23,7 +23,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
     // the moment; this could be removed if it's fixed in that crate.
     let fixed_diff = diff_text
         .lines()
-        .filter(|line| !(line.starts_with("Binary files ") && line.ends_with("differ")))
+        .filter(|line| !(line.starts_with("Binary files ")))
         .chain(once(""))
         .join("\n");
 
