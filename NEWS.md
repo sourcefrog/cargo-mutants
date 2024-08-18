@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: `--iterate` option skips mutants that were previously caught or unviable.
+
 - New: cargo-mutants starts a GNU jobserver, shared across all children, so that running multiple `--jobs` does not spawn an excessive number of compiler processes. The jobserver is on by default and can be turned off with `--jobserver false`.
 
 - Fixed: Don't error on diffs containing a "Binary files differ" message.

@@ -1,6 +1,7 @@
 // Copyright 2021-2024 Martin Pool
 
-//! Successively apply mutations to the source code and run cargo to check, build, and test them.
+//! Successively apply mutations to the source code and run cargo to check,
+//! build, and test them.
 
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
@@ -10,9 +11,7 @@ use std::thread;
 use std::time::Instant;
 
 use itertools::Itertools;
-use tracing::warn;
-#[allow(unused)]
-use tracing::{debug, debug_span, error, info, trace};
+use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::cargo::run_cargo;
 use crate::outcome::LabOutcome;
@@ -31,16 +30,11 @@ use crate::*;
 pub fn test_mutants(
     mut mutants: Vec<Mutant>,
     workspace_dir: &Utf8Path,
+    output_dir: OutputDir,
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let output_dir = OutputDir::new(
-        options
-            .output_in_dir
-            .as_ref()
-            .map_or(workspace_dir, |p| p.as_path()),
-    )?;
     console.set_debug_log(output_dir.open_debug_log()?);
     let jobserver = options
         .jobserver
@@ -51,7 +45,6 @@ pub fn test_mutants(
         })
         .transpose()
         .context("Start jobserver")?;
-
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
