@@ -785,7 +785,7 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
 #[test]
 fn hang_avoided_by_build_timeout_with_cap_lints() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
-    run()
+    let out = run()
         .arg("mutants")
         .args([
             "--build-timeout-multiplier=4",
@@ -795,8 +795,12 @@ fn hang_avoided_by_build_timeout_with_cap_lints() {
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
-        .assert()
-        .code(3); // exit_code::TIMEOUT
+        .assert();
+    println!(
+        "debug log:\n===\n{}\n===",
+        read_to_string(tmp_src_dir.path().join("mutants.out/debug.log")).unwrap_or_default()
+    );
+    out.code(3); // exit_code::TIMEOUT
     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
         .expect("read timeout.txt");
     assert!(
