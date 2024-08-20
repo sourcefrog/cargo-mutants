@@ -296,6 +296,10 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     no_shuffle: bool,
 
+    /// Build with this cargo profile.
+    #[arg(long, help_heading = "Build")]
+    profile: Option<String>,
+
     /// Run only one shard of all generated mutants: specify as e.g. 1/4.
     #[arg(long, help_heading = "Execution")]
     shard: Option<Shard>,

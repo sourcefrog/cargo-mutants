@@ -4,6 +4,8 @@
 
 - Fixed: Avoid generating empty string elements in `ENCODED_RUSTFLAGS` when `--cap-lints` is set. In some situations these could cause a compiler error complaining about the empty argument.
 
+- New: `--profile` option allows selecting a Cargo profile. In particular, it's recommended that you can use `--profile=mutants` and configure a custom profile in your `Cargo.toml` to optimize the build for mutants, by turning off debug symbols.
+
 - New: `--iterate` option skips mutants that were previously caught or unviable.
 
 - New: cargo-mutants starts a GNU jobserver, shared across all children, so that running multiple `--jobs` does not spawn an excessive number of compiler processes. The jobserver is on by default and can be turned off with `--jobserver false`.

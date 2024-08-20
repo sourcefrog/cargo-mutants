@@ -115,6 +115,16 @@ fn cargo_argv(
             cargo_args.push("--tests".to_string());
         }
     }
+    if let Some(profile) = &options.profile {
+        match options.test_tool {
+            TestTool::Cargo => {
+                cargo_args.push(format!("--profile={profile}"));
+            }
+            TestTool::Nextest => {
+                cargo_args.push(format!("--cargo-profile={profile}"));
+            }
+        }
+    }
     cargo_args.push("--verbose".to_string());
     if let Some([package]) = packages {
         // Use the unambiguous form for this case; it works better when the same
@@ -351,6 +361,44 @@ mod test {
                 "--workspace",
                 "--features=foo",
                 "--features=bar,baz"
+            ]
+        );
+    }
+
+    #[test]
+    fn profile_arg_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--profile", "mutants"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--profile=mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+    }
+
+    #[test]
+    fn nextest_gets_special_cargo_profile_option() {
+        let args = Args::try_parse_from(
+            ["mutants", "--test-tool=nextest", "--profile", "mutants"].as_slice(),
+        )
+        .unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            [
+                "nextest",
+                "run",
+                "--no-run",
+                "--cargo-profile=mutants",
+                "--verbose",
+                "--workspace",
             ]
         );
     }

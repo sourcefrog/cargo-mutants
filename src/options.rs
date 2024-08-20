@@ -85,6 +85,9 @@ pub struct Options {
     /// interesting results.
     pub shuffle: bool,
 
+    /// Cargo profile.
+    pub profile: Option<String>,
+
     /// Additional arguments for every cargo invocation.
     pub additional_cargo_args: Vec<String>,
 
@@ -205,6 +208,10 @@ impl Options {
                 &config.additional_cargo_test_args,
             ),
             baseline: args.baseline,
+            build_timeout: args.build_timeout.map(Duration::from_secs_f64),
+            build_timeout_multiplier: args
+                .build_timeout_multiplier
+                .or(config.build_timeout_multiplier),
             cap_lints: args.cap_lints.unwrap_or(config.cap_lints),
             check_only: args.check,
             colors: args.colors,
@@ -228,16 +235,13 @@ impl Options {
             output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,
+            profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),
             shuffle: !args.no_shuffle,
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
-            build_timeout: args.build_timeout.map(Duration::from_secs_f64),
-            build_timeout_multiplier: args
-                .build_timeout_multiplier
-                .or(config.build_timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         options.error_values.iter().for_each(|e| {
@@ -519,6 +523,29 @@ mod test {
             remove_var("NO_COLOR");
             let options = Options::new(&args, &Config::default()).unwrap();
             assert_eq!(options.colors.forced_value(), None);
+        }
+
+        #[test]
+        fn profile_option_from_args() {
+            let args = Args::parse_from(["mutants", "--profile=mutants"]);
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.profile.unwrap(), "mutants");
+        }
+
+
+        #[test]
+        fn profile_from_config() {
+            let args = Args::parse_from(["mutants", "-j3"]);
+            let config = indoc! { r#"
+                profile = "mutants"
+                timeout_multiplier = 1.0
+                build_timeout_multiplier = 2.0
+            "#};
+            let mut config_file = NamedTempFile::new().unwrap();
+            config_file.write_all(config.as_bytes()).unwrap();
+            let config = Config::read_file(config_file.path()).unwrap();
+            let options = Options::new(&args, &config).unwrap();
+            assert_eq!(options.profile.unwrap(), "mutants");
         }
     }
 }

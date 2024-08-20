@@ -45,6 +45,8 @@ pub struct Config {
     pub additional_cargo_test_args: Vec<String>,
     /// Minimum test timeout, in seconds, as a floor on the autoset value.
     pub minimum_test_timeout: Option<f64>,
+    /// Cargo profile.
+    pub profile: Option<String>,
     /// Choice of test tool: cargo or nextest.
     pub test_tool: Option<TestTool>,
     /// Timeout multiplier, relative to the baseline 'cargo test'.
