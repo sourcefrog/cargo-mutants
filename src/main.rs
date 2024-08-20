@@ -2,7 +2,7 @@
 
 //! `cargo-mutants`: Find test gaps by inserting bugs.
 //!
-//! See <https://mutants.rs> for more information.
+//! See <https://mutants.rs> for the manual and more information.
 
 mod build_dir;
 mod cargo;
@@ -47,7 +47,8 @@ use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use color_print::cstr;
-use tracing::debug;
+use output::{load_previously_caught, OutputDir};
+use tracing::{debug, info};
 
 use crate::build_dir::BuildDir;
 use crate::console::Console;
@@ -115,6 +116,10 @@ pub struct Args {
     /// Baseline strategy: check that tests pass in an unmutated tree before testing mutants.
     #[arg(long, value_enum, default_value_t = BaselineStrategy::Run, help_heading = "Execution")]
     baseline: BaselineStrategy,
+
+    /// Turn off all rustc lints, so that denied warnings won't make mutants unviable.
+    #[arg(long, action = ArgAction::Set, help_heading = "Build")]
+    cap_lints: Option<bool>,
 
     /// Print mutants that were caught by tests.
     #[arg(long, short = 'v', help_heading = "Output")]
@@ -194,6 +199,10 @@ pub struct Args {
     )]
     in_place: bool,
 
+    /// Skip mutants that were caught in previous runs.
+    #[arg(long, help_heading = "Filters")]
+    iterate: bool,
+
     /// Run this many cargo build/test jobs in parallel.
     #[arg(
         long,
@@ -202,6 +211,16 @@ pub struct Args {
         help_heading = "Execution"
     )]
     jobs: Option<usize>,
+
+    /// Use a GNU Jobserver to cap concurrency between child processes.
+    #[arg(long, action = ArgAction::Set, help_heading = "Execution", default_value_t = true)]
+    jobserver: bool,
+
+    /// Allow this many jobserver tasks in parallel, across all child processes.
+    ///
+    /// By default, NCPUS.
+    #[arg(long, help_heading = "Execution")]
+    jobserver_tasks: Option<usize>,
 
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
@@ -408,7 +427,26 @@ fn main() -> Result<()> {
     } else {
         PackageFilter::Auto(start_dir.to_owned())
     };
-    let discovered = workspace.discover(&package_filter, &options, &console)?;
+
+    let output_parent_dir = options
+        .output_in_dir
+        .clone()
+        .unwrap_or_else(|| workspace.dir.clone());
+
+    let mut discovered = workspace.discover(&package_filter, &options, &console)?;
+
+    let previously_caught = if args.iterate {
+        let previously_caught = load_previously_caught(&output_parent_dir)?;
+        info!(
+            "Iteration excludes {} previously caught or unviable mutants",
+            previously_caught.len()
+        );
+        discovered.remove_previously_caught(&previously_caught);
+        Some(previously_caught)
+    } else {
+        None
+    };
+
     console.clear();
     if args.list_files {
         list_files(FmtToIoWrite::new(io::stdout()), &discovered.files, &options)?;
@@ -427,7 +465,12 @@ fn main() -> Result<()> {
     if args.list {
         list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
     } else {
-        let lab_outcome = test_mutants(mutants, &workspace.dir, options, &console)?;
+        let output_dir = OutputDir::new(&output_parent_dir)?;
+        if let Some(previously_caught) = previously_caught {
+            output_dir.write_previously_caught(&previously_caught)?;
+        }
+        console.set_debug_log(output_dir.open_debug_log()?);
+        let lab_outcome = test_mutants(mutants, &workspace.dir, output_dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

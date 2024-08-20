@@ -160,9 +160,9 @@ jobs:
           install cargo-mutants ~/.cargo/bin/
       - name: Mutants in-diff
         # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
+        # TODO: Pass --profile=mutants when supported
         run: >
           cargo mutants --no-shuffle -vV --in-diff git.diff --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
-          --cargo-arg=--profile=mutants
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
@@ -208,3 +208,13 @@ jobs:
         with:
           name: mutants-${{matrix.test_tool}}-shard${{matrix.shard}}.out
           path: mutants.out
+
+  typos:
+    name: Spell check with Typos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check spelling
+        uses: crate-ci/typos@master

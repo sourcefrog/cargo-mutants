@@ -24,6 +24,9 @@ pub struct Options {
     /// Run tests in an unmutated tree?
     pub baseline: BaselineStrategy,
 
+    /// Turn off all lints.
+    pub cap_lints: bool,
+
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
@@ -32,6 +35,12 @@ pub struct Options {
 
     /// Don't copy at all; run tests in the source directory.
     pub in_place: bool,
+
+    /// Run a jobserver to limit concurrency between child processes.
+    pub jobserver: bool,
+
+    /// Allow this many concurrent jobs, across all child processes. None means NCPU.
+    pub jobserver_tasks: Option<usize>,
 
     /// Don't delete scratch directories.
     pub leak_dirs: bool,
@@ -203,6 +212,7 @@ impl Options {
             build_timeout_multiplier: args
                 .build_timeout_multiplier
                 .or(config.build_timeout_multiplier),
+            cap_lints: args.cap_lints.unwrap_or(config.cap_lints),
             check_only: args.check,
             colors: args.colors,
             emit_json: args.json,
@@ -218,6 +228,8 @@ impl Options {
             gitignore: args.gitignore,
             in_place: args.in_place,
             jobs: args.jobs,
+            jobserver: args.jobserver,
+            jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
             output_in_dir: args.output.clone(),
@@ -274,6 +286,7 @@ mod test {
         let options = Options::new(&args, &Config::default()).unwrap();
         assert!(!options.check_only);
         assert_eq!(options.test_tool, TestTool::Cargo);
+        assert!(!options.cap_lints);
     }
 
     #[test]
@@ -362,9 +375,10 @@ mod test {
     }
 
     #[test]
-    fn test_tool_from_config() {
+    fn from_config() {
         let config = indoc! { r#"
             test_tool = "nextest"
+            cap_lints = true
         "#};
         let mut config_file = NamedTempFile::new().unwrap();
         config_file.write_all(config.as_bytes()).unwrap();
@@ -372,6 +386,7 @@ mod test {
         let config = Config::read_file(config_file.path()).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
+        assert!(options.cap_lints);
     }
 
     #[test]
@@ -410,6 +425,30 @@ mod test {
         );
         assert!(options.features.no_default_features);
         assert!(!options.features.all_features);
+    }
+
+    #[test]
+    fn default_jobserver_settings() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.jobserver);
+        assert_eq!(options.jobserver_tasks, None);
+    }
+
+    #[test]
+    fn disable_jobserver() {
+        let args = Args::parse_from(["mutants", "--jobserver=false"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(!options.jobserver);
+        assert_eq!(options.jobserver_tasks, None);
+    }
+
+    #[test]
+    fn jobserver_tasks() {
+        let args = Args::parse_from(["mutants", "--jobserver-tasks=13"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.jobserver);
+        assert_eq!(options.jobserver_tasks, Some(13));
     }
 
     #[test]
