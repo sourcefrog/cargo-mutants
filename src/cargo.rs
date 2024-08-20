@@ -112,7 +112,14 @@ fn cargo_argv(
         }
     }
     if let Some(profile) = &options.profile {
-        cargo_args.push(format!("--profile={profile}"));
+        match options.test_tool {
+            TestTool::Cargo => {
+                cargo_args.push(format!("--profile={profile}"));
+            }
+            TestTool::Nextest => {
+                cargo_args.push(format!("--cargo-profile={profile}"));
+            }
+        }
     }
     cargo_args.push("--verbose".to_string());
     if let Some([package]) = packages {
@@ -371,6 +378,28 @@ mod test {
             ]
         );
     }
+
+    #[test]
+    fn nextest_gets_special_cargo_profile_option() {
+        let args = Args::try_parse_from(
+            ["mutants", "--test-tool=nextest", "--profile", "mutants"].as_slice(),
+        )
+        .unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            [
+                "nextest",
+                "run",
+                "--no-run",
+                "--cargo-profile=mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+    }
+
     rusty_fork_test! {
         #[test]
         fn rustflags_with_no_environment_variables() {
