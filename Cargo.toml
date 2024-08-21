@@ -116,6 +116,7 @@ exclude = [
     "testdata/integration_tests",
     "testdata/many_patterns",
     "testdata/missing_test",
+    "testdata/missing_test_fixed",
     "testdata/mut_ref",
     "testdata/nested_mod",
     "testdata/never_type",
