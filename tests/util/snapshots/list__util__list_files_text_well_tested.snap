@@ -1,0 +1,20 @@
+---
+source: tests/util/mod.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+src/lib.rs
+src/arc.rs
+src/booleans.rs
+src/empty_fns.rs
+src/inside_mod.rs
+src/item_mod.rs
+src/methods.rs
+src/nested_function.rs
+src/numbers.rs
+src/result.rs
+src/sets.rs
+src/simple_fns.rs
+src/slices.rs
+src/static_item.rs
+src/struct_with_lifetime.rs
+src/traits.rs

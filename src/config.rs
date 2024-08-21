@@ -1,4 +1,4 @@
-// Copyright 2022 Martin Pool.
+// Copyright 2022-2024 Martin Pool.
 
 //! `.cargo/mutants.toml` configuration file.
 //!
@@ -10,21 +10,27 @@
 
 use std::default::Default;
 use std::fs::read_to_string;
+use std::path::Path;
+use std::str::FromStr;
 
 use anyhow::Context;
 use camino::Utf8Path;
 use serde::Deserialize;
 
-use crate::source::SourceTree;
+use crate::options::TestTool;
 use crate::Result;
 
 /// Configuration read from a config file.
 ///
 /// This is similar to [Options], and eventually merged into it, but separate because it
 /// can be deserialized.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Pass `--cap-lints` to rustc.
+    pub cap_lints: bool,
+    /// Generate these error values from functions returning Result.
+    pub error_values: Vec<String>,
     /// Generate mutants from source files matching these globs.
     pub examine_globs: Vec<String>,
     /// Exclude mutants from source files matching these globs.
@@ -37,22 +43,40 @@ pub struct Config {
     pub additional_cargo_args: Vec<String>,
     /// Pass extra args to cargo test.
     pub additional_cargo_test_args: Vec<String>,
+    /// Minimum test timeout, in seconds, as a floor on the autoset value.
+    pub minimum_test_timeout: Option<f64>,
+    /// Cargo profile.
+    pub profile: Option<String>,
+    /// Choice of test tool: cargo or nextest.
+    pub test_tool: Option<TestTool>,
+    /// Timeout multiplier, relative to the baseline 'cargo test'.
+    pub timeout_multiplier: Option<f64>,
+    /// Build timeout multiplier, relative to the baseline 'cargo build'.
+    pub build_timeout_multiplier: Option<f64>,
 }
 
 impl Config {
-    pub fn read_file(path: &Utf8Path) -> Result<Config> {
+    pub fn read_file(path: &Path) -> Result<Config> {
         let toml = read_to_string(path).with_context(|| format!("read config {path:?}"))?;
         toml::de::from_str(&toml).with_context(|| format!("parse toml from {path:?}"))
     }
 
     /// Read the config from a tree's `.cargo/mutants.toml`, and return a default (empty)
     /// Config is the file does not exist.
-    pub fn read_tree_config(source_tree: &dyn SourceTree) -> Result<Config> {
-        let path = source_tree.path().join(".cargo").join("mutants.toml");
+    pub fn read_tree_config(workspace_dir: &Utf8Path) -> Result<Config> {
+        let path = workspace_dir.join(".cargo").join("mutants.toml");
         if path.exists() {
-            Config::read_file(&path)
+            Config::read_file(path.as_ref())
         } else {
             Ok(Config::default())
         }
+    }
+}
+
+impl FromStr for Config {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        toml::de::from_str(s).with_context(|| "parse toml")
     }
 }

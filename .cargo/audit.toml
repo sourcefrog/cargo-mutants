@@ -1,5 +1,8 @@
 [advisories]
 ignore = [
   # Intractable Unix TZ issues; not obviously important in Conserve
-  "RUSTSEC-2020-0071", "RUSTSEC-2020-0159"
+  "RUSTSEC-2020-0071",
+  "RUSTSEC-2020-0159",
+  # Only relevant with a custom allocator, which we don't use
+  "RUSTSEC-2021-0145",
 ]

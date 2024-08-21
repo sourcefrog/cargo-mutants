@@ -1,73 +1,74 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
-use std::env;
-use std::sync::Arc;
-use std::thread::sleep;
+use std::iter::once;
 use std::time::{Duration, Instant};
 
-#[allow(unused_imports)]
-use anyhow::{anyhow, bail, Context, Result};
-use camino::{Utf8Path, Utf8PathBuf};
-use serde_json::Value;
-#[allow(unused_imports)]
-use tracing::{debug, error, info, span, trace, warn, Level};
+use itertools::Itertools;
+use tracing::{debug, debug_span, warn};
 
-use crate::console::Console;
-use crate::log_file::LogFile;
-use crate::path::TreeRelativePathBuf;
-use crate::process::{get_command_output, Process, ProcessStatus};
+use crate::outcome::PhaseResult;
+use crate::package::Package;
+use crate::process::{Process, ProcessStatus};
 use crate::*;
 
-/// How frequently to check if cargo finished.
-const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
-
-/// Run one `cargo` subprocess, with a timeout, and with appropriate handling of interrupts.
+/// Run cargo build, check, or test.
+#[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 pub fn run_cargo(
     build_dir: &BuildDir,
-    argv: &[String],
+    jobserver: &Option<jobserver::Client>,
+    packages: Option<&[&Package]>,
+    phase: Phase,
+    timeout: Option<Duration>,
     log_file: &mut LogFile,
-    timeout: Duration,
+    options: &Options,
     console: &Console,
-    rustflags: &str,
-) -> Result<ProcessStatus> {
+) -> Result<PhaseResult> {
+    let _span = debug_span!("run", ?phase).entered();
     let start = Instant::now();
-
-    // The tests might use Insta <https://insta.rs>, and we don't want it to write
-    // updates to the source tree, and we *certainly* don't want it to write
-    // updates and then let the test pass.
-
-    let env = [
-        ("CARGO_ENCODED_RUSTFLAGS", rustflags),
-        ("INSTA_UPDATE", "no"),
+    let argv = cargo_argv(build_dir.path(), packages, phase, options);
+    let mut env = vec![
+        // The tests might use Insta <https://insta.rs>, and we don't want it to write
+        // updates to the source tree, and we *certainly* don't want it to write
+        // updates and then let the test pass.
+        ("INSTA_UPDATE".to_owned(), "no".to_owned()),
+        ("INSTA_FORCE_PASS".to_owned(), "0".to_owned()),
     ];
-    debug!(?env);
-
-    let mut child = Process::start(argv, &env, build_dir.path(), timeout, log_file)?;
-
-    let process_status = loop {
-        if let Some(exit_status) = child.poll()? {
-            break exit_status;
-        } else {
-            console.tick();
-            sleep(WAIT_POLL_INTERVAL);
-        }
-    };
-
-    let message = format!(
-        "cargo result: {:?} in {:.3}s",
-        process_status,
-        start.elapsed().as_secs_f64()
-    );
-    log_file.message(&message);
-    debug!(cargo_result = ?process_status, elapsed = ?start.elapsed());
+    if let Some(encoded_rustflags) = encoded_rustflags(options) {
+        debug!(?encoded_rustflags);
+        env.push(("CARGO_ENCODED_RUSTFLAGS".to_owned(), encoded_rustflags));
+    }
+    let process_status = Process::run(
+        &argv,
+        &env,
+        build_dir.path(),
+        timeout,
+        jobserver,
+        log_file,
+        console,
+    )?;
     check_interrupted()?;
-    Ok(process_status)
+    debug!(?process_status, elapsed = ?start.elapsed());
+    if let ProcessStatus::Failure(code) = process_status {
+        // 100 "one or more tests failed" from <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>;
+        // I'm not addind a dependency to just get one integer.
+        if argv[1] == "nextest" && code != 100 {
+            // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
+            // error, but we can at least warn if it's unexpected.
+            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
+        }
+    }
+    Ok(PhaseResult {
+        phase,
+        duration: start.elapsed(),
+        process_status,
+        argv,
+    })
 }
 
 /// Return the name of the cargo binary.
-fn cargo_bin() -> String {
+pub fn cargo_bin() -> String {
     // When run as a Cargo subcommand, which is the usual/intended case,
     // $CARGO tells us the right way to call back into it, so that we get
     // the matching toolchain etc.
@@ -76,48 +77,86 @@ fn cargo_bin() -> String {
 
 /// Make up the argv for a cargo check/build/test invocation, including argv[0] as the
 /// cargo binary itself.
-pub fn cargo_argv(package_name: Option<&str>, phase: Phase, options: &Options) -> Vec<String> {
-    let mut cargo_args = vec![cargo_bin(), phase.name().to_string()];
-    if phase == Phase::Check || phase == Phase::Build {
-        cargo_args.push("--tests".to_string());
+// (This is split out so it's easier to test.)
+fn cargo_argv(
+    build_dir: &Utf8Path,
+    packages: Option<&[&Package]>,
+    phase: Phase,
+    options: &Options,
+) -> Vec<String> {
+    let mut cargo_args = vec![cargo_bin()];
+    match phase {
+        Phase::Test => match &options.test_tool {
+            TestTool::Cargo => cargo_args.push("test".to_string()),
+            TestTool::Nextest => {
+                cargo_args.push("nextest".to_string());
+                cargo_args.push("run".to_string());
+            }
+        },
+        Phase::Build => {
+            match &options.test_tool {
+                TestTool::Cargo => {
+                    // These invocations default to the test profile, and might
+                    // have other differences? Generally we want to do everything
+                    // to make the tests build, but not actually run them.
+                    // See <https://github.com/sourcefrog/cargo-mutants/issues/237>.
+                    cargo_args.push("test".to_string());
+                    cargo_args.push("--no-run".to_string());
+                }
+                TestTool::Nextest => {
+                    cargo_args.push("nextest".to_string());
+                    cargo_args.push("run".to_string());
+                    cargo_args.push("--no-run".to_string());
+                }
+            }
+        }
+        Phase::Check => {
+            cargo_args.push("check".to_string());
+            cargo_args.push("--tests".to_string());
+        }
     }
-    if let Some(package_name) = package_name {
-        cargo_args.push("--package".to_owned());
-        cargo_args.push(package_name.to_owned());
+    if let Some(profile) = &options.profile {
+        match options.test_tool {
+            TestTool::Cargo => {
+                cargo_args.push(format!("--profile={profile}"));
+            }
+            TestTool::Nextest => {
+                cargo_args.push(format!("--cargo-profile={profile}"));
+            }
+        }
+    }
+    cargo_args.push("--verbose".to_string());
+    if let Some([package]) = packages {
+        // Use the unambiguous form for this case; it works better when the same
+        // package occurs multiple times in the tree with different versions?
+        cargo_args.push("--manifest-path".to_owned());
+        cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
+    } else if let Some(packages) = packages {
+        for package in packages.iter().map(|p| p.name.to_owned()).sorted() {
+            cargo_args.push("--package".to_owned());
+            cargo_args.push(package);
+        }
     } else {
         cargo_args.push("--workspace".to_string());
     }
+    let features = &options.features;
+    if features.no_default_features {
+        cargo_args.push("--no-default-features".to_owned());
+    }
+    if features.all_features {
+        cargo_args.push("--all-features".to_owned());
+    }
+    cargo_args.extend(
+        features
+            .features
+            .iter()
+            .map(|f| format!("--features={}", f)),
+    );
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
         cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
     }
     cargo_args
-}
-
-/// A source tree where we can run cargo commands.
-#[derive(Debug)]
-pub struct CargoSourceTree {
-    pub root: Utf8PathBuf,
-    cargo_toml_path: Utf8PathBuf,
-}
-
-impl CargoSourceTree {
-    /// Open the source tree enclosing the given path.
-    ///
-    /// Returns an error if it's not found.
-    pub fn open(path: &Utf8Path) -> Result<CargoSourceTree> {
-        let cargo_toml_path = locate_cargo_toml(path)?;
-        let root = cargo_toml_path
-            .parent()
-            .expect("cargo_toml_path has a parent")
-            .to_owned();
-        assert!(root.is_dir());
-
-        Ok(CargoSourceTree {
-            root,
-            cargo_toml_path,
-        })
-    }
 }
 
 /// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
@@ -126,172 +165,113 @@ impl CargoSourceTree {
 ///
 /// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
 /// <https://doc.rust-lang.org/rustc/lints/levels.html#capping-lints>
-pub fn rustflags() -> String {
-    let mut rustflags: Vec<String> = if let Some(rustflags) = env::var_os("CARGO_ENCODED_RUSTFLAGS")
-    {
-        rustflags
-            .to_str()
-            .expect("CARGO_ENCODED_RUSTFLAGS is not valid UTF-8")
-            .split(|c| c == '\x1f')
-            .map(|s| s.to_owned())
-            .collect()
-    } else if let Some(rustflags) = env::var_os("RUSTFLAGS") {
-        rustflags
-            .to_str()
-            .expect("RUSTFLAGS is not valid UTF-8")
-            .split(' ')
-            .map(|s| s.to_owned())
-            .collect()
-    } else {
-        // TODO: We could read the config files, but working out the right target and config seems complicated
-        // given the information available here.
-        // TODO: All matching target.<triple>.rustflags and target.<cfg>.rustflags config entries joined together.
-        // TODO: build.rustflags config value.
-        Vec::new()
-    };
-    rustflags.push("--cap-lints=allow".to_owned());
-    debug!("adjusted rustflags: {:?}", rustflags);
-    rustflags.join("\x1f")
-}
-
-/// Run `cargo locate-project` to find the path of the `Cargo.toml` enclosing this path.
-fn locate_cargo_toml(path: &Utf8Path) -> Result<Utf8PathBuf> {
-    let cargo_bin = cargo_bin();
-    if !path.is_dir() {
-        bail!("{} is not a directory", path);
-    }
-    let argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
-    let stdout = get_command_output(&argv, path)
-        .with_context(|| format!("run cargo locate-project in {path:?}"))?;
-    let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
-    let cargo_toml_path: Utf8PathBuf = val["root"]
-        .as_str()
-        .context("cargo locate-project output has no root: {stdout:?}")?
-        .to_owned()
-        .into();
-    assert!(cargo_toml_path.is_file());
-    Ok(cargo_toml_path)
-}
-
-impl SourceTree for CargoSourceTree {
-    fn path(&self) -> &Utf8Path {
-        &self.root
-    }
-
-    fn root_files(&self, _options: &Options) -> Result<Vec<Arc<SourceFile>>> {
-        debug!("cargo_toml_path = {}", self.cargo_toml_path);
-        check_interrupted()?;
-        let metadata = cargo_metadata::MetadataCommand::new()
-            .manifest_path(&self.cargo_toml_path)
-            .exec()
-            .context("run cargo metadata")?;
-        check_interrupted()?;
-
-        let mut r = Vec::new();
-        for package_metadata in &metadata.workspace_packages() {
-            debug!("walk package {:?}", package_metadata.manifest_path);
-            let package_name = Arc::new(package_metadata.name.to_string());
-            for source_path in direct_package_sources(&self.root, package_metadata)? {
-                check_interrupted()?;
-                r.push(Arc::new(SourceFile::new(
-                    &self.root,
-                    source_path,
-                    package_name.clone(),
-                )?));
-            }
-        }
-        Ok(r)
-    }
-}
-
-/// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
-///
-/// These are the starting points for discovering source files.
-fn direct_package_sources(
-    workspace_root: &Utf8Path,
-    package_metadata: &cargo_metadata::Package,
-) -> Result<Vec<TreeRelativePathBuf>> {
-    let mut found = Vec::new();
-    let pkg_dir = package_metadata.manifest_path.parent().unwrap();
-    for target in &package_metadata.targets {
-        if should_mutate_target(target) {
-            if let Ok(relpath) = target.src_path.strip_prefix(workspace_root) {
-                let relpath = TreeRelativePathBuf::new(relpath.into());
-                debug!(
-                    "found mutation target {} of kind {:?}",
-                    relpath, target.kind
-                );
-                found.push(relpath);
-            } else {
-                warn!("{:?} is not in {:?}", target.src_path, pkg_dir);
-            }
+fn encoded_rustflags(options: &Options) -> Option<String> {
+    let cap_lints_arg = "--cap-lints=warn";
+    let separator = "\x1f";
+    if !options.cap_lints {
+        None
+    } else if let Ok(encoded) = env::var("CARGO_ENCODED_RUSTFLAGS") {
+        if encoded.is_empty() {
+            Some(cap_lints_arg.to_owned())
         } else {
-            debug!(
-                "skipping target {:?} of kinds {:?}",
-                target.name, target.kind
-            );
+            Some(encoded + separator + cap_lints_arg)
         }
+    } else if let Ok(rustflags) = env::var("RUSTFLAGS") {
+        if rustflags.is_empty() {
+            Some(cap_lints_arg.to_owned())
+        } else {
+            Some(
+                rustflags
+                    .split(' ')
+                    .filter(|s| !s.is_empty())
+                    .chain(once("--cap-lints=warn"))
+                    .collect::<Vec<&str>>()
+                    .join(separator),
+            )
+        }
+    } else {
+        Some(cap_lints_arg.to_owned())
     }
-    found.sort();
-    found.dedup();
-    Ok(found)
-}
-
-fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    target.kind.iter().any(|k| k.ends_with("lib") || k == "bin")
 }
 
 #[cfg(test)]
 mod test {
-    use std::ffi::OsStr;
+    use std::sync::Arc;
 
     use pretty_assertions::assert_eq;
-
-    use crate::{Options, Phase};
+    use rusty_fork::rusty_fork_test;
 
     use super::*;
 
     #[test]
     fn generate_cargo_args_for_baseline_with_default_options() {
         let options = Options::default();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(None, Phase::Check, &options)[1..],
-            ["check", "--tests", "--workspace"]
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--verbose", "--workspace"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Build, &options)[1..],
-            ["build", "--tests", "--workspace"]
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            ["test", "--no-run", "--verbose", "--workspace"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Test, &options)[1..],
-            ["test", "--workspace"]
+            cargo_argv(build_dir, None, Phase::Test, &options)[1..],
+            ["test", "--verbose", "--workspace"]
         );
     }
 
     #[test]
-    fn generate_cargo_args_with_additional_cargo_test_args_and_package_name() {
+    fn generate_cargo_args_with_additional_cargo_test_args_and_package() {
         let mut options = Options::default();
         let package_name = "cargo-mutants-testdata-something";
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+        let package = Arc::new(Package {
+            name: package_name.to_owned(),
+            relative_manifest_path: relative_manifest_path.clone(),
+        });
+        let build_manifest_path = build_dir.join(relative_manifest_path);
         assert_eq!(
-            cargo_argv(Some(package_name), Phase::Check, &options)[1..],
-            ["check", "--tests", "--package", package_name]
+            cargo_argv(build_dir, Some(&[&package]), Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--verbose",
+                "--manifest-path",
+                build_manifest_path.as_str(),
+            ]
         );
         assert_eq!(
-            cargo_argv(Some(package_name), Phase::Build, &options)[1..],
-            ["build", "--tests", "--package", package_name]
+            cargo_argv(build_dir, Some(&[&package]), Phase::Build, &options)[1..],
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--manifest-path",
+                build_manifest_path.as_str(),
+            ]
         );
         assert_eq!(
-            cargo_argv(Some(package_name), Phase::Test, &options)[1..],
-            ["test", "--package", package_name, "--lib", "--no-fail-fast"]
+            cargo_argv(build_dir, Some(&[&package]), Phase::Test, &options)[1..],
+            [
+                "test",
+                "--verbose",
+                "--manifest-path",
+                build_manifest_path.as_str(),
+                "--lib",
+                "--no-fail-fast"
+            ]
         );
     }
 
     #[test]
     fn generate_cargo_args_with_additional_cargo_args_and_test_args() {
         let mut options = Options::default();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
@@ -299,17 +279,18 @@ mod test {
             .additional_cargo_args
             .extend(["--release".to_owned()]);
         assert_eq!(
-            cargo_argv(None, Phase::Check, &options)[1..],
-            ["check", "--tests", "--workspace", "--release"]
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--verbose", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Build, &options)[1..],
-            ["build", "--tests", "--workspace", "--release"]
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            ["test", "--no-run", "--verbose", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_argv(None, Phase::Test, &options)[1..],
+            cargo_argv(build_dir, None, Phase::Test, &options)[1..],
             [
                 "test",
+                "--verbose",
                 "--workspace",
                 "--release",
                 "--lib",
@@ -319,18 +300,166 @@ mod test {
     }
 
     #[test]
-    fn error_opening_outside_of_crate() {
-        CargoSourceTree::open(Utf8Path::new("/")).unwrap_err();
+    fn no_default_features_args_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--no-default-features"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--verbose",
+                "--workspace",
+                "--no-default-features"
+            ]
+        );
     }
 
     #[test]
-    fn open_subdirectory_of_crate_opens_the_crate() {
-        let source_tree = CargoSourceTree::open(Utf8Path::new("testdata/tree/factorial/src"))
-            .expect("open source tree from subdirectory");
-        let path = source_tree.path();
-        assert!(path.is_dir());
-        assert!(path.join("Cargo.toml").is_file());
-        assert!(path.join("src/bin/factorial.rs").is_file());
-        assert_eq!(path.file_name().unwrap(), OsStr::new("factorial"));
+    fn all_features_args_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--all-features"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--verbose",
+                "--workspace",
+                "--all-features"
+            ]
+        );
+    }
+
+    #[test]
+    fn cap_lints_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--cap-lints=true"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            ["check", "--tests", "--verbose", "--workspace",]
+        );
+    }
+
+    #[test]
+    fn feature_args_passed_to_cargo() {
+        let args = Args::try_parse_from(
+            ["mutants", "--features", "foo", "--features", "bar,baz"].as_slice(),
+        )
+        .unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--verbose",
+                "--workspace",
+                "--features=foo",
+                "--features=bar,baz"
+            ]
+        );
+    }
+
+    #[test]
+    fn profile_arg_passed_to_cargo() {
+        let args = Args::try_parse_from(["mutants", "--profile", "mutants"].as_slice()).unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--profile=mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+    }
+
+    #[test]
+    fn nextest_gets_special_cargo_profile_option() {
+        let args = Args::try_parse_from(
+            ["mutants", "--test-tool=nextest", "--profile", "mutants"].as_slice(),
+        )
+        .unwrap();
+        let options = Options::from_args(&args).unwrap();
+        let build_dir = Utf8Path::new("/tmp/buildXYZ");
+        assert_eq!(
+            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            [
+                "nextest",
+                "run",
+                "--no-run",
+                "--cargo-profile=mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+    }
+
+    rusty_fork_test! {
+        #[test]
+        fn rustflags_without_cap_lints_and_no_environment_variables() {
+            env::remove_var("RUSTFLAGS");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(
+                encoded_rustflags(&Options {
+                    ..Default::default()
+                }),
+                None
+            );
+        }
+        #[test]
+        fn rustflags_with_cap_lints_and_no_environment_variables() {
+            env::remove_var("RUSTFLAGS");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(
+                encoded_rustflags(&Options {
+                    cap_lints: true,
+                    ..Default::default()
+                }),
+                Some("--cap-lints=warn".into())
+            );
+        }
+
+        // Don't generate an empty argument if the encoded rustflags is empty.
+        #[test]
+        fn rustflags_with_empty_encoded_rustflags() {
+            env::set_var("CARGO_ENCODED_RUSTFLAGS", "");
+            assert_eq!(
+                encoded_rustflags(&Options {
+                    cap_lints: true,
+                    ..Default::default()
+                }).unwrap(),
+                "--cap-lints=warn"
+            );
+        }
+
+        #[test]
+        fn rustflags_added_to_existing_encoded_rustflags() {
+            env::set_var("RUSTFLAGS", "--something\x1f--else");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            let options = Options {
+                cap_lints: true,
+                ..Default::default()
+            };
+            assert_eq!(encoded_rustflags(&options).unwrap(), "--something\x1f--else\x1f--cap-lints=warn");
+        }
+
+        #[test]
+        fn rustflags_added_to_existing_rustflags() {
+            env::set_var("RUSTFLAGS", "-Dwarnings");
+            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            assert_eq!(encoded_rustflags(&Options {
+                cap_lints: true,
+                ..Default::default()
+            }).unwrap(), "-Dwarnings\x1f--cap-lints=warn");
+        }
     }
 }

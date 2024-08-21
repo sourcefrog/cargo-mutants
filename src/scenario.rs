@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 use serde::Serialize;
 use std::fmt;
@@ -18,7 +18,7 @@ impl fmt::Display for Scenario {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Scenario::Baseline => f.write_str("baseline"),
-            Scenario::Mutant(mutant) => mutant.fmt(f),
+            Scenario::Mutant(mutant) => f.write_str(&mutant.name(true, false)),
         }
     }
 }
@@ -28,19 +28,18 @@ impl Scenario {
         matches!(self, Scenario::Mutant { .. })
     }
 
+    /// Return a reference to the mutant, if there is one.
+    pub fn mutant(&self) -> Option<&Mutant> {
+        match self {
+            Scenario::Baseline => None,
+            Scenario::Mutant(mutant) => Some(mutant),
+        }
+    }
+
     pub fn log_file_name_base(&self) -> String {
         match self {
             Scenario::Baseline => "baseline".into(),
             Scenario::Mutant(mutant) => mutant.log_file_name_base(),
-        }
-    }
-
-    /// Return the package name that should be tested for this scenario,
-    /// or None to test every package.
-    pub fn package_name(&self) -> Option<&str> {
-        match self {
-            Scenario::Mutant(mutant) => Some(mutant.package_name()),
-            _ => None,
         }
     }
 }

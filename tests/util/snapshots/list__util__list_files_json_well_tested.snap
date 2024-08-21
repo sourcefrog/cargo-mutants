@@ -1,0 +1,70 @@
+---
+source: tests/util/mod.rs
+expression: "String::from_utf8_lossy(&output.stdout)"
+---
+[
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/lib.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/arc.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/booleans.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/empty_fns.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/inside_mod.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/item_mod.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/methods.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/nested_function.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/numbers.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/result.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/sets.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/simple_fns.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/slices.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/static_item.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/struct_with_lifetime.rs"
+  },
+  {
+    "package": "cargo-mutants-testdata-well-tested",
+    "path": "src/traits.rs"
+  }
+]

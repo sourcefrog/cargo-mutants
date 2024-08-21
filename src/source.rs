@@ -1,16 +1,17 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2023 Martin Pool
 
 //! Access to a Rust source tree and files.
 
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
-use crate::path::TreeRelativePathBuf;
-use crate::*;
+use crate::package::Package;
+use crate::path::{ascent, Utf8PathSlashes};
+use crate::span::LineColumn;
 
 /// A Rust source file within a source tree.
 ///
@@ -19,16 +20,23 @@ use crate::*;
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SourceFile {
     /// Package within the workspace.
-    pub package_name: Arc<String>,
+    pub package: Arc<Package>,
 
-    /// Path relative to the root of the tree.
-    pub tree_relative_path: TreeRelativePathBuf,
+    /// Path of this source file relative to workspace.
+    pub tree_relative_path: Utf8PathBuf,
 
-    /// Full copy of the source.
+    /// Full copy of the unmodified source.
+    ///
+    /// This is held in an [Arc] so that SourceFiles can be cloned without using excessive
+    /// amounts of memory.
     pub code: Arc<String>,
+
+    /// True if this is the top source file for its target: typically but
+    /// not always `lib.rs` or `main.rs`.
+    pub is_top: bool,
 }
 
 impl SourceFile {
@@ -37,45 +45,50 @@ impl SourceFile {
     /// This eagerly loads the text of the file.
     pub fn new(
         tree_path: &Utf8Path,
-        tree_relative_path: TreeRelativePathBuf,
-        package_name: Arc<String>,
-    ) -> Result<SourceFile> {
-        let full_path = tree_relative_path.within(tree_path);
-        let code = std::fs::read_to_string(&full_path)
-            .with_context(|| format!("failed to read source of {:?}", full_path))?
-            .replace("\r\n", "\n");
-        Ok(SourceFile {
+        tree_relative_path: Utf8PathBuf,
+        package: &Arc<Package>,
+        is_top: bool,
+    ) -> Result<Option<SourceFile>> {
+        if ascent(&tree_relative_path) > 0 {
+            warn!(
+                "skipping source outside of tree: {:?}",
+                tree_relative_path.to_slash_path()
+            );
+            return Ok(None);
+        }
+        let full_path = tree_path.join(&tree_relative_path);
+        let code = Arc::new(
+            std::fs::read_to_string(&full_path)
+                .with_context(|| format!("failed to read source of {full_path:?}"))?
+                .replace("\r\n", "\n"),
+        );
+        Ok(Some(SourceFile {
             tree_relative_path,
-            code: Arc::new(code),
-            package_name,
-        })
+            code,
+            package: Arc::clone(package),
+            is_top,
+        }))
     }
 
     /// Return the path of this file relative to the tree root, with forward slashes.
     pub fn tree_relative_slashes(&self) -> String {
-        self.tree_relative_path.to_string()
+        self.tree_relative_path.to_slash_path()
     }
 
-    /// Return the path of this file relative to the base of the source tree.
-    pub fn tree_relative_path(&self) -> &TreeRelativePathBuf {
-        &self.tree_relative_path
+    pub fn path(&self) -> &Utf8Path {
+        self.tree_relative_path.as_path()
     }
-}
 
-/// Some kind of source tree.
-///
-/// The specific type of tree depends on which tool is used to build it.
-///
-/// It knows its filesystem path, and can provide a list of source files, from
-/// which mutations can be generated.
-pub trait SourceTree: std::fmt::Debug {
-    /// Return a list of crate root files for the tree.
-    ///
-    /// These are the `lib.rs`, `main.rs`, etc. From these, all the other source files can be found by walking `mod` statements.
-    fn root_files(&self, options: &Options) -> Result<Vec<Arc<SourceFile>>>;
+    pub fn code(&self) -> &str {
+        self.code.as_str()
+    }
 
-    /// Path of the root of the tree.
-    fn path(&self) -> &Utf8Path;
+    /// Format a location within this source file for display to the user
+    pub fn format_source_location(&self, location: LineColumn) -> String {
+        let source_file = self.tree_relative_slashes();
+        let LineColumn { line, column } = location;
+        format!("{source_file}:{line}:{column}")
+    }
 }
 
 #[cfg(test)]
@@ -100,9 +113,29 @@ mod test {
         let source_file = SourceFile::new(
             temp_dir_path,
             file_name.parse().unwrap(),
-            Arc::new("imaginary-package".to_owned()),
+            &Arc::new(Package {
+                name: "imaginary-package".to_owned(),
+                relative_manifest_path: "whatever/Cargo.toml".into(),
+            }),
+            true,
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(source_file.code(), "fn main() {\n    640 << 10;\n}\n");
+    }
+
+    #[test]
+    fn skips_files_outside_of_workspace() {
+        let source_file = SourceFile::new(
+            &Utf8PathBuf::from("unimportant"),
+            "../outside_workspace.rs".parse().unwrap(),
+            &Arc::new(Package {
+                name: "imaginary-package".to_owned(),
+                relative_manifest_path: "whatever/Cargo.toml".into(),
+            }),
+            true,
         )
         .unwrap();
-        assert_eq!(*source_file.code, "fn main() {\n    640 << 10;\n}\n");
+        assert_eq!(source_file, None);
     }
 }

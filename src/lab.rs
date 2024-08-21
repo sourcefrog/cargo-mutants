@@ -1,228 +1,270 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
-//! Successively apply mutations to the source code and run cargo to check, build, and test them.
+//! Successively apply mutations to the source code and run cargo to check,
+//! build, and test them.
 
-use std::cmp::max;
+use std::cmp::{max, min};
+use std::panic::resume_unwind;
+use std::path::Path;
 use std::sync::Mutex;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use anyhow::{anyhow, Context, Result};
-use rand::prelude::*;
-#[allow(unused)]
-use tracing::{debug, debug_span, error, info, trace};
+use itertools::Itertools;
+use tracing::{debug, debug_span, error, trace, warn};
 
-use crate::cargo::{cargo_argv, run_cargo, rustflags, CargoSourceTree};
-use crate::console::Console;
-use crate::outcome::{LabOutcome, Phase, ScenarioOutcome};
+use crate::cargo::run_cargo;
+use crate::outcome::LabOutcome;
 use crate::output::OutputDir;
-use crate::visit::discover_mutants;
+use crate::package::Package;
+use crate::timeouts::Timeouts;
 use crate::*;
 
 /// Run all possible mutation experiments.
 ///
+/// This is called after all filtering is complete, so all the mutants here will be tested
+/// or checked.
+///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-pub fn test_unmutated_then_all_mutants(
-    source_tree: &CargoSourceTree,
+pub fn test_mutants(
+    mut mutants: Vec<Mutant>,
+    workspace_dir: &Utf8Path,
+    output_dir: OutputDir,
     options: Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
-    let output_in_dir = if let Some(o) = &options.output_in_dir {
-        o.as_path()
-    } else {
-        source_tree.path()
-    };
-    let output_dir = OutputDir::new(output_in_dir)?;
     console.set_debug_log(output_dir.open_debug_log()?);
-
-    let rustflags = rustflags();
-    let mut mutants = discover_mutants(source_tree, &options)?;
+    let jobserver = options
+        .jobserver
+        .then(|| {
+            let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
+            debug!(n_tasks, "starting jobserver");
+            jobserver::Client::new(n_tasks)
+        })
+        .transpose()
+        .context("Start jobserver")?;
     if options.shuffle {
-        mutants.shuffle(&mut rand::thread_rng());
+        fastrand::shuffle(&mut mutants);
     }
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
-        return Err(anyhow!("No mutants found"));
+        warn!("No mutants found under the active filters");
+        return Ok(LabOutcome::default());
     }
+    let mutant_packages = mutants.iter().map(|m| m.package()).unique().collect_vec(); // hold
+    debug!(?mutant_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let mut build_dirs = vec![BuildDir::new(source_tree, console)?];
-    let baseline_outcome = {
-        let _span = debug_span!("baseline").entered();
-        test_scenario(
-            &mut build_dirs[0],
-            &output_mutex,
-            &options,
-            &Scenario::Baseline,
-            options.test_timeout.unwrap_or(Duration::MAX),
-            console,
-            &rustflags,
-        )?
+    let build_dir = match options.in_place {
+        true => BuildDir::in_place(workspace_dir)?,
+        false => BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?,
     };
-    if !baseline_outcome.success() {
-        error!(
-            "cargo {} failed in an unmutated tree, so no mutants were tested",
-            baseline_outcome.last_phase(),
-        );
-        // TODO: Maybe should be Err, but it would need to be an error that can map to the right
-        // exit code.
-        return Ok(output_mutex
-            .into_inner()
-            .expect("lock output_dir")
-            .take_lab_outcome());
-    }
 
-    let mutated_test_timeout = if let Some(timeout) = options.test_timeout {
-        timeout
-    } else if let Some(baseline_test_duration) = baseline_outcome.test_duration() {
-        // If we didn't run tests in the baseline, e.g. for `--check`, there might be no duration.
-        let auto_timeout = max(minimum_test_timeout()?, baseline_test_duration.mul_f32(5.0));
-        if options.show_times {
-            console.autoset_timeout(auto_timeout);
+    let timeouts = match options.baseline {
+        BaselineStrategy::Run => {
+            let outcome = test_scenario(
+                &build_dir,
+                &output_mutex,
+                &jobserver,
+                &Scenario::Baseline,
+                &mutant_packages,
+                Timeouts::for_baseline(&options),
+                &options,
+                console,
+            )?;
+            if !outcome.success() {
+                error!(
+                    "cargo {} failed in an unmutated tree, so no mutants were tested",
+                    outcome.last_phase(),
+                );
+                // We "successfully" established that the baseline tree doesn't work; arguably this should be represented as an error
+                // but we'd need a way for that error to convey an exit code...
+                return Ok(output_mutex
+                    .into_inner()
+                    .expect("lock output_dir")
+                    .take_lab_outcome());
+            }
+            Timeouts::from_baseline(&outcome, &options)
         }
-        auto_timeout
-    } else {
-        Duration::MAX
+        BaselineStrategy::Skip => Timeouts::without_baseline(&options),
     };
+    debug!(?timeouts);
 
-    let jobs = std::cmp::max(1, std::cmp::min(options.jobs.unwrap_or(1), mutants.len()));
-    // Create more build dirs
-    // TODO: Progress indicator; maybe run them in parallel.
-    console.build_dirs_start(jobs - 1);
-    for i in 1..jobs {
-        debug!("copy build dir {i}");
-        build_dirs.push(build_dirs[0].copy(console).context("copy build dir")?);
-    }
-    console.build_dirs_finished();
-    debug!(build_dirs = ?build_dirs);
-
+    let build_dir_0 = Mutex::new(Some(build_dir));
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
     // scenario to test off the queue, and then exits when there are no more left.
     console.start_testing_mutants(mutants.len());
-    let numbered_mutants = Mutex::new(mutants.into_iter().enumerate());
-    thread::scope(|scope| {
+    let n_threads = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
+    let pending = Mutex::new(mutants.into_iter());
+    thread::scope(|scope| -> crate::Result<()> {
         let mut threads = Vec::new();
-        for build_dir in build_dirs {
-            threads.push(scope.spawn(|| {
-                let mut build_dir = build_dir; // move it into this thread
-                let _thread_span = debug_span!("test thread", thread = ?thread::current().id()).entered();
-                trace!("start thread in {build_dir:?}");
-                loop {
-                    // Not a while loop so that it only holds the lock briefly.
-                    let next = numbered_mutants.lock().expect("lock mutants queue").next();
-                    if let Some((mutant_id, mutant)) = next {
-                        let _span = debug_span!("mutant", id = mutant_id).entered();
-                        debug!(location = %mutant.describe_location(), change = ?mutant.describe_change());
-                        // We don't care about the outcome; it's been collected into the output_dir.
-                        let _outcome = test_scenario(
-                            &mut build_dir,
-                            &output_mutex,
-                            &options,
-                            &Scenario::Mutant(mutant),
-                            mutated_test_timeout,
+        for _i_thread in 0..n_threads {
+            threads.push(scope.spawn(|| -> crate::Result<()> {
+                trace!(thread_id = ?thread::current().id(), "start thread");
+                // First thread to start can use the initial build dir; others need to copy a new one
+                let build_dir_0 = build_dir_0.lock().expect("lock build dir 0").take(); // separate for lock
+                let build_dir = match build_dir_0 {
+                    Some(d) => d,
+                    None => {
+                        debug!("copy build dir");
+                        BuildDir::copy_from(
+                            workspace_dir,
+                            options.gitignore,
+                            options.leak_dirs,
                             console,
-                            &rustflags,
-                        )
-                        .expect("scenario test");
-                    } else {
-                        trace!("no more work");
-                        break
+                        )?
+                    }
+                };
+                let _thread_span =
+                    debug_span!("worker thread", build_dir = ?build_dir.path()).entered();
+                loop {
+                    // Extract the mutant in a separate statement so that we don't hold the
+                    // lock while testing it.
+                    let next = pending.lock().map(|mut s| s.next()); // separate for lock
+                    match next {
+                        Err(err) => {
+                            // PoisonError is not Send so we can't pass it directly.
+                            return Err(anyhow!("Lock pending work queue: {}", err));
+                        }
+                        Ok(Some(mutant)) => {
+                            let _span =
+                                debug_span!("mutant", name = mutant.name(false, false)).entered();
+                            let package = mutant.package().clone(); // hold
+                            test_scenario(
+                                &build_dir,
+                                &output_mutex,
+                                &jobserver,
+                                &Scenario::Mutant(mutant),
+                                &[&package],
+                                timeouts,
+                                &options,
+                                console,
+                            )?;
+                        }
+                        Ok(None) => {
+                            return Ok(()); // no more work for this thread
+                        }
                     }
                 }
             }));
         }
-        for thread in threads {
-            thread.join().expect("join thread");
+        // The errors potentially returned from `join` are a special `std::thread::Result`
+        // that does not implement error, indicating that the thread panicked.
+        // Probably the most useful thing is to `resume_unwind` it.
+        // Inside that, there's an actual Mutants error indicating a non-panic error.
+        // Most likely, this would be "interrupted" but it might be some IO error
+        // etc. In that case, print them all and return the first.
+        let errors = threads
+            .into_iter()
+            .flat_map(|thread| match thread.join() {
+                Err(panic) => resume_unwind(panic),
+                Ok(Ok(())) => None,
+                Ok(Err(err)) => {
+                    // To avoid spam, as a special case, don't print "interrupted" errors for each thread,
+                    // since that should have been printed by check_interrupted: but, do return them.
+                    if err.to_string() != "interrupted" {
+                        error!("Worker thread failed: {:?}", err);
+                    }
+                    Some(err)
+                }
+            })
+            .collect_vec(); // print/process them all
+        if let Some(first_err) = errors.into_iter().next() {
+            Err(first_err)
+        } else {
+            Ok(())
         }
-    });
+    })?;
 
     let output_dir = output_mutex
         .into_inner()
         .expect("final unlock mutants queue");
     console.lab_finished(&output_dir.lab_outcome, start_time, &options);
-    Ok(output_dir.take_lab_outcome())
+    let lab_outcome = output_dir.take_lab_outcome();
+    if lab_outcome.total_mutants == 0 {
+        // This should be unreachable as we also bail out before copying
+        // the tree if no mutants are generated.
+        warn!("No mutants were generated");
+    } else if lab_outcome.unviable == lab_outcome.total_mutants {
+        warn!("No mutants were viable; perhaps there is a problem with building in a scratch directory");
+    }
+    Ok(lab_outcome)
 }
 
 /// Test various phases of one scenario in a build dir.
 ///
 /// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
 /// duration of the test.
+#[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 fn test_scenario(
-    build_dir: &mut BuildDir,
+    build_dir: &BuildDir,
     output_mutex: &Mutex<OutputDir>,
-    options: &Options,
+    jobserver: &Option<jobserver::Client>,
     scenario: &Scenario,
-    test_timeout: Duration,
+    test_packages: &[&Package],
+    timeouts: Timeouts,
+    options: &Options,
     console: &Console,
-    rustflags: &str,
 ) -> Result<ScenarioOutcome> {
     let mut log_file = output_mutex
         .lock()
         .expect("lock output_dir to create log")
         .create_log(scenario)?;
     log_file.message(&scenario.to_string());
-    if let Scenario::Mutant(mutant) = scenario {
-        log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
-        mutant.apply(build_dir)?;
-    }
-    console.scenario_started(scenario, log_file.path());
+    console.scenario_started(build_dir.path().as_ref(), scenario, log_file.path())?;
     let diff_filename = output_mutex.lock().unwrap().write_diff_file(scenario)?;
 
-    let mut outcome = ScenarioOutcome::new(&log_file, diff_filename, scenario.clone());
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
     } else {
         &[Phase::Build, Phase::Test]
     };
+    let applied = scenario
+        .mutant()
+        .map(|mutant| {
+            // TODO: This is slightly inefficient as it computes the mutated source twice,
+            // once for the diff and once to write it out.
+            log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
+            mutant.apply(build_dir)
+        })
+        .transpose()?;
+    let dir: &Path = build_dir.path().as_ref();
+    console.scenario_started(dir, scenario, log_file.path())?;
+
+    let mut outcome = ScenarioOutcome::new(&log_file, &diff_filename, scenario.clone());
     for &phase in phases {
-        let phase_start = Instant::now();
-        console.scenario_phase_started(scenario, phase);
-        let cargo_argv = cargo_argv(scenario.package_name(), phase, options);
+        console.scenario_phase_started(dir, phase);
         let timeout = match phase {
-            Phase::Test => test_timeout,
-            _ => Duration::MAX,
+            Phase::Test => timeouts.test,
+            Phase::Build | Phase::Check => timeouts.build,
         };
-        let cargo_result = run_cargo(
+        let phase_result = run_cargo(
             build_dir,
-            &cargo_argv,
-            &mut log_file,
+            jobserver,
+            Some(test_packages),
+            phase,
             timeout,
+            &mut log_file,
+            options,
             console,
-            rustflags,
         )?;
-        outcome.add_phase_result(phase, phase_start.elapsed(), cargo_result, &cargo_argv);
-        console.scenario_phase_finished(scenario, phase);
-        if (phase == Phase::Check && options.check_only) || !cargo_result.success() {
+        let success = phase_result.is_success(); // so we can move it away
+        outcome.add_phase_result(phase_result);
+        console.scenario_phase_finished(dir, phase);
+        if !success {
             break;
         }
     }
-    if let Scenario::Mutant(mutant) = scenario {
-        mutant.unapply(build_dir)?;
-    }
+    drop(applied);
     output_mutex
         .lock()
         .expect("lock output dir to add outcome")
         .add_scenario_outcome(&outcome)?;
     debug!(outcome = ?outcome.summary());
-    console.scenario_finished(scenario, &outcome, options);
+    console.scenario_finished(dir, scenario, &outcome, options);
 
     Ok(outcome)
-}
-
-/// Return the minimum timeout for cargo tests (used if the baseline tests are fast),
-/// from either the environment or a built-in default.
-fn minimum_test_timeout() -> Result<Duration> {
-    let var_name = crate::MINIMUM_TEST_TIMEOUT_ENV_VAR;
-    if let Some(env_timeout) = env::var_os(var_name) {
-        let env_timeout = env_timeout
-            .to_string_lossy()
-            .parse()
-            .with_context(|| format!("invalid {var_name}"))?;
-        Ok(Duration::from_secs(env_timeout))
-    } else {
-        Ok(DEFAULT_MINIMUM_TEST_TIMEOUT)
-    }
 }

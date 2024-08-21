@@ -1,0 +1,6 @@
+---
+source: tests/cli/main.rs
+expression: content
+---
+src/bin/factorial.rs:2:5: replace main with ()
+

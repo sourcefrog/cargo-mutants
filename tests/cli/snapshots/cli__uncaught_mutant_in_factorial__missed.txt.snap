@@ -1,6 +1,0 @@
----
-source: tests/cli.rs
-expression: missed_txt
----
-src/bin/factorial.rs:1: replace main with ()
-

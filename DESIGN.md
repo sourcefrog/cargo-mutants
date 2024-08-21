@@ -12,8 +12,12 @@ See also [CONTRIBUTING.md](CONTRIBUTING.md) for more advice on style, approach, 
 
 Actually running subprocesses is delegated to `process.rs`, so that we can later potentially run different build tools to Cargo.
 
+`build_dir.rs` -- Manage temporary build directories.
+
 `console.rs` -- colored output to the console including drawing progress bars.
 The interface to the `console` and `indicatif` crates is localized here.
+
+`copy_tree.rs` -- Copy a source file tree into a build dir, with gitignore and other exclusions.
 
 `interrupt.rs` -- Handle Ctrl-C signals by setting a global atomic flag, which
 is checked during long-running operations.
@@ -43,36 +47,67 @@ applied.
 `source.rs` -- A source tree and files within it, including visiting each source
 file to find mutations.
 
-`textedit.rs` -- A (line, column) addressing within a source file, and edits to
-the content based on those addresses.
+`span.rs` -- A (line, column) addressing within a source file, a range between
+two positions, and edits to the content based on those addresses.
 
-`visit.rs` -- Walk a source file's AST. The interface to the `syn` parser is
-localized here.
+`visit.rs` -- Walk a source file's AST, and guess at likely-legal-but-wrong
+replacements. The interface to the `syn` parser is localized here, and also the
+core of cargo-mutants logic to guess at valid replacements.
 
-## Relative dependencies
+## Major processing stages
+
+1. Find the workspace enclosing the start directory, and the packages within it.
+1. Determine which packages to mutate.
+1. Generate mutants by walking each package.
+1. Copy the source tree.
+1. Run baseline tests.
+1. Test each mutant in parallel.
+
+### Finding the workspace and packages
+
+cargo-mutants is invoked from within, or given with `-d`, a single directory, called the _start directory_. To find mutants and run tests we first need to find the enclosing workspace and the packages within it.
+
+This is done basically by parsing the output of `cargo locate-project` and `cargo metadata`.
+
+We often want to test only one or a subset of packages in the workspace. This can be set explicitly with `--package` and `--workspace`, or heuristically depending on the project metadata and the start directory.
+
+For each package, cargo tells us the build targets including tests and the main library or binary. The tests are not considered for mutation, so this leaves us with
+some targets of interest, and for each of them cargo tells us one top source file, typically something like `src/lib.rs` or `src/main.rs`.
+
+### Discovering mutants
+
+After discovering packages and before running any tests, we discover all the potential mutants.
+
+Starting from the top files for each package, we parse each source file using `syn`
+and then walk its AST. In the course of that walk we can find three broad categories of patterns:
+
+* A `mod` statement (without a block), which tells us of another source file we must remember
+  to walk.
+* A source pattern that cargo-mutants knows how to mutate, such as a function returning a value.
+* A pattern that tells cargo-mutants not to look further into this branch of the tree, such as `#[test]` or `#[mutants::skip]`.
+
+For baseline builds and tests, we test all the packages that will later be mutated. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
+
+We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
+
+### Copying the source tree
+
+Mutations are tested in copies of the source tree. (An option could be added to test in-place, which would be nice for CI.)
+
+Initially, one copy is made to run baseline tests; if they succeed then additional copies are made as necessary for each parallel job.
 
 After copying the tree, cargo-mutants scans the top-level `Cargo.toml` and any
 `.cargo/config.toml` for relative dependencies. If there are any, the paths are
 rewritten to be absolute, so that they still work when cargo is run in the
 scratch directory.
 
-## Enumerating the source tree
+Currently, the whole workspace tree is copied. In future, possibly only the package to be mutated could be copied: this would require changes to the code that fixes up dependencies.
 
-A source tree may be a single crate or a Cargo workspace. There are several levels of nesting:
+Copies by default respect gitignore, but this can be turned off.
 
-* A workspace contains one or more packages.
-* A package contains one or more targets.
-* Each target names one (or possibly-more) top level source files, whose directories are walked to find more source files.
-* Each source file contains some functions.
-* For each function we generate some mutants.
+Each parallel build dir is copied from the original source so that it sees any gitignore files in parent directories.
 
-The name of the containing package is passed through to the `SourceFile` and the `Mutant` objects.
-
-For source tree and baseline builds and tests, we pass Cargo `--workspace` to build and test everything. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
-
-Currently source files are discovered by finding any `bin` or `lib` targets in the package, then taking every `*.rs` file in the same directory as their top-level source file. (This is a bit approximate and will pick up files that might not actually be referenced by a `mod` statement, so may change in the future.)
-
-We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
+(This current approach assumes that all the packages are under the workspace directory, which is common but not actually required.)
 
 ## Handling timeouts
 
@@ -143,6 +178,10 @@ Various output files, including the text output from all the cargo commands are
 written into `mutants.out` within the directory specified by `--output`, or by
 default the source directory.
 
+## Cargo quirks
+
+To build the tests, we actually run `cargo test --no-test` (or similarly for Nextest) so that the build uses the same profile as the tests. This is because the tests are built with the `test` profile, which can have different settings from the `dev` profile.
+
 ## Handling strict lints
 
 Some trees are configured so that any unused variable is an error. This is a reasonable choice to keep the tree very clean in CI, but if unhandled it would be a problem for cargo mutants. Many mutants -- in fact at the time of writing all generated mutants -- ignore function parameters and return a static value. Rejecting them due to the lint failure is a missed opportunity to consider a similar but more subtle potential bug.
@@ -159,9 +198,21 @@ Cargo-mutants is primarily tested on its public interface, which is the command 
 
 `cargo-mutants` runs as a subprocess of the test process so that we get the most realistic view of its behavior. In some cases it is run via the `cargo` command to test that this level of indirection works properly.
 
+### Test performance
+
+Since cargo-mutants itself runs the test suite of the program under test many times there is a risk that the test suite can get slow. Aside from slowing down developers and CI, this has a multiplicative effect on the time to run `cargo mutants` on itself.
+
+To manage test time:
+
+* Although key behaviour should be tested through integration tests that run the CLI, it's OK to handle additional cases with unit tests that run much faster.
+
+* Whenever reasonable, CLI tests can only list mutants with `--list` rather than actually testing all of them: we have just a small set of tests that check that the mutants that are listed are actually run.
+
+* Use relatively small testdata trees that are sufficient to test the right behavior.
+
 ### `testdata` trees
 
-The primary means of testing is Rust source trees under `testdata/tree`: you can copy an existing tree and modify it to show the new behavior that you want to test.
+The primary means of testing is Rust source trees under `testdata`: you can copy an existing tree and modify it to show the new behavior that you want to test.
 
 A selection of test trees are available for testing different scenarios. If there is an existing suitable tree, please use it. If you need to test a situation that is not covered yet, please add a new tree.
 
@@ -179,7 +230,11 @@ Many features can be tested adequately by only looking at the list of mutants pr
 
 ### Unit tests
 
-Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient to exercise from the command line.
+Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient or overly slow to exercise from the command line.
+
+### Nextest tests
+
+cargo-mutants tests require `nextest` to be installed.
 
 ## UI Style
 

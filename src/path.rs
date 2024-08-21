@@ -2,18 +2,12 @@
 
 //! Utilities for file paths.
 
-use std::convert::TryInto;
-use std::fmt;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-
-use camino::{Utf8Path, Utf8PathBuf};
-use serde::Serialize;
+use camino::Utf8Path;
 
 /// Measures how far above its starting point a path ascends.
 ///
 /// If in following this path you would ever ascend above the starting point,
-/// this returns a whole number indicating the number of steps above the
+/// this returns a positive number indicating the number of steps above the
 /// starting point.
 ///
 /// This only considers the textual content of the path, and does not look at
@@ -51,102 +45,6 @@ impl Utf8PathSlashes for Utf8Path {
             .map(|c| if c == "/" || c == "\\" { "" } else { c })
             .collect::<Vec<_>>()
             .join("/")
-    }
-}
-
-/// A path relative to the top of the source tree.
-#[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord, Serialize)]
-pub struct TreeRelativePathBuf(Utf8PathBuf);
-
-impl fmt::Display for TreeRelativePathBuf {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = self
-            .0
-            .components()
-            .map(|c| c.as_str())
-            .collect::<Vec<_>>()
-            .join("/");
-        f.write_str(&s)
-    }
-}
-
-impl TreeRelativePathBuf {
-    pub fn new(path: Utf8PathBuf) -> Self {
-        assert!(path.is_relative());
-        TreeRelativePathBuf(path)
-    }
-
-    /// Make an empty tree-relative path, identifying the root.
-    #[allow(dead_code)]
-    pub fn empty() -> Self {
-        TreeRelativePathBuf(Utf8PathBuf::new())
-    }
-
-    #[allow(dead_code)]
-    pub fn from_absolute(path: &Utf8Path, tree_root: &Utf8Path) -> Self {
-        TreeRelativePathBuf(
-            path.strip_prefix(tree_root)
-                .expect("path is within tree root")
-                .to_owned(),
-        )
-    }
-
-    pub fn within(&self, tree_path: &Utf8Path) -> Utf8PathBuf {
-        tree_path.join(&self.0)
-    }
-
-    pub fn join(&self, p: impl AsRef<Utf8Path>) -> Self {
-        TreeRelativePathBuf(self.0.join(p))
-    }
-
-    /// Return the tree-relative path of the containing directory.
-    ///
-    /// Panics if there is no parent, i.e. if self is already the tree root.
-    #[allow(dead_code)]
-    pub fn parent(&self) -> TreeRelativePathBuf {
-        self.0
-            .parent()
-            .expect("TreeRelativePath has no parent")
-            .to_owned()
-            .into()
-    }
-}
-
-impl AsRef<Utf8Path> for TreeRelativePathBuf {
-    fn as_ref(&self) -> &Utf8Path {
-        &self.0
-    }
-}
-
-impl From<&Utf8Path> for TreeRelativePathBuf {
-    fn from(path_buf: &Utf8Path) -> Self {
-        TreeRelativePathBuf::new(path_buf.to_owned())
-    }
-}
-
-impl From<Utf8PathBuf> for TreeRelativePathBuf {
-    fn from(path_buf: Utf8PathBuf) -> Self {
-        TreeRelativePathBuf::new(path_buf)
-    }
-}
-
-impl From<PathBuf> for TreeRelativePathBuf {
-    fn from(path_buf: PathBuf) -> Self {
-        TreeRelativePathBuf::new(path_buf.try_into().expect("path must be UTF-8"))
-    }
-}
-
-impl From<&Path> for TreeRelativePathBuf {
-    fn from(path: &Path) -> Self {
-        TreeRelativePathBuf::from(path.to_owned())
-    }
-}
-
-impl FromStr for TreeRelativePathBuf {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(TreeRelativePathBuf::new(s.parse()?))
     }
 }
 

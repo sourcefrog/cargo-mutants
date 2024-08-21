@@ -1,9 +1,0 @@
----
-source: tests/cli.rs
-expression: stdout
----
-Found 1 mutant to test
-Unmutated baseline ... ok
-src/entry.rs:1: replace factorial -> u32 with Default::default() ... caught
-1 mutant tested: 1 caught
-

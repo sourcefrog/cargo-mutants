@@ -1,0 +1,12 @@
+---
+source: tests/main.rs
+expression: stdout
+---
+Found 4 mutants to test
+ok       Unmutated baseline
+caught   src/entry.rs:2:5: replace factorial -> u32 with 0
+caught   src/entry.rs:2:5: replace factorial -> u32 with 1
+caught   src/entry.rs:4:11: replace *= with += in factorial
+caught   src/entry.rs:4:11: replace *= with /= in factorial
+4 mutants tested: 4 caught
+

@@ -1,7 +1,0 @@
----
-source: tests/cli.rs
-expression: "String::from_utf8_lossy(&output.stdout)"
----
-src/bin/factorial.rs:1: replace main with ()
-src/bin/factorial.rs:7: replace factorial -> u32 with Default::default()
-

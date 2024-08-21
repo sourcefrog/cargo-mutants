@@ -4,3 +4,11 @@ language = "en"
 multilingual = false
 src = "src"
 title = "cargo-mutants"
+
+[output.html]
+
+[output.linkcheck]
+follow-web-links = true
+
+[output.linkcheck.http-headers]
+'crates\.io' = ["Accept: text/html"]

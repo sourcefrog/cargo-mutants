@@ -1,103 +1,171 @@
 [package]
 name = "cargo-mutants"
-version = "1.2.0"
+version = "24.7.1"
 edition = "2021"
 authors = ["Martin Pool"]
 license = "MIT"
-description = "Find inadequately-tested code that can be removed without any tests failing."
+description = "Inject bugs and see if your tests catch them"
 repository = "https://github.com/sourcefrog/cargo-mutants"
+homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
-rust-version = "1.63"
+rust-version = "1.74"
+
+[package.metadata.wix]
+upgrade-guid = "CA7BFE8D-F3A7-4D1D-AE43-B7749110FA90"
+path-guid = "457C7F8E-0F02-42CC-80D9-FE55FBED23F8"
+license = false
+eula = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
-camino = "1.0"
-cargo_metadata = "0.15"
-clap = { version = "4", features = ["deprecated", "derive", "wrap_help"] }
+anyhow = "1.0.86"
+camino = "1.1.6"
+cargo_metadata = "0.18"
+clap = { version = "4.4.1", features = [
+    "deprecated",
+    "derive",
+    "env",
+    "wrap_help",
+] }
 clap_complete = "4"
+color-print = "0.3"
 console = "0.15"
 ctrlc = { version = "3.2.1", features = ["termination"] }
+fastrand = "2"
 fs2 = "0.4"
-globset = "0.4.8"
-itertools = "0.10"
+globset = "0.4.10"
+humantime = "2.1.0"
+ignore = "0.4.20"
+indoc = "2.0.0"
+itertools = "0.12"
+jobserver = "0.1"
 mutants = "0.0.3"
-nix = "0.25"
+num_cpus = "1.16"
+patch = "0.7"
 path-slash = "0.2"
-quote = "1.0"
-rand = "0.8"
-serde_json = "1"
-similar = "2.0"
-subprocess = "0.2.8"
-tempfile = "3.2"
+quote = "1.0.35"
+regex = "1.10"
+serde_json = "1.0.117"
+similar = "2.1"
+strum = { version = "0.26", features = ["derive"] }
+tempfile = "3.4"
 time = "0.3"
-toml = "0.5"
-tracing = "0.1"
+toml = "0.8"
+tracing = "0.1.40"
 tracing-appender = "0.2"
-tracing-subscriber = "0.3"
-whoami = "1.2"
-
-[dependencies.regex]
-version = "1.5"
-
-[dependencies.cp_r]
-version = "0.5.1"
+tracing-subscriber = "0.3.18"
+whoami = "1.5"
 
 [dependencies.nutmeg]
-version = "0.1.2"
+version = "0.1.4"
 # git = "https://github.com/sourcefrog/nutmeg.git"
 
 [dependencies.proc-macro2]
 features = ["span-locations"]
-version = "1.0.29"
+version = "1.0.74"
 
 [dependencies.serde]
-version = "1"
+version = "1.0.194"
 features = ["derive"]
 
 [dependencies.syn]
-version = "1"
+version = "2.0.46"
 features = ["full", "extra-traits", "visit"]
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.28", features = ["process", "signal"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
+cp_r = "0.5.1"
 insta = "1.12"
 lazy_static = "1.4"
-predicates = "2"
+predicates = "3"
 pretty_assertions = "1"
-regex = "1.5"
-walkdir = "2.3"
+rusty-fork = "0.3"
+walkdir = "2.5"
 
 [workspace]
 members = ["mutants_attrs"]
+resolver = "2"
 
 # Exclude all testdata, so that they're more isolated from the real tree, and
 # so that support for testing workspaces does not try to test the whole
 # cargo-mutants tree.
 exclude = [
-    "testdata/tree/already_failing_tests",
-    "testdata/tree/already_hangs",
-    "testdata/tree/cdylib",
-    "testdata/tree/cfg_attr_mutants_skip",
-    "testdata/tree/cfg_attr_test_skip",
-    "testdata/tree/dependency",
-    "testdata/tree/everything_skipped",
-    "testdata/tree/factorial",
-    "testdata/tree/fails_without_feature",
-    "testdata/tree/hang_avoided_by_attr/",
-    "testdata/tree/hang_when_mutated",
-    "testdata/tree/insta",
-    "testdata/tree/integration_tests",
-    "testdata/tree/override_dependency",
-    "testdata/tree/patch_dependency",
-    "testdata/tree/relative_dependency",
-    "testdata/tree/replace_dependency",
-    "testdata/tree/small_well_tested",
-    "testdata/tree/strict_warnings",
-    "testdata/tree/struct_with_no_default",
-    "testdata/tree/unapply",
-    "testdata/tree/well_tested",
-    "testdata/tree/with_child_directories",
+    "testdata/already_failing_tests",
+    "testdata/already_hangs",
+    "testdata/cdylib",
+    "testdata/cfg_attr_mutants_skip",
+    "testdata/cfg_attr_test_skip",
+    "testdata/cfg_test_inner",
+    "testdata/custom_top_file",
+    "testdata/dangling_mod",
+    "testdata/dependency",
+    "testdata/diff0",
+    "testdata/diff1",
+    "testdata/error_value",
+    "testdata/everything_skipped",
+    "testdata/factorial",
+    "testdata/fails_without_feature",
+    "testdata/hang_avoided_by_attr/",
+    "testdata/hang_when_mutated",
+    "testdata/insta",
+    "testdata/integration_tests",
+    "testdata/many_patterns",
+    "testdata/missing_test",
+    "testdata/mut_ref",
+    "testdata/nested_mod",
+    "testdata/never_type",
+    "testdata/override_dependency",
+    "testdata/package-fails/",
+    "testdata/patch_dependency",
+    "testdata/relative_dependency",
+    "testdata/replace_dependency",
+    "testdata/small_well_tested",
+    "testdata/strict_warnings",
+    "testdata/struct_with_no_default",
+    "testdata/symlink",
+    "testdata/unapply",
+    "testdata/unsafe",
+    "testdata/well_tested",
+    "testdata/with_child_directories",
+]
+
+# Config for 'cargo dist'
+[workspace.metadata.dist]
+# The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
+cargo-dist-version = "0.14.1"
+# CI backends to support
+ci = "github"
+# The installers to generate for each app
+installers = []
+# Target platforms to build apps for (Rust target-triple syntax)
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
+# Publish jobs to run in CI
+pr-run-mode = "plan"
+# # Publish jobs to run in CI
+# pr-run-mode = "upload"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+[profile.mutants]
+inherits = "test"
+debug = "none"
+
+# Config for <https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md>
+[workspace.metadata.release]
+pre-release-replacements = [
+    { "file" = "NEWS.md", search = "## Unreleased", replace = "## {{version}}", exactly = 1 },
+    { "file" = "CITATION.cff", search = "^version: .*", replace = "version: {{version}}", exactly = 1 },
 ]

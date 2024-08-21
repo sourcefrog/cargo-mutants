@@ -1,21 +1,19 @@
-// Copyright 2021, 2022 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::fs::{self, File, OpenOptions};
+use std::fs::{create_dir, remove_dir_all, rename, write, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
-use anyhow::{Context, Result};
-use camino::Utf8Path;
 use fs2::FileExt;
 use path_slash::PathExt;
 use serde::Serialize;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
-use tracing::info;
+use tracing::{info, trace};
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::*;
@@ -24,6 +22,9 @@ const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
 const LOCK_JSON: &str = "lock.json";
 const LOCK_POLL: Duration = Duration::from_millis(100);
+static CAUGHT_TXT: &str = "caught.txt";
+static PREVIOUSLY_CAUGHT_TXT: &str = "previously_caught.txt";
+static UNVIABLE_TXT: &str = "unviable.txt";
 
 /// The contents of a `lock.json` written into the output directory and used as
 /// a lock file to ensure that two cargo-mutants invocations don't try to write
@@ -44,7 +45,7 @@ impl LockFile {
         LockFile {
             cargo_mutants_version: crate::VERSION.to_string(),
             start_time,
-            hostname: whoami::hostname(),
+            hostname: whoami::fallible::hostname().unwrap_or_default(),
             username: whoami::username(),
         }
     }
@@ -57,24 +58,21 @@ impl LockFile {
         let lock_path = output_dir.join(LOCK_JSON);
         let mut lock_file = File::options()
             .create(true)
+            .truncate(false)
             .write(true)
             .open(&lock_path)
             .context("open or create lock.json in existing directory")?;
-        if lock_file.try_lock_exclusive().is_err() {
-            info!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
-            let contended_kind = fs2::lock_contended_error().kind();
-            loop {
-                check_interrupted()?;
-                if let Err(err) = lock_file.try_lock_exclusive() {
-                    if err.kind() == contended_kind {
-                        sleep(LOCK_POLL)
-                    } else {
-                        return Err(err).context("wait for lock");
-                    }
-                } else {
-                    break;
-                }
+        let mut first = true;
+        while let Err(err) = lock_file.try_lock_exclusive() {
+            if first {
+                info!(
+                    "Waiting for lock on {} ...: {err}",
+                    lock_path.to_slash_lossy()
+                );
+                first = false;
             }
+            check_interrupted()?;
+            sleep(LOCK_POLL);
         }
         lock_file.set_len(0)?;
         lock_file
@@ -116,7 +114,7 @@ impl OutputDir {
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
     pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
         if !in_dir.exists() {
-            fs::create_dir(in_dir).context("create output parent directory {in_dir:?}")?;
+            create_dir(in_dir).context("create output parent directory {in_dir:?}")?;
         }
         let output_dir = in_dir.join(OUTDIR_NAME);
         if output_dir.exists() {
@@ -126,19 +124,19 @@ impl OutputDir {
 
             let rotated = in_dir.join(ROTATED_NAME);
             if rotated.exists() {
-                fs::remove_dir_all(&rotated).with_context(|| format!("remove {:?}", &rotated))?;
+                remove_dir_all(&rotated).with_context(|| format!("remove {:?}", &rotated))?;
             }
-            fs::rename(&output_dir, &rotated)
+            rename(&output_dir, &rotated)
                 .with_context(|| format!("move {:?} to {:?}", &output_dir, &rotated))?;
         }
-        fs::create_dir(&output_dir)
+        create_dir(&output_dir)
             .with_context(|| format!("create output directory {:?}", &output_dir))?;
         let lock_file = LockFile::acquire_lock(output_dir.as_std_path())
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
-        fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
+        create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
         let diff_dir = output_dir.join("diff");
-        fs::create_dir(&diff_dir).context("create diff dir")?;
+        create_dir(&diff_dir).context("create diff dir")?;
 
         // Create text list files.
         let mut list_file_options = OpenOptions::new();
@@ -147,10 +145,10 @@ impl OutputDir {
             .open(output_dir.join("missed.txt"))
             .context("create missed.txt")?;
         let caught_list = list_file_options
-            .open(output_dir.join("caught.txt"))
+            .open(output_dir.join(CAUGHT_TXT))
             .context("create caught.txt")?;
         let unviable_list = list_file_options
-            .open(output_dir.join("unviable.txt"))
+            .open(output_dir.join(UNVIABLE_TXT))
             .context("create unviable.txt")?;
         let timeout_list = list_file_options
             .open(output_dir.join("timeout.txt"))
@@ -185,7 +183,7 @@ impl OutputDir {
     /// Update the state of the overall lab.
     ///
     /// Called multiple times as the lab runs.
-    pub fn write_lab_outcome(&self) -> Result<()> {
+    fn write_lab_outcome(&self) -> Result<()> {
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(self.path.join("outcomes.json"))?),
             &self.lab_outcome,
@@ -206,22 +204,24 @@ impl OutputDir {
                 SummaryOutcome::Unviable => &mut self.unviable_list,
                 _ => return Ok(()),
             };
-            writeln!(file, "{}", mutant).context("write to list file")?;
+            writeln!(file, "{}", mutant.name(true, false)).context("write to list file")?;
         }
         Ok(())
     }
 
     pub fn write_diff_file(&self, scenario: &Scenario) -> Result<Utf8PathBuf> {
-        // TODO: Unify with the cleaning/uniquifying code in LogFile...
+        // TODO: Unify with code to calculate log file names; maybe OutputDir should assign unique
+        // names?
         let diff_filename = self
             .diff_dir
             .join(format!("{}.diff", scenario.log_file_name_base()));
         let diff = if let Scenario::Mutant(mutant) = scenario {
+            // TODO: Calculate the mutant text only once?
             mutant.diff()
         } else {
             String::new()
         };
-        fs::write(&diff_filename, diff.as_bytes())
+        write(&diff_filename, diff.as_bytes())
             .with_context(|| format!("write diff file {diff_filename:?}"))?;
         Ok(diff_filename)
     }
@@ -246,34 +246,73 @@ impl OutputDir {
     pub fn take_lab_outcome(self) -> LabOutcome {
         self.lab_outcome
     }
+
+    pub fn write_previously_caught(&self, caught: &[String]) -> Result<()> {
+        let p = self.path.join(PREVIOUSLY_CAUGHT_TXT);
+        // TODO: with_capacity when mutants knows to skip that; https://github.com/sourcefrog/cargo-mutants/issues/315
+        // let mut b = String::with_capacity(caught.iter().map(|l| l.len() + 1).sum());
+        let mut b = String::new();
+        for l in caught {
+            b.push_str(l);
+            b.push('\n');
+        }
+        File::options()
+            .create_new(true)
+            .write(true)
+            .open(&p)
+            .and_then(|mut f| f.write_all(b.as_bytes()))
+            .with_context(|| format!("Write {p:?}"))
+    }
+}
+
+/// Return the string names of mutants previously caught in this output directory, including
+/// unviable mutants.
+///
+/// Returns an empty vec if there are none.
+pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String>> {
+    let mut r = Vec::new();
+    for filename in [CAUGHT_TXT, UNVIABLE_TXT, PREVIOUSLY_CAUGHT_TXT] {
+        let p = output_parent_dir.join(OUTDIR_NAME).join(filename);
+        trace!(?p, "read previously caught");
+        if p.is_file() {
+            r.extend(
+                read_to_string(&p)
+                    .with_context(|| format!("Read previously caught mutants from {p:?}"))?
+                    .lines()
+                    .map(|s| s.to_owned()),
+            );
+        }
+    }
+    Ok(r)
 }
 
 #[cfg(test)]
 mod test {
-    use std::convert::TryInto;
+    use std::fs::write;
 
+    use indoc::indoc;
     use itertools::Itertools;
-    use path_slash::PathExt;
     use pretty_assertions::assert_eq;
-    use tempfile::TempDir;
+    use tempfile::{tempdir, TempDir};
 
     use super::*;
-    use crate::source::SourceTree;
 
     fn minimal_source_tree() -> TempDir {
-        let tmp = tempfile::tempdir().unwrap();
+        let tmp = tempdir().unwrap();
         let path = tmp.path();
-        fs::write(
+        write(
             path.join("Cargo.toml"),
-            br#"# enough for a test
-[package]
-name = "cargo-mutants-minimal-test-tree"
-version = "0.0.0"
-"#,
+            indoc! { br#"
+                # enough for a test
+                [package]
+                name = "cargo-mutants-minimal-test-tree"
+                version = "0.0.0"
+                "#
+            },
         )
         .unwrap();
-        fs::create_dir(path.join("src")).unwrap();
-        fs::write(path.join("src/lib.rs"), b"fn foo() {}").unwrap();
+        create_dir(path.join("src")).unwrap();
+        write(path.join("src/lib.rs"), b"fn foo() {}").unwrap();
         tmp
     }
 
@@ -296,9 +335,9 @@ version = "0.0.0"
     #[test]
     fn create_output_dir() {
         let tmp = minimal_source_tree();
-        let tmp_path = tmp.path().try_into().unwrap();
-        let src_tree = CargoSourceTree::open(tmp_path).unwrap();
-        let output_dir = OutputDir::new(src_tree.path()).unwrap();
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let workspace = Workspace::open(tmp_path).unwrap();
+        let output_dir = OutputDir::new(&workspace.dir).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
             &[
@@ -316,14 +355,14 @@ version = "0.0.0"
                 "src/lib.rs",
             ]
         );
-        assert_eq!(output_dir.path(), src_tree.path().join("mutants.out"));
-        assert_eq!(output_dir.log_dir, src_tree.path().join("mutants.out/log"));
+        assert_eq!(output_dir.path(), workspace.dir.join("mutants.out"));
+        assert_eq!(output_dir.log_dir, workspace.dir.join("mutants.out/log"));
         assert!(output_dir.path().join("lock.json").is_file());
     }
 
     #[test]
     fn rotate() {
-        let temp_dir = tempfile::TempDir::new().unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
@@ -363,5 +402,46 @@ version = "0.0.0"
             .path()
             .join("mutants.out.old/log/baseline.log")
             .is_file());
+    }
+
+    #[test]
+    fn track_previously_caught() {
+        let temp_dir = TempDir::new().unwrap();
+        let parent = Utf8Path::from_path(temp_dir.path()).unwrap();
+
+        let example = "src/process.rs:213:9: replace ProcessStatus::is_success -> bool with true
+src/process.rs:248:5: replace get_command_output -> Result<String> with Ok(String::new())
+";
+
+        // Read from an empty dir: succeeds.
+        assert!(load_previously_caught(parent)
+            .expect("load succeeds")
+            .is_empty());
+
+        let output_dir = OutputDir::new(parent).unwrap();
+        assert!(load_previously_caught(parent)
+            .expect("load succeeds")
+            .is_empty());
+
+        write(parent.join("mutants.out/caught.txt"), example.as_bytes()).unwrap();
+        let previously_caught = load_previously_caught(parent).expect("load succeeds");
+        assert_eq!(
+            previously_caught.iter().collect_vec(),
+            example.lines().collect_vec()
+        );
+
+        // make a new output dir, moving away the old one, and write this
+        drop(output_dir);
+        let output_dir = OutputDir::new(parent).unwrap();
+        output_dir
+            .write_previously_caught(&previously_caught)
+            .unwrap();
+        assert_eq!(
+            read_to_string(parent.join("mutants.out/caught.txt")).expect("read caught.txt"),
+            ""
+        );
+        assert!(parent.join("mutants.out/previously_caught.txt").is_file());
+        let now = load_previously_caught(parent).expect("load succeeds");
+        assert_eq!(now.iter().collect_vec(), example.lines().collect_vec());
     }
 }

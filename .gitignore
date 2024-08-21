@@ -3,3 +3,4 @@ mutants.out
 mutants.out.old
 .cargo/config.toml
 wiki
+.vscode/

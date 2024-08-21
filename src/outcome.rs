@@ -1,4 +1,4 @@
-// Copyright 2022 Martin Pool
+// Copyright 2022-2024 Martin Pool
 
 //! The outcome of running a single mutation scenario, or a whole lab.
 
@@ -7,14 +7,13 @@ use std::fs;
 use std::time::Duration;
 use std::time::Instant;
 
-use anyhow::Context;
+use humantime::format_duration;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
+use tracing::warn;
 
-use crate::console::{duration_minutes_seconds, plural};
-use crate::exit_code;
-use crate::log_file::LogFile;
+use crate::console::plural;
 use crate::process::ProcessStatus;
 use crate::*;
 
@@ -48,7 +47,7 @@ impl Phase {
 
 impl fmt::Display for Phase {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.name())
+        f.pad(self.name())
     }
 }
 
@@ -56,14 +55,13 @@ impl fmt::Display for Phase {
 #[derive(Debug, Default, Serialize)]
 pub struct LabOutcome {
     /// All the scenario outcomes, including baseline builds.
-    outcomes: Vec<ScenarioOutcome>,
-    total_mutants: usize,
-    missed: usize,
-    caught: usize,
-    timeout: usize,
-    unviable: usize,
-    success: usize,
-    failure: usize,
+    pub outcomes: Vec<ScenarioOutcome>,
+    pub total_mutants: usize,
+    pub missed: usize,
+    pub caught: usize,
+    pub timeout: usize,
+    pub unviable: usize,
+    pub success: usize,
 }
 
 impl LabOutcome {
@@ -81,7 +79,10 @@ impl LabOutcome {
                 SummaryOutcome::Timeout => self.timeout += 1,
                 SummaryOutcome::Unviable => self.unviable += 1,
                 SummaryOutcome::Success => self.success += 1,
-                SummaryOutcome::Failure => self.failure += 1,
+                SummaryOutcome::Failure => {
+                    // We don't expect to see failures that don't fit into the other categories.
+                    warn!("Unclassified failure for mutant {:?}", outcome.scenario);
+                }
             }
         }
         self.outcomes.push(outcome);
@@ -107,39 +108,38 @@ impl LabOutcome {
 
     /// Return an overall summary, to show at the end of the program.
     pub fn summary_string(&self, start_time: Instant, options: &Options) -> String {
-        let mut s = format!("{} tested", plural(self.total_mutants, "mutant"),);
+        let mut s = Vec::new();
+        s.push(format!("{} tested", plural(self.total_mutants, "mutant")));
         if options.show_times {
-            s.push_str(" in ");
-            s.push_str(&duration_minutes_seconds(start_time.elapsed()));
+            s.push(format!(
+                " in {}",
+                format_duration(Duration::from_secs(start_time.elapsed().as_secs()))
+            ));
         }
-        s.push_str(": ");
-        let mut parts: Vec<String> = Vec::new();
-        if self.missed > 0 {
-            parts.push(format!("{} missed", self.missed));
+        s.push(": ".into());
+        let mut by_outcome: Vec<String> = Vec::new();
+        if self.missed != 0 {
+            by_outcome.push(format!("{} missed", self.missed));
         }
-        if self.caught > 0 {
-            parts.push(format!("{} caught", self.caught));
+        if self.caught != 0 {
+            by_outcome.push(format!("{} caught", self.caught));
         }
-        if self.unviable > 0 {
-            parts.push(format!("{} unviable", self.unviable));
+        if self.unviable != 0 {
+            by_outcome.push(format!("{} unviable", self.unviable));
         }
-        if self.timeout > 0 {
-            parts.push(format!("{} timeouts", self.timeout));
+        if self.timeout != 0 {
+            by_outcome.push(format!("{} timeouts", self.timeout));
         }
-        if self.success > 0 {
-            parts.push(format!("{} succeeded", self.success));
+        if self.success != 0 {
+            by_outcome.push(format!("{} succeeded", self.success));
         }
-        if self.failure > 0 {
-            parts.push(format!("{} failed", self.failure));
-        }
-        s.push_str(&parts.join(", "));
-        s
+        s.push(by_outcome.join(", "));
+        s.join("")
     }
 }
 
 /// The result of running one mutation scenario.
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[must_use]
 pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
@@ -168,28 +168,17 @@ impl Serialize for ScenarioOutcome {
 }
 
 impl ScenarioOutcome {
-    pub fn new(log_file: &LogFile, diff_path: Utf8PathBuf, scenario: Scenario) -> ScenarioOutcome {
+    pub fn new(log_file: &LogFile, diff_path: &Utf8Path, scenario: Scenario) -> ScenarioOutcome {
         ScenarioOutcome {
             log_path: log_file.path().to_owned(),
-            diff_path,
+            diff_path: diff_path.to_owned(),
             scenario,
             phase_results: Vec::new(),
         }
     }
 
-    pub fn add_phase_result(
-        &mut self,
-        phase: Phase,
-        duration: Duration,
-        cargo_result: ProcessStatus,
-        command: &[String],
-    ) {
-        self.phase_results.push(PhaseResult {
-            phase,
-            duration,
-            cargo_result,
-            command: command.to_owned(),
-        });
+    pub fn add_phase_result(&mut self, phase_result: PhaseResult) {
+        self.phase_results.push(phase_result);
     }
 
     pub fn get_log_content(&self) -> Result<String> {
@@ -201,11 +190,17 @@ impl ScenarioOutcome {
     }
 
     pub fn last_phase_result(&self) -> ProcessStatus {
-        self.phase_results.last().unwrap().cargo_result
+        self.phase_results.last().unwrap().process_status
     }
 
+    /// Return the results of all phases.
     pub fn phase_results(&self) -> &[PhaseResult] {
         &self.phase_results
+    }
+
+    /// Return the result of the given phase, if it was run.
+    pub fn phase_result(&self, phase: Phase) -> Option<&PhaseResult> {
+        self.phase_results.iter().find(|pr| pr.phase == phase)
     }
 
     /// True if this status indicates the user definitely needs to see the logs, because a task
@@ -215,46 +210,38 @@ impl ScenarioOutcome {
     }
 
     pub fn success(&self) -> bool {
-        self.last_phase_result().success()
+        self.last_phase_result().is_success()
     }
 
     pub fn has_timeout(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.cargo_result.timeout())
+            .any(|pr| pr.process_status.is_timeout())
     }
 
     pub fn check_or_build_failed(&self) -> bool {
         self.phase_results
             .iter()
-            .any(|pr| pr.phase != Phase::Test && pr.cargo_result == ProcessStatus::Failure)
+            .any(|pr| pr.phase != Phase::Test && pr.process_status.is_failure())
     }
 
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
     pub fn mutant_caught(&self) -> bool {
         self.scenario.is_mutant()
             && self.last_phase() == Phase::Test
-            && self.last_phase_result() == ProcessStatus::Failure
+            && self.last_phase_result().is_failure()
     }
 
     /// True if this outcome is a missed mutant: it's a mutant and the tests succeeded.
     pub fn mutant_missed(&self) -> bool {
         self.scenario.is_mutant()
             && self.last_phase() == Phase::Test
-            && self.last_phase_result().success()
-    }
-
-    /// Duration of the test phase, if tests were run.
-    pub fn test_duration(&self) -> Option<Duration> {
-        if let Some(phase_result) = self.phase_results.last() {
-            if phase_result.phase == Phase::Test {
-                return Some(phase_result.duration);
-            }
-        }
-        None
+            && self.last_phase_result().is_success()
     }
 
     pub fn summary(&self) -> SummaryOutcome {
+        // Caution: this function is called when rendering progress
+        // and so should not log; see https://github.com/sourcefrog/nutmeg/issues/16.
         match self.scenario {
             Scenario::Baseline => {
                 if self.has_timeout() {
@@ -277,6 +264,7 @@ impl ScenarioOutcome {
                 } else if self.success() {
                     SummaryOutcome::Success
                 } else {
+                    // Some unattributed failure; should be rare or impossible?
                     SummaryOutcome::Failure
                 }
             }
@@ -292,9 +280,15 @@ pub struct PhaseResult {
     /// How long did it take?
     pub duration: Duration,
     /// Did it succeed?
-    pub cargo_result: ProcessStatus,
+    pub process_status: ProcessStatus,
     /// What command was run, as an argv list.
-    pub command: Vec<String>,
+    pub argv: Vec<String>,
+}
+
+impl PhaseResult {
+    pub fn is_success(&self) -> bool {
+        self.process_status.is_success()
+    }
 }
 
 impl Serialize for PhaseResult {
@@ -302,12 +296,11 @@ impl Serialize for PhaseResult {
     where
         S: Serializer,
     {
-        // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("PhaseResult", 4)?;
         ss.serialize_field("phase", &self.phase)?;
         ss.serialize_field("duration", &self.duration.as_secs_f64())?;
-        ss.serialize_field("cargo_result", &self.cargo_result)?;
-        ss.serialize_field("command", &self.command)?;
+        ss.serialize_field("process_status", &self.process_status)?;
+        ss.serialize_field("argv", &self.argv)?;
         ss.end()
     }
 }
@@ -321,4 +314,62 @@ pub enum SummaryOutcome {
     Unviable,
     Failure,
     Timeout,
+}
+
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    use crate::process::ProcessStatus;
+
+    use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
+
+    #[test]
+    fn find_phase_result() {
+        let outcome = ScenarioOutcome {
+            log_path: "log".into(),
+            diff_path: "mutant.diff".into(),
+            scenario: Scenario::Baseline,
+            phase_results: vec![
+                PhaseResult {
+                    phase: Phase::Build,
+                    duration: Duration::from_secs(2),
+                    process_status: ProcessStatus::Success,
+                    argv: vec!["cargo".into(), "build".into()],
+                },
+                PhaseResult {
+                    phase: Phase::Test,
+                    duration: Duration::from_secs(3),
+                    process_status: ProcessStatus::Success,
+                    argv: vec!["cargo".into(), "test".into()],
+                },
+            ],
+        };
+        assert_eq!(
+            outcome.phase_result(Phase::Build),
+            Some(&PhaseResult {
+                phase: Phase::Build,
+                duration: Duration::from_secs(2),
+                process_status: ProcessStatus::Success,
+                argv: vec!["cargo".into(), "build".into()],
+            })
+        );
+        assert_eq!(
+            outcome
+                .phase_result(Phase::Build)
+                .unwrap()
+                .duration
+                .as_secs(),
+            2
+        );
+        assert_eq!(
+            outcome
+                .phase_result(Phase::Test)
+                .unwrap()
+                .duration
+                .as_secs(),
+            3
+        );
+        assert_eq!(outcome.phase_result(Phase::Check), None);
+    }
 }

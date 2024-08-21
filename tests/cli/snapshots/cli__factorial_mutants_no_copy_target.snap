@@ -1,9 +1,0 @@
----
-source: tests/cli.rs
-expression: stdout
----
-Found 2 mutants to test
-Unmutated baseline ... ok
-src/bin/factorial.rs:1: replace main with () ... NOT CAUGHT
-2 mutants tested: 1 missed, 1 caught
-

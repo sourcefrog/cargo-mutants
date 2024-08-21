@@ -1,0 +1,8 @@
+---
+source: tests/cli/main.rs
+expression: stdout
+---
+Found 6 mutants to test
+ok       Unmutated baseline
+6 mutants tested: 6 caught
+

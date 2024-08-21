@@ -1,10 +1,9 @@
 # Contributing to cargo-mutants
 
-Pull requests are welcome.
-
-If the change is not obvious please feel free to open a bug or Github discussion first.
-
-If you are interested in working on a bug or feature please say so on the bug first to avoid wasted work, and feel free to talk or ask about the approach.
+If you're interested in adding a feature or fixing a bug, thank you! Please
+start by reading this document and opening a Github discussion or bug about the
+thing you want to do, to avoid wasted work. void wasted work, and feel free to
+talk or ask about the approach.
 
 Please also read the [DESIGN.md](DESIGN.md) file for technical information not specifically about posting contributions.
 
@@ -12,6 +11,14 @@ Please also read the [DESIGN.md](DESIGN.md) file for technical information not s
 
 This project is conducted in accord with the [Rust Code of
 Conduct](https://www.rust-lang.org/policies/code-of-conduct).
+
+## Try it on a new tree
+
+One of the most helpful things you can do is to try cargo-mutants on a new tree: either your own project
+or an important open source project:
+
+* Did cargo-mutants hang, error, or otherwise fail to run? If so a bug with reproduction instructions would be very helpful.
+* Were the mutants interesting or helpful in understanding coverage or test quality? Did it generate any new tests that were accepted into the tree?
 
 ## Rust Style
 
@@ -26,7 +33,13 @@ Please run `cargo fmt` and `cargo clippy`. These are checked in CI.
 
 ## Testing
 
-Of course, please add tests for new features or bug fixes, and see the _Testing_ section of [the design doc](DESIGN.md).
+Of course, please add tests for new features or bug fixes. See also the _Testing_ section of [the design doc](DESIGN.md).
+
+### Running the tests
+
+cargo-mutants tests require [`cargo-nextest`](https://nexte.st/) to be installed, so that they can exercise `--test-tool=nextest`.
+
+cargo-mutants tests can be run under either `cargo test` or `cargo nextest run`.
 
 ### Test naming
 
@@ -63,6 +76,15 @@ When the tests run, `cargo test` runs a test suite binary from `target`, which t
 
 As a result, attaching a debugger to the test binary will let you see the code that launches the subprocess and that inspects the output, but it won't let you step through cargo-mutants itself, which is probably the most interesting part.
 
-Probably the easiest path is to just make note of the command run by the test, and then run that command yourself, under a debugger, outside of the test suite. For example, `./target/debug/cargo-mutants -d ./testdata/tree/factorial --list`.
+Probably the easiest path is to just make note of the command run by the test, and then run that command yourself, under a debugger, outside of the test suite. For example, `./target/debug/cargo-mutants -d ./testdata/factorial --list`.
 
 You may wish to turn off the timeouts with `-t 0`.
+
+## Generating new mutations
+
+The largest area for new work at the moment is in generating new mutations. Most of the code for this is in `visit.rs`.
+
+If you look in `mutants.out/debug.log` you can see messages like `Return type is not recognized, trying Default`.
+These might be good places to add a new more specific pattern.
+
+Also `mutants.out/unviable.txt` might suggest ways to generate new patterns that are viable.

@@ -1,0 +1,21 @@
+abstract: Find inadequately-tested code that can be removed without any tests failing.
+authors:
+  - alias: sourcefrog
+    family-names: Pool
+    given-names: Martin
+cff-version: 1.2.0
+date-released: 2024-01-13
+keywords:
+  - Rust
+  - cargo
+  - coverage
+  - development-tools::testing
+  - mutants
+  - mutation-testing
+  - testing
+license: MIT
+message: Please cite this project using these information.
+repository-code: https://github.com/sourcefrog/cargo-mutants
+title: cargo-mutants
+url: https://mutants.rs/
+version: 24.7.0

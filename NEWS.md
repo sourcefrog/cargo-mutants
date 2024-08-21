@@ -1,8 +1,296 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Fixed: Avoid generating empty string elements in `ENCODED_RUSTFLAGS` when `--cap-lints` is set. In some situations these could cause a compiler error complaining about the empty argument.
+
+- New: `--profile` option allows selecting a Cargo profile. In particular, it's recommended that you can use `--profile=mutants` and configure a custom profile in your `Cargo.toml` to optimize the build for mutants, by turning off debug symbols.
+
+- New: `--iterate` option skips mutants that were previously caught or unviable.
+
+- New: cargo-mutants starts a GNU jobserver, shared across all children, so that running multiple `--jobs` does not spawn an excessive number of compiler processes. The jobserver is on by default and can be turned off with `--jobserver false`.
+
+- Fixed: Don't error on diffs containing a "Binary files differ" message.
+
+## 24.7.1
+
+- Changed: No build timeouts by default. Previously, cargo-mutants set a default build timeout based on the baseline build, but experience showed that this would sometimes make builds flaky, because build times can be quite variable. If mutants cause builds to hang, then you can still set a timeout using `--build-timeout` or `--build-timeout-multiplier`.
+
+- Fixed: Don't error if the `--in-diff` file is empty.
+
+- Changed: cargo-mutants no longer passes `--cap-lints=allow` to rustc. This was previously done so that mutants would not unnecessarily be unviable due to triggering compiler warnings in trees configured to deny some lints, but it had the undesirable effect of disabling rustc's detection of long running const evaluations. If your tree treats some lints as errors then the previous behavior can be restored with `--cap-lints=true` (or the equivalent config option), or you can use `cfg_attr` and a feature flag  to accept those warnings when testing under cargo-mutants.
+
+## 24.7.0
+
+- Fixed: The auto-set timeout for building mutants is now 2 times the baseline build time times the number of jobs, with a minimum of 20 seconds. This was changed because builds of mutants contend with each other for access to CPUs and may be slower than the baseline build.
+
+## 24.5.0
+
+- Fixed: Follow `path` attributes on `mod` statements.
+
+- New: `--build-timeout` and `--build-timeout-multiplier` options for setting timeouts for the `build` and `check` cargo phases.
+
+- Changed: `--timeout-multiplier` now overrides `timeout_multiplier` from `.cargo/mutants.toml`.
+
+- Changed: `--timeout` and `--timeout-multiplier` are now conflicting options.
+
+## 24.4.0
+
+- Changes: Baselines and mutants are now built with `cargo test --no-run` rather than `cargo build --tests` as previously. This avoids wasted build effort if the `dev` and `test` Cargo profiles are not the same, and may better distinguish build failures from test failures. With `--test-tool=nextest`, the corresponding `cargo nextest run --no-run` is used.
+
+- Fixed: `.ignore` files can no longer affect source tree copying, so test files listed in a `.ignore` (e.g. `*.snap` for Insta snapshots) are now correctly copied into temporary build directories.
+
+- Fixed: Don't visit files marked with `#![cfg(test)]` (or other inner attributes that generally cause code to be skipped.)
+
+- Fixed: Paths to module files nested within `mod` blocks are now correctly resolved.
+
+- Added: Document stability policy in the manual.
+
+- New: Generate mutations that delete the `!` and `-` unary operators.
+
+## 24.3.0
+
+- Fixed: `cargo install cargo-mutants` without `--locked` was failing due to breaking API changes in some unstable dependencies.
+
+- Changed: In globs, `*` no longer matches path separators, only parts of a filename. For example, `src/*.rs` will now only match files directly in `src/`, not in subdirectories. To include subdirectories, use `**` as in `src/**/*.rs`.
+
+  And, patterns that do not contain a path separator match directories at any level, and all files within them. For example, `-f db` will match `src/db.rs` and `src/db/mod.rs` and all files in `src/db/` or in `other/db`.
+
+  This may break existing configurations but is considered a bug fix because it brings the behavior in line with other tools and allows more precise expressions.
+
+- Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.74.
+
+- Changed: Removed the count of `failure` from `mutants.out/outcomes.json`: it was already the case that every outcome received some other classification, so the count was always zero.
+
+## 24.2.1
+
+- New: `--features`, `--no-default-features` and `--all-features` options are passed through to Cargo.
+
+- Changed: Minimum Rust version (to build cargo-mutants, not to use it) increased to 1.73.
+
+- New: Warn if nextest returns an exit code indicating some failure other than test failure, such as an internal error in nextest.
+
+- New: json output includes the exit code of subprocesses, and the signal if it was killed by a signal.
+
+- Changed: Set `INSTA_FORCE_PASS=0` (in addition to previously `INSTA_UPDATE=no`) when running tests, so that tests that use the [Insta](https://insta.rs/) library don't write updates back into the source directory, and so don't falsely pass.
+
+- New: `--timeout-multiplier` option allows setting the timeout for mutants to be a multiple of the baseline timeout, rather than a fixed time.
+
+## 24.2.0
+
+- New: Colored output can be enabled in CI or other noninteractive situations by passing `--colors=always`, or setting `CARGO_TERM_COLOR=always`, or `CLICOLOR_FORCE=1`. Colors can similarly be forced off with `--colors=never`, `CARGO_TERM_COLOR=never`, or `NO_COLOR=1`.
+
+## 24.1.2
+
+- New: `--in-place` option tests mutations in the original source tree, without copying the tree. This is faster and uses less disk space, but it's incompatible with `--jobs`, and you must be careful not to edit or commit the source tree while tests are running.
+
+## 24.1.1
+
+- New: Mutate `+, -, *, /, %, &, ^, |, <<, >>` binary ops, and their corresponding assignment ops like `+=`.
+
+- New: `--baseline=skip` option to skip running tests in an unmutated tree, when they're already been checked externally.
+
+- Changed: Stop generating mutations of `||` and `&&` to `!=` and `||`, because it seems to raise too many low-value false positives that may be hard to test.
+
+- Fixed: Colors in command-line help and error messages.
+
+## 24.1.0
+
+- New! `cargo mutants --test-tool nextest`, or `test_tool = "nextest"` in `.cargo/mutants.toml` runs tests under [Nextest](https://nexte.st/). Some trees have tests that only work under Nextest, and this allows them to be tested. In other cases Nextest may be significantly faster, because it will exit soon after the first test failure.
+
+- Fixed: Fixed spurious "Patch input contains repeated filenames" error when `--in-diff` is given a patch that deletes multiple files.
+
+## 23.12.2
+
+- New: A `--shard k/n` allows you to split the work across n independent parallel `cargo mutants` invocations running on separate machines to get a faster overall solution on large suites. You, or your CI system, are responsible for launching all the shards and checking whether any of them failed.
+
+- Improved: Better documentation about `-j`, with stronger recommendations not to set it too high.
+
+- New: Binary releases on GitHub through cargo-dist.
+
+## 23.12.1
+
+- Improved progress bars and console output, including putting the outcome of each mutant on the left, and the overall progress bar at the bottom. Improved display of estimated remaining time, and other times.
+
+- Fixed: Correctly traverse `mod` statements within package top source files that are not named `lib.rs` or `main.rs`, by following the `path` setting of each target within the manifest.
+
+- Improved: Don't generate function mutants that have the same AST as the code they're replacing.
+
+## 23.12.0
+
+An exciting step forward: cargo-mutants can now generate mutations smaller than a whole function. To start with, several binary operators are mutated.
+
+- New: Mutate `==` to `!=` and vice versa.
+
+- New: Mutate `&&` to `||` and vice versa, and mutate both of them to `==` and `!=`.
+
+- New: Mutate `<`, `<=`, `>`, `>=`.
+
+- Changed: If no mutants are generated then `cargo mutants` now exits successfully, showing a warning. (Previously it would exit with an error.) This works better with `--in-diff` in CI, where it's normal that some changes may not have any mutants.
+
+- Changed: Include column numbers in text listings of mutants and output to disambiguate smaller-than-function mutants, for example if there are several operators that can be changed on one line. This also applies to the names used for regex matching, so may break some regexps that match the entire line (sorry). The new option `--line-col=false` turns them both off in `--list` output.
+
+- Changed: In the mutants.json format, replaced the `function`, `line`, and `return_type` fields with a `function` submessage (including the name and return type) and a `span` indicating the entire replaced region, to better handle smaller-than-function mutants. Also, the `function` includes the line-column span of the entire function.
+
+## 23.11.2
+
+- Changed: If `--file` or `--exclude` are set on the command line, then they replace the corresponding config file options. Similarly, if `--re` is given then the `examine_re` config key is ignored, and if `--exclude-re` is given then `exclude_regex` is ignored. (Previously the values were combined.) This makes it easier to use the command line to test files or mutants that are normally not tested.
+
+- Improved: By default, files matching gitignore patterns (including in parent directories, per-user configuration, and `info/exclude`) are excluded from copying to temporary build directories. This should improve performance in some large trees with many files that are not part of the build. This behavior can be turned off with `--gitignore=false`.
+
+- Improved: Run `cargo metadata` with `--no-deps`, so that it doesn't download and compute dependency information, which can save time in some situations.
+
+- Added: Alternative aliases for command line options, so you don't need to remember if it's "regex" or "re": `--regex`, `--examine-re`, `--examine-regex` (all for names to include) and `--exclude-regex`.
+
+- Added: Accept `--manifest-path` as an alternative to `-d`, for consistency with other cargo commands.
+
+## 23.11.1
+
+- New `--in-diff FILE` option tests only mutants that are in the diff from the
+  given file. This is useful to avoid testing mutants from code that has not changed,
+  either locally or in CI.
+
+## 23.11.0
+
+- Changed: `cargo mutants` now tries to match the behavior of `cargo test` when run within a workspace. If run in a package directory, it tests only that package. If run in a workspace that is not a package (a "virtual workspace"), it tests the configured default packages, or otherwise all packages. This can all be overridden with the `--package` or `--workspace` options.
+
+- New: generate key-value map values from types like `BTreeMap<String, Vec<u8>>`.
+
+- Changed: Send trace messages to stderr rather stdout, in part so that it won't pollute json output.
+
+## 23.10.0
+
+- The baseline test (with no mutants) now tests only the packages in which
+  mutants will be generated, subject to any file or regex filters. This
+  should both make baseline tests faster, and allow testing workspaces in
+  which some packages have non-hermetic tests.
+
+## 23.9.1
+
+- Mutate the known collection types `BinaryHeap`, `BTreeSet`, `HashSet`,
+  `LinkedList`, and `VecDeque` to generate empty and one-element collections
+  using `T::new()` and `T::from_iter(..)`.
+
+- Mutate known container types like `Arc`, `Box`, `Cell`, `Mutex`, `Rc`,
+  `RefCell` into `T::new(a)`.
+
+- Mutate unknown types that look like containers or collections `T<A>` or
+  `T<'a, A>'` and try to construct them from an `A` with `T::from_iter`,
+  `T::new`, and `T::from`.
+
+- Minimum Rust version updated to 1.70.
+
+- Mutate `Cow<'_, T>` into `Owned` and `Borrowed` variants.
+
+- Mutate functions returning `&[T]` and `&mut [T]` to return leaked vecs
+  of values.
+
+- Mutate `(A, B, C, ...)` into the product of all replacements for
+  `a, b, c, ...`
+
+- The combination of options `--list --diff --json` is now supported, and emits
+  a `diff` key in the JSON.
+
+- Mutate `-> impl Iterator<Item = A>` to produce empty and one-element iterators
+  of the item type.
+
+## 23.9.0
+
+- Fixed a bug causing an assertion failure when cargo-mutants was run from a
+  subdirectory of a workspace. Thanks to Adam Chalmers!
+
+- Generate `HttpResponse::Ok().finish()` as a mutation of an Actix `HttpResponse`.
+
+## 23.6.0
+
+- Generate `Box::leak(Box::new(...))` as a mutation of functions returning
+  `&mut`.
+
+- Add a concept of mutant "genre", which is included in the json listing of
+  mutants. The only genre today is `FnValue`, in which a function body is
+  replaced by a value. This will in future allow filtering by genre.
+
+- Recurse into return types, so that for example `Result<bool>` can generate
+  `Ok(true)` and `Ok(false)`, and `Some<T>` generates `None` and every generated
+  value of `T`. Similarly for `Box<T>`, `Vec<T>`, `Rc<T>`, `Arc<T>`.
+
+- Generate specific values for integers: `[0, 1]` for unsigned integers,
+  `[0, 1, -1]` for signed integers; `[1]` for NonZero unsigned integers and
+  `[1, -1]` for NonZero signed integers.
+
+- Generate specific values for floats: `[0.0, 1.0, -1.0]`.
+
+- Generate (fixed-length) array values, like `[0; 256], [1; 256]` using every
+  recursively generated value for the element type.
+
+## 23.5.0
+
+_"Pickled crab"_
+
+Released 2023-05-27
+
+- `cargo mutants` can now successfully test packages that transitively depend on
+  a different version of themselves, such as `itertools`. Previously,
+  cargo-mutants used the cargo `--package` option, which is ambiguous in this
+  case, and now it uses `--manifest-path` instead.
+
+- Mutate functions returning `&'_ str` (whether a lifetime is named or not) to
+  return `"xyzzy"` and `""`.
+
+- Switch to CalVer numbering.
+
+## 1.2.3
+
+Released 2023-05-05
+
+- Mutate functions returning `String` to `String::new()` rather than `"".into()`: same
+  result but a bit more idiomatic.
+
+- New `--leak-dirs` option, for debugging cargo-mutants.
+
+- Update to [syn 2.0](https://github.com/dtolnay/syn/releases/tag/2.0.0), adding support for new Rust syntax.
+
+- Minimum supported Rust version increased to 1.65 due to changes in dependencies.
+
+- New `--error` option, to cause functions returning `Result` to be mutated to return the
+  specified error.
+
+- New `--no-config` option, to disable reading `.cargo/mutants.toml`.
+
+## 1.2.2
+
+Released 2023-04-01
+
+- Don't mutate `unsafe` fns.
+
+- Don't mutate functions that never return (i.e. `-> !`).
+
+- Minimum supported Rust version increased to 1.64 due to changes in dependencies.
+
+- Some command-line options can now also be configured through environment variables:
+  `CARGO_MUTANTS_JOBS`, `CARGO_MUTANTS_TRACE_LEVEL`.
+
+- New command line option `--minimum-test-timeout` and config file variable `minimum_test_timeout`
+  join existing environment variable `CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT`, to allow
+  boosting the minimum, especially for test environments with poor or uneven throughput.
+
+- Changed: Renamed fields in `outcomes.json` from `cargo_result` to `process_status` and from `command` to `argv`.
+
+- Warn if no mutants were generated or if all mutants were unviable.
+
+## 1.2.1
+
+Released 2023-01-05
+
+- Converted most of the docs to a book available at <https://mutants.rs/>.
+
+- Fixed: Correctly find submodules that don't use mmod.rs`naming, e.g. when
+descending from`src/foo.rs`to`src/foo/bar.rs`. Also handle module names that
+are raw identifiers using`r#`. (Thanks to @kpreid for the report.)
+
 ## 1.2.0
 
-*Thankful mutants!*
+_Thankful mutants!_
 
 - Fixed: Files that are excluded by filters are also excluded from `--list-files`.
 
@@ -16,7 +304,7 @@
 
 Released 2022-10-31
 
-*Spooky mutants!*
+_Spooky mutants!_
 
 - Fixed support for the Mold linker, or for other options passed via `RUSTFLAGS` or `CARGO_ENCODED_RUSTFLAGS`. (See the instructions in README.md).
 
@@ -26,7 +314,7 @@ Released 2022-10-31
 
 Released 2022-10-30
 
-*Fearless concurrency!*
+_Fearless concurrency!_
 
 - cargo-mutants can now run multiple cargo build and test tasks in parallel, to make better use of machine resources and find mutants faster, controlled by `--jobs`.
 
@@ -46,7 +334,7 @@ Released 2022-09-24
 
 - New: `cargo mutants --completions SHELL` to generate shell completions using `clap_complete`.
 
-- Changed: `carg-mutants` no longer builds in the source directory, and no longer copies the `target/` directory to the scratch directory. Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
+- Changed: `cargo-mutants` no longer builds in the source directory, and no longer copies the `target/` directory to the scratch directory. Since `cargo-mutants` now sets `RUSTFLAGS` to avoid false failures from warnings, it is unlikely to match the existing build products in the source directory `target/`, and in fact building there is just likely to cause rebuilds in the source. The behavior now is as if `--no-copy-target` was always passed. That option is still accepted, but it has no effect.
 
 - Changed: `cargo-mutants` finds all possible mutations before doing the baseline test, so that you can see earlier how many there will be.
 
@@ -70,7 +358,7 @@ Released 2022-08-21
 
 A 1.0 release to celebrate that with the addition of workspace handling, cargo-mutants gives useful results on many Rust projects.
 
-- New: Supports workspaces containing multiple packages. Mutants are generated for all relevant targets in all packages, and mutants are subject to the tests of their own package.  `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
+- New: Supports workspaces containing multiple packages. Mutants are generated for all relevant targets in all packages, and mutants are subject to the tests of their own package. `cargo mutants --list-files --json` and `cargo mutants --list --json` now includes package names for each file or mutant.
 
 - Improved: Generate mutations in `cdylib`, `rlib`, and ever other `*lib` target. For example, this correctly exercises Wasm projects.
 
@@ -116,7 +404,7 @@ Released 2022-07-30
 - Fixed: Open log files in append mode to fix messages from other processes
   occasionally being partly overwritten.
 
-- Improved: `cargo mutants` should now give useful results in packages that use `#![deny(unused)]` or other mechanisms to reject warnings.  Mutated functions often ignore some parameters, which would previously be rejected by this configuration without proving anything interesting about test coverage. Now, `--cap-lints=allow` is passed in `RUSTFLAGS` while building mutants, so that they're not falsely rejected and the tests can be exercised.
+- Improved: `cargo mutants` should now give useful results in packages that use `#![deny(unused)]` or other mechanisms to reject warnings. Mutated functions often ignore some parameters, which would previously be rejected by this configuration without proving anything interesting about test coverage. Now, `--cap-lints=allow` is passed in `RUSTFLAGS` while building mutants, so that they're not falsely rejected and the tests can be exercised.
 
 - Improved: The build dir name includes the root package name.
 

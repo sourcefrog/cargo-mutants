@@ -1,8 +1,0 @@
-[package]
-name = "cargo-mutants-testdata-well-tested"
-version = "0.1.0"
-edition = "2018"
-publish = false
-
-[dependencies.mutants]
-version = "0.0.3"

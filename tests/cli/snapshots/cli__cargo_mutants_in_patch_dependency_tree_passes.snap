@@ -1,8 +1,0 @@
----
-source: tests/cli.rs
-expression: stdout
----
-Found 2 mutants to test
-Unmutated baseline ... ok
-2 mutants tested: 2 caught
-

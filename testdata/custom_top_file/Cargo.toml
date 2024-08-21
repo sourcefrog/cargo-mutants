@@ -1,0 +1,11 @@
+[package]
+name = "cargo-mutants-testdata-custom-top-file"
+description = "A package that overrides the default file name for a target"
+version = "0.0.0"
+edition = "2018"
+authors = ["Martin Pool"]
+publish = false
+
+[lib]
+doctest = false
+path = "src/custom_top.rs"
