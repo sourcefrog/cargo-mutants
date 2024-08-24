@@ -4,7 +4,7 @@
 //! and test cases, mixed with commentary from cargo-mutants.
 
 use std::fs::{File, OpenOptions};
-use std::io::{self, Write};
+use std::io::Write;
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
@@ -22,30 +22,15 @@ pub struct LogFile {
 }
 
 impl LogFile {
-    pub fn create_in(log_dir: &Utf8Path, scenario_name: &str) -> Result<LogFile> {
-        let basename = clean_filename(scenario_name);
-        for i in 0..1000 {
-            let t = if i == 0 {
-                format!("{basename}.log")
-            } else {
-                format!("{basename}_{i:03}.log")
-            };
-            let path = log_dir.join(t);
-            match OpenOptions::new()
-                .read(true)
-                .append(true)
-                .create_new(true)
-                .open(&path)
-            {
-                Ok(write_to) => return Ok(LogFile { path, write_to }),
-                Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
-                Err(e) => return Err(anyhow::Error::from(e).context("create test log file")),
-            }
-        }
-        unreachable!(
-            "couldn't create any test log in {:?} for {:?}",
-            log_dir, scenario_name,
-        );
+    pub fn create_in(log_dir: &Utf8Path, basename: &str) -> Result<LogFile> {
+        let path = log_dir.join(format!("{basename}.log"));
+        let write_to = OpenOptions::new()
+            .create_new(true)
+            .read(true)
+            .append(true)
+            .open(&path)
+            .with_context(|| format!("create test log file {path:?}"))?;
+        Ok(LogFile { path, write_to })
     }
 
     /// Open the log file to append more content.

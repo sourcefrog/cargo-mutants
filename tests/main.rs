@@ -94,7 +94,14 @@ fn tree_with_child_directories_is_well_tested() {
     let mut all_diffs = HashSet::new();
     for outcome_json in json["outcomes"].as_array().unwrap() {
         let diff_path = outcome_json["diff_path"].as_str().unwrap();
-        assert!(Utf8Path::new(diff_path).is_file());
+        assert!(
+            tmp_src_dir
+                .path()
+                .join("mutants.out")
+                .join(diff_path)
+                .is_file(),
+            "{diff_path:?} is not a file"
+        );
         assert!(all_diffs.insert(diff_path));
     }
 }

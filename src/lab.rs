@@ -11,6 +11,7 @@ use std::thread;
 use std::time::Instant;
 
 use itertools::Itertools;
+use output::ScenarioOutput;
 use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::cargo::run_cargo;
@@ -209,13 +210,13 @@ fn test_scenario(
     options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
-    let mut log_file = output_mutex
+    let scenario_output = output_mutex
         .lock()
-        .expect("lock output_dir to create log")
-        .create_log(scenario)?;
+        .expect("lock output_dir to start scenario")
+        .start_scenario(scenario)?;
+    let ScenarioOutput { mut log_file, .. } = scenario_output;
     log_file.message(&scenario.to_string());
     console.scenario_started(build_dir.path().as_ref(), scenario, log_file.path())?;
-    let diff_filename = output_mutex.lock().unwrap().write_diff_file(scenario)?;
 
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
@@ -234,7 +235,7 @@ fn test_scenario(
     let dir: &Path = build_dir.path().as_ref();
     console.scenario_started(dir, scenario, log_file.path())?;
 
-    let mut outcome = ScenarioOutcome::new(&log_file, &diff_filename, scenario.clone());
+    let mut outcome = ScenarioOutcome::new(&log_file, &scenario_output.diff_path, scenario.clone());
     for &phase in phases {
         console.scenario_phase_started(dir, phase);
         let timeout = match phase {

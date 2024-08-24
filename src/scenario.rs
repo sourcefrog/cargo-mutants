@@ -35,11 +35,4 @@ impl Scenario {
             Scenario::Mutant(mutant) => Some(mutant),
         }
     }
-
-    pub fn log_file_name_base(&self) -> String {
-        match self {
-            Scenario::Baseline => "baseline".into(),
-            Scenario::Mutant(mutant) => mutant.log_file_name_base(),
-        }
-    }
 }
