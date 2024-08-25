@@ -15,7 +15,7 @@ use tracing::error;
 use tracing::trace;
 
 use crate::build_dir::BuildDir;
-use crate::log_file::clean_filename;
+use crate::output::clean_filename;
 use crate::package::Package;
 use crate::source::SourceFile;
 use crate::span::Span;

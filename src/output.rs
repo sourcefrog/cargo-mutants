@@ -88,7 +88,7 @@ impl LockFile {
 #[derive(Debug)]
 pub struct OutputDir {
     path: Utf8PathBuf,
-    log_dir: Utf8PathBuf,
+
     #[allow(unused)] // Lifetime controls the file lock
     lock_file: File,
     /// A file holding a list of missed mutants as text, one per line.
@@ -100,9 +100,6 @@ pub struct OutputDir {
     unviable_list: File,
     /// The accumulated overall lab outcome.
     pub lab_outcome: LabOutcome,
-    /// Incrementing sequence numbers for each scenario, so that they can each have a unique
-    /// filename.
-    pub scenario_index: usize,
     /// Log filenames which have already been used, and the number of times that each
     /// basename has been used.
     used_log_names: HashMap<String, usize>,
@@ -163,13 +160,11 @@ impl OutputDir {
         Ok(OutputDir {
             path: output_dir,
             lab_outcome: LabOutcome::new(),
-            log_dir,
             lock_file,
             missed_list,
             caught_list,
             timeout_list,
             unviable_list,
-            scenario_index: 0,
             used_log_names: HashMap::new(),
         })
     }
@@ -191,11 +186,6 @@ impl OutputDir {
                 scenario_name
             }
         };
-        // TODO: Maybe store pathse relative to the output directory; it would be more useful
-        // if the whole directory is later archived and moved.
-        let log_file = LogFile::create_in(&self.log_dir, &basename)?;
-        // TODO: Don't write a diff for the baseline?
-        let diff_path = Utf8PathBuf::from(format!("diff/{basename}.diff"));
         let diff = if let Scenario::Mutant(mutant) = scenario {
             // TODO: This calculates the mutated text again, and perhaps we could do it
             // only once in the caller.
@@ -203,16 +193,11 @@ impl OutputDir {
         } else {
             String::new()
         };
-        let full_diff_path = self.path().join(&diff_path);
-        write(&full_diff_path, diff.as_bytes())
-            .with_context(|| format!("write diff file {full_diff_path:?}"))?;
-        Ok(ScenarioOutput {
-            log_file,
-            diff_path,
-        })
+        ScenarioOutput::new(&self.path, &basename, &diff)
     }
 
     /// Return the path of the `mutants.out` directory.
+    #[allow(unused)]
     pub fn path(&self) -> &Utf8Path {
         &self.path
     }
@@ -309,15 +294,68 @@ pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String
 /// Where to write output about a particular Scenario.
 // TODO: Maybe merge with LogFile?
 pub struct ScenarioOutput {
-    pub log_file: LogFile,
-    /// Dif
+    pub output_dir: Utf8PathBuf,
+    log_path: Utf8PathBuf,
+    pub log_file: File,
+    /// File holding the diff of the mutated file.
     pub diff_path: Utf8PathBuf,
 }
 
 impl ScenarioOutput {
-    pub fn log_file_path(&self) -> &Utf8Path {
-        self.log_file.path()
+    fn new(output_dir: &Utf8Path, basename: &str, diff: &str) -> Result<Self> {
+        let log_path = Utf8PathBuf::from(format!("log/{basename}.log"));
+        let log_file = File::options()
+            .append(true)
+            .create_new(true)
+            .read(true)
+            .open(output_dir.join(&log_path))?;
+        let diff_path = Utf8PathBuf::from(format!("diff/{basename}.diff"));
+        write(output_dir.join(&diff_path), diff.as_bytes())
+            .with_context(|| format!("write {diff_path}"))?;
+        Ok(Self {
+            output_dir: output_dir.to_owned(),
+            log_path,
+            log_file,
+            diff_path,
+        })
     }
+
+    pub fn log_path(&self) -> &Utf8Path {
+        &self.log_path
+    }
+
+    /// Open a new handle reading from the start of the log file.
+    pub fn open_log_read(&self) -> Result<File> {
+        let path = self.output_dir.join(&self.log_path);
+        OpenOptions::new()
+            .read(true)
+            .open(&path)
+            .with_context(|| format!("reopen {} for read", path))
+    }
+
+    /// Open a new handle that appends to the log file, so that it can be passed to a subprocess.
+    pub fn open_log_append(&self) -> Result<File> {
+        let path = self.output_dir.join(&self.log_path);
+        OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .with_context(|| format!("reopen {} for append", path))
+    }
+
+    /// Write a message, with a marker.
+    pub fn message(&mut self, message: &str) -> Result<()> {
+        write!(self.log_file, "\n*** {message}\n").context("write message to log")
+    }
+}
+
+pub fn clean_filename(s: &str) -> String {
+    s.replace('/', "__")
+        .chars()
+        .map(|c| match c {
+            '\\' | ' ' | ':' | '<' | '>' | '?' | '*' | '|' | '"' => '_',
+            c => c,
+        })
+        .collect::<String>()
 }
 
 #[cfg(test)]
@@ -367,6 +405,14 @@ mod test {
     }
 
     #[test]
+    fn clean_filename_removes_special_characters() {
+        assert_eq!(
+            clean_filename("1/2\\3:4<5>6?7*8|9\"0"),
+            "1__2_3_4_5_6_7_8_9_0"
+        );
+    }
+
+    #[test]
     fn create_output_dir() {
         let tmp = minimal_source_tree();
         let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
@@ -390,7 +436,6 @@ mod test {
             ]
         );
         assert_eq!(output_dir.path(), workspace.dir.join("mutants.out"));
-        assert_eq!(output_dir.log_dir, workspace.dir.join("mutants.out/log"));
         assert!(output_dir.path().join("lock.json").is_file());
     }
 

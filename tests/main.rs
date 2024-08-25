@@ -9,7 +9,6 @@ use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
-use camino::Utf8Path;
 use indoc::indoc;
 use itertools::Itertools;
 use predicate::str::{contains, is_match};

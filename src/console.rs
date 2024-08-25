@@ -11,7 +11,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use camino::Utf8Path;
 use console::{style, StyledObject};
 use humantime::format_duration;
 use nutmeg::Destination;
@@ -71,12 +70,7 @@ impl Console {
     }
 
     /// Update that a cargo task is starting.
-    pub fn scenario_started(
-        &self,
-        dir: &Path,
-        scenario: &Scenario,
-        log_file: &Utf8Path,
-    ) -> Result<()> {
+    pub fn scenario_started(&self, dir: &Path, scenario: &Scenario, log_file: File) -> Result<()> {
         let start = Instant::now();
         let scenario_model = ScenarioModel::new(dir, scenario, start, log_file)?;
         self.view.update(|model| {
@@ -502,7 +496,7 @@ impl ScenarioModel {
         dir: &Path,
         scenario: &Scenario,
         start: Instant,
-        log_file: &Utf8Path,
+        log_file: File,
     ) -> Result<ScenarioModel> {
         let log_tail = TailFile::new(log_file).context("Failed to open log file")?;
         Ok(ScenarioModel {

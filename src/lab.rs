@@ -11,7 +11,6 @@ use std::thread;
 use std::time::Instant;
 
 use itertools::Itertools;
-use output::ScenarioOutput;
 use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::cargo::run_cargo;
@@ -210,13 +209,16 @@ fn test_scenario(
     options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
-    let scenario_output = output_mutex
+    let mut scenario_output = output_mutex
         .lock()
         .expect("lock output_dir to start scenario")
         .start_scenario(scenario)?;
-    let ScenarioOutput { mut log_file, .. } = scenario_output;
-    log_file.message(&scenario.to_string());
-    console.scenario_started(build_dir.path().as_ref(), scenario, log_file.path())?;
+    scenario_output.message(&scenario.to_string())?;
+    console.scenario_started(
+        build_dir.path().as_ref(),
+        scenario,
+        scenario_output.open_log_read()?,
+    )?;
 
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
@@ -228,14 +230,14 @@ fn test_scenario(
         .map(|mutant| {
             // TODO: This is slightly inefficient as it computes the mutated source twice,
             // once for the diff and once to write it out.
-            log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
+            scenario_output.message(&format!("mutation diff:\n{}", mutant.diff()))?;
             mutant.apply(build_dir)
         })
         .transpose()?;
     let dir: &Path = build_dir.path().as_ref();
-    console.scenario_started(dir, scenario, log_file.path())?;
+    console.scenario_started(dir, scenario, scenario_output.open_log_read()?)?;
 
-    let mut outcome = ScenarioOutcome::new(&log_file, &scenario_output.diff_path, scenario.clone());
+    let mut outcome = ScenarioOutcome::new(&scenario_output, scenario.clone());
     for &phase in phases {
         console.scenario_phase_started(dir, phase);
         let timeout = match phase {
@@ -248,7 +250,7 @@ fn test_scenario(
             Some(test_packages),
             phase,
             timeout,
-            &mut log_file,
+            &mut scenario_output,
             options,
             console,
         )?;

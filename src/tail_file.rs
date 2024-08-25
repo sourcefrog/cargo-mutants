@@ -1,10 +1,9 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Tail a log file: watch for new writes and return the last line.
 
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
 
 use anyhow::Context;
 
@@ -18,9 +17,8 @@ pub struct TailFile {
 }
 
 impl TailFile {
-    /// Watch the given path.
-    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let file = File::open(path.as_ref()).context("Open log file")?;
+    /// Watch for newly appended data in a file.
+    pub fn new(file: File) -> Result<Self> {
         Ok(TailFile {
             file,
             last_line_seen: String::new(),
@@ -66,7 +64,8 @@ mod test {
     fn last_line_of_file() {
         let mut tempfile = tempfile::NamedTempFile::new().unwrap();
         let path: Utf8PathBuf = tempfile.path().to_owned().try_into().unwrap();
-        let mut tailer = TailFile::new(path).unwrap();
+        let reopened = File::open(&path).unwrap();
+        let mut tailer = TailFile::new(reopened).unwrap();
 
         assert_eq!(
             tailer.last_line().unwrap(),
