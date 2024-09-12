@@ -265,7 +265,12 @@ fn direct_package_sources(
 }
 
 fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    target.kind.iter().any(|k| k.ends_with("lib") || k == "bin")
+    for kind in target.kind.iter() {
+        if kind == "bin" || kind == "proc-macro" || kind.ends_with("lib") {
+            return true;
+        }
+    }
+    false
 }
 
 /// Return the path of the workspace or package directory enclosing a given directory.
