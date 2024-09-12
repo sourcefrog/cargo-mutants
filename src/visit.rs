@@ -504,20 +504,17 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        let replacements = match i.op {
-            UnOp::Not(_) => vec![quote! {}],
-            UnOp::Neg(_) => vec![quote! {}],
+        match i.op {
+            UnOp::Not(_) | UnOp::Neg(_) => {
+                self.collect_mutant(i.op.span().into(), quote! {}, Genre::UnaryOperator);
+            }
             _ => {
                 trace!(
                     op = i.op.to_pretty_string(),
                     "No mutants generated for this unary operator"
                 );
-                Vec::new()
             }
         };
-        replacements
-            .into_iter()
-            .for_each(|rep| self.collect_mutant(i.op.span().into(), rep, Genre::UnaryOperator));
         syn::visit::visit_expr_unary(self, i);
     }
 }
