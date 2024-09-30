@@ -24,6 +24,7 @@
   - [Strict lints](lints.md)
 - [Generating mutants](mutants.md)
   - [Error values](error-values.md)
+  - [Macros](macros.md)
 - [Improving performance](performance.md)
   - [Parallelism](parallelism.md)
   - [Jobserver](jobserver.md)
