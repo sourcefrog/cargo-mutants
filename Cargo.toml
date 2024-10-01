@@ -123,6 +123,7 @@ exclude = [
     "testdata/override_dependency",
     "testdata/package-fails/",
     "testdata/patch_dependency",
+    "testdata/proc_macro",
     "testdata/relative_dependency",
     "testdata/replace_dependency",
     "testdata/small_well_tested",

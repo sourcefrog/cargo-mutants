@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: Mutate `proc_macro` targets and functions.
+
 ## 24.9.0
 
 - Fixed: Avoid generating empty string elements in `ENCODED_RUSTFLAGS` when `--cap-lints` is set. In some situations these could cause a compiler error complaining about the empty argument.

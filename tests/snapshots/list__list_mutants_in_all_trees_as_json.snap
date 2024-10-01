@@ -4768,6 +4768,73 @@ expression: buf
 ]
 ```
 
+## testdata/proc_macro
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "static_len",
+      "return_type": "-> TokenStream",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-proc-macro",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "static_len",
+      "return_type": "-> TokenStream",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "package": "cargo-mutants-testdata-proc-macro",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 10
+      },
+      "start": {
+        "column": 22,
+        "line": 10
+      }
+    }
+  }
+]
+```
+
 ## testdata/relative_dependency
 
 ```json
@@ -9611,5 +9678,3 @@ expression: buf
   }
 ]
 ```
-
-

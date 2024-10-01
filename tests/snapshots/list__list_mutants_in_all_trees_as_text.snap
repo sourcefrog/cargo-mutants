@@ -304,6 +304,13 @@ src/lib.rs:7:7: replace % with / in is_even
 src/lib.rs:7:7: replace % with + in is_even
 ```
 
+## testdata/proc_macro
+
+```
+src/lib.rs:8:5: replace static_len -> TokenStream with Default::default()
+src/lib.rs:10:22: delete ! in static_len
+```
+
 ## testdata/relative_dependency
 
 ```
@@ -523,5 +530,3 @@ main2/src/main.rs:10:5: replace triple_3 -> i32 with 0
 main2/src/main.rs:10:5: replace triple_3 -> i32 with 1
 main2/src/main.rs:10:5: replace triple_3 -> i32 with -1
 ```
-
-
