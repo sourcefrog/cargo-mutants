@@ -46,7 +46,7 @@ mod tests {
     }
 
     #[test]
-    fn test_mutatable_functions() {
+    fn main_tests() {
         assert_eq!(returns_42u32(), 42);
 
         assert!(divisible_by_three(0));
