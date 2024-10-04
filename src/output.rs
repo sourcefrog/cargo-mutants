@@ -124,7 +124,8 @@ impl OutputDir {
         if output_dir.exists() {
             LockFile::acquire_lock(output_dir.as_ref())?;
             // Now release the lock for a bit while we move the directory. This might be
-            // slightly racy. Maybe we should move the lock outside the directory.
+            // slightly racy.
+            // TODO: Move the lock outside the directory, <https://github.com/sourcefrog/cargo-mutants/issues/402>.
 
             let rotated = in_dir.join(ROTATED_NAME);
             if rotated.exists() {
@@ -292,7 +293,6 @@ pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String
 }
 
 /// Where to write output about a particular Scenario.
-// TODO: Maybe merge with LogFile?
 pub struct ScenarioOutput {
     pub output_dir: Utf8PathBuf,
     log_path: Utf8PathBuf,
