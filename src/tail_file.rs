@@ -9,15 +9,20 @@ use anyhow::Context;
 
 use crate::Result;
 
-#[derive(Debug)]
+/// Tail a log file, and return the last non-empty line seen.
+///
+/// This assumes that the log file always receives whole lines as atomic writes, which
+/// is typical.  If the file is being written by a process that writes partial lines,
+/// this won't panic or error but it may not return whole correct lines.
 pub struct TailFile {
     file: File,
+    /// The last non-empty line we've seen in the file so far.
     last_line_seen: String,
     read_buf: Vec<u8>,
 }
 
 impl TailFile {
-    /// Watch for newly appended data in a file.
+    /// Watch lines appended to the given file, which should be open for reading.
     pub fn new(file: File) -> Result<Self> {
         Ok(TailFile {
             file,
@@ -31,14 +36,11 @@ impl TailFile {
     ///
     /// Non-UTF8 content is lost.
     pub fn last_line(&mut self) -> Result<&str> {
-        // This assumes that the file always sees writes of whole lines, which seems
-        // pretty likely: we don't attempt to stitch up writes of partial lines with
-        // later writes, although we could...
         self.read_buf.clear();
         let n_read = self
             .file
             .read_to_end(&mut self.read_buf)
-            .context("Read from log file")?;
+            .context("Read tail of log file")?;
         if n_read > 0 {
             if let Some(new_last) = String::from_utf8_lossy(&self.read_buf)
                 .lines()
@@ -93,5 +95,36 @@ mod test {
             "that's all folks!",
             "newline terminated last line is returned"
         );
+
+        tempfile.write_all(b"").unwrap();
+        assert_eq!(
+            tailer.last_line().unwrap(),
+            "that's all folks!",
+            "touched but unchanged file returns the same last line"
+        );
+
+        // These cases of partial writes aren't supported, because they don't seem to occur in
+        // cargo/rustc output.
+
+        // tempfile.write_all(b"word ").unwrap();
+        // assert_eq!(
+        //     tailer.last_line().unwrap(),
+        //     "word ",
+        //     "see one word from an incomplete line"
+        // );
+
+        // tempfile.write_all(b"word2 ").unwrap();
+        // assert_eq!(
+        //     tailer.last_line().unwrap(),
+        //     "word word2 ",
+        //     "see two words from an incomplete line"
+        // );
+
+        // tempfile.write_all(b"word3\n").unwrap();
+        // assert_eq!(
+        //     tailer.last_line().unwrap(),
+        //     "word word2 word3",
+        //     "the same line is continued and finished"
+        // );
     }
 }
