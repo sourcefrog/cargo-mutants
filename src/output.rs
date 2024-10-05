@@ -446,9 +446,10 @@ mod test {
 
         // Create an initial output dir with one log.
         let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
-        let _scenario_output = output_dir.start_scenario(&Scenario::Baseline).unwrap();
+        let scenario_output = output_dir.start_scenario(&Scenario::Baseline).unwrap();
         assert!(temp_dir_path.join("mutants.out/log/baseline.log").is_file());
         drop(output_dir); // release the lock.
+        drop(scenario_output);
 
         // The second time we create it in the same directory, the old one is moved away.
         let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
