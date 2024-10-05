@@ -2,7 +2,9 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::fs::{self, File, OpenOptions};
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use std::fs::{create_dir, remove_dir_all, rename, write, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
@@ -86,7 +88,7 @@ impl LockFile {
 #[derive(Debug)]
 pub struct OutputDir {
     path: Utf8PathBuf,
-    log_dir: Utf8PathBuf,
+
     #[allow(unused)] // Lifetime controls the file lock
     lock_file: File,
     /// A file holding a list of missed mutants as text, one per line.
@@ -98,6 +100,9 @@ pub struct OutputDir {
     unviable_list: File,
     /// The accumulated overall lab outcome.
     pub lab_outcome: LabOutcome,
+    /// Log filenames which have already been used, and the number of times that each
+    /// basename has been used.
+    used_log_names: HashMap<String, usize>,
 }
 
 impl OutputDir {
@@ -113,27 +118,30 @@ impl OutputDir {
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
     pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
         if !in_dir.exists() {
-            fs::create_dir(in_dir).context("create output parent directory {in_dir:?}")?;
+            create_dir(in_dir).context("create output parent directory {in_dir:?}")?;
         }
         let output_dir = in_dir.join(OUTDIR_NAME);
         if output_dir.exists() {
             LockFile::acquire_lock(output_dir.as_ref())?;
             // Now release the lock for a bit while we move the directory. This might be
             // slightly racy.
+            // TODO: Move the lock outside the directory, <https://github.com/sourcefrog/cargo-mutants/issues/402>.
 
             let rotated = in_dir.join(ROTATED_NAME);
             if rotated.exists() {
-                fs::remove_dir_all(&rotated).with_context(|| format!("remove {:?}", &rotated))?;
+                remove_dir_all(&rotated).with_context(|| format!("remove {:?}", &rotated))?;
             }
-            fs::rename(&output_dir, &rotated)
+            rename(&output_dir, &rotated)
                 .with_context(|| format!("move {:?} to {:?}", &output_dir, &rotated))?;
         }
-        fs::create_dir(&output_dir)
+        create_dir(&output_dir)
             .with_context(|| format!("create output directory {:?}", &output_dir))?;
         let lock_file = LockFile::acquire_lock(output_dir.as_std_path())
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
-        fs::create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
+        create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
+        let diff_dir = output_dir.join("diff");
+        create_dir(&diff_dir).context("create diff dir")?;
 
         // Create text list files.
         let mut list_file_options = OpenOptions::new();
@@ -153,25 +161,37 @@ impl OutputDir {
         Ok(OutputDir {
             path: output_dir,
             lab_outcome: LabOutcome::new(),
-            log_dir,
             lock_file,
             missed_list,
             caught_list,
             timeout_list,
             unviable_list,
+            used_log_names: HashMap::new(),
         })
     }
 
-    /// Create a new log for a given scenario.
-    ///
-    /// Returns the [File] to which subprocess output should be sent, and a LogFile to read it
-    /// later.
-    pub fn create_log(&self, scenario: &Scenario) -> Result<LogFile> {
-        LogFile::create_in(&self.log_dir, &scenario.log_file_name_base())
+    /// Allocate a sequence number and the output files for a scenario.
+    pub fn start_scenario(&mut self, scenario: &Scenario) -> Result<ScenarioOutput> {
+        let scenario_name = match scenario {
+            Scenario::Baseline => "baseline".into(),
+            Scenario::Mutant(mutant) => mutant.log_file_name_base(),
+        };
+        let basename = match self.used_log_names.entry(scenario_name.clone()) {
+            Entry::Occupied(mut e) => {
+                let index = e.get_mut();
+                *index += 1;
+                format!("{scenario_name}_{index:03}")
+            }
+            Entry::Vacant(e) => {
+                e.insert(0);
+                scenario_name
+            }
+        };
+        ScenarioOutput::new(&self.path, scenario, &basename)
     }
 
-    #[allow(dead_code)]
     /// Return the path of the `mutants.out` directory.
+    #[allow(unused)]
     pub fn path(&self) -> &Utf8Path {
         &self.path
     }
@@ -265,9 +285,87 @@ pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String
     Ok(r)
 }
 
+/// Where to write output about a particular Scenario.
+pub struct ScenarioOutput {
+    pub output_dir: Utf8PathBuf,
+    log_path: Utf8PathBuf,
+    pub log_file: File,
+    /// File holding the diff of the mutated file, only if it's a mutation.
+    pub diff_path: Option<Utf8PathBuf>,
+}
+
+impl ScenarioOutput {
+    fn new(output_dir: &Utf8Path, scenario: &Scenario, basename: &str) -> Result<Self> {
+        let log_path = Utf8PathBuf::from(format!("log/{basename}.log"));
+        let log_file = File::options()
+            .append(true)
+            .create_new(true)
+            .read(true)
+            .open(output_dir.join(&log_path))?;
+        let diff_path = if scenario.is_mutant() {
+            Some(Utf8PathBuf::from(format!("diff/{basename}.diff")))
+        } else {
+            None
+        };
+        let mut scenario_output = Self {
+            output_dir: output_dir.to_owned(),
+            log_path,
+            log_file,
+            diff_path,
+        };
+        scenario_output.message(&scenario.to_string())?;
+        Ok(scenario_output)
+    }
+
+    pub fn log_path(&self) -> &Utf8Path {
+        &self.log_path
+    }
+
+    pub fn write_diff(&mut self, diff: &str) -> Result<()> {
+        self.message(&format!("mutation diff:\n{}", diff))?;
+        let diff_path = self.diff_path.as_ref().expect("should know the diff path");
+        write(self.output_dir.join(diff_path), diff.as_bytes())
+            .with_context(|| format!("write diff to {diff_path}"))
+    }
+
+    /// Open a new handle reading from the start of the log file.
+    pub fn open_log_read(&self) -> Result<File> {
+        let path = self.output_dir.join(&self.log_path);
+        OpenOptions::new()
+            .read(true)
+            .open(&path)
+            .with_context(|| format!("reopen {} for read", path))
+    }
+
+    /// Open a new handle that appends to the log file, so that it can be passed to a subprocess.
+    pub fn open_log_append(&self) -> Result<File> {
+        let path = self.output_dir.join(&self.log_path);
+        OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .with_context(|| format!("reopen {} for append", path))
+    }
+
+    /// Write a message, with a marker.
+    pub fn message(&mut self, message: &str) -> Result<()> {
+        write!(self.log_file, "\n*** {message}\n").context("write message to log")
+    }
+}
+
+pub fn clean_filename(s: &str) -> String {
+    s.replace('/', "__")
+        .chars()
+        .map(|c| match c {
+            '\\' | ' ' | ':' | '<' | '>' | '?' | '*' | '|' | '"' => '_',
+            c => c,
+        })
+        .collect::<String>()
+}
+
 #[cfg(test)]
 mod test {
-    use fs::write;
+    use std::fs::write;
+
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
@@ -278,7 +376,7 @@ mod test {
     fn minimal_source_tree() -> TempDir {
         let tmp = tempdir().unwrap();
         let path = tmp.path();
-        fs::write(
+        write(
             path.join("Cargo.toml"),
             indoc! { br#"
                 # enough for a test
@@ -289,8 +387,8 @@ mod test {
             },
         )
         .unwrap();
-        fs::create_dir(path.join("src")).unwrap();
-        fs::write(path.join("src/lib.rs"), b"fn foo() {}").unwrap();
+        create_dir(path.join("src")).unwrap();
+        write(path.join("src/lib.rs"), b"fn foo() {}").unwrap();
         tmp
     }
 
@@ -311,6 +409,14 @@ mod test {
     }
 
     #[test]
+    fn clean_filename_removes_special_characters() {
+        assert_eq!(
+            clean_filename("1/2\\3:4<5>6?7*8|9\"0"),
+            "1__2_3_4_5_6_7_8_9_0"
+        );
+    }
+
+    #[test]
     fn create_output_dir() {
         let tmp = minimal_source_tree();
         let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
@@ -323,6 +429,7 @@ mod test {
                 "Cargo.toml",
                 "mutants.out",
                 "mutants.out/caught.txt",
+                "mutants.out/diff",
                 "mutants.out/lock.json",
                 "mutants.out/log",
                 "mutants.out/missed.txt",
@@ -333,7 +440,6 @@ mod test {
             ]
         );
         assert_eq!(output_dir.path(), workspace.dir.join("mutants.out"));
-        assert_eq!(output_dir.log_dir, workspace.dir.join("mutants.out/log"));
         assert!(output_dir.path().join("lock.json").is_file());
     }
 
@@ -343,17 +449,15 @@ mod test {
         let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
-        let output_dir = OutputDir::new(temp_dir_path).unwrap();
-        output_dir.create_log(&Scenario::Baseline).unwrap();
-        assert!(temp_dir
-            .path()
-            .join("mutants.out/log/baseline.log")
-            .is_file());
+        let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let scenario_output = output_dir.start_scenario(&Scenario::Baseline).unwrap();
+        assert!(temp_dir_path.join("mutants.out/log/baseline.log").is_file());
         drop(output_dir); // release the lock.
+        drop(scenario_output);
 
         // The second time we create it in the same directory, the old one is moved away.
-        let output_dir = OutputDir::new(temp_dir_path).unwrap();
-        output_dir.create_log(&Scenario::Baseline).unwrap();
+        let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
+        output_dir.start_scenario(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
             .join("mutants.out.old/log/baseline.log")
@@ -365,8 +469,8 @@ mod test {
         drop(output_dir);
 
         // The third time (and later), the .old directory is removed.
-        let output_dir = OutputDir::new(temp_dir_path).unwrap();
-        output_dir.create_log(&Scenario::Baseline).unwrap();
+        let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
+        output_dir.start_scenario(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
             .join("mutants.out/log/baseline.log")

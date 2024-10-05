@@ -3,11 +3,11 @@
 //! The outcome of running a single mutation scenario, or a whole lab.
 
 use std::fmt;
-use std::fs;
 use std::time::Duration;
 use std::time::Instant;
 
 use humantime::format_duration;
+use output::ScenarioOutput;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
@@ -143,7 +143,11 @@ impl LabOutcome {
 pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
+    output_dir: Utf8PathBuf,
     log_path: Utf8PathBuf,
+    /// The path relative to `mutants.out` for a file showing the diff between the unmutated
+    /// and mutated source. Only present for mutant scenarios.
+    diff_path: Option<Utf8PathBuf>,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.
@@ -155,20 +159,23 @@ impl Serialize for ScenarioOutcome {
     where
         S: Serializer,
     {
-        // custom serialize to omit inessential info
-        let mut ss = serializer.serialize_struct("Outcome", 4)?;
+        // custom serialize to omit inessential info and to inline a summary.
+        let mut ss = serializer.serialize_struct("Outcome", 5)?;
         ss.serialize_field("scenario", &self.scenario)?;
-        ss.serialize_field("log_path", &self.log_path)?;
         ss.serialize_field("summary", &self.summary())?;
+        ss.serialize_field("log_path", &self.log_path)?;
+        ss.serialize_field("diff_path", &self.diff_path)?;
         ss.serialize_field("phase_results", &self.phase_results)?;
         ss.end()
     }
 }
 
 impl ScenarioOutcome {
-    pub fn new(log_file: &LogFile, scenario: Scenario) -> ScenarioOutcome {
+    pub fn new(scenario_output: &ScenarioOutput, scenario: Scenario) -> ScenarioOutcome {
         ScenarioOutcome {
-            log_path: log_file.path().to_owned(),
+            output_dir: scenario_output.output_dir.to_owned(),
+            log_path: scenario_output.log_path().to_owned(),
+            diff_path: scenario_output.diff_path.to_owned(),
             scenario,
             phase_results: Vec::new(),
         }
@@ -179,7 +186,7 @@ impl ScenarioOutcome {
     }
 
     pub fn get_log_content(&self) -> Result<String> {
-        fs::read_to_string(&self.log_path).context("read log file")
+        read_to_string(self.output_dir.join(&self.log_path)).context("read log file")
     }
 
     pub fn last_phase(&self) -> Phase {
@@ -324,7 +331,9 @@ mod test {
     #[test]
     fn find_phase_result() {
         let outcome = ScenarioOutcome {
+            output_dir: "output".into(),
             log_path: "log".into(),
+            diff_path: Some("mutant.diff".into()),
             scenario: Scenario::Baseline,
             phase_results: vec![
                 PhaseResult {

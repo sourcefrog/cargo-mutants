@@ -2,6 +2,7 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+use std::collections::HashSet;
 use std::env;
 use std::fs::{self, read_dir, read_to_string};
 use std::path::Path;
@@ -85,6 +86,33 @@ fn tree_with_child_directories_is_well_tested() {
             )
             .unwrap(),
         );
+    // The outcomes all have `diff_path` keys and they all identify files.
+    let outcomes_json =
+        read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&outcomes_json).unwrap();
+    let mut all_diffs = HashSet::new();
+    for outcome_json in json["outcomes"].as_array().unwrap() {
+        dbg!(&outcome_json);
+        if outcome_json["scenario"].as_str() == Some("Baseline") {
+            assert!(
+                outcome_json
+                    .get("diff_path")
+                    .expect("has a diff_path")
+                    .is_null(),
+                "diff_path should be null"
+            );
+        } else {
+            let diff_path = outcome_json["diff_path"].as_str().unwrap();
+            let full_diff_path = tmp_src_dir.path().join("mutants.out").join(diff_path);
+            assert!(full_diff_path.is_file(), "{diff_path:?} is not a file");
+            assert!(all_diffs.insert(diff_path));
+            let diff_content = read_to_string(&full_diff_path).expect("read diff file");
+            assert!(
+                diff_content.starts_with("--- src/"),
+                "diff content in {full_diff_path:?} doesn't look right:\n{diff_content}"
+            );
+        }
+    }
 }
 
 #[test]

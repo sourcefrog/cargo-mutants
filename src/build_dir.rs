@@ -3,6 +3,7 @@
 //! A directory containing mutated source to run cargo builds and tests.
 
 use std::fmt::{self, Debug};
+use std::fs::write;
 
 use tempfile::TempDir;
 use tracing::info;
@@ -76,6 +77,14 @@ impl BuildDir {
 
     pub fn path(&self) -> &Utf8Path {
         self.path.as_path()
+    }
+
+    pub fn overwrite_file(&self, relative_path: &Utf8Path, code: &str) -> Result<()> {
+        let full_path = self.path.join(relative_path);
+        // for safety, don't follow symlinks
+        ensure!(full_path.is_file(), "{full_path:?} is not a file");
+        write(&full_path, code.as_bytes())
+            .with_context(|| format!("failed to write code to {full_path:?}"))
     }
 }
 

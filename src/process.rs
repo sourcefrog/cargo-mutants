@@ -21,7 +21,7 @@ use tracing::{debug, debug_span, error, span, trace, warn, Level};
 
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
-use crate::log_file::LogFile;
+use crate::output::ScenarioOutput;
 use crate::Result;
 
 /// How frequently to check if a subprocess finished.
@@ -42,10 +42,10 @@ impl Process {
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: &Option<jobserver::Client>,
-        log_file: &mut LogFile,
+        scenario_output: &mut ScenarioOutput,
         console: &Console,
     ) -> Result<ProcessStatus> {
-        let mut child = Process::start(argv, env, cwd, timeout, jobserver, log_file)?;
+        let mut child = Process::start(argv, env, cwd, timeout, jobserver, scenario_output)?;
         let process_status = loop {
             if let Some(exit_status) = child.poll()? {
                 break exit_status;
@@ -54,7 +54,7 @@ impl Process {
                 sleep(WAIT_POLL_INTERVAL);
             }
         };
-        log_file.message(&format!("result: {process_status:?}"));
+        scenario_output.message(&format!("result: {process_status:?}"))?;
         Ok(process_status)
     }
 
@@ -65,11 +65,11 @@ impl Process {
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: &Option<jobserver::Client>,
-        log_file: &mut LogFile,
+        scenario_output: &mut ScenarioOutput,
     ) -> Result<Process> {
         let start = Instant::now();
         let quoted_argv = cheap_shell_quote(argv);
-        log_file.message(&quoted_argv);
+        scenario_output.message(&quoted_argv)?;
         debug!(%quoted_argv, "start process");
         let os_env = env.iter().map(|(k, v)| (OsStr::new(k), OsStr::new(v)));
         let mut child = Command::new(&argv[0]);
@@ -77,8 +77,8 @@ impl Process {
             .args(&argv[1..])
             .envs(os_env)
             .stdin(Stdio::null())
-            .stdout(log_file.open_append()?)
-            .stderr(log_file.open_append()?)
+            .stdout(scenario_output.open_log_append()?)
+            .stderr(scenario_output.open_log_append()?)
             .current_dir(cwd);
         jobserver.as_ref().map(|js| js.configure(&mut child));
         #[cfg(unix)]

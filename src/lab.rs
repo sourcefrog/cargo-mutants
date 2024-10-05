@@ -5,7 +5,6 @@
 
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
-use std::path::Path;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Instant;
@@ -209,53 +208,62 @@ fn test_scenario(
     options: &Options,
     console: &Console,
 ) -> Result<ScenarioOutcome> {
-    let mut log_file = output_mutex
+    let mut scenario_output = output_mutex
         .lock()
-        .expect("lock output_dir to create log")
-        .create_log(scenario)?;
-    log_file.message(&scenario.to_string());
+        .expect("lock output_dir to start scenario")
+        .start_scenario(scenario)?;
+    let dir = build_dir.path();
+    console.scenario_started(dir, scenario, scenario_output.open_log_read()?)?;
+
     let phases: &[Phase] = if options.check_only {
         &[Phase::Check]
     } else {
         &[Phase::Build, Phase::Test]
     };
-    let applied = scenario
-        .mutant()
-        .map(|mutant| {
-            // TODO: This is slightly inefficient as it computes the mutated source twice,
-            // once for the diff and once to write it out.
-            log_file.message(&format!("mutation diff:\n{}", mutant.diff()));
-            mutant.apply(build_dir)
-        })
-        .transpose()?;
-    let dir: &Path = build_dir.path().as_ref();
-    console.scenario_started(dir, scenario, log_file.path())?;
+    if let Some(mutant) = scenario.mutant() {
+        let mutated_code = mutant.mutated_code();
+        let diff = scenario.mutant().unwrap().diff(&mutated_code);
+        scenario_output.write_diff(&diff)?;
+        mutant.apply(build_dir, &mutated_code)?;
+    }
 
-    let mut outcome = ScenarioOutcome::new(&log_file, scenario.clone());
+    let mut outcome = ScenarioOutcome::new(&scenario_output, scenario.clone());
     for &phase in phases {
         console.scenario_phase_started(dir, phase);
         let timeout = match phase {
             Phase::Test => timeouts.test,
             Phase::Build | Phase::Check => timeouts.build,
         };
-        let phase_result = run_cargo(
+        match run_cargo(
             build_dir,
             jobserver,
             Some(test_packages),
             phase,
             timeout,
-            &mut log_file,
+            &mut scenario_output,
             options,
             console,
-        )?;
-        let success = phase_result.is_success(); // so we can move it away
-        outcome.add_phase_result(phase_result);
-        console.scenario_phase_finished(dir, phase);
-        if !success {
-            break;
+        ) {
+            Ok(phase_result) => {
+                let success = phase_result.is_success(); // so we can move it away
+                outcome.add_phase_result(phase_result);
+                console.scenario_phase_finished(dir, phase);
+                if !success {
+                    break;
+                }
+            }
+            Err(err) => {
+                // Some unexpected internal error that stops the program.
+                if let Some(mutant) = scenario.mutant() {
+                    mutant.revert(build_dir)?;
+                    return Err(err);
+                }
+            }
         }
     }
-    drop(applied);
+    if let Some(mutant) = scenario.mutant() {
+        mutant.revert(build_dir)?;
+    }
     output_mutex
         .lock()
         .expect("lock output dir to add outcome")

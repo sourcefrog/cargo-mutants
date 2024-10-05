@@ -9,6 +9,7 @@ use itertools::Itertools;
 use tracing::{debug, debug_span, warn};
 
 use crate::outcome::PhaseResult;
+use crate::output::ScenarioOutput;
 use crate::package::Package;
 use crate::process::{Process, ProcessStatus};
 use crate::*;
@@ -21,7 +22,7 @@ pub fn run_cargo(
     packages: Option<&[&Package]>,
     phase: Phase,
     timeout: Option<Duration>,
-    log_file: &mut LogFile,
+    scenario_output: &mut ScenarioOutput,
     options: &Options,
     console: &Console,
 ) -> Result<PhaseResult> {
@@ -45,7 +46,7 @@ pub fn run_cargo(
         build_dir.path(),
         timeout,
         jobserver,
-        log_file,
+        scenario_output,
         console,
     )?;
     check_interrupted()?;
@@ -160,6 +161,9 @@ fn cargo_argv(
 }
 
 /// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
+///
+/// It seems we have to set this in the environment because Cargo doesn't expose
+/// a way to pass it in as an option from all commands?
 ///
 /// This does not currently read config files; it's too complicated.
 ///

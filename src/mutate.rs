@@ -1,20 +1,19 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
 use std::fmt;
-use std::fs;
 use std::sync::Arc;
 
-use anyhow::{ensure, Context, Result};
+use anyhow::Result;
 use console::{style, StyledObject};
 use serde::ser::{SerializeStruct, Serializer};
 use serde::Serialize;
 use similar::TextDiff;
-use tracing::error;
 use tracing::trace;
 
 use crate::build_dir::BuildDir;
+use crate::output::clean_filename;
 use crate::package::Package;
 use crate::source::SourceFile;
 use crate::span::Span;
@@ -171,11 +170,14 @@ impl Mutant {
     }
 
     /// Return a unified diff for the mutant.
-    pub fn diff(&self) -> String {
+    ///
+    /// The mutated text must be passed in because we should have already computed
+    /// it, and don't want to pointlessly recompute it here.
+    pub fn diff(&self, mutated_code: &str) -> String {
         let old_label = self.source_file.tree_relative_slashes();
         // There shouldn't be any newlines, but just in case...
         let new_label = self.describe_change().replace('\n', " ");
-        TextDiff::from_lines(self.source_file.code(), &self.mutated_code())
+        TextDiff::from_lines(self.source_file.code(), mutated_code)
             .unified_diff()
             .context_radius(8)
             .header(&old_label, &new_label)
@@ -183,34 +185,27 @@ impl Mutant {
     }
 
     /// Apply this mutant to the relevant file within a BuildDir.
-    pub fn apply<'a>(&'a self, build_dir: &'a BuildDir) -> Result<AppliedMutant> {
+    pub fn apply(&self, build_dir: &BuildDir, mutated_code: &str) -> Result<()> {
         trace!(?self, "Apply mutant");
-        self.write_in_dir(build_dir, &self.mutated_code())?;
-        Ok(AppliedMutant {
-            mutant: self,
-            build_dir,
-        })
+        build_dir.overwrite_file(&self.source_file.tree_relative_path, mutated_code)
     }
 
-    fn unapply(&self, build_dir: &BuildDir) -> Result<()> {
-        trace!(?self, "Unapply mutant");
-        self.write_in_dir(build_dir, self.source_file.code())
-    }
-
-    fn write_in_dir(&self, build_dir: &BuildDir, code: &str) -> Result<()> {
-        let path = build_dir.path().join(&self.source_file.tree_relative_path);
-        // for safety, don't follow symlinks
-        ensure!(path.is_file(), "{path:?} is not a file");
-        fs::write(&path, code.as_bytes())
-            .with_context(|| format!("failed to write mutated code to {path:?}"))
+    pub fn revert(&self, build_dir: &BuildDir) -> Result<()> {
+        trace!(?self, "Revert mutant");
+        build_dir.overwrite_file(
+            &self.source_file.tree_relative_path,
+            self.source_file.code(),
+        )
     }
 
     /// Return a string describing this mutant that's suitable for building a log file name,
     /// but can contain slashes.
     pub fn log_file_name_base(&self) -> String {
+        // TODO: Also include a unique number so that they can't collide, even
+        // with similar mutants on the same line?
         format!(
             "{filename}_line_{line}_col_{col}",
-            filename = self.source_file.tree_relative_slashes(),
+            filename = clean_filename(&self.source_file.tree_relative_slashes()),
             line = self.span.start.line,
             col = self.span.start.column,
         )
@@ -244,22 +239,6 @@ impl Serialize for Mutant {
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
         ss.end()
-    }
-}
-
-/// Manages the lifetime of a mutant being applied to a build directory; when
-/// dropped, the mutant is unapplied.
-#[must_use]
-pub struct AppliedMutant<'a> {
-    mutant: &'a Mutant,
-    build_dir: &'a BuildDir,
-}
-
-impl Drop for AppliedMutant<'_> {
-    fn drop(&mut self) {
-        if let Err(e) = self.mutant.unapply(self.build_dir) {
-            error!("Failed to unapply mutant: {}", e);
-        }
     }
 }
 
