@@ -162,6 +162,9 @@ fn cargo_argv(
 
 /// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
 ///
+/// It seems we have to set this in the environment because Cargo doesn't expose
+/// a way to pass it in as an option from all commands?
+///
 /// This does not currently read config files; it's too complicated.
 ///
 /// See <https://doc.rust-lang.org/cargo/reference/environment-variables.html>
