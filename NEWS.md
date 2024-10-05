@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- New: Mutate `proc_macro` targets and functions.
+
+## 24.9.0
+
 - Fixed: Avoid generating empty string elements in `ENCODED_RUSTFLAGS` when `--cap-lints` is set. In some situations these could cause a compiler error complaining about the empty argument.
 
 - New: `--profile` option allows selecting a Cargo profile. In particular, it's recommended that you can use `--profile=mutants` and configure a custom profile in your `Cargo.toml` to optimize the build for mutants, by turning off debug symbols.

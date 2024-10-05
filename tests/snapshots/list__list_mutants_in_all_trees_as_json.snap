@@ -3171,7 +3171,7 @@ expression: buf
     "replacement": "true",
     "span": {
       "end": {
-        "column": 30,
+        "column": 37,
         "line": 2
       },
       "start": {
@@ -3201,7 +3201,7 @@ expression: buf
     "replacement": "false",
     "span": {
       "end": {
-        "column": 30,
+        "column": 37,
         "line": 2
       },
       "start": {
@@ -3231,11 +3231,11 @@ expression: buf
     "replacement": "==",
     "span": {
       "end": {
-        "column": 28,
+        "column": 35,
         "line": 2
       },
       "start": {
-        "column": 26,
+        "column": 33,
         "line": 2
       }
     }
@@ -3261,11 +3261,11 @@ expression: buf
     "replacement": "|",
     "span": {
       "end": {
-        "column": 16,
+        "column": 23,
         "line": 2
       },
       "start": {
-        "column": 15,
+        "column": 22,
         "line": 2
       }
     }
@@ -3291,11 +3291,168 @@ expression: buf
     "replacement": "^",
     "span": {
       "end": {
-        "column": 16,
+        "column": 23,
         "line": 2
       },
       "start": {
-        "column": 15,
+        "column": 22,
+        "line": 2
+      }
+    }
+  }
+]
+```
+
+## testdata/missing_test_fixed
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-missing-test-fixed",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-missing-test-fixed",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-missing-test-fixed",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 2
+      },
+      "start": {
+        "column": 34,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-missing-test-fixed",
+    "replacement": "|",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 2
+      },
+      "start": {
+        "column": 22,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "is_symlink",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-missing-test-fixed",
+    "replacement": "^",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 2
+      },
+      "start": {
+        "column": 22,
         "line": 2
       }
     }
@@ -4605,6 +4762,73 @@ expression: buf
       "start": {
         "column": 7,
         "line": 7
+      }
+    }
+  }
+]
+```
+
+## testdata/proc_macro
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "static_len",
+      "return_type": "-> TokenStream",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-proc-macro",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "static_len",
+      "return_type": "-> TokenStream",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 5
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "package": "cargo-mutants-testdata-proc-macro",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 10
+      },
+      "start": {
+        "column": 22,
+        "line": 10
       }
     }
   }

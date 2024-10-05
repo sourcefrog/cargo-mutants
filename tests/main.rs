@@ -212,6 +212,20 @@ fn cdylib_tree_is_well_tested() {
 }
 
 #[test]
+fn proc_macro_tree_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("proc_macro");
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "-v", "-V"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "2 mutants tested: 1 caught, 1 unviable",
+        ));
+}
+
+#[test]
 fn well_tested_tree_finds_no_problems() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     run()
