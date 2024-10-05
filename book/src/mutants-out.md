@@ -19,6 +19,9 @@ The output directory contains:
 * An `outcomes.json` file describing the results of all tests,
   and summary counts of each outcome.
 
+* A `diff/` directory, containing a diff file for each mutation, relative to the unmutated baseline.
+  `mutants.json` includes for each mutant the name of the diff file.
+
 * A `logs/` directory, with one log file for each mutation plus the baseline
   unmutated case. The log contains the diff of the mutation plus the output from
   cargo. `outcomes.json` includes for each mutant the name of the log file.
@@ -31,4 +34,4 @@ The contents of the directory and the format of these files is subject to change
 
 These files are incrementally updated while cargo-mutants runs, so other programs can read them to follow progress.
 
-There is generally no reason to include this directory in version control, so it is recommended that you add `/mutants.out*` to your `.gitignore` file. This will exclude both `mutants.out` and `mutants.out.old`.
+There is generally no reason to include this directory in version control, so it is recommended that you add `/mutants.out*` to your `.gitignore` file or equivalent. This will exclude both `mutants.out` and `mutants.out.old`.
