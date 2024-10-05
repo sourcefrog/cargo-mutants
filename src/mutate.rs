@@ -247,13 +247,14 @@ mod test {
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
+    use test_util::copy_of_testdata;
 
     use crate::*;
 
     #[test]
     fn discover_factorial_mutants() {
-        let tree_path = Utf8Path::new("testdata/factorial");
-        let workspace = Workspace::open(tree_path).unwrap();
+        let tmp = copy_of_testdata("factorial");
+        let workspace = Workspace::open(tmp.path()).unwrap();
         let options = Options::default();
         let mutants = workspace
             .mutants(&PackageFilter::All, &options, &Console::new())
@@ -334,7 +335,8 @@ mod test {
 
     #[test]
     fn mutate_factorial() -> Result<()> {
-        let tree_path = Utf8Path::new("testdata/factorial");
+        let temp = copy_of_testdata("factorial");
+        let tree_path = temp.path();
         let mutants = Workspace::open(tree_path)?.mutants(
             &PackageFilter::All,
             &Options::default(),

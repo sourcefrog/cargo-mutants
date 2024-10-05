@@ -1,17 +1,21 @@
 // Copyright 2024 Martin Pool
 
-#![allow(dead_code)] // rustc doesn't understand they're used by multiple crates?
+#![allow(dead_code)] // rustc doesn't understand they're used by multiple crates
 
 //! Reusable utilities for cargo-mutants tests.
+//!
+//! This is available both to integration tests (by `mod util`) and unit tests inside
+//! cargo-mutants (as `use crate::test_util`).
 
 use std::borrow::Borrow;
 use std::env;
-use std::fs::{read_dir, read_to_string};
+use std::fs::{read_dir, read_to_string, rename};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use itertools::Itertools;
 use lazy_static::lazy_static;
-use tempfile::{tempdir, TempDir};
+use tempfile::TempDir;
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
 /// long enough that even commands that do a lot of work can pass even on slow
@@ -65,15 +69,27 @@ impl CommandInstaExt for assert_cmd::Command {
 
 // Copy the source because output is written into mutants.out.
 pub fn copy_of_testdata(tree_name: &str) -> TempDir {
-    let tmp_src_dir = tempdir().unwrap();
+    assert!(
+        !tree_name.contains("/"),
+        "testdata tree name {tree_name:?} should be just the directory name"
+    );
+    let tmp_src_dir = TempDir::with_prefix(format!("cargo-mutants-testdata-{tree_name}-")).unwrap();
+    let tmp_path = tmp_src_dir.path();
     cp_r::CopyOptions::new()
         .filter(|path, _stat| {
             Ok(["target", "mutants.out", "mutants.out.old"]
                 .iter()
                 .all(|p| !path.starts_with(p)))
         })
-        .copy_tree(Path::new("testdata").join(tree_name), &tmp_src_dir)
+        .copy_tree(Path::new("testdata").join(tree_name), &tmp_path)
         .unwrap();
+    if tmp_path.join("Cargo_test.toml").is_file() {
+        rename(
+            tmp_path.join("Cargo_test.toml"),
+            tmp_path.join("Cargo.toml"),
+        )
+        .unwrap();
+    }
     tmp_src_dir
 }
 
@@ -90,17 +106,24 @@ pub fn assert_bytes_eq_json<J: Borrow<serde_json::Value>>(actual: &[u8], expecte
 
 /// Return paths to all testdata trees, in order, excluding leftover git
 /// detritus with no Cargo.toml.
-pub fn all_testdata_tree_paths() -> Vec<PathBuf> {
-    let mut paths: Vec<PathBuf> = read_dir("testdata")
-        .unwrap()
-        .map(|r| r.unwrap())
+pub fn all_testdata_tree_names() -> Vec<String> {
+    read_dir("testdata")
+        .expect("list testdata")
+        .map(|r| r.expect("read testdata dir entry"))
         .filter(|dir_entry| dir_entry.file_type().unwrap().is_dir())
         .filter(|dir_entry| dir_entry.file_name() != "parse_fails")
-        .map(|dir_entry| dir_entry.path())
-        .filter(|dir_path| dir_path.join("Cargo.toml").exists())
-        .collect();
-    paths.sort();
-    paths
+        .filter(|dir_entry| {
+            let dir_path = dir_entry.path();
+            dir_path.join("Cargo.toml").exists() || dir_path.join("Cargo_test.toml").exists()
+        })
+        .map(|dir_entry| {
+            dir_entry
+                .file_name()
+                .into_string()
+                .expect("dir name is UTF-8")
+        })
+        .sorted()
+        .collect()
 }
 
 pub fn outcome_json(tmp_src_dir: &TempDir) -> serde_json::Value {
