@@ -93,18 +93,20 @@ fn tree_with_child_directories_is_well_tested() {
     let mut all_diffs = HashSet::new();
     for outcome_json in json["outcomes"].as_array().unwrap() {
         dbg!(&outcome_json);
-        let diff_path = outcome_json["diff_path"].as_str().unwrap();
-        let full_diff_path = tmp_src_dir.path().join("mutants.out").join(diff_path);
-        assert!(full_diff_path.is_file(), "{diff_path:?} is not a file");
-        assert!(all_diffs.insert(diff_path));
-        let diff_content = read_to_string(&full_diff_path).expect("read diff file");
         if outcome_json["scenario"].as_str() == Some("Baseline") {
-            assert_eq!(diff_path, "diff/baseline.diff");
             assert!(
-                diff_content.is_empty(),
-                "baseline diff in {full_diff_path:?} should be empty"
+                outcome_json
+                    .get("diff_path")
+                    .expect("has a diff_path")
+                    .is_null(),
+                "diff_path should be null"
             );
         } else {
+            let diff_path = outcome_json["diff_path"].as_str().unwrap();
+            let full_diff_path = tmp_src_dir.path().join("mutants.out").join(diff_path);
+            assert!(full_diff_path.is_file(), "{diff_path:?} is not a file");
+            assert!(all_diffs.insert(diff_path));
+            let diff_content = read_to_string(&full_diff_path).expect("read diff file");
             assert!(
                 diff_content.starts_with("--- src/"),
                 "diff content in {full_diff_path:?} doesn't look right:\n{diff_content}"

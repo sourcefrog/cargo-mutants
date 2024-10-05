@@ -4,6 +4,8 @@
 
 - New: Mutate `proc_macro` targets and functions.
 
+- New: Write diffs to dedicated files under `mutants.out/diff/`. The filename is included in the mutant json output.
+
 ## 24.9.0
 
 - Fixed: Avoid generating empty string elements in `ENCODED_RUSTFLAGS` when `--cap-lints` is set. In some situations these could cause a compiler error complaining about the empty argument.

@@ -46,7 +46,10 @@ pub fn copy_tree(
         .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
-    let dest = temp_dir.path();
+    let dest = temp_dir
+        .path()
+        .try_into()
+        .context("Convert path to UTF-8")?;
     console.start_copy(dest);
     for entry in WalkBuilder::new(from_path)
         .standard_filters(gitignore)

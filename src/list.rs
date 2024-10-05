@@ -37,9 +37,10 @@ pub(crate) fn list_mutants<W: fmt::Write>(
         for mutant in mutants {
             let mut obj = serde_json::to_value(mutant)?;
             if options.emit_diffs {
-                obj.as_object_mut()
-                    .unwrap()
-                    .insert("diff".to_owned(), json!(mutant.diff()));
+                obj.as_object_mut().unwrap().insert(
+                    "diff".to_owned(),
+                    json!(mutant.diff(&mutant.mutated_code())),
+                );
             }
             list.push(obj);
         }
@@ -51,7 +52,7 @@ pub(crate) fn list_mutants<W: fmt::Write>(
         for mutant in mutants {
             writeln!(out, "{}", mutant.name(options.show_line_col, colors))?;
             if options.emit_diffs {
-                writeln!(out, "{}", mutant.diff())?;
+                writeln!(out, "{}", mutant.diff(&mutant.mutated_code()))?;
             }
         }
     }

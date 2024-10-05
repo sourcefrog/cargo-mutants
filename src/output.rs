@@ -187,14 +187,7 @@ impl OutputDir {
                 scenario_name
             }
         };
-        let diff = if let Scenario::Mutant(mutant) = scenario {
-            // TODO: This calculates the mutated text again, and perhaps we could do it
-            // only once in the caller.
-            mutant.diff()
-        } else {
-            String::new()
-        };
-        ScenarioOutput::new(&self.path, &basename, &diff)
+        ScenarioOutput::new(&self.path, scenario, &basename)
     }
 
     /// Return the path of the `mutants.out` directory.
@@ -297,31 +290,42 @@ pub struct ScenarioOutput {
     pub output_dir: Utf8PathBuf,
     log_path: Utf8PathBuf,
     pub log_file: File,
-    /// File holding the diff of the mutated file.
-    pub diff_path: Utf8PathBuf,
+    /// File holding the diff of the mutated file, only if it's a mutation.
+    pub diff_path: Option<Utf8PathBuf>,
 }
 
 impl ScenarioOutput {
-    fn new(output_dir: &Utf8Path, basename: &str, diff: &str) -> Result<Self> {
+    fn new(output_dir: &Utf8Path, scenario: &Scenario, basename: &str) -> Result<Self> {
         let log_path = Utf8PathBuf::from(format!("log/{basename}.log"));
         let log_file = File::options()
             .append(true)
             .create_new(true)
             .read(true)
             .open(output_dir.join(&log_path))?;
-        let diff_path = Utf8PathBuf::from(format!("diff/{basename}.diff"));
-        write(output_dir.join(&diff_path), diff.as_bytes())
-            .with_context(|| format!("write {diff_path}"))?;
-        Ok(Self {
+        let diff_path = if scenario.is_mutant() {
+            Some(Utf8PathBuf::from(format!("diff/{basename}.diff")))
+        } else {
+            None
+        };
+        let mut scenario_output = Self {
             output_dir: output_dir.to_owned(),
             log_path,
             log_file,
             diff_path,
-        })
+        };
+        scenario_output.message(&scenario.to_string())?;
+        Ok(scenario_output)
     }
 
     pub fn log_path(&self) -> &Utf8Path {
         &self.log_path
+    }
+
+    pub fn write_diff(&mut self, diff: &str) -> Result<()> {
+        self.message(&format!("mutation diff:\n{}", diff))?;
+        let diff_path = self.diff_path.as_ref().expect("should know the diff path");
+        write(self.output_dir.join(diff_path), diff.as_bytes())
+            .with_context(|| format!("write diff to {diff_path}"))
     }
 
     /// Open a new handle reading from the start of the log file.

@@ -145,7 +145,9 @@ pub struct ScenarioOutcome {
     // TODO: Maybe this should be a log object?
     output_dir: Utf8PathBuf,
     log_path: Utf8PathBuf,
-    diff_path: Utf8PathBuf,
+    /// The path relative to `mutants.out` for a file showing the diff between the unmutated
+    /// and mutated source. Only present for mutant scenarios.
+    diff_path: Option<Utf8PathBuf>,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.
@@ -331,7 +333,7 @@ mod test {
         let outcome = ScenarioOutcome {
             output_dir: "output".into(),
             log_path: "log".into(),
-            diff_path: "mutant.diff".into(),
+            diff_path: Some("mutant.diff".into()),
             scenario: Scenario::Baseline,
             phase_results: vec![
                 PhaseResult {
