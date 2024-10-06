@@ -313,7 +313,7 @@ fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use camino::Utf8Path;
+    use camino::{Utf8Path, Utf8PathBuf};
     use itertools::Itertools;
 
     use crate::console::Console;
@@ -340,15 +340,16 @@ mod test {
 
     #[test]
     fn find_root_from_subdirectory_of_workspace_finds_the_workspace_root() {
-        let workspace = Workspace::open("testdata/workspace/main")
-            .expect("Find root from within workspace/main");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path()).expect("Find root from within workspace/main");
         let root = workspace.root();
-        assert_eq!(root.file_name(), Some("workspace"), "Wrong root: {root:?}");
+        assert_eq!(root, tmp.path(), "Wrong root");
     }
 
     #[test]
     fn find_top_source_files_from_subdirectory_of_workspace() {
-        let workspace = Workspace::open("testdata/workspace/main").expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path()).expect("Find workspace root");
         assert_eq!(
             workspace
                 .packages(&PackageFilter::All)
@@ -372,8 +373,8 @@ mod test {
 
     #[test]
     fn package_filter_all_from_subdir_gets_everything() {
-        let subdir_path = Utf8Path::new("testdata/workspace/main");
-        let workspace = Workspace::open(subdir_path).expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
         let packages = workspace.packages(&PackageFilter::All).unwrap();
         assert_eq!(
             packages.iter().map(|p| &p.name).collect_vec(),
@@ -383,8 +384,9 @@ mod test {
 
     #[test]
     fn auto_packages_in_workspace_subdir_finds_single_package() {
-        let subdir_path = Utf8Path::new("testdata/workspace/main");
-        let workspace = Workspace::open(subdir_path).expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let subdir_path = Utf8PathBuf::try_from(tmp.path().join("main")).unwrap();
+        let workspace = Workspace::open(&subdir_path).expect("Find workspace root");
         let packages = workspace
             .packages(&PackageFilter::Auto(subdir_path.to_owned()))
             .unwrap();
@@ -393,10 +395,12 @@ mod test {
 
     #[test]
     fn auto_packages_in_virtual_workspace_gets_everything() {
-        let path = Utf8Path::new("testdata/workspace");
-        let workspace = Workspace::open(path).expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path()).expect("Find workspace root");
         let packages = workspace
-            .packages(&PackageFilter::Auto(path.to_owned()))
+            .packages(&PackageFilter::Auto(
+                tmp.path().to_owned().try_into().unwrap(),
+            ))
             .unwrap();
         assert_eq!(
             packages.iter().map(|p| &p.name).collect_vec(),
@@ -406,13 +410,10 @@ mod test {
 
     #[test]
     fn filter_by_single_package() {
-        let workspace = Workspace::open("testdata/workspace/main").expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
         let root_dir = workspace.root();
-        assert_eq!(
-            root_dir.file_name(),
-            Some("workspace"),
-            "found the workspace root"
-        );
+        assert_eq!(root_dir, tmp.path());
         let filter = PackageFilter::explicit(["main"]);
         assert_eq!(
             workspace
@@ -436,12 +437,9 @@ mod test {
 
     #[test]
     fn filter_by_multiple_packages() {
-        let workspace = Workspace::open("testdata/workspace/main").unwrap();
-        assert_eq!(
-            workspace.root().file_name(),
-            Some("workspace"),
-            "found the workspace root"
-        );
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
+        assert_eq!(workspace.root(), tmp.path(), "found the workspace root");
         let selection = PackageFilter::explicit(["main", "main2"]);
         let discovered = workspace
             .discover(&selection, &Options::default(), &Console::new())

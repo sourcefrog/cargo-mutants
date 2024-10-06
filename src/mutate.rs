@@ -316,7 +316,8 @@ mod test {
 
     #[test]
     fn filter_by_attributes() {
-        let mutants = Workspace::open(Utf8Path::new("testdata/hang_avoided_by_attr"))
+        let tmp = copy_of_testdata("hang_avoided_by_attr");
+        let mutants = Workspace::open(tmp.path())
             .unwrap()
             .mutants(&PackageFilter::All, &Options::default(), &Console::new())
             .unwrap();

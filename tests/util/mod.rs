@@ -67,30 +67,31 @@ impl CommandInstaExt for assert_cmd::Command {
     }
 }
 
-// Copy the source because output is written into mutants.out.
+// Copy the source for one testdata tree.
 pub fn copy_of_testdata(tree_name: &str) -> TempDir {
     assert!(
         !tree_name.contains("/"),
         "testdata tree name {tree_name:?} should be just the directory name"
     );
-    let tmp_src_dir = TempDir::with_prefix(format!("cargo-mutants-testdata-{tree_name}-")).unwrap();
-    let tmp_path = tmp_src_dir.path();
+    let tmp = TempDir::with_prefix(format!("cargo-mutants-testdata-{tree_name}-")).unwrap();
+    copy_testdata_to(tree_name, tmp.path());
+    tmp
+}
+
+pub fn copy_testdata_to<P: AsRef<Path>>(tree_name: &str, dest: P) {
+    let dest = dest.as_ref();
     cp_r::CopyOptions::new()
         .filter(|path, _stat| {
             Ok(["target", "mutants.out", "mutants.out.old"]
                 .iter()
                 .all(|p| !path.starts_with(p)))
         })
-        .copy_tree(Path::new("testdata").join(tree_name), &tmp_path)
+        .copy_tree(Path::new("testdata").join(tree_name), dest)
         .unwrap();
-    if tmp_path.join("Cargo_test.toml").is_file() {
-        rename(
-            tmp_path.join("Cargo_test.toml"),
-            tmp_path.join("Cargo.toml"),
-        )
-        .unwrap();
+    if dest.join("Cargo_test.toml").is_file() {
+        rename(dest.join("Cargo_test.toml"), dest.join("Cargo.toml"))
+            .expect("rename Cargo_test.toml");
     }
-    tmp_src_dir
 }
 
 /// Assert that some bytes, when parsed as json, equal a json value.
