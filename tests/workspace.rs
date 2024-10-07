@@ -1,4 +1,4 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023-2024 Martin Pool
 
 //! Tests for cargo workspaces with multiple packages.
 
@@ -13,14 +13,10 @@ use util::{assert_bytes_eq_json, copy_of_testdata, run};
 
 #[test]
 fn open_by_manifest_path() {
+    let tmp = copy_of_testdata("factorial");
     run()
-        .args([
-            "mutants",
-            "--list",
-            "--line-col=false",
-            "--manifest-path",
-            "testdata/factorial/Cargo.toml",
-        ])
+        .args(["mutants", "--list", "--line-col=false", "--manifest-path"])
+        .arg(tmp.path().join("Cargo.toml"))
         .assert()
         .success()
         .stdout(predicates::str::contains(

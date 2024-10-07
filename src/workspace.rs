@@ -1,7 +1,8 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023-2024 Martin Pool
 
 use std::fmt;
 use std::panic::catch_unwind;
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{anyhow, ensure, Context};
@@ -21,16 +22,11 @@ use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
 
-pub struct Workspace {
-    pub dir: Utf8PathBuf,
-    metadata: cargo_metadata::Metadata,
-}
-
 impl fmt::Debug for Workspace {
     #[mutants::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Workspace")
-            .field("dir", &self.dir)
+            .field("root", &self.root().to_string())
             // .field("metadata", &self.metadata)
             .finish()
     }
@@ -106,12 +102,22 @@ struct PackageTop {
     top_sources: Vec<Utf8PathBuf>,
 }
 
+pub struct Workspace {
+    metadata: cargo_metadata::Metadata,
+}
+
 impl Workspace {
+    /// The root directory of the workspace.
+    pub fn root(&self) -> &Utf8Path {
+        &self.metadata.workspace_root
+    }
+
     /// Open the workspace containing a given directory.
-    pub fn open<P: AsRef<Utf8Path>>(start_dir: P) -> Result<Self> {
-        let dir = locate_project(start_dir.as_ref(), true)?;
+    pub fn open<P: AsRef<Path>>(start_dir: P) -> Result<Self> {
+        let start_dir = start_dir.as_ref();
+        let dir = locate_project(start_dir.try_into().expect("start_dir is UTF-8"), true)?;
         let manifest_path = dir.join("Cargo.toml");
-        debug!(?manifest_path, ?dir, "Find root files");
+        debug!(?manifest_path, "Find root files");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .no_deps()
@@ -119,7 +125,7 @@ impl Workspace {
             .exec()
             .with_context(|| format!("Failed to run cargo metadata on {:?}", manifest_path))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
-        Ok(Workspace { dir, metadata })
+        Ok(Workspace { metadata })
     }
 
     /// Find packages to mutate, subject to some filtering.
@@ -153,12 +159,12 @@ impl Workspace {
             let manifest_path = &package_metadata.manifest_path;
             debug!(%manifest_path, "walk package");
             let relative_manifest_path = manifest_path
-                .strip_prefix(&self.dir)
+                .strip_prefix(self.root())
                 .map_err(|_| {
                     anyhow!(
                         "manifest path {manifest_path:?} for package {name:?} is not \
                     within the detected source root path {dir:?}",
-                        dir = self.dir
+                        dir = self.root(),
                     )
                 })?
                 .to_owned();
@@ -168,7 +174,7 @@ impl Workspace {
             });
             tops.push(PackageTop {
                 package,
-                top_sources: direct_package_sources(&self.dir, package_metadata)?,
+                top_sources: direct_package_sources(self.root(), package_metadata)?,
             });
         }
         if let PackageFilter::Explicit(ref names) = package_filter {
@@ -191,7 +197,7 @@ impl Workspace {
         {
             for source_path in top_sources {
                 sources.extend(SourceFile::new(
-                    &self.dir,
+                    self.root(),
                     source_path.to_owned(),
                     &package,
                     true,
@@ -209,7 +215,7 @@ impl Workspace {
         console: &Console,
     ) -> Result<Discovered> {
         walk_tree(
-            &self.dir,
+            self.root(),
             &self.top_sources(package_filter)?,
             options,
             console,
@@ -307,13 +313,12 @@ fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use std::ffi::OsStr;
-
-    use camino::Utf8Path;
+    use camino::{Utf8Path, Utf8PathBuf};
     use itertools::Itertools;
 
     use crate::console::Console;
     use crate::options::Options;
+    use crate::test_util::copy_of_testdata;
     use crate::workspace::PackageFilter;
 
     use super::Workspace;
@@ -325,26 +330,29 @@ mod test {
 
     #[test]
     fn open_subdirectory_of_crate_opens_the_crate() {
-        let workspace =
-            Workspace::open("testdata/factorial/src").expect("open source tree from subdirectory");
-        let root = &workspace.dir;
+        let tmp = copy_of_testdata("factorial");
+        let workspace = Workspace::open(&tmp).expect("open source tree from subdirectory");
+        let root = workspace.root();
         assert!(root.is_dir());
         assert!(root.join("Cargo.toml").is_file());
         assert!(root.join("src/bin/factorial.rs").is_file());
-        assert_eq!(root.file_name().unwrap(), OsStr::new("factorial"));
     }
 
     #[test]
     fn find_root_from_subdirectory_of_workspace_finds_the_workspace_root() {
-        let root = Workspace::open("testdata/workspace/main")
-            .expect("Find root from within workspace/main")
-            .dir;
-        assert_eq!(root.file_name(), Some("workspace"), "Wrong root: {root:?}");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path()).expect("Find root from within workspace/main");
+        let root = workspace.root();
+        assert_eq!(
+            root.canonicalize().unwrap(),
+            tmp.path().canonicalize().unwrap()
+        );
     }
 
     #[test]
     fn find_top_source_files_from_subdirectory_of_workspace() {
-        let workspace = Workspace::open("testdata/workspace/main").expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path()).expect("Find workspace root");
         assert_eq!(
             workspace
                 .packages(&PackageFilter::All)
@@ -368,8 +376,8 @@ mod test {
 
     #[test]
     fn package_filter_all_from_subdir_gets_everything() {
-        let subdir_path = Utf8Path::new("testdata/workspace/main");
-        let workspace = Workspace::open(subdir_path).expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
         let packages = workspace.packages(&PackageFilter::All).unwrap();
         assert_eq!(
             packages.iter().map(|p| &p.name).collect_vec(),
@@ -379,8 +387,9 @@ mod test {
 
     #[test]
     fn auto_packages_in_workspace_subdir_finds_single_package() {
-        let subdir_path = Utf8Path::new("testdata/workspace/main");
-        let workspace = Workspace::open(subdir_path).expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let subdir_path = Utf8PathBuf::try_from(tmp.path().join("main")).unwrap();
+        let workspace = Workspace::open(&subdir_path).expect("Find workspace root");
         let packages = workspace
             .packages(&PackageFilter::Auto(subdir_path.to_owned()))
             .unwrap();
@@ -389,10 +398,12 @@ mod test {
 
     #[test]
     fn auto_packages_in_virtual_workspace_gets_everything() {
-        let path = Utf8Path::new("testdata/workspace");
-        let workspace = Workspace::open(path).expect("Find workspace root");
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path()).expect("Find workspace root");
         let packages = workspace
-            .packages(&PackageFilter::Auto(path.to_owned()))
+            .packages(&PackageFilter::Auto(
+                tmp.path().to_owned().try_into().unwrap(),
+            ))
             .unwrap();
         assert_eq!(
             packages.iter().map(|p| &p.name).collect_vec(),
@@ -402,12 +413,12 @@ mod test {
 
     #[test]
     fn filter_by_single_package() {
-        let workspace = Workspace::open("testdata/workspace/main").expect("Find workspace root");
-        let root_dir = &workspace.dir;
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
+        let root_dir = workspace.root();
         assert_eq!(
-            root_dir.file_name(),
-            Some("workspace"),
-            "found the workspace root"
+            root_dir.canonicalize().unwrap(),
+            tmp.path().canonicalize().unwrap()
         );
         let filter = PackageFilter::explicit(["main"]);
         assert_eq!(
@@ -432,11 +443,11 @@ mod test {
 
     #[test]
     fn filter_by_multiple_packages() {
-        let workspace = Workspace::open("testdata/workspace/main").unwrap();
+        let tmp = copy_of_testdata("workspace");
+        let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
         assert_eq!(
-            workspace.dir.file_name(),
-            Some("workspace"),
-            "found the workspace root"
+            workspace.root().canonicalize().unwrap(),
+            tmp.path().canonicalize().unwrap()
         );
         let selection = PackageFilter::explicit(["main", "main2"]);
         let discovered = workspace

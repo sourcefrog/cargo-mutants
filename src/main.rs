@@ -30,6 +30,9 @@ mod shard;
 mod source;
 mod span;
 mod tail_file;
+#[cfg(test)]
+#[path = "../tests/util/mod.rs"]
+mod test_util;
 mod timeouts;
 mod visit;
 mod workspace;
@@ -412,7 +415,7 @@ fn main() -> Result<()> {
     let config = if args.no_config {
         config::Config::default()
     } else {
-        config::Config::read_tree_config(&workspace.dir)?
+        config::Config::read_tree_config(workspace.root())?
     };
     debug!(?config);
     debug!(?args.features);
@@ -429,7 +432,7 @@ fn main() -> Result<()> {
     let output_parent_dir = options
         .output_in_dir
         .clone()
-        .unwrap_or_else(|| workspace.dir.clone());
+        .unwrap_or_else(|| workspace.root().to_owned());
 
     let mut discovered = workspace.discover(&package_filter, &options, &console)?;
 
@@ -468,7 +471,7 @@ fn main() -> Result<()> {
             output_dir.write_previously_caught(&previously_caught)?;
         }
         console.set_debug_log(output_dir.open_debug_log()?);
-        let lab_outcome = test_mutants(mutants, &workspace.dir, output_dir, options, &console)?;
+        let lab_outcome = test_mutants(mutants, workspace.root(), output_dir, options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

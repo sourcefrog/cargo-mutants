@@ -421,7 +421,7 @@ mod test {
         let tmp = minimal_source_tree();
         let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
         let workspace = Workspace::open(tmp_path).unwrap();
-        let output_dir = OutputDir::new(&workspace.dir).unwrap();
+        let output_dir = OutputDir::new(workspace.root()).unwrap();
         assert_eq!(
             list_recursive(tmp.path()),
             &[
@@ -439,7 +439,7 @@ mod test {
                 "src/lib.rs",
             ]
         );
-        assert_eq!(output_dir.path(), workspace.dir.join("mutants.out"));
+        assert_eq!(output_dir.path(), workspace.root().join("mutants.out"));
         assert!(output_dir.path().join("lock.json").is_file());
     }
 
