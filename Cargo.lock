@@ -397,8 +397,7 @@ checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
 [[package]]
 name = "cp_r"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f21d305efe161d2d3179950f5746837215197e774bf7424c12eafc191b63e88a"
+source = "git+https://github.com/sourcefrog/cp_r#101b60f138ab919a27acce6792fb86bad78ba0e7"
 dependencies = [
  "filetime",
 ]

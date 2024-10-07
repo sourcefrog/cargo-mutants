@@ -79,7 +79,7 @@ nix = { version = "0.28", features = ["process", "signal"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
-cp_r = "0.5.1"
+cp_r = { version = "0.5.1", git = "https://github.com/sourcefrog/cp_r" }
 insta = "1.12"
 lazy_static = "1.4"
 predicates = "3"
