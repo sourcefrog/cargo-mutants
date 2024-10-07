@@ -343,7 +343,10 @@ mod test {
         let tmp = copy_of_testdata("workspace");
         let workspace = Workspace::open(tmp.path()).expect("Find root from within workspace/main");
         let root = workspace.root();
-        assert_eq!(root, tmp.path(), "Wrong root");
+        assert_eq!(
+            root.canonicalize().unwrap(),
+            tmp.path().canonicalize().unwrap()
+        );
     }
 
     #[test]
@@ -413,7 +416,10 @@ mod test {
         let tmp = copy_of_testdata("workspace");
         let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
         let root_dir = workspace.root();
-        assert_eq!(root_dir, tmp.path());
+        assert_eq!(
+            root_dir.canonicalize().unwrap(),
+            tmp.path().canonicalize().unwrap()
+        );
         let filter = PackageFilter::explicit(["main"]);
         assert_eq!(
             workspace
@@ -439,7 +445,10 @@ mod test {
     fn filter_by_multiple_packages() {
         let tmp = copy_of_testdata("workspace");
         let workspace = Workspace::open(tmp.path().join("main")).expect("Find workspace root");
-        assert_eq!(workspace.root(), tmp.path(), "found the workspace root");
+        assert_eq!(
+            workspace.root().canonicalize().unwrap(),
+            tmp.path().canonicalize().unwrap()
+        );
         let selection = PackageFilter::explicit(["main", "main2"]);
         let discovered = workspace
             .discover(&selection, &Options::default(), &Console::new())
