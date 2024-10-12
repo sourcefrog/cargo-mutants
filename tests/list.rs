@@ -91,7 +91,7 @@ fn list_mutants_in_factorial_json() {
         .arg("mutants")
         .arg("--list")
         .arg("--json")
-        .current_dir(&tmp.path())
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_in_factorial_json");
 }
 
@@ -150,53 +150,58 @@ fn list_mutants_with_dir_option() {
 
 #[test]
 fn list_mutants_with_diffs_in_factorial() {
-    let temp = copy_of_testdata("factorial");
+    let tmp = copy_of_testdata("factorial");
     run()
         .arg("mutants")
         .arg("--list")
         .arg("--diff")
-        .current_dir(&temp)
+        .current_dir(&tmp)
         .assert_insta("list_mutants_with_diffs_in_factorial");
 }
 
 #[test]
 fn list_mutants_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .arg("--list")
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_well_tested");
 }
 
 #[test]
 fn list_mutants_well_tested_examine_name_filter() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .args(["--list", "--file", "nested_function.rs"])
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_well_tested_examine_name_filter");
 }
 
 #[test]
 fn list_mutants_well_tested_exclude_name_filter() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .args(["--list", "--exclude", "simple_fns.rs"])
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_well_tested_exclude_name_filter");
 }
 
 #[test]
 fn list_mutants_well_tested_exclude_folder_filter() {
+    let tmp = copy_of_testdata("with_child_directories");
     run()
         .arg("mutants")
         .args(["--list", "--exclude", "module"])
-        .current_dir("testdata/with_child_directories")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_well_tested_exclude_folder_filter");
 }
 
 #[test]
 fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
+    let tmp = copy_of_testdata("with_child_directories");
     run()
         .arg("mutants")
         .args([
@@ -206,22 +211,24 @@ fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
             "--exclude",
             "nested_function.rs",
         ])
-        .current_dir("testdata/with_child_directories")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_well_tested_examine_and_exclude_name_filter_combined");
 }
 
 #[test]
 fn list_mutants_regex_filters() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .args(["--list", "--re", "divisible"])
         .arg("-d")
-        .arg("testdata/well_tested")
+        .arg(tmp.path())
         .assert_insta("list_mutants_regex_filters");
 }
 
 #[test]
 fn list_mutants_regex_anchored_matches_full_line() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .args([
@@ -230,7 +237,7 @@ fn list_mutants_regex_anchored_matches_full_line() {
             r"^src/simple_fns.rs:\d+:\d+: replace returns_unit with \(\)$",
         ])
         .arg("-d")
-        .arg("testdata/well_tested")
+        .arg(tmp.path())
         .assert()
         .success()
         .stdout("src/simple_fns.rs:8:5: replace returns_unit with ()\n");
@@ -238,6 +245,7 @@ fn list_mutants_regex_anchored_matches_full_line() {
 
 #[test]
 fn list_mutants_regex_filters_json() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .args([
@@ -249,35 +257,38 @@ fn list_mutants_regex_filters_json() {
             "--json",
         ])
         .arg("-d")
-        .arg("testdata/well_tested")
+        .arg(tmp.path())
         .assert_insta("list_mutants_regex_filters_json");
 }
 
 #[test]
 fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
+    let tmp = copy_of_testdata("with_child_directories");
     run()
         .arg("mutants")
         .args(["--list", "--file", "module_methods.rs", "--file", "utils", "--exclude", "**/sub_utils/**", "--exclude", "nested_function.rs"])
-        .current_dir("testdata/with_child_directories")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
 }
 
 #[test]
 fn list_mutants_json_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .arg("--list")
         .arg("--json")
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert_insta("list_mutants_json_well_tested");
 }
 
 #[test]
 fn list_files_text_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .arg("--list-files")
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert_insta("list_files_text_well_tested");
 }
 
@@ -285,10 +296,11 @@ fn list_files_text_well_tested() {
 fn list_files_respects_file_filters() {
     // Files matching excludes *are* visited to find references to other modules,
     // but they're not included in --list-files.
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .args(["--list-files", "--exclude", "lib.rs"])
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert()
         .success()
         .stdout(predicate::str::contains("methods.rs"))
@@ -297,11 +309,12 @@ fn list_files_respects_file_filters() {
 
 #[test]
 fn list_files_json_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
     run()
         .arg("mutants")
         .arg("--list-files")
         .arg("--json")
-        .current_dir("testdata/well_tested")
+        .current_dir(tmp.path())
         .assert_insta("list_files_json_well_tested");
 }
 

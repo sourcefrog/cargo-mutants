@@ -45,9 +45,10 @@ fn list_warns_about_unmatched_packages() {
 #[test]
 fn list_files_json_workspace() {
     // Demonstrates that we get package names in the json listing.
+    let tmp = copy_of_testdata("workspace");
     let cmd = run()
         .args(["mutants", "--list-files", "--json"])
-        .current_dir("testdata/workspace")
+        .current_dir(tmp.path())
         .assert()
         .success();
     assert_bytes_eq_json(
@@ -73,9 +74,10 @@ fn list_files_json_workspace() {
 
 #[test]
 fn list_files_as_json_in_workspace_subdir() {
+    let tmp = copy_of_testdata("workspace");
     let cmd = run()
         .args(["mutants", "--list-files", "--json", "--workspace"])
-        .current_dir("testdata/workspace/main2")
+        .current_dir(tmp.path().join("main2"))
         .assert()
         .success();
     assert_bytes_eq_json(

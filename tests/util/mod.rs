@@ -80,17 +80,25 @@ pub fn copy_of_testdata(tree_name: &str) -> TempDir {
 
 pub fn copy_testdata_to<P: AsRef<Path>>(tree_name: &str, dest: P) {
     let dest = dest.as_ref();
+    let mut cargo_toml_files = Vec::new();
     cp_r::CopyOptions::new()
         .filter(|path, _stat| {
             Ok(["target", "mutants.out", "mutants.out.old"]
                 .iter()
                 .all(|p| !path.starts_with(p)))
         })
+        .after_entry_copied(|path, file_type, _stats| {
+            if file_type.is_file() && path.ends_with("Cargo_test.toml") {
+                cargo_toml_files.push(dest.join(path))
+            }
+            Ok(())
+        })
         .copy_tree(Path::new("testdata").join(tree_name), dest)
         .unwrap();
-    if dest.join("Cargo_test.toml").is_file() {
-        rename(dest.join("Cargo_test.toml"), dest.join("Cargo.toml"))
-            .expect("rename Cargo_test.toml");
+    for path in &cargo_toml_files {
+        if let Err(err) = rename(path, path.parent().unwrap().join("Cargo.toml")) {
+            panic!("failed to rename {path:?}: {err:?}")
+        }
     }
 }
 
