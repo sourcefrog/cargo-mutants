@@ -59,6 +59,7 @@ impl PackageFilter {
     pub fn resolve_auto(&self, metadata: &cargo_metadata::Metadata) -> Result<PackageFilter> {
         if let PackageFilter::Auto(dir) = &self {
             let package_dir = locate_project(dir, false)?;
+            assert!(package_dir.is_absolute());
             let workspace_dir = &metadata.workspace_root;
             // It's not required that the members be inside the workspace directory: see
             // <https://doc.rust-lang.org/cargo/reference/workspaces.html>
