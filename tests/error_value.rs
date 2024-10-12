@@ -2,12 +2,16 @@
 
 //! Tests for error value mutations, from `--error-value` etc.
 
-use std::env;
+use std::{
+    env,
+    fs::{create_dir_all, rename},
+};
 
 use indoc::indoc;
 use predicates::prelude::*;
 
 mod util;
+use tempfile::TempDir;
 use util::{copy_of_testdata, run};
 
 #[test]
@@ -116,7 +120,7 @@ fn warn_module_outside_of_tree() {
     // [TEMP]/nested_mod/src/paths_in_main/a/foo.rs
     //
     let tree_name = "dangling_mod";
-    let tmp_src_dir_parent = tempfile::tempdir().unwrap();
+    let tmp_src_dir_parent = TempDir::with_prefix("warn_module_outside_of_tree").unwrap();
     let tmp_src_dir = tmp_src_dir_parent.path().join("dangling_mod");
     cp_r::CopyOptions::new()
         .filter(|path, _stat| {
@@ -129,11 +133,16 @@ fn warn_module_outside_of_tree() {
             &tmp_src_dir,
         )
         .unwrap();
+    rename(
+        tmp_src_dir.join("Cargo_test.toml"),
+        tmp_src_dir.join("Cargo.toml"),
+    )
+    .unwrap();
 
     let external_file_path = tmp_src_dir_parent
         .path()
         .join("nested_mod/src/paths_in_main/a");
-    std::fs::create_dir_all(&external_file_path).unwrap();
+    create_dir_all(&external_file_path).unwrap();
     std::fs::copy(
         std::path::Path::new("testdata/nested_mod/src/paths_in_main/a/foo.rs"),
         external_file_path.join("foo.rs"),
