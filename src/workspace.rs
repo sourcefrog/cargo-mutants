@@ -117,6 +117,10 @@ impl Workspace {
     pub fn open<P: AsRef<Path>>(start_dir: P) -> Result<Self> {
         let start_dir = start_dir.as_ref();
         let dir = locate_project(start_dir.try_into().expect("start_dir is UTF-8"), true)?;
+        assert!(
+            dir.is_absolute(),
+            "project location {dir:?} is not absolute"
+        );
         let manifest_path = dir.join("Cargo.toml");
         debug!(?manifest_path, "Find root files");
         check_interrupted()?;
