@@ -6,6 +6,8 @@
 
 - New: Write diffs to dedicated files under `mutants.out/diff/`. The filename is included in the mutant json output.
 
+- New: The package tarball on `crates.io` now includes all the test data, so that the tests can be run on the unpacked tarball. This may be helpful for people packaging `cargo-mutants` for distributions, and keeps an accurate record of the whole tree separate from the git history.
+
 ## 24.9.0
 
 - Fixed: Avoid generating empty string elements in `ENCODED_RUSTFLAGS` when `--cap-lints` is set. In some situations these could cause a compiler error complaining about the empty argument.
