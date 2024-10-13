@@ -100,7 +100,7 @@ jobs:
       - run: |
           cd target/package
           ls -l
-          tar xvf *.crate
+          tar xvf cargo-mutants*.crate
           cd cargo-mutants-*.*.[0-9]
           cargo test
       - name: Upload package artifact
