@@ -1,0 +1,11 @@
+[package]
+name = "mutants"
+version = "0.0.3"
+edition = "2018"
+license = "MIT"
+description = "Decorator attributes to be used with cargo-mutants"
+repository = "https://github.com/sourcefrog/cargo-mutants"
+categories = ["development-tools::testing"]
+
+[lib]
+proc-macro = true

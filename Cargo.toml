@@ -50,7 +50,7 @@ regex = "1.10"
 serde_json = "1.0.117"
 similar = "2.1"
 strum = { version = "0.26", features = ["derive"] }
-tempfile = "3.4"
+tempfile = "3.8"
 time = "0.3"
 toml = "0.8"
 tracing = "0.1.40"
@@ -79,7 +79,7 @@ nix = { version = "0.28", features = ["process", "signal"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"
-cp_r = "0.5.1"
+cp_r = { version = "0.5.2" } # git = "https://github.com/sourcefrog/cp_r"
 insta = "1.12"
 lazy_static = "1.4"
 predicates = "3"
@@ -90,51 +90,6 @@ walkdir = "2.5"
 [workspace]
 members = ["mutants_attrs"]
 resolver = "2"
-
-# Exclude all testdata, so that they're more isolated from the real tree, and
-# so that support for testing workspaces does not try to test the whole
-# cargo-mutants tree.
-exclude = [
-    "testdata/already_failing_tests",
-    "testdata/already_hangs",
-    "testdata/cdylib",
-    "testdata/cfg_attr_mutants_skip",
-    "testdata/cfg_attr_test_skip",
-    "testdata/cfg_test_inner",
-    "testdata/custom_top_file",
-    "testdata/dangling_mod",
-    "testdata/dependency",
-    "testdata/diff0",
-    "testdata/diff1",
-    "testdata/error_value",
-    "testdata/everything_skipped",
-    "testdata/factorial",
-    "testdata/fails_without_feature",
-    "testdata/hang_avoided_by_attr/",
-    "testdata/hang_when_mutated",
-    "testdata/insta",
-    "testdata/integration_tests",
-    "testdata/many_patterns",
-    "testdata/missing_test",
-    "testdata/missing_test_fixed",
-    "testdata/mut_ref",
-    "testdata/nested_mod",
-    "testdata/never_type",
-    "testdata/override_dependency",
-    "testdata/package-fails/",
-    "testdata/patch_dependency",
-    "testdata/proc_macro",
-    "testdata/relative_dependency",
-    "testdata/replace_dependency",
-    "testdata/small_well_tested",
-    "testdata/strict_warnings",
-    "testdata/struct_with_no_default",
-    "testdata/symlink",
-    "testdata/unapply",
-    "testdata/unsafe",
-    "testdata/well_tested",
-    "testdata/with_child_directories",
-]
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]

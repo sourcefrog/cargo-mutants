@@ -90,12 +90,16 @@ impl BuildDir {
 
 #[cfg(test)]
 mod test {
+    use test_util::copy_of_testdata;
+
     use super::*;
 
     #[test]
     fn build_dir_copy_from() {
-        let workspace = Workspace::open("testdata/factorial").unwrap();
-        let build_dir = BuildDir::copy_from(&workspace.dir, true, false, &Console::new()).unwrap();
+        let tmp = copy_of_testdata("factorial");
+        let workspace = Workspace::open(tmp.path()).unwrap();
+        let build_dir =
+            BuildDir::copy_from(workspace.root(), true, false, &Console::new()).unwrap();
         let debug_form = format!("{build_dir:?}");
         println!("debug form is {debug_form:?}");
         assert!(debug_form.starts_with("BuildDir { path: "));
@@ -106,13 +110,14 @@ mod test {
 
     #[test]
     fn build_dir_in_place() -> Result<()> {
-        let workspace = Workspace::open("testdata/factorial")?;
-        let build_dir = BuildDir::in_place(&workspace.dir)?;
+        let tmp = copy_of_testdata("factorial");
+        let workspace = Workspace::open(tmp.path())?;
+        let build_dir = BuildDir::in_place(workspace.root())?;
         // On Windows e.g. the paths might not have the same form, but they
         // should point to the same place.
         assert_eq!(
             build_dir.path().canonicalize_utf8()?,
-            workspace.dir.canonicalize_utf8()?
+            workspace.root().canonicalize_utf8()?
         );
         Ok(())
     }

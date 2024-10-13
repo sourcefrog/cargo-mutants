@@ -5,15 +5,16 @@
 use predicates::prelude::*;
 
 mod util;
-use util::run;
+use util::{copy_of_testdata, run};
 
 #[test]
 fn env_var_controls_trace() {
+    let tmp = copy_of_testdata("never_type");
     run()
         .env("CARGO_MUTANTS_TRACE_LEVEL", "trace")
         .args(["mutants", "--list"])
         .arg("-d")
-        .arg("testdata/never_type")
+        .arg(tmp.path())
         .assert()
         // This is a debug!() message; it should only be seen if the trace var
         // was wired correctly to stderr.

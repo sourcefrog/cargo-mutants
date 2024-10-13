@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 use std::env;
-use std::fs::{self, read_dir, read_to_string};
+use std::fs::{self, create_dir, read_dir, read_to_string};
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
@@ -18,7 +18,7 @@ use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
 mod util;
-use util::{copy_of_testdata, run, MAIN_BINARY, OUTER_TIMEOUT};
+use util::{copy_of_testdata, copy_testdata_to, run, MAIN_BINARY, OUTER_TIMEOUT};
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -829,11 +829,7 @@ fn hang_avoided_by_build_timeout_with_cap_lints() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     let out = run()
         .arg("mutants")
-        .args([
-            "--build-timeout-multiplier=4",
-            "--regex=const",
-            "--cap-lints=true",
-        ])
+        .args(["--build-timeout=10", "--regex=const", "--cap-lints=true"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
@@ -856,7 +852,7 @@ fn constfn_mutation_passes_check() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     let cmd = run()
         .arg("mutants")
-        .args(["--check", "--build-timeout=4"])
+        .args(["--check", "--build-timeout=10"])
         .current_dir(tmp_src_dir.path())
         .env_remove("RUST_BACKTRACE")
         .timeout(OUTER_TIMEOUT)
@@ -899,16 +895,34 @@ fn log_file_names_are_short_and_dont_collide() {
     );
 }
 
+fn setup_relative_dependency(tree_name: &str) -> TempDir {
+    let tmp = TempDir::new().unwrap();
+    let tmp_path = tmp.path();
+    let tmp_testdata = tmp_path.join("testdata");
+    create_dir(&tmp_testdata).unwrap();
+    copy_testdata_to(tree_name, tmp_testdata.join(tree_name));
+
+    // Make a tiny version of the 'mutants' crate so that it can be imported by a relative
+    // dependency or otherwise.
+    //
+    // This is a bit annoying because
+    // - the dependency must be published to crates.io to be a dependency that's overridden
+    // - but, we have a copy of it in this tree so we can override the dependency, without
+    //   needing to download it during the tests
+    copy_testdata_to("mutants_attrs", tmp_path.join("mutants_attrs"));
+    tmp
+}
+
 #[test]
 fn cargo_mutants_in_override_dependency_tree_passes() {
-    // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used.
+    let tree_name = "override_dependency";
+    let tmp = setup_relative_dependency(tree_name);
     run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/override_dependency")
+        .arg(tmp.path().join("testdata").join(tree_name))
         .assert()
         .success()
         .stdout(predicate::function(|stdout: &str| {
@@ -919,14 +933,15 @@ fn cargo_mutants_in_override_dependency_tree_passes() {
 
 #[test]
 fn cargo_mutants_in_relative_dependency_tree_passes() {
-    // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used.
+    let tree_name = "relative_dependency";
+    let tmp = setup_relative_dependency(tree_name);
+    copy_testdata_to("dependency", tmp.path().join("testdata").join("dependency"));
     run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/relative_dependency")
+        .arg(tmp.path().join("testdata").join(tree_name))
         .assert()
         .success()
         .stdout(predicate::function(|stdout: &str| {
@@ -937,14 +952,14 @@ fn cargo_mutants_in_relative_dependency_tree_passes() {
 
 #[test]
 fn cargo_mutants_in_replace_dependency_tree_passes() {
-    // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used.
+    let tree_name = "replace_dependency";
+    let tmp = setup_relative_dependency(tree_name);
     run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/replace_dependency")
+        .arg(tmp.path().join("testdata").join(tree_name))
         .assert()
         .success()
         .stdout(predicate::function(|stdout: &str| {
@@ -955,14 +970,13 @@ fn cargo_mutants_in_replace_dependency_tree_passes() {
 
 #[test]
 fn cargo_mutants_in_patch_dependency_tree_passes() {
-    // Run against the testdata directory directly, without copying it, so that the
-    // relative dependency `../dependency` is still used.
+    let tmp = setup_relative_dependency("patch_dependency");
     run()
         .arg("mutants")
         .arg("--no-times")
         .arg("--no-shuffle")
         .arg("-d")
-        .arg("testdata/patch_dependency")
+        .arg(tmp.path().join("testdata").join("patch_dependency"))
         .assert()
         .success()
         .stdout(predicate::function(|stdout: &str| {

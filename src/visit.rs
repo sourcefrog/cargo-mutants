@@ -726,6 +726,7 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
 mod test {
     use indoc::indoc;
     use itertools::Itertools;
+    use test_util::copy_of_testdata;
 
     use super::*;
     use crate::package::Package;
@@ -761,7 +762,8 @@ mod test {
     fn no_mutants_in_files_with_inner_cfg_test_attribute() {
         let options = Options::default();
         let console = Console::new();
-        let workspace = Workspace::open("testdata/cfg_test_inner").unwrap();
+        let tmp = copy_of_testdata("cfg_test_inner");
+        let workspace = Workspace::open(tmp.path()).unwrap();
         let discovered = workspace
             .discover(&PackageFilter::All, &options, &console)
             .unwrap();

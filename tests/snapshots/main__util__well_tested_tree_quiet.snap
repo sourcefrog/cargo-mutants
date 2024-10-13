@@ -1,8 +1,0 @@
----
-source: tests/cli/main.rs
-expression: stdout
----
-Found 50 mutants to test
-Unmutated baseline ... ok
-50 mutants tested: 50 caught
-

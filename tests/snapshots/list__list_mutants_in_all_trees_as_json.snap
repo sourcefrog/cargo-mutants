@@ -3527,6 +3527,43 @@ expression: buf
 ]
 ```
 
+## testdata/mutants_attrs
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "skip",
+      "return_type": "-> TokenStream",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 31
+        },
+        "start": {
+          "column": 1,
+          "line": 16
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "mutants",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 30
+      },
+      "start": {
+        "column": 5,
+        "line": 30
+      }
+    }
+  }
+]
+```
+
 ## testdata/nested_mod
 
 ```json

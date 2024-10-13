@@ -66,8 +66,6 @@ jobs:
         run: cargo build --all-targets
       - name: Test
         run: cargo test --workspace
-      - run: cargo update
-      - run: cargo build --all-targets
 
   minimal-versions:
     strategy:
@@ -85,6 +83,53 @@ jobs:
         with:
           tool: nextest
       - run: cargo test
+
+  # Run `cargo update` and check the tests still pass
+  maximal-versions:
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo update
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - run: cargo test
+
+  tests-from-tarball:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo package --no-verify
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-mutants-package
+          path: |
+            target/package
+      - name: Unpack package
+        run: |
+          cd target/package
+          ls -l
+          tar xvf cargo-mutants*.crate
+      - name: Install nextest using install-action
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: Run tests from package
+        run: |
+          cd target/package/cargo-mutants-*.*.[0-9]
+          cargo test
 
   # Install from a checkout of the source, to find broken dependencies etc.
   # We run this on various versions because some dependencies might have changed
