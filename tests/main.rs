@@ -901,9 +901,15 @@ fn setup_relative_dependency(tree_name: &str) -> TempDir {
     let tmp_testdata = tmp_path.join("testdata");
     create_dir(&tmp_testdata).unwrap();
     copy_testdata_to(tree_name, tmp_testdata.join(tree_name));
-    cp_r::CopyOptions::new()
-        .copy_tree("mutants_attrs", tmp_path.join("mutants_attrs"))
-        .unwrap();
+
+    // Make a tiny version of the 'mutants' crate so that it can be imported by a relative
+    // dependency or otherwise.
+    //
+    // This is a bit annoying because
+    // - the dependency must be published to crates.io to be a dependency that's overridden
+    // - but, we have a copy of it in this tree so we can override the dependency, without
+    //   needing to download it during the tests
+    copy_testdata_to("mutants_attrs", tmp_path.join("mutants_attrs"));
     tmp
 }
 

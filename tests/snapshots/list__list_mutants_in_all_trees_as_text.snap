@@ -234,6 +234,12 @@ src/lib.rs:2:5: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(0))
 src/lib.rs:2:5: replace returns_mut_ref -> &mut u32 with Box::leak(Box::new(1))
 ```
 
+## testdata/mutants_attrs
+
+```
+src/lib.rs:30:5: replace skip -> TokenStream with Default::default()
+```
+
 ## testdata/nested_mod
 
 ```
