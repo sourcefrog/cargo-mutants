@@ -66,8 +66,6 @@ jobs:
         run: cargo build --all-targets
       - name: Test
         run: cargo test --workspace
-      - run: cargo update
-      - run: cargo build --all-targets
 
   minimal-versions:
     strategy:
@@ -80,6 +78,23 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly -Zdirect-minimal-versions update
       - run: cargo build --all-targets
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - run: cargo test
+
+  # Run `cargo update` and check the tests still pass
+  maximal-versions:
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo update
       - uses: taiki-e/install-action@v2
         name: Install nextest using install-action
         with:
