@@ -87,6 +87,7 @@ jobs:
       - run: cargo test
 
   tests-from-tarball:
+    needs: [test]
     strategy:
       matrix:
         os: [ubuntu-latest]
