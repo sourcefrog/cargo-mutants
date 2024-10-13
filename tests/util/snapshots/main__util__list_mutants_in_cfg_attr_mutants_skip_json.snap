@@ -1,5 +1,0 @@
----
-source: tests/util/mod.rs
-expression: "String::from_utf8_lossy(&output.stdout)"
----
-[]
