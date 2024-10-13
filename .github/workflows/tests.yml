@@ -86,6 +86,21 @@ jobs:
           tool: nextest
       - run: cargo test
 
+  tests-from-tarball:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo package --no-verify
+      - run: |
+          cd target/package
+          cd cargo-mutants-*.*.[0-9]
+          cargo test
+
   # Install from a checkout of the source, to find broken dependencies etc.
   # We run this on various versions because some dependencies might have changed
   # their MSRV, and on every platform because there are platform-specific
