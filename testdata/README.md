@@ -9,3 +9,5 @@ In these trees, the manifest file is called `Cargo_test.toml` (rather than `Carg
 2. We don't want cargo to look at these crates when building or resolving dependencies for cargo-mutants itself.
 
 Since the `--manifest-path` of Cargo commands expects the manifest to be named `Cargo.toml` we have to always copy these trees before using them. The `copy_of_testdata` helper function copies them and fixes the manifest name. Copying the tree also avoids any conflicts between concurrent or consecutive tests.
+
+Similarly, the testdata here has `.cargo_test` instead of `.cargo` directories, but they're fixed up as the trees are copied.
