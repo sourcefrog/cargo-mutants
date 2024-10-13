@@ -34,9 +34,13 @@ fn gitignore_can_be_turned_off() {
 
 /// A tree containing a symlink that must exist for the tests to pass works properly.
 #[test]
-#[cfg(unix)]
 fn symlink_in_source_tree_is_copied() {
     let tmp = copy_of_testdata("symlink");
+    let testdata = tmp.path().join("testdata");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("target", testdata.join("symlink")).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file("target", testdata.join("symlink")).unwrap();
     assert!(tmp.path().join("testdata").join("symlink").is_symlink());
     run()
         .args(["mutants", "-d"])
