@@ -97,19 +97,25 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
       - run: cargo package --no-verify
-      - run: |
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-mutants-package
+          path: |
+            target/package
+      - name: Unpack package
+        run: |
           cd target/package
           ls -l
           tar xvf cargo-mutants*.crate
-          cd cargo-mutants-*.*.[0-9]
-          cargo test
-      - name: Upload package artifact
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Install nextest using install-action
+        uses: taiki-e/install-action@v2
         with:
-          name: target/package
-          path: |
-            target/package
+          tool: nextest
+      - name: Run tests from package
+        run: |
+          cd target/package/cargo-mutants-*.*.[0-9]
+          cargo test
 
   # Install from a checkout of the source, to find broken dependencies etc.
   # We run this on various versions because some dependencies might have changed
