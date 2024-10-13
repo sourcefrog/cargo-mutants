@@ -3,13 +3,14 @@
 use std::fmt;
 use std::panic::catch_unwind;
 use std::path::Path;
+use std::process::Command;
 use std::sync::Arc;
 
-use anyhow::{anyhow, ensure, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
 use itertools::Itertools;
 use serde_json::Value;
-use tracing::{debug, debug_span, warn};
+use tracing::{debug, debug_span, error, warn};
 
 use crate::cargo::cargo_bin;
 use crate::console::Console;
@@ -17,7 +18,6 @@ use crate::interrupt::check_interrupted;
 use crate::mutate::Mutant;
 use crate::options::Options;
 use crate::package::Package;
-use crate::process::get_command_output;
 use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
@@ -127,6 +127,7 @@ impl Workspace {
         let metadata = cargo_metadata::MetadataCommand::new()
             .no_deps()
             .manifest_path(&manifest_path)
+            .verbose(false)
             .exec()
             .with_context(|| format!("Failed to run cargo metadata on {:?}", manifest_path))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
@@ -287,13 +288,27 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
 /// Return the path of the workspace or package directory enclosing a given directory.
 fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
     ensure!(path.is_dir(), "{path:?} is not a directory");
-    let cargo_bin = cargo_bin(); // needed for lifetime
-    let mut argv: Vec<&str> = vec![&cargo_bin, "locate-project"];
+    let mut args: Vec<&str> = vec!["locate-project"];
     if workspace {
-        argv.push("--workspace");
+        args.push("--workspace");
     }
-    let stdout = get_command_output(&argv, path)
-        .with_context(|| format!("run cargo locate-project in {path:?}"))?;
+    let output = Command::new(cargo_bin())
+        .args(&args)
+        .current_dir(path)
+        .output()
+        .with_context(|| format!("failed to spawn {args:?}"))?;
+    let exit = output.status;
+    if !exit.success() {
+        error!(
+            ?exit,
+            "cargo locate-project failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        bail!("cargo locate-project failed");
+    }
+    let stdout =
+        String::from_utf8(output.stdout).context("cargo locate-project output is not UTF-8")?;
+    debug!("output: {}", stdout.trim());
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let cargo_toml_path: Utf8PathBuf = val["root"]
         .as_str()

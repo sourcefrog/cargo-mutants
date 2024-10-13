@@ -17,7 +17,7 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context};
 use camino::Utf8Path;
 use serde::Serialize;
-use tracing::{debug, debug_span, error, span, trace, warn, Level};
+use tracing::{debug, span, trace, warn, Level};
 
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
@@ -198,31 +198,6 @@ impl ProcessStatus {
     pub fn is_failure(&self) -> bool {
         matches!(self, ProcessStatus::Failure(_))
     }
-}
-
-/// Run a command and return its stdout output as a string.
-///
-/// If the command exits non-zero, the error includes any messages it wrote to stderr.
-///
-/// The runtime is capped by [METADATA_TIMEOUT].
-pub fn get_command_output(argv: &[&str], cwd: &Utf8Path) -> Result<String> {
-    // TODO: Perhaps redirect to files so this doesn't jam if there's a lot of output.
-    // For the commands we use this for today, which only produce small output, it's OK.
-    let _span = debug_span!("get_command_output", argv = ?argv).entered();
-    let output = Command::new(argv[0])
-        .args(&argv[1..])
-        .stderr(Stdio::inherit())
-        .current_dir(cwd)
-        .output()
-        .with_context(|| format!("failed to spawn {argv:?}"))?;
-    let exit = output.status;
-    if !exit.success() {
-        error!(?exit, "Child failed");
-        bail!("Child failed with status {exit:?}: {argv:?}");
-    }
-    let stdout = String::from_utf8(output.stdout).context("Child output is not UTF-8")?;
-    debug!("output: {}", stdout.trim());
-    Ok(stdout)
 }
 
 /// Quote an argv slice in Unix shell style.
