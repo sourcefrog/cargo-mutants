@@ -55,6 +55,9 @@ pub struct Options {
     /// The time multiplier for test tasks, if set (relative to baseline test duration).
     pub test_timeout_multiplier: Option<f64>,
 
+    /// Run all tests in the workspace, not just the current package.
+    pub test_workspace: bool,
+
     /// The time limit for build tasks, if set.
     ///
     /// If this is not set by the user it's None, in which case there is no time limit
@@ -243,6 +246,10 @@ impl Options {
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
+            test_workspace: args
+                .test_workspace
+                .or(config.test_workspace)
+                .unwrap_or(false),
         };
         options.error_values.iter().for_each(|e| {
             if e.starts_with("Err(") {

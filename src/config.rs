@@ -53,6 +53,8 @@ pub struct Config {
     pub timeout_multiplier: Option<f64>,
     /// Build timeout multiplier, relative to the baseline 'cargo build'.
     pub build_timeout_multiplier: Option<f64>,
+    /// Run tests from all packages in the workspace, not just the mutated package.
+    pub test_workspace: Option<bool>,
 }
 
 impl Config {

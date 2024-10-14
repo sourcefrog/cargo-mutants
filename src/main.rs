@@ -309,6 +309,12 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     test_tool: Option<TestTool>,
 
+    /// Run all tests in the workspace.
+    ///
+    /// If false, only the tests in the mutated package are run.
+    #[arg(long, help_heading = "Tests")]
+    test_workspace: Option<bool>,
+
     /// Maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't', help_heading = "Execution")]
     timeout: Option<f64>,
