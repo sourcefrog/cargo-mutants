@@ -206,7 +206,7 @@ struct DiscoveryVisitor<'o> {
     error_exprs: &'o [Expr],
 }
 
-impl<'o> DiscoveryVisitor<'o> {
+impl DiscoveryVisitor<'_> {
     fn enter_function(
         &mut self,
         function_name: &Ident,

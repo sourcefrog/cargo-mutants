@@ -293,7 +293,7 @@ pub struct TerminalWriter {
     view: Arc<nutmeg::View<LabModel>>,
 }
 
-impl<'w> MakeWriter<'w> for TerminalWriter {
+impl MakeWriter<'_> for TerminalWriter {
     type Writer = Self;
 
     fn make_writer(&self) -> Self::Writer {
@@ -320,7 +320,7 @@ impl std::io::Write for TerminalWriter {
 /// Write trace output to the debug log file if it's open.
 pub struct DebugLogWriter(Arc<Mutex<Option<File>>>);
 
-impl<'w> MakeWriter<'w> for DebugLogWriter {
+impl MakeWriter<'_> for DebugLogWriter {
     type Writer = Self;
 
     fn make_writer(&self) -> Self::Writer {
