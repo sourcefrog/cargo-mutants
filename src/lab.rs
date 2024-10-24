@@ -69,7 +69,7 @@ pub fn test_mutants(
                 &output_mutex,
                 &jobserver,
                 &Scenario::Baseline,
-                &mutant_packages,
+                Some(&mutant_packages),
                 Timeouts::for_baseline(&options),
                 &options,
                 console,
@@ -129,15 +129,22 @@ pub fn test_mutants(
                             return Err(anyhow!("Lock pending work queue: {}", err));
                         }
                         Ok(Some(mutant)) => {
+                            let scenario = Scenario::Mutant(mutant.clone());
                             let _span =
                                 debug_span!("mutant", name = mutant.name(false, false)).entered();
                             let package = mutant.package().clone(); // hold
+                            let packages = [&package];
+                            let test_packages: Option<&[&Package]> = if options.test_workspace {
+                                None
+                            } else {
+                                Some(&packages)
+                            };
                             test_scenario(
                                 &build_dir,
                                 &output_mutex,
                                 &jobserver,
-                                &Scenario::Mutant(mutant),
-                                &[&package],
+                                &scenario,
+                                test_packages,
                                 timeouts,
                                 &options,
                                 console,
@@ -203,7 +210,7 @@ fn test_scenario(
     output_mutex: &Mutex<OutputDir>,
     jobserver: &Option<jobserver::Client>,
     scenario: &Scenario,
-    test_packages: &[&Package],
+    test_packages: Option<&[&Package]>,
     timeouts: Timeouts,
     options: &Options,
     console: &Console,
@@ -237,7 +244,7 @@ fn test_scenario(
         match run_cargo(
             build_dir,
             jobserver,
-            Some(test_packages),
+            test_packages,
             phase,
             timeout,
             &mut scenario_output,
