@@ -339,7 +339,7 @@ pub struct Args {
     #[arg(long, action = clap::ArgAction::SetTrue)]
     version: bool,
 
-    /// Test every package in the workspace.
+    /// Generate mutations in every package in the workspace.
     #[arg(long, help_heading = "Filters")]
     workspace: bool,
 
