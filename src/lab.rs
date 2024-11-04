@@ -12,12 +12,11 @@ use std::time::Instant;
 use itertools::Itertools;
 use tracing::{debug, debug_span, error, trace, warn};
 
-use crate::cargo::run_cargo;
-use crate::outcome::LabOutcome;
-use crate::output::OutputDir;
-use crate::package::Package;
-use crate::timeouts::Timeouts;
 use crate::*;
+use crate::{
+    cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
+    package::Package, timeouts::Timeouts,
+};
 
 /// Run all possible mutation experiments.
 ///
@@ -126,7 +125,7 @@ pub fn test_mutants(
                     match next {
                         Err(err) => {
                             // PoisonError is not Send so we can't pass it directly.
-                            return Err(anyhow!("Lock pending work queue: {}", err));
+                            return Err(anyhow!("Failed to lock pending work queue: {}", err));
                         }
                         Ok(Some(mutant)) => {
                             let scenario = Scenario::Mutant(mutant.clone());
@@ -134,10 +133,12 @@ pub fn test_mutants(
                                 debug_span!("mutant", name = mutant.name(false, false)).entered();
                             let package = mutant.package().clone(); // hold
                             let packages = [&package];
-                            let test_packages: Option<&[&Package]> = if options.test_workspace {
-                                None
-                            } else {
-                                Some(&packages)
+                            let test_packages: Option<&[&Package]> = match &options.test_packages {
+                                TestPackages::Workspace => None,
+                                TestPackages::Mutated => Some(&packages),
+                                TestPackages::Named(_named) => {
+                                    unimplemented!("get packages by name")
+                                }
                             };
                             test_scenario(
                                 &build_dir,

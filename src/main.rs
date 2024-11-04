@@ -305,6 +305,10 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     shard: Option<Shard>,
 
+    /// Run tests from these packages for all mutants.
+    #[arg(long, help_heading = "Tests")]
+    test_packages: Vec<String>,
+
     /// Tool used to run test suites: cargo or nextest.
     #[arg(long, help_heading = "Execution")]
     test_tool: Option<TestTool>,
@@ -312,6 +316,8 @@ pub struct Args {
     /// Run all tests in the workspace.
     ///
     /// If false, only the tests in the mutated package are run.
+    ///
+    /// Overrides `--test_packages`.
     #[arg(long, help_heading = "Tests")]
     test_workspace: Option<bool>,
 

@@ -47,6 +47,8 @@ pub struct Config {
     pub minimum_test_timeout: Option<f64>,
     /// Cargo profile.
     pub profile: Option<String>,
+    /// Run tests from these packages for all mutants.
+    pub test_packages: Vec<String>,
     /// Choice of test tool: cargo or nextest.
     pub test_tool: Option<TestTool>,
     /// Timeout multiplier, relative to the baseline 'cargo test'.
@@ -54,13 +56,15 @@ pub struct Config {
     /// Build timeout multiplier, relative to the baseline 'cargo build'.
     pub build_timeout_multiplier: Option<f64>,
     /// Run tests from all packages in the workspace, not just the mutated package.
+    ///
+    /// Overrides `test_packages`.
     pub test_workspace: Option<bool>,
 }
 
 impl Config {
     pub fn read_file(path: &Path) -> Result<Config> {
         let toml = read_to_string(path).with_context(|| format!("read config {path:?}"))?;
-        toml::de::from_str(&toml).with_context(|| format!("parse toml from {path:?}"))
+        Config::from_str(&toml).with_context(|| format!("parse toml from {path:?}"))
     }
 
     /// Read the config from a tree's `.cargo/mutants.toml`, and return a default (empty)

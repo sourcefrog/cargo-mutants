@@ -32,10 +32,16 @@ on the command line, so that the shell doesn't expand them.) You can use `--list
 For each baseline and mutant scenario, cargo-mutants selects some tests to see if the mutant is caught.
 These selections turn into `--package` or `--workspace` arguments to `cargo test`.
 
-By default, the baseline runs tests from all and only the packages for which mutants will be generated. That is, if the whole workspace is being tested, then it runs `cargo test --workspace`, and otherwise it selects all the packages.
+There are different behaviors for the baseline tests (before mutation), which run once for all packages, and then for the tests applied to each mutant.
+
+These behaviors can be controlled by the `--test-workspace` and `--test-package` command line options and the corresponding configuration options.
+
+By default, the baseline runs the tests from all and only the packages for which mutants will be generated. That is, if the whole workspace is being tested, then it runs `cargo test --workspace`, and otherwise runs tests for each selected package.
 
 By default, each mutant runs only the tests from the package that's being mutated.
 
-If the `--test-workspace` arguments or `test_workspace` configuration key is set, then all tests from the workspace are run against each mutant.
+If the `--test-workspace` arguments or `test_workspace` configuration key is set, then all tests from the workspace are run for the baseline and against each mutant.
 
-If the `--test-package` argument or `test_package` configuration key is set then the specified packages are tested for all mutants.
+If the `--test-package` argument or `test_package` configuration key is set then the specified packages are tested for the baseline and all mutants.
+
+As for other options, the command line arguments have priority over the configuration file.

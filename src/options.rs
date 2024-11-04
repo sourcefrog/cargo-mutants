@@ -55,8 +55,10 @@ pub struct Options {
     /// The time multiplier for test tasks, if set (relative to baseline test duration).
     pub test_timeout_multiplier: Option<f64>,
 
-    /// Run all tests in the workspace, not just the current package.
-    pub test_workspace: bool,
+    /// Which packages to test for a given mutant.
+    ///
+    /// Comes from `--test-workspace` etc.
+    pub test_packages: TestPackages,
 
     /// The time limit for build tasks, if set.
     ///
@@ -134,6 +136,20 @@ pub struct Options {
     pub test_tool: TestTool,
 }
 
+/// Which packages should be tested for a given mutant?
+#[derive(Debug, Default, Clone, PartialEq, Eq, EnumString, Display, Deserialize)]
+pub enum TestPackages {
+    /// Only the package containing the mutated file.
+    #[default]
+    Mutated,
+
+    /// All packages in the workspace.
+    Workspace,
+
+    /// Certain packages, specified by name.
+    Named(Vec<String>),
+}
+
 /// Choice of tool to use to run tests.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, EnumString, Display, Deserialize)]
 #[strum(serialize_all = "snake_case")]
@@ -204,6 +220,25 @@ impl Options {
                 .unwrap_or(20f64),
         );
 
+        // If either command line argument is set, it overrides the config.
+        let test_packages = if args.test_workspace == Some(true) {
+            TestPackages::Workspace
+        } else if !args.test_packages.is_empty() {
+            TestPackages::Named(
+                args.test_packages
+                    .iter()
+                    .flat_map(|s| s.split(','))
+                    .map(|s| s.to_string())
+                    .collect(),
+            )
+        } else if args.test_workspace.is_none() && config.test_workspace == Some(true) {
+            TestPackages::Workspace
+        } else if !config.test_packages.is_empty() {
+            TestPackages::Named(config.test_packages.clone())
+        } else {
+            TestPackages::Mutated
+        };
+
         let options = Options {
             additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
             additional_cargo_test_args: join_slices(
@@ -243,13 +278,10 @@ impl Options {
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
+            test_packages,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
-            test_workspace: args
-                .test_workspace
-                .or(config.test_workspace)
-                .unwrap_or(false),
         };
         options.error_values.iter().for_each(|e| {
             if e.starts_with("Err(") {
@@ -280,6 +312,7 @@ fn or_slices<'a: 'c, 'b: 'c, 'c, T>(a: &'a [T], b: &'b [T]) -> &'c [T] {
 #[cfg(test)]
 mod test {
     use std::io::Write;
+    use std::str::FromStr;
 
     use indoc::indoc;
     use rusty_fork::rusty_fork_test;
@@ -531,28 +564,111 @@ mod test {
             let options = Options::new(&args, &Config::default()).unwrap();
             assert_eq!(options.colors.forced_value(), None);
         }
+    }
 
-        #[test]
-        fn profile_option_from_args() {
-            let args = Args::parse_from(["mutants", "--profile=mutants"]);
-            let options = Options::new(&args, &Config::default()).unwrap();
-            assert_eq!(options.profile.unwrap(), "mutants");
-        }
+    #[test]
+    fn profile_option_from_args() {
+        let args = Args::parse_from(["mutants", "--profile=mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.profile.unwrap(), "mutants");
+    }
 
-
-        #[test]
-        fn profile_from_config() {
-            let args = Args::parse_from(["mutants", "-j3"]);
-            let config = indoc! { r#"
+    #[test]
+    fn profile_from_config() {
+        let args = Args::parse_from(["mutants", "-j3"]);
+        let config = indoc! { r#"
                 profile = "mutants"
                 timeout_multiplier = 1.0
                 build_timeout_multiplier = 2.0
             "#};
-            let mut config_file = NamedTempFile::new().unwrap();
-            config_file.write_all(config.as_bytes()).unwrap();
-            let config = Config::read_file(config_file.path()).unwrap();
-            let options = Options::new(&args, &config).unwrap();
-            assert_eq!(options.profile.unwrap(), "mutants");
-        }
+        let mut config_file = NamedTempFile::new().unwrap();
+        config_file.write_all(config.as_bytes()).unwrap();
+        let config = Config::read_file(config_file.path()).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.profile.unwrap(), "mutants");
+    }
+
+    #[test]
+    fn test_workspace_arg_true() {
+        let args = Args::parse_from(["mutants", "--test-workspace=true"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_packages, TestPackages::Workspace);
+    }
+
+    #[test]
+    fn test_workspace_arg_false() {
+        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(options.test_packages, TestPackages::Mutated);
+    }
+
+    #[test]
+    fn test_workspace_config_true() {
+        let args = Args::parse_from(["mutants"]);
+        let config = indoc! { r#"
+                test_workspace = true
+            "#};
+        let config = Config::from_str(config).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.test_packages, TestPackages::Workspace);
+    }
+
+    #[test]
+    fn test_workspace_config_false() {
+        let args = Args::parse_from(["mutants"]);
+        let config = indoc! { r#"
+                test_workspace = false
+            "#};
+        let config = Config::from_str(config).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.test_packages, TestPackages::Mutated);
+    }
+
+    #[test]
+    fn test_workspace_args_override_config_true() {
+        let args = Args::parse_from(["mutants", "--test-workspace=true"]);
+        let config = indoc! { r#"
+                test_workspace = false
+            "#};
+        let config = Config::from_str(config).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.test_packages, TestPackages::Workspace);
+    }
+
+    #[test]
+    fn test_workspace_args_override_config_false() {
+        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
+        let config = indoc! { r#"
+                test_workspace = true
+            "#};
+        let config = Config::from_str(config).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.test_packages, TestPackages::Mutated);
+    }
+
+    #[test]
+    fn test_workspace_arg_false_allows_packages_from_config() {
+        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
+        let config = indoc! { r#"
+                # Normally the packages would be ignored, but --test-workspace=false.
+                test_workspace = true
+                test_packages = ["foo", "bar"]
+            "#};
+        let config = Config::from_str(config).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.test_packages,
+            TestPackages::Named(vec!["foo".to_string(), "bar".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_packages_arg_with_commas() {
+        let args = Args::parse_from(["mutants", "--test-packages=foo,bar"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert_eq!(
+            options.test_packages,
+            TestPackages::Named(vec!["foo".to_string(), "bar".to_string()])
+        );
     }
 }
