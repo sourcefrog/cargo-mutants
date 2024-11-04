@@ -4,3 +4,4 @@ mutants.out.old
 .cargo/config.toml
 wiki
 .vscode/
+book/book
