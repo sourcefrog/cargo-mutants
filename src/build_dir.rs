@@ -2,20 +2,29 @@
 
 //! A directory containing mutated source to run cargo builds and tests.
 
-use std::fmt::{self, Debug};
+#![warn(clippy::pedantic)]
+
 use std::fs::write;
 
+use anyhow::{ensure, Context};
+use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 use tracing::info;
 
-use crate::copy_tree::copy_tree;
-use crate::manifest::fix_cargo_config;
-use crate::*;
+use crate::{
+    console::Console,
+    copy_tree::copy_tree,
+    manifest::{fix_cargo_config, fix_manifest},
+    options::Options,
+    workspace::Workspace,
+    Result,
+};
 
 /// A directory containing source, that can be mutated, built, and tested.
 ///
 /// Depending on how its constructed, this might be a copy in a tempdir
 /// or the original source directory.
+#[derive(Debug)]
 pub struct BuildDir {
     /// The path of the root of the build directory.
     path: Utf8PathBuf,
@@ -23,14 +32,6 @@ pub struct BuildDir {
     /// object is dropped. If None, there's nothing to clean up.
     #[allow(dead_code)]
     temp_dir: Option<TempDir>,
-}
-
-impl Debug for BuildDir {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BuildDir")
-            .field("path", &self.path)
-            .finish()
-    }
 }
 
 impl BuildDir {
@@ -71,7 +72,7 @@ impl BuildDir {
         } else {
             Some(temp_dir)
         };
-        let build_dir = BuildDir { temp_dir, path };
+        let build_dir = BuildDir { path, temp_dir };
         Ok(build_dir)
     }
 
@@ -81,8 +82,7 @@ impl BuildDir {
             temp_dir: None,
             path: source_path
                 .canonicalize_utf8()
-                .context("canonicalize source path")?
-                .to_owned(),
+                .context("canonicalize source path")?,
         })
     }
 
@@ -101,7 +101,7 @@ impl BuildDir {
 
 #[cfg(test)]
 mod test {
-    use test_util::copy_of_testdata;
+    use crate::test_util::copy_of_testdata;
 
     use super::*;
 
