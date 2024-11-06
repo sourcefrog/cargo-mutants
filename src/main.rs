@@ -58,7 +58,6 @@ use crate::in_diff::diff_filter;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
-use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
 use crate::options::{Colors, Options, TestTool};
 use crate::outcome::{Phase, ScenarioOutcome};

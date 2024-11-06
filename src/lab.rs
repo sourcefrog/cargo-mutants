@@ -46,8 +46,6 @@ pub fn test_mutants(
         warn!("No mutants found under the active filters");
         return Ok(LabOutcome::default());
     }
-    let mutant_packages = mutants.iter().map(Mutant::package).unique().collect_vec(); // hold
-    debug!(?mutant_packages);
 
     let output_mutex = Mutex::new(output_dir);
     let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;
@@ -63,6 +61,8 @@ pub fn test_mutants(
         .context("Start jobserver")?;
     let timeouts = match options.baseline {
         BaselineStrategy::Run => {
+            let all_mutated_packages = mutants.iter().map(Mutant::package).unique().collect_vec(); // hold
+            debug!(?all_mutated_packages);
             let outcome = Worker {
                 build_dir: &baseline_build_dir,
                 output_mutex: &output_mutex,
@@ -71,13 +71,13 @@ pub fn test_mutants(
                 options,
                 console,
             }
-            .run_one_scenario(&Scenario::Baseline, Some(&mutant_packages))?;
+            .run_one_scenario(&Scenario::Baseline, Some(&all_mutated_packages))?;
             if outcome.success() {
                 Timeouts::from_baseline(&outcome, options)
             } else {
                 error!(
-                    "cargo {} failed in an unmutated tree, so no mutants were tested",
-                    outcome.last_phase(),
+                    "cargo {phase} failed in an unmutated tree, so no mutants were tested",
+                    phase = outcome.last_phase(),
                 );
                 return Ok(output_mutex
                     .into_inner()
