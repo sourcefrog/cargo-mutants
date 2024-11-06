@@ -34,18 +34,29 @@ impl Debug for BuildDir {
 }
 
 impl BuildDir {
-    /// Make a new build dir, copying from a source directory, subject to exclusions.
-    pub fn copy_from(
-        source: &Utf8Path,
-        gitignore: bool,
-        leak_temp_dir: bool,
+    /// Make the build dir for the baseline.
+    ///
+    /// Depending on the options, this might be either a copy of the source directory
+    /// or in-place.
+    pub fn for_baseline(
+        workspace: &Workspace,
+        options: &Options,
         console: &Console,
     ) -> Result<BuildDir> {
+        if options.in_place {
+            BuildDir::in_place(workspace.root())
+        } else {
+            BuildDir::copy_from(workspace.root(), options, console)
+        }
+    }
+
+    /// Make a new build dir, copying from a source directory, subject to exclusions.
+    pub fn copy_from(source: &Utf8Path, options: &Options, console: &Console) -> Result<BuildDir> {
         let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or("unnamed"));
         let source_abs = source
             .canonicalize_utf8()
             .context("canonicalize source path")?;
-        let temp_dir = copy_tree(source, &name_base, gitignore, console)?;
+        let temp_dir = copy_tree(source, &name_base, options.gitignore, console)?;
         let path: Utf8PathBuf = temp_dir
             .path()
             .to_owned()
@@ -53,7 +64,7 @@ impl BuildDir {
             .context("tempdir path to UTF-8")?;
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
-        let temp_dir = if leak_temp_dir {
+        let temp_dir = if options.leak_dirs {
             let _ = temp_dir.into_path();
             info!(?path, "Build directory will be leaked for inspection");
             None
@@ -98,14 +109,56 @@ mod test {
     fn build_dir_copy_from() {
         let tmp = copy_of_testdata("factorial");
         let workspace = Workspace::open(tmp.path()).unwrap();
-        let build_dir =
-            BuildDir::copy_from(workspace.root(), true, false, &Console::new()).unwrap();
+        let options = Options {
+            in_place: false,
+            gitignore: true,
+            leak_dirs: false,
+            ..Default::default()
+        };
+        let build_dir = BuildDir::copy_from(workspace.root(), &options, &Console::new()).unwrap();
         let debug_form = format!("{build_dir:?}");
         println!("debug form is {debug_form:?}");
         assert!(debug_form.starts_with("BuildDir { path: "));
         assert!(build_dir.path().is_dir());
         assert!(build_dir.path().join("Cargo.toml").is_file());
         assert!(build_dir.path().join("src").is_dir());
+    }
+
+    #[test]
+    fn for_baseline_in_place() -> Result<()> {
+        let tmp = copy_of_testdata("factorial");
+        let workspace = Workspace::open(tmp.path())?;
+        let options = Options {
+            in_place: true,
+            ..Default::default()
+        };
+        let build_dir = BuildDir::for_baseline(&workspace, &options, &Console::new())?;
+        assert_eq!(
+            build_dir.path().canonicalize_utf8()?,
+            workspace.root().canonicalize_utf8()?
+        );
+        assert!(build_dir.temp_dir.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn for_baseline_copied() -> Result<()> {
+        let tmp = copy_of_testdata("factorial");
+        let workspace = Workspace::open(tmp.path())?;
+        let options = Options {
+            in_place: false,
+            ..Default::default()
+        };
+        let build_dir = BuildDir::for_baseline(&workspace, &options, &Console::new())?;
+        assert!(build_dir.path().is_dir());
+        assert!(build_dir.path().join("Cargo.toml").is_file());
+        assert!(build_dir.path().join("src").is_dir());
+        assert!(build_dir.temp_dir.is_some());
+        assert_ne!(
+            build_dir.path().canonicalize_utf8()?,
+            workspace.root().canonicalize_utf8()?
+        );
+        Ok(())
     }
 
     #[test]

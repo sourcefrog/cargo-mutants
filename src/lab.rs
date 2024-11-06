@@ -16,8 +16,8 @@ use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::{
     cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
-    package::Package, timeouts::Timeouts, BaselineStrategy, BuildDir, Console, Context, Mutant,
-    Options, Phase, Result, Scenario, ScenarioOutcome, Utf8Path,
+    package::Package, timeouts::Timeouts, workspace::Workspace, BaselineStrategy, BuildDir,
+    Console, Context, Mutant, Options, Phase, Result, Scenario, ScenarioOutcome,
 };
 
 /// Run all possible mutation experiments.
@@ -30,7 +30,7 @@ use crate::{
 #[allow(clippy::too_many_lines)] // just for now
 pub fn test_mutants(
     mut mutants: Vec<Mutant>,
-    workspace_dir: &Utf8Path,
+    workspace: &Workspace,
     output_dir: OutputDir,
     options: &Options,
     console: &Console,
@@ -50,11 +50,7 @@ pub fn test_mutants(
     debug!(?mutant_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let baseline_build_dir = if options.in_place {
-        BuildDir::in_place(workspace_dir)?
-    } else {
-        BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?
-    };
+    let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;
 
     let jobserver = &options
         .jobserver
@@ -109,13 +105,7 @@ pub fn test_mutants(
                 let build_dir = &if let Some(d) = build_dir_0 {
                     d
                 } else {
-                    debug!("copy build dir");
-                    BuildDir::copy_from(
-                        workspace_dir,
-                        options.gitignore,
-                        options.leak_dirs,
-                        console,
-                    )?
+                    BuildDir::copy_from(workspace.root(), options, console)?
                 };
                 let worker = Worker {
                     build_dir,
