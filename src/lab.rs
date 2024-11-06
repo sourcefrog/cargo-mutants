@@ -256,11 +256,12 @@ fn test_scenario(
                 }
             }
             Err(err) => {
+                error!(?err, ?phase, "scenario execution internal error");
                 // Some unexpected internal error that stops the program.
                 if let Some(mutant) = scenario.mutant() {
                     mutant.revert(build_dir)?;
-                    return Err(err);
                 }
+                return Err(err);
             }
         }
     }
