@@ -298,6 +298,15 @@ impl Options {
     pub fn from_args(args: &Args) -> Result<Options> {
         Options::new(args, &Config::default())
     }
+
+    /// Which phases to run for each mutant.
+    pub fn phases(&self) -> &[Phase] {
+        if self.check_only {
+            &[Phase::Check]
+        } else {
+            &[Phase::Build, Phase::Test]
+        }
+    }
 }
 
 /// If the first slices is non-empty, return that, otherwise the second.

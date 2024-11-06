@@ -223,11 +223,6 @@ fn test_scenario(
     let dir = build_dir.path();
     console.scenario_started(dir, scenario, scenario_output.open_log_read()?)?;
 
-    let phases: &[Phase] = if options.check_only {
-        &[Phase::Check]
-    } else {
-        &[Phase::Build, Phase::Test]
-    };
     if let Some(mutant) = scenario.mutant() {
         let mutated_code = mutant.mutated_code();
         let diff = scenario.mutant().unwrap().diff(&mutated_code);
@@ -236,7 +231,7 @@ fn test_scenario(
     }
 
     let mut outcome = ScenarioOutcome::new(&scenario_output, scenario.clone());
-    for &phase in phases {
+    for &phase in options.phases() {
         console.scenario_phase_started(dir, phase);
         let timeout = match phase {
             Phase::Test => timeouts.test,
