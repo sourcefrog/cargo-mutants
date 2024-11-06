@@ -22,16 +22,6 @@ use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
 
-impl fmt::Debug for Workspace {
-    #[mutants::skip]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Workspace")
-            .field("root", &self.root().to_string())
-            // .field("metadata", &self.metadata)
-            .finish()
-    }
-}
-
 /// Which packages to mutate in a workspace?
 #[derive(Debug, Clone)]
 pub enum PackageFilter {
@@ -103,8 +93,19 @@ struct PackageTop {
     top_sources: Vec<Utf8PathBuf>,
 }
 
+/// A cargo workspace.
 pub struct Workspace {
     metadata: cargo_metadata::Metadata,
+}
+
+impl fmt::Debug for Workspace {
+    #[mutants::skip]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Workspace")
+            .field("root", &self.root().to_string())
+            // .field("metadata", &self.metadata)
+            .finish()
+    }
 }
 
 impl Workspace {
