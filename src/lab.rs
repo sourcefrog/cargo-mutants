@@ -3,6 +3,8 @@
 //! Successively apply mutations to the source code and run cargo to check,
 //! build, and test them.
 
+#![warn(clippy::pedantic)]
+
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
 use std::sync::Mutex;
@@ -12,10 +14,10 @@ use std::{thread, vec};
 use itertools::Itertools;
 use tracing::{debug, debug_span, error, trace, warn};
 
-use crate::*;
 use crate::{
     cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
-    package::Package, timeouts::Timeouts,
+    package::Package, timeouts::Timeouts, BaselineStrategy, BuildDir, Console, Context, Mutant,
+    Options, Phase, Result, Scenario, ScenarioOutcome, Utf8Path,
 };
 
 /// Run all possible mutation experiments.
@@ -25,6 +27,7 @@ use crate::{
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
+#[allow(clippy::too_many_lines)] // just for now
 pub fn test_mutants(
     mut mutants: Vec<Mutant>,
     workspace_dir: &Utf8Path,
@@ -43,13 +46,14 @@ pub fn test_mutants(
         warn!("No mutants found under the active filters");
         return Ok(LabOutcome::default());
     }
-    let mutant_packages = mutants.iter().map(|m| m.package()).unique().collect_vec(); // hold
+    let mutant_packages = mutants.iter().map(Mutant::package).unique().collect_vec(); // hold
     debug!(?mutant_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let baseline_build_dir = match options.in_place {
-        true => BuildDir::in_place(workspace_dir)?,
-        false => BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?,
+    let baseline_build_dir = if options.in_place {
+        BuildDir::in_place(workspace_dir)?
+    } else {
+        BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?
     };
 
     let jobserver = &options
@@ -71,8 +75,10 @@ pub fn test_mutants(
                 options,
                 console,
             }
-            .run_one_scenario(Scenario::Baseline, Some(&mutant_packages))?;
-            if !outcome.success() {
+            .run_one_scenario(&Scenario::Baseline, Some(&mutant_packages))?;
+            if outcome.success() {
+                Timeouts::from_baseline(&outcome, options)
+            } else {
                 error!(
                     "cargo {} failed in an unmutated tree, so no mutants were tested",
                     outcome.last_phase(),
@@ -81,8 +87,6 @@ pub fn test_mutants(
                     .into_inner()
                     .expect("lock output_dir")
                     .take_lab_outcome());
-            } else {
-                Timeouts::from_baseline(&outcome, options)
             }
         }
         BaselineStrategy::Skip => Timeouts::without_baseline(options),
@@ -102,17 +106,16 @@ pub fn test_mutants(
                 trace!(thread_id = ?thread::current().id(), "start thread");
                 // First thread to start can use the initial build dir; others need to copy a new one
                 let build_dir_0 = build_dir_0.lock().expect("lock build dir 0").take(); // separate for lock
-                let build_dir = &match build_dir_0 {
-                    Some(d) => d,
-                    None => {
-                        debug!("copy build dir");
-                        BuildDir::copy_from(
-                            workspace_dir,
-                            options.gitignore,
-                            options.leak_dirs,
-                            console,
-                        )?
-                    }
+                let build_dir = &if let Some(d) = build_dir_0 {
+                    d
+                } else {
+                    debug!("copy build dir");
+                    BuildDir::copy_from(
+                        workspace_dir,
+                        options.gitignore,
+                        options.leak_dirs,
+                        console,
+                    )?
                 };
                 let worker = Worker {
                     build_dir,
@@ -133,7 +136,7 @@ pub fn test_mutants(
         // etc. In that case, print them all and return the first.
         let errors = threads
             .into_iter()
-            .flat_map(|thread| match thread.join() {
+            .filter_map(|thread| match thread.join() {
                 Err(panic) => resume_unwind(panic),
                 Ok(Ok(())) => None,
                 Ok(Err(err)) => {
@@ -202,27 +205,26 @@ impl Worker<'_> {
                         unimplemented!("get packages by name")
                     }
                 };
-                self.run_one_scenario(scenario, test_packages)?;
+                self.run_one_scenario(&scenario, test_packages)?;
             } else {
                 return Ok(());
             }
         }
     }
 
-    // #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
     fn run_one_scenario(
         &mut self,
-        scenario: Scenario,
+        scenario: &Scenario,
         test_packages: Option<&[&Package]>,
     ) -> Result<ScenarioOutcome> {
         let mut scenario_output = self
             .output_mutex
             .lock()
             .expect("lock output_dir to start scenario")
-            .start_scenario(&scenario)?;
+            .start_scenario(scenario)?;
         let dir = self.build_dir.path();
         self.console
-            .scenario_started(dir, &scenario, scenario_output.open_log_read()?)?;
+            .scenario_started(dir, scenario, scenario_output.open_log_read()?)?;
 
         if let Some(mutant) = scenario.mutant() {
             let mutated_code = mutant.mutated_code();
@@ -275,7 +277,7 @@ impl Worker<'_> {
             .add_scenario_outcome(&outcome)?;
         debug!(outcome = ?outcome.summary());
         self.console
-            .scenario_finished(dir, &scenario, &outcome, self.options);
+            .scenario_finished(dir, scenario, &outcome, self.options);
 
         Ok(outcome)
     }
