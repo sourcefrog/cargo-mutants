@@ -34,15 +34,6 @@ pub fn test_mutants(
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
     console.set_debug_log(output_dir.open_debug_log()?);
-    let jobserver = options
-        .jobserver
-        .then(|| {
-            let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
-            debug!(n_tasks, "starting jobserver");
-            jobserver::Client::new(n_tasks)
-        })
-        .transpose()
-        .context("Start jobserver")?;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
@@ -61,6 +52,15 @@ pub fn test_mutants(
         false => BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?,
     };
 
+    let jobserver = options
+        .jobserver
+        .then(|| {
+            let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
+            debug!(n_tasks, "starting jobserver");
+            jobserver::Client::new(n_tasks)
+        })
+        .transpose()
+        .context("Start jobserver")?;
     let timeouts = match options.baseline {
         BaselineStrategy::Run => {
             let outcome = test_scenario(
