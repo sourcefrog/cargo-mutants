@@ -49,8 +49,7 @@ pub fn test_mutants(
 
     let output_mutex = Mutex::new(output_dir);
     let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;
-
-    let jobserver = &options
+    let jobserver = options
         .jobserver
         .then(|| {
             let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
@@ -59,19 +58,16 @@ pub fn test_mutants(
         })
         .transpose()
         .context("Start jobserver")?;
+    let lab = Lab {
+        workspace,
+        output_mutex,
+        jobserver,
+        options,
+        console,
+    };
     let timeouts = match options.baseline {
         BaselineStrategy::Run => {
-            let all_mutated_packages = mutants.iter().map(Mutant::package).unique().collect_vec(); // hold
-            debug!(?all_mutated_packages);
-            let outcome = Worker {
-                build_dir: &baseline_build_dir,
-                output_mutex: &output_mutex,
-                jobserver,
-                timeouts: Timeouts::for_baseline(options),
-                options,
-                console,
-            }
-            .run_one_scenario(&Scenario::Baseline, Some(&all_mutated_packages))?;
+            let outcome = lab.run_baseline(&baseline_build_dir, &mutants)?;
             if outcome.success() {
                 Timeouts::from_baseline(&outcome, options)
             } else {
@@ -79,7 +75,8 @@ pub fn test_mutants(
                     "cargo {phase} failed in an unmutated tree, so no mutants were tested",
                     phase = outcome.last_phase(),
                 );
-                return Ok(output_mutex
+                return Ok(lab
+                    .output_mutex
                     .into_inner()
                     .expect("lock output_dir")
                     .take_lab_outcome());
@@ -100,22 +97,15 @@ pub fn test_mutants(
         for _i_thread in 0..n_threads {
             threads.push(scope.spawn(|| -> crate::Result<()> {
                 trace!(thread_id = ?thread::current().id(), "start thread");
-                // First thread to start can use the initial build dir; others need to copy a new one
+                // First thread to start can use the baseline's build dir;
+                // others need to copy a new one
                 let build_dir_0 = build_dir_0.lock().expect("lock build dir 0").take(); // separate for lock
                 let build_dir = &if let Some(d) = build_dir_0 {
                     d
                 } else {
                     BuildDir::copy_from(workspace.root(), options, console)?
                 };
-                let worker = Worker {
-                    build_dir,
-                    output_mutex: &output_mutex,
-                    jobserver,
-                    timeouts,
-                    options,
-                    console,
-                };
-                worker.run_queue(work_queue)
+                lab.run_queue(build_dir, timeouts, work_queue)
             }));
         }
         // The errors potentially returned from `join` are a special `std::thread::Result`
@@ -146,7 +136,8 @@ pub fn test_mutants(
         }
     })?;
 
-    let output_dir = output_mutex
+    let output_dir = lab
+        .output_mutex
         .into_inner()
         .expect("final unlock mutants queue");
     console.lab_finished(&output_dir.lab_outcome, start_time, options);
@@ -159,6 +150,61 @@ pub fn test_mutants(
         warn!("No mutants were viable; perhaps there is a problem with building in a scratch directory");
     }
     Ok(lab_outcome)
+}
+
+/// Common context across all scenarios, threads, and build dirs.
+struct Lab<'a> {
+    #[allow(unused)] // needed later to find packages
+    workspace: &'a Workspace,
+    output_mutex: Mutex<OutputDir>,
+    jobserver: Option<jobserver::Client>,
+    options: &'a Options,
+    console: &'a Console,
+}
+
+impl Lab<'_> {
+    /// Run the baseline scenario, which is the same as running `cargo test` on the unmutated
+    /// tree.
+    ///
+    /// If it fails, return None, indicating that no further testing should be done.
+    ///
+    /// If it succeeds, return the timeouts to be used for the other scenarios.
+    fn run_baseline(
+        &self,
+        baseline_build_dir: &BuildDir,
+        mutants: &[Mutant],
+    ) -> Result<ScenarioOutcome> {
+        let all_mutated_packages = mutants.iter().map(Mutant::package).unique().collect_vec();
+        Worker {
+            build_dir: baseline_build_dir,
+            output_mutex: &self.output_mutex,
+            jobserver: &self.jobserver,
+            timeouts: Timeouts::for_baseline(self.options),
+            options: self.options,
+            console: self.console,
+        }
+        .run_one_scenario(&Scenario::Baseline, Some(&all_mutated_packages))
+    }
+
+    /// Run until the input queue is empty.
+    ///
+    /// The queue, inside a mutex, can be consumed by multiple threads.
+    fn run_queue(
+        &self,
+        build_dir: &BuildDir,
+        timeouts: Timeouts,
+        work_queue: &Mutex<vec::IntoIter<Mutant>>,
+    ) -> Result<()> {
+        Worker {
+            build_dir,
+            output_mutex: &self.output_mutex,
+            jobserver: &self.jobserver,
+            timeouts,
+            options: self.options,
+            console: self.console,
+        }
+        .run_queue(work_queue)
+    }
 }
 
 /// A worker owns one build directory and runs a single thread of testing.
