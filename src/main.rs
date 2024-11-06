@@ -483,7 +483,7 @@ fn main() -> Result<()> {
             output_dir.write_previously_caught(&previously_caught)?;
         }
         console.set_debug_log(output_dir.open_debug_log()?);
-        let lab_outcome = test_mutants(mutants, workspace.root(), output_dir, options, &console)?;
+        let lab_outcome = test_mutants(mutants, workspace.root(), output_dir, &options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

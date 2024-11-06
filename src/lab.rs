@@ -6,8 +6,8 @@
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
 use std::sync::Mutex;
-use std::thread;
 use std::time::Instant;
+use std::{thread, vec};
 
 use itertools::Itertools;
 use tracing::{debug, debug_span, error, trace, warn};
@@ -29,7 +29,7 @@ pub fn test_mutants(
     mut mutants: Vec<Mutant>,
     workspace_dir: &Utf8Path,
     output_dir: OutputDir,
-    options: Options,
+    options: &Options,
     console: &Console,
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
@@ -47,12 +47,12 @@ pub fn test_mutants(
     debug!(?mutant_packages);
 
     let output_mutex = Mutex::new(output_dir);
-    let build_dir = match options.in_place {
+    let baseline_build_dir = match options.in_place {
         true => BuildDir::in_place(workspace_dir)?,
         false => BuildDir::copy_from(workspace_dir, options.gitignore, options.leak_dirs, console)?,
     };
 
-    let jobserver = options
+    let jobserver = &options
         .jobserver
         .then(|| {
             let n_tasks = options.jobserver_tasks.unwrap_or_else(num_cpus::get);
@@ -63,40 +63,38 @@ pub fn test_mutants(
         .context("Start jobserver")?;
     let timeouts = match options.baseline {
         BaselineStrategy::Run => {
-            let outcome = test_scenario(
-                &build_dir,
-                &output_mutex,
-                &jobserver,
-                &Scenario::Baseline,
-                Some(&mutant_packages),
-                Timeouts::for_baseline(&options),
-                &options,
+            let outcome = Worker {
+                build_dir: &baseline_build_dir,
+                output_mutex: &output_mutex,
+                jobserver,
+                timeouts: Timeouts::for_baseline(options),
+                options,
                 console,
-            )?;
+            }
+            .run_one_scenario(Scenario::Baseline, Some(&mutant_packages))?;
             if !outcome.success() {
                 error!(
                     "cargo {} failed in an unmutated tree, so no mutants were tested",
                     outcome.last_phase(),
                 );
-                // We "successfully" established that the baseline tree doesn't work; arguably this should be represented as an error
-                // but we'd need a way for that error to convey an exit code...
                 return Ok(output_mutex
                     .into_inner()
                     .expect("lock output_dir")
                     .take_lab_outcome());
+            } else {
+                Timeouts::from_baseline(&outcome, options)
             }
-            Timeouts::from_baseline(&outcome, &options)
         }
-        BaselineStrategy::Skip => Timeouts::without_baseline(&options),
+        BaselineStrategy::Skip => Timeouts::without_baseline(options),
     };
     debug!(?timeouts);
 
-    let build_dir_0 = Mutex::new(Some(build_dir));
+    let build_dir_0 = Mutex::new(Some(baseline_build_dir));
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
     // scenario to test off the queue, and then exits when there are no more left.
     console.start_testing_mutants(mutants.len());
     let n_threads = max(1, min(options.jobs.unwrap_or(1), mutants.len()));
-    let pending = Mutex::new(mutants.into_iter());
+    let work_queue = &Mutex::new(mutants.into_iter());
     thread::scope(|scope| -> crate::Result<()> {
         let mut threads = Vec::new();
         for _i_thread in 0..n_threads {
@@ -104,7 +102,7 @@ pub fn test_mutants(
                 trace!(thread_id = ?thread::current().id(), "start thread");
                 // First thread to start can use the initial build dir; others need to copy a new one
                 let build_dir_0 = build_dir_0.lock().expect("lock build dir 0").take(); // separate for lock
-                let build_dir = match build_dir_0 {
+                let build_dir = &match build_dir_0 {
                     Some(d) => d,
                     None => {
                         debug!("copy build dir");
@@ -116,46 +114,15 @@ pub fn test_mutants(
                         )?
                     }
                 };
-                let _thread_span =
-                    debug_span!("worker thread", build_dir = ?build_dir.path()).entered();
-                loop {
-                    // Extract the mutant in a separate statement so that we don't hold the
-                    // lock while testing it.
-                    let next = pending.lock().map(|mut s| s.next()); // separate for lock
-                    match next {
-                        Err(err) => {
-                            // PoisonError is not Send so we can't pass it directly.
-                            return Err(anyhow!("Failed to lock pending work queue: {}", err));
-                        }
-                        Ok(Some(mutant)) => {
-                            let scenario = Scenario::Mutant(mutant.clone());
-                            let _span =
-                                debug_span!("mutant", name = mutant.name(false, false)).entered();
-                            let package = mutant.package().clone(); // hold
-                            let packages = [&package];
-                            let test_packages: Option<&[&Package]> = match &options.test_packages {
-                                TestPackages::Workspace => None,
-                                TestPackages::Mutated => Some(&packages),
-                                TestPackages::Named(_named) => {
-                                    unimplemented!("get packages by name")
-                                }
-                            };
-                            test_scenario(
-                                &build_dir,
-                                &output_mutex,
-                                &jobserver,
-                                &scenario,
-                                test_packages,
-                                timeouts,
-                                &options,
-                                console,
-                            )?;
-                        }
-                        Ok(None) => {
-                            return Ok(()); // no more work for this thread
-                        }
-                    }
-                }
+                let worker = Worker {
+                    build_dir,
+                    output_mutex: &output_mutex,
+                    jobserver,
+                    timeouts,
+                    options,
+                    console,
+                };
+                worker.run_queue(work_queue)
             }));
         }
         // The errors potentially returned from `join` are a special `std::thread::Result`
@@ -189,7 +156,7 @@ pub fn test_mutants(
     let output_dir = output_mutex
         .into_inner()
         .expect("final unlock mutants queue");
-    console.lab_finished(&output_dir.lab_outcome, start_time, &options);
+    console.lab_finished(&output_dir.lab_outcome, start_time, options);
     let lab_outcome = output_dir.take_lab_outcome();
     if lab_outcome.total_mutants == 0 {
         // This should be unreachable as we also bail out before copying
@@ -201,79 +168,115 @@ pub fn test_mutants(
     Ok(lab_outcome)
 }
 
-/// Test various phases of one scenario in a build dir.
+/// A worker owns one build directory and runs a single thread of testing.
 ///
-/// The [BuildDir] is passed as mutable because it's for the exclusive use of this function for the
-/// duration of the test.
-#[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
-fn test_scenario(
-    build_dir: &BuildDir,
-    output_mutex: &Mutex<OutputDir>,
-    jobserver: &Option<jobserver::Client>,
-    scenario: &Scenario,
-    test_packages: Option<&[&Package]>,
+/// It consumes jobs from an input queue and runs them until the queue is empty,
+/// appending output to the output directory.
+struct Worker<'a> {
+    build_dir: &'a BuildDir,
+    output_mutex: &'a Mutex<OutputDir>,
+    jobserver: &'a Option<jobserver::Client>,
     timeouts: Timeouts,
-    options: &Options,
-    console: &Console,
-) -> Result<ScenarioOutcome> {
-    let mut scenario_output = output_mutex
-        .lock()
-        .expect("lock output_dir to start scenario")
-        .start_scenario(scenario)?;
-    let dir = build_dir.path();
-    console.scenario_started(dir, scenario, scenario_output.open_log_read()?)?;
+    options: &'a Options,
+    console: &'a Console,
+}
 
-    if let Some(mutant) = scenario.mutant() {
-        let mutated_code = mutant.mutated_code();
-        let diff = scenario.mutant().unwrap().diff(&mutated_code);
-        scenario_output.write_diff(&diff)?;
-        mutant.apply(build_dir, &mutated_code)?;
-    }
-
-    let mut outcome = ScenarioOutcome::new(&scenario_output, scenario.clone());
-    for &phase in options.phases() {
-        console.scenario_phase_started(dir, phase);
-        let timeout = match phase {
-            Phase::Test => timeouts.test,
-            Phase::Build | Phase::Check => timeouts.build,
-        };
-        match run_cargo(
-            build_dir,
-            jobserver,
-            test_packages,
-            phase,
-            timeout,
-            &mut scenario_output,
-            options,
-            console,
-        ) {
-            Ok(phase_result) => {
-                let success = phase_result.is_success(); // so we can move it away
-                outcome.add_phase_result(phase_result);
-                console.scenario_phase_finished(dir, phase);
-                if !success {
-                    break;
-                }
-            }
-            Err(err) => {
-                error!(?err, ?phase, "scenario execution internal error");
-                // Some unexpected internal error that stops the program.
-                if let Some(mutant) = scenario.mutant() {
-                    mutant.revert(build_dir)?;
-                }
-                return Err(err);
+impl Worker<'_> {
+    /// Run until the input queue is empty.
+    fn run_queue(mut self, work_queue: &Mutex<vec::IntoIter<Mutant>>) -> Result<()> {
+        let _thread_span =
+            debug_span!("worker thread", build_dir = ?self.build_dir.path()).entered();
+        loop {
+            // Extract the mutant in a separate statement so that we don't hold the
+            // lock while testing it.
+            let next_mutant = work_queue.lock().expect("Lock pending work queue").next(); // separate for lock
+            if let Some(mutant) = next_mutant {
+                let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
+                let package = mutant.package().clone(); // hold
+                let packages = [&package]; // hold
+                let scenario = Scenario::Mutant(mutant);
+                let test_packages: Option<&[&Package]> = match &self.options.test_packages {
+                    TestPackages::Workspace => None,
+                    TestPackages::Mutated => Some(&packages),
+                    TestPackages::Named(_named) => {
+                        unimplemented!("get packages by name")
+                    }
+                };
+                self.run_one_scenario(scenario, test_packages)?;
+            } else {
+                return Ok(());
             }
         }
     }
-    if let Some(mutant) = scenario.mutant() {
-        mutant.revert(build_dir)?;
-    }
-    output_mutex
-        .lock()
-        .expect("lock output dir to add outcome")
-        .add_scenario_outcome(&outcome)?;
-    debug!(outcome = ?outcome.summary());
-    console.scenario_finished(dir, scenario, &outcome, options);
 
-    Ok(outcome)
+    // #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
+    fn run_one_scenario(
+        &mut self,
+        scenario: Scenario,
+        test_packages: Option<&[&Package]>,
+    ) -> Result<ScenarioOutcome> {
+        let mut scenario_output = self
+            .output_mutex
+            .lock()
+            .expect("lock output_dir to start scenario")
+            .start_scenario(&scenario)?;
+        let dir = self.build_dir.path();
+        self.console
+            .scenario_started(dir, &scenario, scenario_output.open_log_read()?)?;
+
+        if let Some(mutant) = scenario.mutant() {
+            let mutated_code = mutant.mutated_code();
+            let diff = scenario.mutant().unwrap().diff(&mutated_code);
+            scenario_output.write_diff(&diff)?;
+            mutant.apply(self.build_dir, &mutated_code)?;
+        }
+
+        let mut outcome = ScenarioOutcome::new(&scenario_output, scenario.clone());
+        for &phase in self.options.phases() {
+            self.console.scenario_phase_started(dir, phase);
+            let timeout = match phase {
+                Phase::Test => self.timeouts.test,
+                Phase::Build | Phase::Check => self.timeouts.build,
+            };
+            match run_cargo(
+                self.build_dir,
+                self.jobserver,
+                test_packages,
+                phase,
+                timeout,
+                &mut scenario_output,
+                self.options,
+                self.console,
+            ) {
+                Ok(phase_result) => {
+                    let success = phase_result.is_success(); // so we can move it away
+                    outcome.add_phase_result(phase_result);
+                    self.console.scenario_phase_finished(dir, phase);
+                    if !success {
+                        break;
+                    }
+                }
+                Err(err) => {
+                    error!(?err, ?phase, "scenario execution internal error");
+                    // Some unexpected internal error that stops the program.
+                    if let Some(mutant) = scenario.mutant() {
+                        mutant.revert(self.build_dir)?;
+                    }
+                    return Err(err);
+                }
+            }
+        }
+        if let Some(mutant) = scenario.mutant() {
+            mutant.revert(self.build_dir)?;
+        }
+        self.output_mutex
+            .lock()
+            .expect("lock output dir to add outcome")
+            .add_scenario_outcome(&outcome)?;
+        debug!(outcome = ?outcome.summary());
+        self.console
+            .scenario_finished(dir, &scenario, &outcome, self.options);
+
+        Ok(outcome)
+    }
 }
