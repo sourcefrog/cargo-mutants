@@ -30,7 +30,7 @@ use tracing::{debug, debug_span, error, warn};
 use crate::cargo::cargo_bin;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
-use crate::options::Options;
+use crate::options::{Options, TestPackages};
 use crate::package::{Package, PackageSelection};
 use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
@@ -168,6 +168,26 @@ impl Workspace {
         Ok(Workspace { metadata, packages })
     }
 
+    pub fn has_package(&self, name: &str) -> bool {
+        self.packages.iter().any(|p| p.name == name)
+    }
+
+    pub fn check_test_packages_are_present(&self, test_packages: &TestPackages) -> Result<()> {
+        if let TestPackages::Named(test_packages) = test_packages {
+            let missing = test_packages
+                .iter()
+                .filter(|&name| !self.has_package(name))
+                .collect_vec();
+            if !missing.is_empty() {
+                // TODO: Test for this
+                bail!(
+                    "Some package names in test-packages are not present in the workspace: {}",
+                    missing.into_iter().join(", ")
+                );
+            }
+        }
+        Ok(())
+    }
     /// Find packages matching some filter.
     fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
         match package_filter.resolve_auto(&self.metadata)? {

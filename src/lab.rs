@@ -43,6 +43,7 @@ pub fn test_mutants(
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
+    workspace.check_test_packages_are_present(&options.test_packages)?;
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
@@ -62,7 +63,6 @@ pub fn test_mutants(
         .transpose()
         .context("Start jobserver")?;
     let lab = Lab {
-        workspace,
         output_mutex,
         jobserver,
         options,
@@ -150,15 +150,13 @@ pub fn test_mutants(
         // the tree if no mutants are generated.
         warn!("No mutants were generated");
     } else if lab_outcome.unviable == lab_outcome.total_mutants {
-        warn!("No mutants were viable; perhaps there is a problem with building in a scratch directory");
+        warn!("No mutants were viable: perhaps there is a problem with building in a scratch directory. Look in mutants.out/log/* for more information.");
     }
     Ok(lab_outcome)
 }
 
 /// Common context across all scenarios, threads, and build dirs.
 struct Lab<'a> {
-    #[allow(unused)] // needed later to find packages
-    workspace: &'a Workspace,
     output_mutex: Mutex<OutputDir>,
     jobserver: Option<jobserver::Client>,
     options: &'a Options,
