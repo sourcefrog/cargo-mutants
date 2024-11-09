@@ -12,4 +12,8 @@ pub struct Package {
 
     /// For Cargo, the path of the `Cargo.toml` manifest file, relative to the top of the tree.
     pub relative_manifest_path: Utf8PathBuf,
+
+    /// The top source files for this package, relative to the workspace root,
+    /// like `["src/lib.rs"]`.
+    pub top_sources: Vec<Utf8PathBuf>,
 }

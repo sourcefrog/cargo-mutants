@@ -85,12 +85,6 @@ impl PackageFilter {
     }
 }
 
-/// A package and the top source files within it.
-struct PackageTop {
-    package: Package,
-    top_sources: Vec<Utf8PathBuf>,
-}
-
 /// A cargo workspace.
 pub struct Workspace {
     metadata: cargo_metadata::Metadata,
@@ -137,16 +131,12 @@ impl Workspace {
     /// Find packages to mutate, subject to some filtering.
     #[cfg(test)]
     pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
-        Ok(self
-            .package_tops(package_filter)?
-            .into_iter()
-            .map(|pt| pt.package.clone())
-            .collect())
+        self.package_tops(package_filter)
     }
 
     /// Find all the packages and their top source files.
-    fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<PackageTop>> {
-        let mut tops = Vec::new();
+    fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
+        let mut packages = Vec::new();
         let package_filter = package_filter.resolve_auto(&self.metadata)?;
         for package_metadata in self
             .metadata
@@ -174,37 +164,34 @@ impl Workspace {
                     )
                 })?
                 .to_owned();
-            tops.push(PackageTop {
-                package: Package {
-                    name: package_metadata.name.clone(),
-                    relative_manifest_path,
-                },
+            packages.push(Package {
+                name: package_metadata.name.clone(),
+                relative_manifest_path,
                 top_sources: direct_package_sources(self.root(), package_metadata)?,
             });
         }
         if let PackageFilter::Explicit(ref names) = package_filter {
             for wanted in names {
-                if !tops.iter().any(|found| found.package.name == *wanted) {
+                if !packages.iter().any(|package| package.name == *wanted) {
                     warn!("package {wanted:?} not found in source tree");
                 }
             }
         }
-        Ok(tops)
+        Ok(packages)
     }
 
     /// Find all the top source files for selected packages.
     fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<SourceFile>> {
         let mut sources = Vec::new();
-        for PackageTop {
-            package,
-            top_sources,
+        for Package {
+            name, top_sources, ..
         } in self.package_tops(package_filter)?
         {
             for source_path in top_sources {
                 sources.extend(SourceFile::new(
                     self.root(),
                     source_path.to_owned(),
-                    &package.name,
+                    &name,
                     true,
                 )?);
             }
