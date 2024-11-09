@@ -179,7 +179,6 @@ impl Workspace {
                 .filter(|&name| !self.has_package(name))
                 .collect_vec();
             if !missing.is_empty() {
-                // TODO: Test for this
                 bail!(
                     "Some package names in --test-package are not present in the workspace: {}",
                     missing.into_iter().join(", ")
