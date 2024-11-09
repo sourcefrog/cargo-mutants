@@ -1,17 +1,18 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023-2024 Martin Pool
 
 //! Test `--shard`
 
 use itertools::Itertools;
 
 mod util;
-use util::run;
+use util::{copy_of_testdata, run};
 
 #[test]
 fn shard_divides_all_mutants() {
     // For speed, this only lists the mutants, trusting that the mutants
     // that are listed are the ones that are run.
-    let common_args = ["mutants", "--list", "-d", "testdata/well_tested"];
+    let tmp = copy_of_testdata("well_tested");
+    let common_args = ["mutants", "--list", "-d", tmp.path().to_str().unwrap()];
     let full_list = String::from_utf8(
         run()
             .args(common_args)
