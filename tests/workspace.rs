@@ -329,7 +329,7 @@ fn cross_package_tests() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .stderr(
-            "Error: Some package names in test-package are not present in the workspace: tests\n",
+            "Error: Some package names in --test-package are not present in the workspace: tests\n",
         )
         .code(1);
 
