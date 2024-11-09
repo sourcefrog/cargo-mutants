@@ -559,6 +559,133 @@ expression: buf
 []
 ```
 
+## testdata/cross_package_tests
+
+```json
+[
+  {
+    "file": "lib/src/lib.rs",
+    "function": {
+      "function_name": "add",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-cross-package-tests-lib",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "lib/src/lib.rs",
+    "function": {
+      "function_name": "add",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-cross-package-tests-lib",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "lib/src/lib.rs",
+    "function": {
+      "function_name": "add",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-cross-package-tests-lib",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 2
+      },
+      "start": {
+        "column": 7,
+        "line": 2
+      }
+    }
+  },
+  {
+    "file": "lib/src/lib.rs",
+    "function": {
+      "function_name": "add",
+      "return_type": "-> u32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-cross-package-tests-lib",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 2
+      },
+      "start": {
+        "column": 7,
+        "line": 2
+      }
+    }
+  }
+]
+```
+
 ## testdata/custom_top_file
 
 ```json
@@ -9715,3 +9842,5 @@ expression: buf
   }
 ]
 ```
+
+

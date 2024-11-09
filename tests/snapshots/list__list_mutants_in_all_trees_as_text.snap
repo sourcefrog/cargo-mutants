@@ -54,6 +54,15 @@ src/lib.rs:18:7: replace * with / in double
 ```
 ```
 
+## testdata/cross_package_tests
+
+```
+lib/src/lib.rs:2:5: replace add -> u32 with 0
+lib/src/lib.rs:2:5: replace add -> u32 with 1
+lib/src/lib.rs:2:7: replace + with - in add
+lib/src/lib.rs:2:7: replace + with * in add
+```
+
 ## testdata/custom_top_file
 
 ```
@@ -536,3 +545,5 @@ main2/src/main.rs:10:5: replace triple_3 -> i32 with 0
 main2/src/main.rs:10:5: replace triple_3 -> i32 with 1
 main2/src/main.rs:10:5: replace triple_3 -> i32 with -1
 ```
+
+

@@ -2,10 +2,11 @@
 
 //! Tests for cargo workspaces with multiple packages.
 
-use std::fs::{self, read_to_string};
+use std::fs::{self, create_dir, read_to_string, write};
 
 use insta::assert_snapshot;
 use itertools::Itertools;
+use predicates::prelude::predicate;
 use serde_json::json;
 
 mod util;
@@ -257,4 +258,106 @@ fn baseline_test_respects_package_options() {
         read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
         ""
     );
+}
+
+#[test]
+fn cross_package_tests() {
+    // This workspace has two packages, one of which contains the tests.
+    // Mutating the one with no tests will find test gaps, but
+    // either testing the whole workspace, or naming the test package,
+    // will show that it's actually all well tested.
+    //
+    // <https://github.com/sourcefrog/cargo-mutants/issues/394>
+
+    let tmp = copy_of_testdata("cross_package_tests");
+    let path = tmp.path();
+
+    // Testing only this one package will find gaps.
+    run()
+        .args(["mutants"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("4 missed"))
+        .code(2); // missed mutants
+
+    // Just asking to *mutate* the whole workspace will not cause us
+    // to run the tests in "tests" against mutants in "lib".
+    run()
+        .args(["mutants", "--workspace"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("4 missed"))
+        .code(2); // missed mutants
+
+    // Similarly, starting in the workspace dir is not enough.
+    run()
+        .args(["mutants"])
+        .arg("-d")
+        .arg(path)
+        .assert()
+        .stdout(predicate::str::contains("4 missed"))
+        .code(2); // missed mutants
+
+    // Testing the whole workspace does catch everything.
+    run()
+        .args(["mutants", "--test-workspace=true"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("4 caught"))
+        .code(0);
+
+    // And naming the test package also catches everything.
+    run()
+        .args([
+            "mutants",
+            "--test-package=cargo-mutants-testdata-cross-package-tests-tests",
+        ])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("4 caught"))
+        .code(0);
+
+    // Using the wrong package name is an error
+    run()
+        .args(["mutants", "--test-package=tests"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .stderr(
+            "Error: Some package names in test-package are not present in the workspace: tests\n",
+        )
+        .code(1);
+
+    // You can configure the test package in the workspace
+    let cargo_dir = path.join(".cargo");
+    create_dir(&cargo_dir).unwrap();
+    let mutants_toml_path = cargo_dir.join("mutants.toml");
+    write(&mutants_toml_path, b"test_workspace = true").unwrap();
+    // Now the mutants are caught
+    run()
+        .args(["mutants"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("4 caught"))
+        .code(0);
+
+    // It would also work to name the test package
+    write(
+        &mutants_toml_path,
+        br#"test_package = ["cargo-mutants-testdata-cross-package-tests-tests"]"#,
+    )
+    .unwrap();
+    run()
+        .args(["mutants"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("4 caught"))
+        .code(0);
 }
