@@ -7,6 +7,7 @@ use std::process::Command;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::Metadata;
 use itertools::Itertools;
 use serde_json::Value;
 use tracing::{debug, debug_span, error, warn};
@@ -88,6 +89,7 @@ impl PackageFilter {
 /// A cargo workspace.
 pub struct Workspace {
     metadata: cargo_metadata::Metadata,
+    packages: Vec<Package>,
 }
 
 impl fmt::Debug for Workspace {
@@ -97,7 +99,7 @@ impl fmt::Debug for Workspace {
         // just the root is enough.
         f.debug_struct("Workspace")
             .field("root", &self.root().to_string())
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -125,50 +127,25 @@ impl Workspace {
             .exec()
             .with_context(|| format!("Failed to run cargo metadata on {:?}", manifest_path))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
-        Ok(Workspace { metadata })
+        let packages = packages_from_metadata(&metadata)?;
+        Ok(Workspace { metadata, packages })
     }
 
     /// Find packages matching some filter.
     fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
-        let mut packages = Vec::new();
         let package_filter = package_filter.resolve_auto(&self.metadata)?;
-        for package_metadata in self
-            .metadata
-            .workspace_packages()
-            .into_iter()
-            .sorted_by_key(|p| &p.name)
-        {
-            check_interrupted()?;
-            let name = &package_metadata.name;
-            let _span = debug_span!("package", %name).entered();
-            if let PackageFilter::Explicit(ref include_names) = package_filter {
-                if !include_names.contains(name) {
-                    continue;
-                }
-            }
-            let manifest_path = &package_metadata.manifest_path;
-            debug!(%manifest_path, "walk package");
-            let relative_manifest_path = manifest_path
-                .strip_prefix(self.root())
-                .map_err(|_| {
-                    anyhow!(
-                        "manifest path {manifest_path:?} for package {name:?} is not \
-                    within the detected source root path {dir:?}",
-                        dir = self.root(),
-                    )
-                })?
-                .to_owned();
-            packages.push(Package {
-                name: package_metadata.name.clone(),
-                relative_manifest_path,
-                top_sources: direct_package_sources(self.root(), package_metadata)?,
-            });
-        }
-        if let PackageFilter::Explicit(ref names) = package_filter {
-            for wanted in names {
-                if !packages.iter().any(|package| package.name == *wanted) {
-                    warn!("package {wanted:?} not found in source tree");
-                }
+        let PackageFilter::Explicit(wanted) = package_filter else {
+            return Ok(self.packages.clone());
+        };
+        let packages = self
+            .packages
+            .iter()
+            .filter(|p| wanted.contains(&p.name))
+            .cloned()
+            .collect_vec();
+        for wanted in wanted {
+            if !packages.iter().any(|package| package.name == *wanted) {
+                warn!("package {wanted:?} not found in source tree");
             }
         }
         Ok(packages)
@@ -188,6 +165,38 @@ impl Workspace {
             console,
         )
     }
+}
+
+/// Read `cargo-metadata` parsed output, and produce our package representation.
+fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
+    let mut packages = Vec::new();
+    let root = &metadata.workspace_root;
+    for package_metadata in metadata
+        .workspace_packages()
+        .into_iter()
+        .sorted_by_key(|p| &p.name)
+    {
+        check_interrupted()?;
+        let name = &package_metadata.name;
+        let _span = debug_span!("package", %name).entered();
+        let manifest_path = &package_metadata.manifest_path;
+        debug!(%manifest_path, "walk package");
+        let relative_manifest_path = manifest_path
+                .strip_prefix(root)
+                .map_err(|_| {
+                    // TODO: Maybe just warn and skip?
+                    anyhow!(
+                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {root:?}",
+                    )
+                })?
+                .to_owned();
+        packages.push(Package {
+            name: package_metadata.name.clone(),
+            relative_manifest_path,
+            top_sources: direct_package_sources(root, package_metadata)?,
+        });
+    }
+    Ok(packages)
 }
 
 /// Find all the top source files for selected packages.
