@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: `--test-workspace` and `--test-package` arguments and config options support projects whose tests live in a different package.
+
 - New: Mutate `proc_macro` targets and functions.
 
 - New: Write diffs to dedicated files under `mutants.out/diff/`. The filename is included in the mutant json output.
