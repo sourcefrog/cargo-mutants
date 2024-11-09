@@ -128,14 +128,8 @@ impl Workspace {
         Ok(Workspace { metadata })
     }
 
-    /// Find packages to mutate, subject to some filtering.
-    #[cfg(test)]
-    pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
-        self.package_tops(package_filter)
-    }
-
-    /// Find all the packages and their top source files.
-    fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
+    /// Find packages matching some filter.
+    fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
         let mut packages = Vec::new();
         let package_filter = package_filter.resolve_auto(&self.metadata)?;
         for package_metadata in self
@@ -180,25 +174,6 @@ impl Workspace {
         Ok(packages)
     }
 
-    /// Find all the top source files for selected packages.
-    fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<SourceFile>> {
-        let mut sources = Vec::new();
-        for Package {
-            name, top_sources, ..
-        } in self.package_tops(package_filter)?
-        {
-            for source_path in top_sources {
-                sources.extend(SourceFile::new(
-                    self.root(),
-                    source_path.to_owned(),
-                    &name,
-                    true,
-                )?);
-            }
-        }
-        Ok(sources)
-    }
-
     /// Make all the mutants from the filtered packages in this workspace.
     pub fn discover(
         &self,
@@ -208,11 +183,25 @@ impl Workspace {
     ) -> Result<Discovered> {
         walk_tree(
             self.root(),
-            &self.top_sources(package_filter)?,
+            &top_sources(self.root(), &self.packages(package_filter)?)?,
             options,
             console,
         )
     }
+}
+
+/// Find all the top source files for selected packages.
+fn top_sources(root: &Utf8Path, packages: &[Package]) -> Result<Vec<SourceFile>> {
+    let mut sources = Vec::new();
+    for Package {
+        name, top_sources, ..
+    } in packages
+    {
+        for source_path in top_sources {
+            sources.extend(SourceFile::new(root, source_path.to_owned(), name, true)?);
+        }
+    }
+    Ok(sources)
 }
 
 /// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
@@ -314,7 +303,7 @@ mod test {
     use crate::console::Console;
     use crate::options::Options;
     use crate::test_util::copy_of_testdata;
-    use crate::workspace::PackageFilter;
+    use crate::workspace::{top_sources, PackageFilter};
 
     use super::Workspace;
 
@@ -358,12 +347,14 @@ mod test {
             ["cargo_mutants_testdata_workspace_utils", "main", "main2"]
         );
         assert_eq!(
-            workspace
-                .top_sources(&PackageFilter::All)
-                .unwrap()
-                .iter()
-                .map(|sf| sf.tree_relative_path.clone())
-                .collect_vec(),
+            top_sources(
+                workspace.root(),
+                workspace.packages(&PackageFilter::All).unwrap().as_slice()
+            )
+            .unwrap()
+            .iter()
+            .map(|sf| sf.tree_relative_path.clone())
+            .collect_vec(),
             // ordered by package name
             ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
         );
@@ -425,7 +416,8 @@ mod test {
                 .collect_vec(),
             ["main"]
         );
-        let top_sources = workspace.top_sources(&filter).unwrap();
+        let top_sources =
+            top_sources(workspace.root(), &workspace.packages(&filter).unwrap()).unwrap();
         println!("{top_sources:#?}");
         assert_eq!(
             top_sources
