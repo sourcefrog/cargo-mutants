@@ -111,32 +111,7 @@ pub fn test_mutants(
                 lab.run_queue(build_dir, timeouts, work_queue)
             }));
         }
-        // The errors potentially returned from `join` are a special `std::thread::Result`
-        // that does not implement error, indicating that the thread panicked.
-        // Probably the most useful thing is to `resume_unwind` it.
-        // Inside that, there's an actual Mutants error indicating a non-panic error.
-        // Most likely, this would be "interrupted" but it might be some IO error
-        // etc. In that case, print them all and return the first.
-        let errors = threads
-            .into_iter()
-            .filter_map(|thread| match thread.join() {
-                Err(panic) => resume_unwind(panic),
-                Ok(Ok(())) => None,
-                Ok(Err(err)) => {
-                    // To avoid spam, as a special case, don't print "interrupted" errors for each thread,
-                    // since that should have been printed by check_interrupted: but, do return them.
-                    if err.to_string() != "interrupted" {
-                        error!("Worker thread failed: {:?}", err);
-                    }
-                    Some(err)
-                }
-            })
-            .collect_vec(); // print/process them all
-        if let Some(first_err) = errors.into_iter().next() {
-            Err(first_err)
-        } else {
-            Ok(())
-        }
+        join_threads(threads)
     })?;
 
     let output_dir = lab
@@ -153,6 +128,35 @@ pub fn test_mutants(
         warn!("No mutants were viable: perhaps there is a problem with building in a scratch directory. Look in mutants.out/log/* for more information.");
     }
     Ok(lab_outcome)
+}
+
+fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Result<()> {
+    // The errors potentially returned from `join` are a special `std::thread::Result`
+    // that does not implement error, indicating that the thread panicked.
+    // Probably the most useful thing is to `resume_unwind` it.
+    // Inside that, there's an actual Mutants error indicating a non-panic error.
+    // Most likely, this would be "interrupted" but it might be some IO error
+    // etc. In that case, print them all and return the first.
+    let errors = threads
+        .into_iter()
+        .filter_map(|thread| match thread.join() {
+            Err(panic) => resume_unwind(panic),
+            Ok(Ok(())) => None,
+            Ok(Err(err)) => {
+                // To avoid console spam don't print "interrupted" errors for each thread,
+                // since that should have been printed by check_interrupted but do return them.
+                if err.to_string() != "interrupted" {
+                    error!("Worker thread failed: {:?}", err);
+                }
+                Some(err)
+            }
+        })
+        .collect_vec();
+    if let Some(first_err) = errors.into_iter().next() {
+        Err(first_err)
+    } else {
+        Ok(())
+    }
 }
 
 /// Common context across all scenarios, threads, and build dirs.
