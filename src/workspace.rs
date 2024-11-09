@@ -13,6 +13,8 @@
 //! 3. In particular when selecting packages, we attempt to match cargo's own heuristics
 //!    when invoked inside a workspace.
 
+#![warn(clippy::pedantic)]
+
 use std::fmt;
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -80,7 +82,7 @@ impl PackageFilter {
                     // If this package is one of the workspace members, then select this package.
                     if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
                         debug!("resolved auto package filter to {:?}", package.name);
-                        return Ok(PackageSelection::Explicit(vec![package.name.to_owned()]));
+                        return Ok(PackageSelection::Explicit(vec![package.name.clone()]));
                     }
                 }
                 // Otherwise, we're in a virtual workspace directory, and not inside any package.
@@ -167,7 +169,7 @@ impl Workspace {
             .manifest_path(&manifest_path)
             .verbose(false)
             .exec()
-            .with_context(|| format!("Failed to run cargo metadata on {:?}", manifest_path))?;
+            .with_context(|| format!("Failed to run cargo metadata on {manifest_path}"))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
         let packages = packages_from_metadata(&metadata)?;
         Ok(Workspace { metadata, packages })
@@ -236,7 +238,7 @@ fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
         packages.push(Package {
             name: package_metadata.name.clone(),
             relative_manifest_path,
-            top_sources: direct_package_sources(root, package_metadata)?,
+            top_sources: package_top_sources(root, package_metadata),
         });
     }
     Ok(packages)
@@ -256,13 +258,14 @@ fn top_sources(root: &Utf8Path, packages: &[Package]) -> Result<Vec<SourceFile>>
     Ok(sources)
 }
 
-/// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
+/// Find all the files that are named in the `path` of targets in a
+/// Cargo manifest, if the kind of the target is one that we should mutate.
 ///
 /// These are the starting points for discovering source files.
-fn direct_package_sources(
+fn package_top_sources(
     workspace_root: &Utf8Path,
     package_metadata: &cargo_metadata::Package,
-) -> Result<Vec<Utf8PathBuf>> {
+) -> Vec<Utf8PathBuf> {
     let mut found = Vec::new();
     let pkg_dir = package_metadata.manifest_path.parent().unwrap();
     for target in &package_metadata.targets {
@@ -289,11 +292,11 @@ fn direct_package_sources(
     }
     found.sort();
     found.dedup();
-    Ok(found)
+    found
 }
 
 fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    for kind in target.kind.iter() {
+    for kind in &target.kind {
         if kind == "bin" || kind == "proc-macro" || kind.ends_with("lib") {
             return true;
         }
@@ -429,7 +432,7 @@ mod test {
         let subdir_path = Utf8PathBuf::try_from(tmp.path().join("main")).unwrap();
         let workspace = Workspace::open(&subdir_path).expect("Find workspace root");
         let packages = workspace
-            .packages(&PackageFilter::Auto(subdir_path.to_owned()))
+            .packages(&PackageFilter::Auto(subdir_path.clone()))
             .unwrap();
         assert_eq!(packages.iter().map(|p| &p.name).collect_vec(), ["main"]);
     }
