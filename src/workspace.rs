@@ -4,7 +4,6 @@ use std::fmt;
 use std::panic::catch_unwind;
 use std::path::Path;
 use std::process::Command;
-use std::sync::Arc;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -15,7 +14,6 @@ use tracing::{debug, debug_span, error, warn};
 use crate::cargo::cargo_bin;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
-use crate::mutate::Mutant;
 use crate::options::Options;
 use crate::package::Package;
 use crate::source::SourceFile;
@@ -89,7 +87,7 @@ impl PackageFilter {
 
 /// A package and the top source files within it.
 struct PackageTop {
-    package: Arc<Package>,
+    package: Package,
     top_sources: Vec<Utf8PathBuf>,
 }
 
@@ -137,12 +135,12 @@ impl Workspace {
     }
 
     /// Find packages to mutate, subject to some filtering.
-    #[allow(dead_code)]
-    pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<Package>>> {
+    #[cfg(test)]
+    pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
         Ok(self
             .package_tops(package_filter)?
             .into_iter()
-            .map(|pt| pt.package)
+            .map(|pt| pt.package.clone())
             .collect())
     }
 
@@ -176,12 +174,11 @@ impl Workspace {
                     )
                 })?
                 .to_owned();
-            let package = Arc::new(Package {
-                name: package_metadata.name.clone(),
-                relative_manifest_path,
-            });
             tops.push(PackageTop {
-                package,
+                package: Package {
+                    name: package_metadata.name.clone(),
+                    relative_manifest_path,
+                },
                 top_sources: direct_package_sources(self.root(), package_metadata)?,
             });
         }
@@ -228,17 +225,6 @@ impl Workspace {
             options,
             console,
         )
-    }
-
-    /// Return all mutants generated from this workspace.
-    #[allow(dead_code)] // called from tests, for now
-    pub fn mutants(
-        &self,
-        package_filter: &PackageFilter,
-        options: &Options,
-        console: &Console,
-    ) -> Result<Vec<Mutant>> {
-        Ok(self.discover(package_filter, options, console)?.mutants)
     }
 }
 

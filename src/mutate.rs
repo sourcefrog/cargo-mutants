@@ -247,8 +247,9 @@ mod test {
         let workspace = Workspace::open(tmp.path()).unwrap();
         let options = Options::default();
         let mutants = workspace
-            .mutants(&PackageFilter::All, &options, &Console::new())
-            .unwrap();
+            .discover(&PackageFilter::All, &options, &Console::new())
+            .unwrap()
+            .mutants;
         assert_eq!(mutants.len(), 5);
         assert_eq!(
             format!("{:#?}", mutants[0]),
@@ -309,8 +310,9 @@ mod test {
         let tmp = copy_of_testdata("hang_avoided_by_attr");
         let mutants = Workspace::open(tmp.path())
             .unwrap()
-            .mutants(&PackageFilter::All, &Options::default(), &Console::new())
-            .unwrap();
+            .discover(&PackageFilter::All, &Options::default(), &Console::new())
+            .unwrap()
+            .mutants;
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
@@ -328,11 +330,9 @@ mod test {
     fn mutate_factorial() -> Result<()> {
         let temp = copy_of_testdata("factorial");
         let tree_path = temp.path();
-        let mutants = Workspace::open(tree_path)?.mutants(
-            &PackageFilter::All,
-            &Options::default(),
-            &Console::new(),
-        )?;
+        let mutants = Workspace::open(tree_path)?
+            .discover(&PackageFilter::All, &Options::default(), &Console::new())?
+            .mutants;
         assert_eq!(mutants.len(), 5);
 
         let mutated_code = mutants[0].mutated_code();
