@@ -227,28 +227,32 @@ struct Worker<'a> {
 impl Worker<'_> {
     /// Run until the input queue is empty.
     fn run_queue(mut self, work_queue: &Mutex<vec::IntoIter<Mutant>>) -> Result<()> {
-        let _thread_span =
-            debug_span!("worker thread", build_dir = ?self.build_dir.path()).entered();
+        let _span = debug_span!("worker thread", build_dir = ?self.build_dir.path()).entered();
         loop {
             // Extract the mutant in a separate statement so that we don't hold the
             // lock while testing it.
-            let next_mutant = work_queue.lock().expect("Lock pending work queue").next(); // separate for lock
-            if let Some(mutant) = next_mutant {
-                let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
-                let package_name = mutant.source_file.package_name.clone(); // hold
-                let scenario = Scenario::Mutant(mutant);
-                let local_packages: &[&str] = &[&package_name]; // hold
-                let test_packages: Option<&[&str]> = match &self.options.test_packages {
-                    TestPackages::Workspace => None,
-                    TestPackages::Mutated => Some(local_packages),
-                    TestPackages::Named(_named) => {
-                        unimplemented!("get packages by name")
-                    }
-                };
-                self.run_one_scenario(&scenario, test_packages)?;
-            } else {
+            let Some(mutant) = work_queue.lock().expect("Lock pending work queue").next() else {
                 return Ok(());
-            }
+            };
+            let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
+            // variables held here for lifetime
+            let package_name = mutant.source_file.package_name.clone();
+            let scenario = Scenario::Mutant(mutant);
+            let local_packages: [&str; 1];
+            let named_packages;
+            let test_packages: Option<&[&str]> = match &self.options.test_packages {
+                TestPackages::Workspace => None,
+                TestPackages::Mutated => {
+                    local_packages = [&package_name];
+                    Some(&local_packages)
+                }
+                TestPackages::Named(named) => {
+                    named_packages = named.iter().map(String::as_str).collect_vec();
+                    Some(&named_packages)
+                }
+            };
+            debug!(?test_packages);
+            self.run_one_scenario(&scenario, test_packages)?;
         }
     }
 
