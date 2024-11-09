@@ -30,7 +30,6 @@ use crate::{
 ///
 /// Before testing the mutants, the lab checks that the source tree passes its tests with no
 /// mutations applied.
-#[allow(clippy::too_many_lines)] // just for now
 pub fn test_mutants(
     mut mutants: Vec<Mutant>,
     workspace: &Workspace,
@@ -174,27 +173,16 @@ impl Lab<'_> {
     /// If it fails, return None, indicating that no further testing should be done.
     ///
     /// If it succeeds, return the timeouts to be used for the other scenarios.
-    fn run_baseline(
-        &self,
-        baseline_build_dir: &BuildDir,
-        mutants: &[Mutant],
-    ) -> Result<ScenarioOutcome> {
+    fn run_baseline(&self, build_dir: &BuildDir, mutants: &[Mutant]) -> Result<ScenarioOutcome> {
         let all_mutated_packages = mutants
             .iter()
             .map(|m| m.source_file.package_name.as_str())
             .unique()
             .collect_vec();
-        Worker {
-            build_dir: baseline_build_dir,
-            output_mutex: &self.output_mutex,
-            jobserver: &self.jobserver,
-            timeouts: Timeouts::for_baseline(self.options),
-            options: self.options,
-            console: self.console,
-        }
-        .run_one_scenario(
+        self.make_worker(build_dir).run_one_scenario(
             &Scenario::Baseline,
             &PackageSelection::explicit(all_mutated_packages),
+            Timeouts::for_baseline(self.options),
         )
     }
 
@@ -207,15 +195,17 @@ impl Lab<'_> {
         timeouts: Timeouts,
         work_queue: &Mutex<vec::IntoIter<Mutant>>,
     ) -> Result<()> {
+        self.make_worker(build_dir).run_queue(work_queue, timeouts)
+    }
+
+    fn make_worker<'a>(&'a self, build_dir: &'a BuildDir) -> Worker<'a> {
         Worker {
             build_dir,
             output_mutex: &self.output_mutex,
             jobserver: &self.jobserver,
-            timeouts,
             options: self.options,
             console: self.console,
         }
-        .run_queue(work_queue)
     }
 }
 
@@ -227,14 +217,17 @@ struct Worker<'a> {
     build_dir: &'a BuildDir,
     output_mutex: &'a Mutex<OutputDir>,
     jobserver: &'a Option<jobserver::Client>,
-    timeouts: Timeouts,
     options: &'a Options,
     console: &'a Console,
 }
 
 impl Worker<'_> {
     /// Run until the input queue is empty.
-    fn run_queue(mut self, work_queue: &Mutex<vec::IntoIter<Mutant>>) -> Result<()> {
+    fn run_queue(
+        mut self,
+        work_queue: &Mutex<vec::IntoIter<Mutant>>,
+        timeouts: Timeouts,
+    ) -> Result<()> {
         let _span = debug_span!("worker thread", build_dir = ?self.build_dir.path()).entered();
         loop {
             // Not a `for` statement so that we don't hold the lock
@@ -251,7 +244,7 @@ impl Worker<'_> {
                 TestPackages::Named(named) => PackageSelection::Explicit(named.clone()),
             };
             debug!(?test_package);
-            self.run_one_scenario(&Scenario::Mutant(mutant), &test_package)?;
+            self.run_one_scenario(&Scenario::Mutant(mutant), &test_package, timeouts)?;
         }
     }
 
@@ -259,6 +252,7 @@ impl Worker<'_> {
         &mut self,
         scenario: &Scenario,
         test_package: &PackageSelection,
+        timeouts: Timeouts,
     ) -> Result<ScenarioOutcome> {
         let mut scenario_output = self
             .output_mutex
@@ -280,8 +274,8 @@ impl Worker<'_> {
         for &phase in self.options.phases() {
             self.console.scenario_phase_started(dir, phase);
             let timeout = match phase {
-                Phase::Test => self.timeouts.test,
-                Phase::Build | Phase::Check => self.timeouts.build,
+                Phase::Test => timeouts.test,
+                Phase::Build | Phase::Check => timeouts.build,
             };
             match run_cargo(
                 self.build_dir,
