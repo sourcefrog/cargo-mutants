@@ -16,8 +16,11 @@ use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::{
     cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
-    timeouts::Timeouts, workspace::Workspace, BaselineStrategy, BuildDir, Console, Context, Mutant,
-    Options, Phase, Result, Scenario, ScenarioOutcome,
+    package::PackageSelection, timeouts::Timeouts, workspace::Workspace,
+};
+use crate::{
+    BaselineStrategy, BuildDir, Console, Context, Mutant, Options, Phase, Result, Scenario,
+    ScenarioOutcome,
 };
 
 /// Run all possible mutation experiments.
@@ -187,7 +190,10 @@ impl Lab<'_> {
             options: self.options,
             console: self.console,
         }
-        .run_one_scenario(&Scenario::Baseline, Some(&all_mutated_packages))
+        .run_one_scenario(
+            &Scenario::Baseline,
+            &PackageSelection::explicit(all_mutated_packages),
+        )
     }
 
     /// Run until the input queue is empty.
@@ -229,37 +235,28 @@ impl Worker<'_> {
     fn run_queue(mut self, work_queue: &Mutex<vec::IntoIter<Mutant>>) -> Result<()> {
         let _span = debug_span!("worker thread", build_dir = ?self.build_dir.path()).entered();
         loop {
-            // Extract the mutant in a separate statement so that we don't hold the
-            // lock while testing it.
+            // Not a `for` statement so that we don't hold the lock
+            // for the whole iteration.
             let Some(mutant) = work_queue.lock().expect("Lock pending work queue").next() else {
                 return Ok(());
             };
             let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
-            // variables held here for lifetime
-            let package_name = mutant.source_file.package_name.clone();
-            let scenario = Scenario::Mutant(mutant);
-            let local_packages: [&str; 1];
-            let named_packages;
-            let test_packages: Option<&[&str]> = match &self.options.test_packages {
-                TestPackages::Workspace => None,
+            let test_packages = match &self.options.test_packages {
+                TestPackages::Workspace => PackageSelection::All,
                 TestPackages::Mutated => {
-                    local_packages = [&package_name];
-                    Some(&local_packages)
+                    PackageSelection::Explicit(vec![mutant.source_file.package_name.clone()])
                 }
-                TestPackages::Named(named) => {
-                    named_packages = named.iter().map(String::as_str).collect_vec();
-                    Some(&named_packages)
-                }
+                TestPackages::Named(named) => PackageSelection::Explicit(named.clone()),
             };
             debug!(?test_packages);
-            self.run_one_scenario(&scenario, test_packages)?;
+            self.run_one_scenario(&Scenario::Mutant(mutant), &test_packages)?;
         }
     }
 
     fn run_one_scenario(
         &mut self,
         scenario: &Scenario,
-        test_packages: Option<&[&str]>,
+        test_packages: &PackageSelection,
     ) -> Result<ScenarioOutcome> {
         let mut scenario_output = self
             .output_mutex

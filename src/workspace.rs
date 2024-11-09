@@ -31,7 +31,7 @@ use crate::cargo::cargo_bin;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::options::Options;
-use crate::package::Package;
+use crate::package::{Package, PackageSelection};
 use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
@@ -54,13 +54,6 @@ pub enum PackageFilter {
     /// primary package. In this case, if there is a `default-members` field in the workspace,
     /// use that list. Otherwise, apply to all members of the workspace.
     Auto(Utf8PathBuf),
-}
-
-/// A more specific view of which packages to mutate, after resolving `PackageFilter::Auto`.
-#[derive(Debug, Clone)]
-enum PackageSelection {
-    All,
-    Explicit(Vec<String>),
 }
 
 impl PackageFilter {

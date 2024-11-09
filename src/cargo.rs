@@ -2,23 +2,30 @@
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
+use std::env;
 use std::iter::once;
 use std::time::{Duration, Instant};
 
+use camino::Utf8Path;
 use itertools::Itertools;
 use tracing::{debug, debug_span, warn};
 
-use crate::outcome::PhaseResult;
+use crate::build_dir::BuildDir;
+use crate::console::Console;
+use crate::interrupt::check_interrupted;
+use crate::options::{Options, TestTool};
+use crate::outcome::{Phase, PhaseResult};
 use crate::output::ScenarioOutput;
+use crate::package::PackageSelection;
 use crate::process::{Process, ProcessStatus};
-use crate::*;
+use crate::Result;
 
 /// Run cargo build, check, or test.
 #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 pub fn run_cargo(
     build_dir: &BuildDir,
     jobserver: &Option<jobserver::Client>,
-    package_names: Option<&[&str]>,
+    packages: &PackageSelection,
     phase: Phase,
     timeout: Option<Duration>,
     scenario_output: &mut ScenarioOutput,
@@ -27,7 +34,7 @@ pub fn run_cargo(
 ) -> Result<PhaseResult> {
     let _span = debug_span!("run", ?phase).entered();
     let start = Instant::now();
-    let argv = cargo_argv(build_dir.path(), package_names, phase, options);
+    let argv = cargo_argv(build_dir.path(), packages, phase, options);
     let mut env = vec![
         // The tests might use Insta <https://insta.rs>, and we don't want it to write
         // updates to the source tree, and we *certainly* don't want it to write
@@ -80,7 +87,7 @@ pub fn cargo_bin() -> String {
 // (This is split out so it's easier to test.)
 fn cargo_argv(
     _build_dir: &Utf8Path,
-    package_names: Option<&[&str]>,
+    packages: &PackageSelection,
     phase: Phase,
     options: &Options,
 ) -> Vec<String> {
@@ -135,13 +142,16 @@ fn cargo_argv(
     //     // package occurs multiple times in the tree with different versions?
     //     cargo_args.push("--manifest-path".to_owned());
     //     cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
-    if let Some(packages) = package_names {
-        for package in packages.iter().sorted() {
-            cargo_args.push("--package".to_owned());
-            cargo_args.push(package.to_string());
+    match packages {
+        PackageSelection::All => {
+            cargo_args.push("--workspace".to_string());
         }
-    } else {
-        cargo_args.push("--workspace".to_string());
+        PackageSelection::Explicit(package_names) => {
+            for package in package_names.iter().sorted() {
+                cargo_args.push("--package".to_owned());
+                cargo_args.push(package.to_string());
+            }
+        }
     }
     let features = &options.features;
     if features.no_default_features {
@@ -150,6 +160,7 @@ fn cargo_argv(
     if features.all_features {
         cargo_args.push("--all-features".to_owned());
     }
+    // N.B. it can make sense to have --all-features and also explicit features from non-default packages.`
     cargo_args.extend(
         features
             .features
@@ -203,8 +214,11 @@ fn encoded_rustflags(options: &Options) -> Option<String> {
 
 #[cfg(test)]
 mod test {
+    use clap::Parser;
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
+
+    use crate::Args;
 
     use super::*;
 
@@ -213,15 +227,15 @@ mod test {
         let options = Options::default();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             ["check", "--tests", "--verbose", "--workspace"]
         );
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Build, &options)[1..],
             ["test", "--no-run", "--verbose", "--workspace"]
         );
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Test, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Test, &options)[1..],
             ["test", "--verbose", "--workspace"]
         );
     }
@@ -239,7 +253,12 @@ mod test {
         // the fix for <https://github.com/sourcefrog/cargo-mutants/issues/117>
         // but it's temporarily regressed.
         assert_eq!(
-            cargo_argv(build_dir, Some(&[package_name]), Phase::Check, &options)[1..],
+            cargo_argv(
+                build_dir,
+                &PackageSelection::explicit([package_name]),
+                Phase::Check,
+                &options
+            )[1..],
             ["check", "--tests", "--verbose", "--package", package_name]
         );
 
@@ -288,15 +307,15 @@ mod test {
             .additional_cargo_args
             .extend(["--release".to_owned()]);
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             ["check", "--tests", "--verbose", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Build, &options)[1..],
             ["test", "--no-run", "--verbose", "--workspace", "--release"]
         );
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Test, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Test, &options)[1..],
             [
                 "test",
                 "--verbose",
@@ -314,7 +333,7 @@ mod test {
         let options = Options::from_args(&args).unwrap();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             [
                 "check",
                 "--tests",
@@ -331,7 +350,7 @@ mod test {
         let options = Options::from_args(&args).unwrap();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             [
                 "check",
                 "--tests",
@@ -348,7 +367,7 @@ mod test {
         let options = Options::from_args(&args).unwrap();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             ["check", "--tests", "--verbose", "--workspace",]
         );
     }
@@ -362,7 +381,7 @@ mod test {
         let options = Options::from_args(&args).unwrap();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             [
                 "check",
                 "--tests",
@@ -380,7 +399,7 @@ mod test {
         let options = Options::from_args(&args).unwrap();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Check, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Check, &options)[1..],
             [
                 "check",
                 "--tests",
@@ -400,7 +419,7 @@ mod test {
         let options = Options::from_args(&args).unwrap();
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
         assert_eq!(
-            cargo_argv(build_dir, None, Phase::Build, &options)[1..],
+            cargo_argv(build_dir, &PackageSelection::All, Phase::Build, &options)[1..],
             [
                 "nextest",
                 "run",
