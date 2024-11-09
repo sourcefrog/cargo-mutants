@@ -1,5 +1,18 @@
 // Copyright 2023-2024 Martin Pool
 
+//! Understand cargo workspaces, which can contain multiple packages.
+//!
+//! In cargo-mutants there are a few important connections to workspaces:
+//!
+//! 1. We copy the whole workspace to scratch directories, so need to find the root.
+//!
+//! 2. We can select to mutate, or run tests from, all packages in the workspace,
+//!    or just some, so we need to find the packages. Also, mutants are marked with the
+//!    package they come from.
+//!
+//! 3. In particular when selecting packages, we attempt to match cargo's own heuristics
+//!    when invoked inside a workspace.
+
 use std::fmt;
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -28,7 +41,9 @@ pub enum PackageFilter {
     All,
     /// Packages with given names, from `--package`.
     Explicit(Vec<String>),
-    /// Automatic behavior when invoked from a subdirectory, as per
+    /// Automatic behavior when invoked from a subdirectory.
+    ///
+    /// This tries to match
     /// <https://doc.rust-lang.org/cargo/reference/workspaces.html#package-selection>.
     ///
     /// If the directory is within a package directory, select that package.
@@ -39,49 +54,76 @@ pub enum PackageFilter {
     Auto(Utf8PathBuf),
 }
 
+/// A more specific view of which packages to mutate, after resolving `PackageFilter::Auto`.
+#[derive(Debug, Clone)]
+enum PackageSelection {
+    All,
+    Explicit(Vec<String>),
+}
+
 impl PackageFilter {
+    /// Convenience constructor for `PackageFilter::Explicit`.
     pub fn explicit<S: ToString, I: IntoIterator<Item = S>>(names: I) -> PackageFilter {
         PackageFilter::Explicit(names.into_iter().map(|s| s.to_string()).collect_vec())
     }
 
     /// Translate an auto package filter to either All or Explicit.
-    pub fn resolve_auto(&self, metadata: &cargo_metadata::Metadata) -> Result<PackageFilter> {
-        if let PackageFilter::Auto(dir) = &self {
-            let package_dir = locate_project(dir, false)?;
-            assert!(package_dir.is_absolute());
-            let workspace_dir = &metadata.workspace_root;
-            // It's not required that the members be inside the workspace directory: see
-            // <https://doc.rust-lang.org/cargo/reference/workspaces.html>
-            for package in metadata.workspace_packages() {
-                if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
-                    debug!("resolved auto package filter to {:?}", package.name);
-                    return Ok(PackageFilter::explicit([&package.name]));
+    fn resolve_auto(&self, metadata: &cargo_metadata::Metadata) -> Result<PackageSelection> {
+        match &self {
+            PackageFilter::Auto(dir) => {
+                // Find the closest package directory (with a cargo manifest) to the current directory.
+                let package_dir = locate_project(dir, false)?;
+                assert!(package_dir.is_absolute());
+                // It's not required that the members be inside the workspace directory: see
+                // <https://doc.rust-lang.org/cargo/reference/workspaces.html>
+                for package in metadata.workspace_packages() {
+                    // If this package is one of the workspace members, then select this package.
+                    if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
+                        debug!("resolved auto package filter to {:?}", package.name);
+                        return Ok(PackageSelection::Explicit(vec![package.name.to_owned()]));
+                    }
                 }
+                // Otherwise, we're in a virtual workspace directory, and not inside any package.
+                // Use configured defaults if there are any, otherwise test all packages.
+                let workspace_dir = &metadata.workspace_root;
+                ensure!(
+                    &package_dir == workspace_dir,
+                    "package {package_dir:?} doesn't match any child and doesn't match the workspace root {workspace_dir:?}?",
+                );
+                Ok(workspace_default_packages(metadata))
             }
-            // Presumably our manifest is the workspace root manifest and there is no
-            // top-level package?
-            ensure!(
-                &package_dir == workspace_dir,
-                "package {package_dir:?} doesn't match any child and doesn't match the workspace root {workspace_dir:?}?",
+            PackageFilter::All => Ok(PackageSelection::All),
+            PackageFilter::Explicit(names) => Ok(PackageSelection::Explicit(names.clone())),
+        }
+    }
+}
+
+/// Return the default workspace packages.
+///
+/// Default packages can be specified in the workspace's `Cargo.toml` file;
+/// if not, all packages are included.
+fn workspace_default_packages(metadata: &Metadata) -> PackageSelection {
+    // `cargo_metadata::workspace_default_packages` will panic when calling Cargo older than 1.71;
+    // in that case we'll just fall back to everything, for lack of a better option.
+    match catch_unwind(|| metadata.workspace_default_packages()) {
+        Ok(default_packages) => {
+            if default_packages.is_empty() {
+                PackageSelection::All
+            } else {
+                PackageSelection::Explicit(
+                    default_packages
+                        .into_iter()
+                        .map(|pmeta| pmeta.name.clone())
+                        .collect(),
+                )
+            }
+        }
+        Err(err) => {
+            warn!(
+                cargo_metadata_error = err.downcast::<String>().unwrap_or_default(),
+                "workspace_default_packages is not supported; testing all packages",
             );
-            // `workspace_default_packages` will panic when calling Cargo older than 1.71;
-            // in that case we'll just fall back to everything, for lack of a better option.
-            match catch_unwind(|| metadata.workspace_default_packages()) {
-                Ok(dm) if dm.is_empty() => Ok(PackageFilter::All),
-                Ok(dm) => Ok(PackageFilter::explicit(
-                    dm.into_iter().map(|pmeta| &pmeta.name),
-                )),
-                Err(err) => {
-                    warn!(
-                        cargo_metadata_error =
-                            err.downcast::<String>().expect("panic message is a string"),
-                        "workspace_default_packages is not supported; testing all packages",
-                    );
-                    Ok(PackageFilter::All)
-                }
-            }
-        } else {
-            Ok(self.clone())
+            PackageSelection::All
         }
     }
 }
@@ -133,22 +175,23 @@ impl Workspace {
 
     /// Find packages matching some filter.
     fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
-        let package_filter = package_filter.resolve_auto(&self.metadata)?;
-        let PackageFilter::Explicit(wanted) = package_filter else {
-            return Ok(self.packages.clone());
-        };
-        let packages = self
-            .packages
-            .iter()
-            .filter(|p| wanted.contains(&p.name))
-            .cloned()
-            .collect_vec();
-        for wanted in wanted {
-            if !packages.iter().any(|package| package.name == *wanted) {
-                warn!("package {wanted:?} not found in source tree");
+        match package_filter.resolve_auto(&self.metadata)? {
+            PackageSelection::Explicit(wanted) => {
+                let packages = self
+                    .packages
+                    .iter()
+                    .filter(|p| wanted.contains(&p.name))
+                    .cloned()
+                    .collect_vec();
+                for wanted in wanted {
+                    if !packages.iter().any(|package| package.name == *wanted) {
+                        warn!("package {wanted:?} not found in source tree");
+                    }
+                }
+                Ok(packages)
             }
+            PackageSelection::All => Ok(self.packages.iter().cloned().collect_vec()),
         }
-        Ok(packages)
     }
 
     /// Make all the mutants from the filtered packages in this workspace.
