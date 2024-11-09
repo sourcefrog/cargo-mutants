@@ -58,7 +58,7 @@ pub struct Options {
     /// Which packages to test for a given mutant.
     ///
     /// Comes from `--test-workspace` etc.
-    pub test_packages: TestPackages,
+    pub test_package: TestPackages,
 
     /// The time limit for build tasks, if set.
     ///
@@ -221,11 +221,11 @@ impl Options {
         );
 
         // If either command line argument is set, it overrides the config.
-        let test_packages = if args.test_workspace == Some(true) {
+        let test_package = if args.test_workspace == Some(true) {
             TestPackages::Workspace
-        } else if !args.test_packages.is_empty() {
+        } else if !args.test_package.is_empty() {
             TestPackages::Named(
-                args.test_packages
+                args.test_package
                     .iter()
                     .flat_map(|s| s.split(','))
                     .map(|s| s.to_string())
@@ -233,8 +233,8 @@ impl Options {
             )
         } else if args.test_workspace.is_none() && config.test_workspace == Some(true) {
             TestPackages::Workspace
-        } else if !config.test_packages.is_empty() {
-            TestPackages::Named(config.test_packages.clone())
+        } else if !config.test_package.is_empty() {
+            TestPackages::Named(config.test_package.clone())
         } else {
             TestPackages::Mutated
         };
@@ -278,7 +278,7 @@ impl Options {
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
-            test_packages,
+            test_package,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
@@ -601,14 +601,14 @@ mod test {
     fn test_workspace_arg_true() {
         let args = Args::parse_from(["mutants", "--test-workspace=true"]);
         let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(options.test_packages, TestPackages::Workspace);
+        assert_eq!(options.test_package, TestPackages::Workspace);
     }
 
     #[test]
     fn test_workspace_arg_false() {
         let args = Args::parse_from(["mutants", "--test-workspace=false"]);
         let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(options.test_packages, TestPackages::Mutated);
+        assert_eq!(options.test_package, TestPackages::Mutated);
     }
 
     #[test]
@@ -619,7 +619,7 @@ mod test {
             "#};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
-        assert_eq!(options.test_packages, TestPackages::Workspace);
+        assert_eq!(options.test_package, TestPackages::Workspace);
     }
 
     #[test]
@@ -630,7 +630,7 @@ mod test {
             "#};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
-        assert_eq!(options.test_packages, TestPackages::Mutated);
+        assert_eq!(options.test_package, TestPackages::Mutated);
     }
 
     #[test]
@@ -641,7 +641,7 @@ mod test {
             "#};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
-        assert_eq!(options.test_packages, TestPackages::Workspace);
+        assert_eq!(options.test_package, TestPackages::Workspace);
     }
 
     #[test]
@@ -652,7 +652,7 @@ mod test {
             "#};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
-        assert_eq!(options.test_packages, TestPackages::Mutated);
+        assert_eq!(options.test_package, TestPackages::Mutated);
     }
 
     #[test]
@@ -661,22 +661,22 @@ mod test {
         let config = indoc! { r#"
                 # Normally the packages would be ignored, but --test-workspace=false.
                 test_workspace = true
-                test_packages = ["foo", "bar"]
+                test_package = ["foo", "bar"]
             "#};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(
-            options.test_packages,
+            options.test_package,
             TestPackages::Named(vec!["foo".to_string(), "bar".to_string()])
         );
     }
 
     #[test]
-    fn test_packages_arg_with_commas() {
-        let args = Args::parse_from(["mutants", "--test-packages=foo,bar"]);
+    fn test_package_arg_with_commas() {
+        let args = Args::parse_from(["mutants", "--test-package=foo,bar"]);
         let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(
-            options.test_packages,
+            options.test_package,
             TestPackages::Named(vec!["foo".to_string(), "bar".to_string()])
         );
     }

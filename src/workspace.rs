@@ -172,16 +172,16 @@ impl Workspace {
         self.packages.iter().any(|p| p.name == name)
     }
 
-    pub fn check_test_packages_are_present(&self, test_packages: &TestPackages) -> Result<()> {
-        if let TestPackages::Named(test_packages) = test_packages {
-            let missing = test_packages
+    pub fn check_test_packages_are_present(&self, test_package: &TestPackages) -> Result<()> {
+        if let TestPackages::Named(test_package) = test_package {
+            let missing = test_package
                 .iter()
                 .filter(|&name| !self.has_package(name))
                 .collect_vec();
             if !missing.is_empty() {
                 // TODO: Test for this
                 bail!(
-                    "Some package names in test-packages are not present in the workspace: {}",
+                    "Some package names in --test-package are not present in the workspace: {}",
                     missing.into_iter().join(", ")
                 );
             }

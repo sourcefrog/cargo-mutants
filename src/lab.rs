@@ -43,7 +43,7 @@ pub fn test_mutants(
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
-    workspace.check_test_packages_are_present(&options.test_packages)?;
+    workspace.check_test_packages_are_present(&options.test_package)?;
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
@@ -239,22 +239,22 @@ impl Worker<'_> {
                 return Ok(());
             };
             let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
-            let test_packages = match &self.options.test_packages {
+            let test_package = match &self.options.test_package {
                 TestPackages::Workspace => PackageSelection::All,
                 TestPackages::Mutated => {
                     PackageSelection::Explicit(vec![mutant.source_file.package_name.clone()])
                 }
                 TestPackages::Named(named) => PackageSelection::Explicit(named.clone()),
             };
-            debug!(?test_packages);
-            self.run_one_scenario(&Scenario::Mutant(mutant), &test_packages)?;
+            debug!(?test_package);
+            self.run_one_scenario(&Scenario::Mutant(mutant), &test_package)?;
         }
     }
 
     fn run_one_scenario(
         &mut self,
         scenario: &Scenario,
-        test_packages: &PackageSelection,
+        test_package: &PackageSelection,
     ) -> Result<ScenarioOutcome> {
         let mut scenario_output = self
             .output_mutex
@@ -282,7 +282,7 @@ impl Worker<'_> {
             match run_cargo(
                 self.build_dir,
                 self.jobserver,
-                test_packages,
+                test_package,
                 phase,
                 timeout,
                 &mut scenario_output,

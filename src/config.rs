@@ -48,7 +48,7 @@ pub struct Config {
     /// Cargo profile.
     pub profile: Option<String>,
     /// Run tests from these packages for all mutants.
-    pub test_packages: Vec<String>,
+    pub test_package: Vec<String>,
     /// Choice of test tool: cargo or nextest.
     pub test_tool: Option<TestTool>,
     /// Timeout multiplier, relative to the baseline 'cargo test'.
@@ -57,7 +57,7 @@ pub struct Config {
     pub build_timeout_multiplier: Option<f64>,
     /// Run tests from all packages in the workspace, not just the mutated package.
     ///
-    /// Overrides `test_packages`.
+    /// Overrides `test_package`.
     pub test_workspace: Option<bool>,
 }
 

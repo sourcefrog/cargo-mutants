@@ -40,8 +40,10 @@ By default, the baseline runs the tests from all and only the packages for which
 
 By default, each mutant runs only the tests from the package that's being mutated.
 
-If the `--test-workspace` arguments or `test_workspace` configuration key is set, then all tests from the workspace are run for the baseline and against each mutant.
+If the `--test-workspace=true` argument or `test_workspace` configuration key is set, then all tests from the workspace are run for the baseline and against each mutant.
 
 If the `--test-package` argument or `test_package` configuration key is set then the specified packages are tested for the baseline and all mutants.
 
 As for other options, the command line arguments have priority over the configuration file.
+
+Like `--package`, the argument to `--test-package` can be a comma-separated list, or the option can be repeated.
