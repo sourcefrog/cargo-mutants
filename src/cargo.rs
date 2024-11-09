@@ -10,7 +10,6 @@ use tracing::{debug, debug_span, warn};
 
 use crate::outcome::PhaseResult;
 use crate::output::ScenarioOutput;
-use crate::package::Package;
 use crate::process::{Process, ProcessStatus};
 use crate::*;
 
@@ -19,7 +18,7 @@ use crate::*;
 pub fn run_cargo(
     build_dir: &BuildDir,
     jobserver: &Option<jobserver::Client>,
-    packages: Option<&[&Package]>,
+    package_names: Option<&[&str]>,
     phase: Phase,
     timeout: Option<Duration>,
     scenario_output: &mut ScenarioOutput,
@@ -28,7 +27,7 @@ pub fn run_cargo(
 ) -> Result<PhaseResult> {
     let _span = debug_span!("run", ?phase).entered();
     let start = Instant::now();
-    let argv = cargo_argv(build_dir.path(), packages, phase, options);
+    let argv = cargo_argv(build_dir.path(), package_names, phase, options);
     let mut env = vec![
         // The tests might use Insta <https://insta.rs>, and we don't want it to write
         // updates to the source tree, and we *certainly* don't want it to write
@@ -80,8 +79,8 @@ pub fn cargo_bin() -> String {
 /// cargo binary itself.
 // (This is split out so it's easier to test.)
 fn cargo_argv(
-    build_dir: &Utf8Path,
-    packages: Option<&[&Package]>,
+    _build_dir: &Utf8Path,
+    package_names: Option<&[&str]>,
     phase: Phase,
     options: &Options,
 ) -> Vec<String> {
@@ -127,15 +126,19 @@ fn cargo_argv(
         }
     }
     cargo_args.push("--verbose".to_string());
-    if let Some([package]) = packages {
-        // Use the unambiguous form for this case; it works better when the same
-        // package occurs multiple times in the tree with different versions?
-        cargo_args.push("--manifest-path".to_owned());
-        cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
-    } else if let Some(packages) = packages {
-        for package in packages.iter().map(|p| p.name.to_owned()).sorted() {
+    // TODO: If there's just one package then look up its manifest path in the
+    // workspace and use that instead, because it's less ambiguous when there's
+    // multiple different-version packages with the same name in the workspace.
+    // (A rare case, but it happens in itertools.)
+    // if let Some([package]) = package_names {
+    //     // Use the unambiguous form for this case; it works better when the same
+    //     // package occurs multiple times in the tree with different versions?
+    //     cargo_args.push("--manifest-path".to_owned());
+    //     cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
+    if let Some(packages) = package_names {
+        for package in packages.iter().sorted() {
             cargo_args.push("--package".to_owned());
-            cargo_args.push(package);
+            cargo_args.push(package.to_string());
         }
     } else {
         cargo_args.push("--workspace".to_string());
@@ -200,8 +203,6 @@ fn encoded_rustflags(options: &Options) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
-
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
 
@@ -230,46 +231,50 @@ mod test {
         let mut options = Options::default();
         let package_name = "cargo-mutants-testdata-something";
         let build_dir = Utf8Path::new("/tmp/buildXYZ");
-        let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
+        // let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
-        let package = Arc::new(Package {
-            name: package_name.to_owned(),
-            relative_manifest_path: relative_manifest_path.clone(),
-        });
-        let build_manifest_path = build_dir.join(relative_manifest_path);
+        // TODO: It wolud be a bit better to use `--manifest-path` here, to get
+        // the fix for <https://github.com/sourcefrog/cargo-mutants/issues/117>
+        // but it's temporarily regressed.
         assert_eq!(
-            cargo_argv(build_dir, Some(&[&package]), Phase::Check, &options)[1..],
-            [
-                "check",
-                "--tests",
-                "--verbose",
-                "--manifest-path",
-                build_manifest_path.as_str(),
-            ]
+            cargo_argv(build_dir, Some(&[package_name]), Phase::Check, &options)[1..],
+            ["check", "--tests", "--verbose", "--package", package_name]
         );
-        assert_eq!(
-            cargo_argv(build_dir, Some(&[&package]), Phase::Build, &options)[1..],
-            [
-                "test",
-                "--no-run",
-                "--verbose",
-                "--manifest-path",
-                build_manifest_path.as_str(),
-            ]
-        );
-        assert_eq!(
-            cargo_argv(build_dir, Some(&[&package]), Phase::Test, &options)[1..],
-            [
-                "test",
-                "--verbose",
-                "--manifest-path",
-                build_manifest_path.as_str(),
-                "--lib",
-                "--no-fail-fast"
-            ]
-        );
+
+        // let build_manifest_path = build_dir.join(relative_manifest_path);
+        // assert_eq!(
+        //     cargo_argv(build_dir, Some(&[package_name]), Phase::Check, &options)[1..],
+        //     [
+        //         "check",
+        //         "--tests",
+        //         "--verbose",
+        //         "--manifest-path",
+        //         build_manifest_path.as_str(),
+        //     ]
+        // );
+        // assert_eq!(
+        //     cargo_argv(build_dir, Some(&[package_name]), Phase::Build, &options)[1..],
+        //     [
+        //         "test",
+        //         "--no-run",
+        //         "--verbose",
+        //         "--manifest-path",
+        //         build_manifest_path.as_str(),
+        //     ]
+        // );
+        // assert_eq!(
+        //     cargo_argv(build_dir, Some(&[package_name]), Phase::Test, &options)[1..],
+        //     [
+        //         "test",
+        //         "--verbose",
+        //         "--manifest-path",
+        //         build_manifest_path.as_str(),
+        //         "--lib",
+        //         "--no-fail-fast"
+        //     ]
+        // );
     }
 
     #[test]

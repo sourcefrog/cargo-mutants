@@ -9,7 +9,6 @@ use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
-use crate::package::Package;
 use crate::path::{ascent, Utf8PathSlashes};
 use crate::span::LineColumn;
 
@@ -22,8 +21,8 @@ use crate::span::LineColumn;
 /// files are written with Unix line endings.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SourceFile {
-    /// Package within the workspace.
-    pub package: Arc<Package>,
+    /// Which package within the workspace contains this file?
+    pub package_name: String,
 
     /// Path of this source file relative to workspace.
     pub tree_relative_path: Utf8PathBuf,
@@ -46,7 +45,7 @@ impl SourceFile {
     pub fn new(
         tree_path: &Utf8Path,
         tree_relative_path: Utf8PathBuf,
-        package: &Arc<Package>,
+        package_name: &str,
         is_top: bool,
     ) -> Result<Option<SourceFile>> {
         if ascent(&tree_relative_path) > 0 {
@@ -65,7 +64,7 @@ impl SourceFile {
         Ok(Some(SourceFile {
             tree_relative_path,
             code,
-            package: Arc::clone(package),
+            package_name: package_name.to_owned(),
             is_top,
         }))
     }
@@ -113,10 +112,7 @@ mod test {
         let source_file = SourceFile::new(
             temp_dir_path,
             file_name.parse().unwrap(),
-            &Arc::new(Package {
-                name: "imaginary-package".to_owned(),
-                relative_manifest_path: "whatever/Cargo.toml".into(),
-            }),
+            "imaginary-package",
             true,
         )
         .unwrap()
@@ -129,10 +125,7 @@ mod test {
         let source_file = SourceFile::new(
             &Utf8PathBuf::from("unimportant"),
             "../outside_workspace.rs".parse().unwrap(),
-            &Arc::new(Package {
-                name: "imaginary-package".to_owned(),
-                relative_manifest_path: "whatever/Cargo.toml".into(),
-            }),
+            "imaginary-package",
             true,
         )
         .unwrap();

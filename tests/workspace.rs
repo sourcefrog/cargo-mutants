@@ -161,8 +161,8 @@ fn workspace_tree_is_well_tested() {
         );
         assert_eq!(mutant_phases[1]["process_status"], json!({"Failure": 101}));
         assert_eq!(
-            mutant_phases[1]["argv"].as_array().unwrap()[1..=3],
-            ["test", "--verbose", "--manifest-path"],
+            mutant_phases[1]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--verbose"],
         );
     }
     {

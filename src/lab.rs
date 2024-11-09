@@ -16,8 +16,8 @@ use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::{
     cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
-    package::Package, timeouts::Timeouts, workspace::Workspace, BaselineStrategy, BuildDir,
-    Console, Context, Mutant, Options, Phase, Result, Scenario, ScenarioOutcome,
+    timeouts::Timeouts, workspace::Workspace, BaselineStrategy, BuildDir, Console, Context, Mutant,
+    Options, Phase, Result, Scenario, ScenarioOutcome,
 };
 
 /// Run all possible mutation experiments.
@@ -174,7 +174,11 @@ impl Lab<'_> {
         baseline_build_dir: &BuildDir,
         mutants: &[Mutant],
     ) -> Result<ScenarioOutcome> {
-        let all_mutated_packages = mutants.iter().map(Mutant::package).unique().collect_vec();
+        let all_mutated_packages = mutants
+            .iter()
+            .map(|m| m.source_file.package_name.as_str())
+            .unique()
+            .collect_vec();
         Worker {
             build_dir: baseline_build_dir,
             output_mutex: &self.output_mutex,
@@ -231,12 +235,12 @@ impl Worker<'_> {
             let next_mutant = work_queue.lock().expect("Lock pending work queue").next(); // separate for lock
             if let Some(mutant) = next_mutant {
                 let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
-                let package = mutant.package().clone(); // hold
-                let packages = [&package]; // hold
+                let package_name = mutant.source_file.package_name.clone(); // hold
                 let scenario = Scenario::Mutant(mutant);
-                let test_packages: Option<&[&Package]> = match &self.options.test_packages {
+                let local_packages: &[&str] = &[&package_name]; // hold
+                let test_packages: Option<&[&str]> = match &self.options.test_packages {
                     TestPackages::Workspace => None,
-                    TestPackages::Mutated => Some(&packages),
+                    TestPackages::Mutated => Some(local_packages),
                     TestPackages::Named(_named) => {
                         unimplemented!("get packages by name")
                     }
@@ -251,7 +255,7 @@ impl Worker<'_> {
     fn run_one_scenario(
         &mut self,
         scenario: &Scenario,
-        test_packages: Option<&[&Package]>,
+        test_packages: Option<&[&str]>,
     ) -> Result<ScenarioOutcome> {
         let mut scenario_output = self
             .output_mutex

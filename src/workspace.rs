@@ -101,7 +101,7 @@ pub struct Workspace {
 impl fmt::Debug for Workspace {
     #[mutants::skip]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // The `metadata` value is very large so is omitted here; 
+        // The `metadata` value is very large so is omitted here;
         // just the root is enough.
         f.debug_struct("Workspace")
             .field("root", &self.root().to_string())
@@ -207,7 +207,7 @@ impl Workspace {
                 sources.extend(SourceFile::new(
                     self.root(),
                     source_path.to_owned(),
-                    &package,
+                    &package.name,
                     true,
                 )?);
             }
