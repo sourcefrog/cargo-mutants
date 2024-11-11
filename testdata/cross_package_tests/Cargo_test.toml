@@ -1,0 +1,6 @@
+# This workspace has no root package, which is an interesting edge case to test:
+# older cargo-mutants assumed there was a root package and only tested it.
+
+[workspace]
+members = ["lib", "tests"]
+resolver = "2"

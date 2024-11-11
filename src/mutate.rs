@@ -14,7 +14,6 @@ use tracing::trace;
 
 use crate::build_dir::BuildDir;
 use crate::output::clean_filename;
-use crate::package::Package;
 use crate::source::SourceFile;
 use crate::span::Span;
 use crate::MUTATION_MARKER_COMMENT;
@@ -160,15 +159,6 @@ impl Mutant {
         self.replacement.as_str()
     }
 
-    /// Return the cargo package name.
-    pub fn package_name(&self) -> &str {
-        &self.source_file.package.name
-    }
-
-    pub fn package(&self) -> &Package {
-        &self.source_file.package
-    }
-
     /// Return a unified diff for the mutant.
     ///
     /// The mutated text must be passed in because we should have already computed
@@ -220,7 +210,7 @@ impl fmt::Debug for Mutant {
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
             .field("span", &self.span)
-            .field("package_name", &self.package_name())
+            .field("package_name", &self.source_file.package_name)
             .finish()
     }
 }
@@ -232,7 +222,7 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
-        ss.serialize_field("package", &self.package_name())?;
+        ss.serialize_field("package", &self.source_file.package_name)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("function", &self.function.as_ref().map(|a| a.as_ref()))?;
         ss.serialize_field("span", &self.span)?;
@@ -257,8 +247,9 @@ mod test {
         let workspace = Workspace::open(tmp.path()).unwrap();
         let options = Options::default();
         let mutants = workspace
-            .mutants(&PackageFilter::All, &options, &Console::new())
-            .unwrap();
+            .discover(&PackageFilter::All, &options, &Console::new())
+            .unwrap()
+            .mutants;
         assert_eq!(mutants.len(), 5);
         assert_eq!(
             format!("{:#?}", mutants[0]),
@@ -319,8 +310,9 @@ mod test {
         let tmp = copy_of_testdata("hang_avoided_by_attr");
         let mutants = Workspace::open(tmp.path())
             .unwrap()
-            .mutants(&PackageFilter::All, &Options::default(), &Console::new())
-            .unwrap();
+            .discover(&PackageFilter::All, &Options::default(), &Console::new())
+            .unwrap()
+            .mutants;
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
         insta::assert_snapshot!(
             descriptions.join("\n"),
@@ -338,11 +330,9 @@ mod test {
     fn mutate_factorial() -> Result<()> {
         let temp = copy_of_testdata("factorial");
         let tree_path = temp.path();
-        let mutants = Workspace::open(tree_path)?.mutants(
-            &PackageFilter::All,
-            &Options::default(),
-            &Console::new(),
-        )?;
+        let mutants = Workspace::open(tree_path)?
+            .discover(&PackageFilter::All, &Options::default(), &Console::new())?
+            .mutants;
         assert_eq!(mutants.len(), 5);
 
         let mutated_code = mutants[0].mutated_code();

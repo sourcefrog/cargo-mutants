@@ -58,7 +58,6 @@ use crate::in_diff::diff_filter;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants, FmtToIoWrite};
-use crate::manifest::fix_manifest;
 use crate::mutate::{Genre, Mutant};
 use crate::options::{Colors, Options, TestTool};
 use crate::outcome::{Phase, ScenarioOutcome};
@@ -305,9 +304,21 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     shard: Option<Shard>,
 
+    /// Run tests from these packages for all mutants.
+    #[arg(long, help_heading = "Tests")]
+    test_package: Vec<String>,
+
     /// Tool used to run test suites: cargo or nextest.
     #[arg(long, help_heading = "Execution")]
     test_tool: Option<TestTool>,
+
+    /// Run all tests in the workspace.
+    ///
+    /// If false, only the tests in the mutated package are run.
+    ///
+    /// Overrides `--test_package`.
+    #[arg(long, help_heading = "Tests")]
+    test_workspace: Option<bool>,
 
     /// Maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't', help_heading = "Execution")]
@@ -333,7 +344,7 @@ pub struct Args {
     #[arg(long, action = clap::ArgAction::SetTrue)]
     version: bool,
 
-    /// Test every package in the workspace.
+    /// Generate mutations in every package in the workspace.
     #[arg(long, help_heading = "Filters")]
     workspace: bool,
 
@@ -471,7 +482,7 @@ fn main() -> Result<()> {
             output_dir.write_previously_caught(&previously_caught)?;
         }
         console.set_debug_log(output_dir.open_debug_log()?);
-        let lab_outcome = test_mutants(mutants, workspace.root(), output_dir, options, &console)?;
+        let lab_outcome = test_mutants(mutants, &workspace, output_dir, &options, &console)?;
         exit(lab_outcome.exit_code());
     }
     Ok(())

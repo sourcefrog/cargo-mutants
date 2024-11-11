@@ -1,13 +1,28 @@
 // Copyright 2023-2024 Martin Pool
 
+//! Understand cargo workspaces, which can contain multiple packages.
+//!
+//! In cargo-mutants there are a few important connections to workspaces:
+//!
+//! 1. We copy the whole workspace to scratch directories, so need to find the root.
+//!
+//! 2. We can select to mutate, or run tests from, all packages in the workspace,
+//!    or just some, so we need to find the packages. Also, mutants are marked with the
+//!    package they come from.
+//!
+//! 3. In particular when selecting packages, we attempt to match cargo's own heuristics
+//!    when invoked inside a workspace.
+
+#![warn(clippy::pedantic)]
+
 use std::fmt;
 use std::panic::catch_unwind;
 use std::path::Path;
 use std::process::Command;
-use std::sync::Arc;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
+use cargo_metadata::Metadata;
 use itertools::Itertools;
 use serde_json::Value;
 use tracing::{debug, debug_span, error, warn};
@@ -15,22 +30,11 @@ use tracing::{debug, debug_span, error, warn};
 use crate::cargo::cargo_bin;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
-use crate::mutate::Mutant;
-use crate::options::Options;
-use crate::package::Package;
+use crate::options::{Options, TestPackages};
+use crate::package::{Package, PackageSelection};
 use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
-
-impl fmt::Debug for Workspace {
-    #[mutants::skip]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Workspace")
-            .field("root", &self.root().to_string())
-            // .field("metadata", &self.metadata)
-            .finish()
-    }
-}
 
 /// Which packages to mutate in a workspace?
 #[derive(Debug, Clone)]
@@ -39,7 +43,9 @@ pub enum PackageFilter {
     All,
     /// Packages with given names, from `--package`.
     Explicit(Vec<String>),
-    /// Automatic behavior when invoked from a subdirectory, as per
+    /// Automatic behavior when invoked from a subdirectory.
+    ///
+    /// This tries to match
     /// <https://doc.rust-lang.org/cargo/reference/workspaces.html#package-selection>.
     ///
     /// If the directory is within a package directory, select that package.
@@ -51,60 +57,87 @@ pub enum PackageFilter {
 }
 
 impl PackageFilter {
+    /// Convenience constructor for `PackageFilter::Explicit`.
     pub fn explicit<S: ToString, I: IntoIterator<Item = S>>(names: I) -> PackageFilter {
         PackageFilter::Explicit(names.into_iter().map(|s| s.to_string()).collect_vec())
     }
 
     /// Translate an auto package filter to either All or Explicit.
-    pub fn resolve_auto(&self, metadata: &cargo_metadata::Metadata) -> Result<PackageFilter> {
-        if let PackageFilter::Auto(dir) = &self {
-            let package_dir = locate_project(dir, false)?;
-            assert!(package_dir.is_absolute());
-            let workspace_dir = &metadata.workspace_root;
-            // It's not required that the members be inside the workspace directory: see
-            // <https://doc.rust-lang.org/cargo/reference/workspaces.html>
-            for package in metadata.workspace_packages() {
-                if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
-                    debug!("resolved auto package filter to {:?}", package.name);
-                    return Ok(PackageFilter::explicit([&package.name]));
+    fn resolve_auto(&self, metadata: &cargo_metadata::Metadata) -> Result<PackageSelection> {
+        match &self {
+            PackageFilter::Auto(dir) => {
+                // Find the closest package directory (with a cargo manifest) to the current directory.
+                let package_dir = locate_project(dir, false)?;
+                assert!(package_dir.is_absolute());
+                // It's not required that the members be inside the workspace directory: see
+                // <https://doc.rust-lang.org/cargo/reference/workspaces.html>
+                for package in metadata.workspace_packages() {
+                    // If this package is one of the workspace members, then select this package.
+                    if package.manifest_path.parent().expect("remove Cargo.toml") == package_dir {
+                        debug!("resolved auto package filter to {:?}", package.name);
+                        return Ok(PackageSelection::Explicit(vec![package.name.clone()]));
+                    }
                 }
+                // Otherwise, we're in a virtual workspace directory, and not inside any package.
+                // Use configured defaults if there are any, otherwise test all packages.
+                let workspace_dir = &metadata.workspace_root;
+                ensure!(
+                    &package_dir == workspace_dir,
+                    "package {package_dir:?} doesn't match any child and doesn't match the workspace root {workspace_dir:?}?",
+                );
+                Ok(workspace_default_packages(metadata))
             }
-            // Presumably our manifest is the workspace root manifest and there is no
-            // top-level package?
-            ensure!(
-                &package_dir == workspace_dir,
-                "package {package_dir:?} doesn't match any child and doesn't match the workspace root {workspace_dir:?}?",
-            );
-            // `workspace_default_packages` will panic when calling Cargo older than 1.71;
-            // in that case we'll just fall back to everything, for lack of a better option.
-            match catch_unwind(|| metadata.workspace_default_packages()) {
-                Ok(dm) if dm.is_empty() => Ok(PackageFilter::All),
-                Ok(dm) => Ok(PackageFilter::explicit(
-                    dm.into_iter().map(|pmeta| &pmeta.name),
-                )),
-                Err(err) => {
-                    warn!(
-                        cargo_metadata_error =
-                            err.downcast::<String>().expect("panic message is a string"),
-                        "workspace_default_packages is not supported; testing all packages",
-                    );
-                    Ok(PackageFilter::All)
-                }
-            }
-        } else {
-            Ok(self.clone())
+            PackageFilter::All => Ok(PackageSelection::All),
+            PackageFilter::Explicit(names) => Ok(PackageSelection::Explicit(names.clone())),
         }
     }
 }
 
-/// A package and the top source files within it.
-struct PackageTop {
-    package: Arc<Package>,
-    top_sources: Vec<Utf8PathBuf>,
+/// Return the default workspace packages.
+///
+/// Default packages can be specified in the workspace's `Cargo.toml` file;
+/// if not, all packages are included.
+fn workspace_default_packages(metadata: &Metadata) -> PackageSelection {
+    // `cargo_metadata::workspace_default_packages` will panic when calling Cargo older than 1.71;
+    // in that case we'll just fall back to everything, for lack of a better option.
+    match catch_unwind(|| metadata.workspace_default_packages()) {
+        Ok(default_packages) => {
+            if default_packages.is_empty() {
+                PackageSelection::All
+            } else {
+                PackageSelection::Explicit(
+                    default_packages
+                        .into_iter()
+                        .map(|pmeta| pmeta.name.clone())
+                        .collect(),
+                )
+            }
+        }
+        Err(err) => {
+            warn!(
+                cargo_metadata_error = err.downcast::<String>().unwrap_or_default(),
+                "workspace_default_packages is not supported; testing all packages",
+            );
+            PackageSelection::All
+        }
+    }
 }
 
+/// A cargo workspace.
 pub struct Workspace {
     metadata: cargo_metadata::Metadata,
+    packages: Vec<Package>,
+}
+
+impl fmt::Debug for Workspace {
+    #[mutants::skip]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // The `metadata` value is very large so is omitted here;
+        // just the root is enough.
+        f.debug_struct("Workspace")
+            .field("root", &self.root().to_string())
+            .finish_non_exhaustive()
+    }
 }
 
 impl Workspace {
@@ -129,88 +162,50 @@ impl Workspace {
             .manifest_path(&manifest_path)
             .verbose(false)
             .exec()
-            .with_context(|| format!("Failed to run cargo metadata on {:?}", manifest_path))?;
+            .with_context(|| format!("Failed to run cargo metadata on {manifest_path}"))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
-        Ok(Workspace { metadata })
+        let packages = packages_from_metadata(&metadata)?;
+        Ok(Workspace { metadata, packages })
     }
 
-    /// Find packages to mutate, subject to some filtering.
-    #[allow(dead_code)]
-    pub fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Arc<Package>>> {
-        Ok(self
-            .package_tops(package_filter)?
-            .into_iter()
-            .map(|pt| pt.package)
-            .collect())
+    pub fn has_package(&self, name: &str) -> bool {
+        self.packages.iter().any(|p| p.name == name)
     }
 
-    /// Find all the packages and their top source files.
-    fn package_tops(&self, package_filter: &PackageFilter) -> Result<Vec<PackageTop>> {
-        let mut tops = Vec::new();
-        let package_filter = package_filter.resolve_auto(&self.metadata)?;
-        for package_metadata in self
-            .metadata
-            .workspace_packages()
-            .into_iter()
-            .sorted_by_key(|p| &p.name)
-        {
-            check_interrupted()?;
-            let name = &package_metadata.name;
-            let _span = debug_span!("package", %name).entered();
-            if let PackageFilter::Explicit(ref include_names) = package_filter {
-                if !include_names.contains(name) {
-                    continue;
+    pub fn check_test_packages_are_present(&self, test_package: &TestPackages) -> Result<()> {
+        if let TestPackages::Named(test_package) = test_package {
+            let missing = test_package
+                .iter()
+                .filter(|&name| !self.has_package(name))
+                .collect_vec();
+            if !missing.is_empty() {
+                bail!(
+                    "Some package names in --test-package are not present in the workspace: {}",
+                    missing.into_iter().join(", ")
+                );
+            }
+        }
+        Ok(())
+    }
+    /// Find packages matching some filter.
+    fn packages(&self, package_filter: &PackageFilter) -> Result<Vec<Package>> {
+        match package_filter.resolve_auto(&self.metadata)? {
+            PackageSelection::Explicit(wanted) => {
+                let packages = self
+                    .packages
+                    .iter()
+                    .filter(|p| wanted.contains(&p.name))
+                    .cloned()
+                    .collect_vec();
+                for wanted in wanted {
+                    if !packages.iter().any(|package| package.name == *wanted) {
+                        warn!("package {wanted:?} not found in source tree");
+                    }
                 }
+                Ok(packages)
             }
-            let manifest_path = &package_metadata.manifest_path;
-            debug!(%manifest_path, "walk package");
-            let relative_manifest_path = manifest_path
-                .strip_prefix(self.root())
-                .map_err(|_| {
-                    anyhow!(
-                        "manifest path {manifest_path:?} for package {name:?} is not \
-                    within the detected source root path {dir:?}",
-                        dir = self.root(),
-                    )
-                })?
-                .to_owned();
-            let package = Arc::new(Package {
-                name: package_metadata.name.clone(),
-                relative_manifest_path,
-            });
-            tops.push(PackageTop {
-                package,
-                top_sources: direct_package_sources(self.root(), package_metadata)?,
-            });
+            PackageSelection::All => Ok(self.packages.iter().cloned().collect_vec()),
         }
-        if let PackageFilter::Explicit(ref names) = package_filter {
-            for wanted in names {
-                if !tops.iter().any(|found| found.package.name == *wanted) {
-                    warn!("package {wanted:?} not found in source tree");
-                }
-            }
-        }
-        Ok(tops)
-    }
-
-    /// Find all the top source files for selected packages.
-    fn top_sources(&self, package_filter: &PackageFilter) -> Result<Vec<SourceFile>> {
-        let mut sources = Vec::new();
-        for PackageTop {
-            package,
-            top_sources,
-        } in self.package_tops(package_filter)?
-        {
-            for source_path in top_sources {
-                sources.extend(SourceFile::new(
-                    self.root(),
-                    source_path.to_owned(),
-                    &package,
-                    true,
-                )?);
-            }
-        }
-        Ok(sources)
     }
 
     /// Make all the mutants from the filtered packages in this workspace.
@@ -222,31 +217,67 @@ impl Workspace {
     ) -> Result<Discovered> {
         walk_tree(
             self.root(),
-            &self.top_sources(package_filter)?,
+            &top_sources(self.root(), &self.packages(package_filter)?)?,
             options,
             console,
         )
     }
-
-    /// Return all mutants generated from this workspace.
-    #[allow(dead_code)] // called from tests, for now
-    pub fn mutants(
-        &self,
-        package_filter: &PackageFilter,
-        options: &Options,
-        console: &Console,
-    ) -> Result<Vec<Mutant>> {
-        Ok(self.discover(package_filter, options, console)?.mutants)
-    }
 }
 
-/// Find all the files that are named in the `path` of targets in a Cargo manifest that should be tested.
+/// Read `cargo-metadata` parsed output, and produce our package representation.
+fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
+    let mut packages = Vec::new();
+    let root = &metadata.workspace_root;
+    for package_metadata in metadata
+        .workspace_packages()
+        .into_iter()
+        .sorted_by_key(|p| &p.name)
+    {
+        check_interrupted()?;
+        let name = &package_metadata.name;
+        let _span = debug_span!("package", %name).entered();
+        let manifest_path = &package_metadata.manifest_path;
+        debug!(%manifest_path, "walk package");
+        let relative_manifest_path = manifest_path
+                .strip_prefix(root)
+                .map_err(|_| {
+                    // TODO: Maybe just warn and skip?
+                    anyhow!(
+                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {root:?}",
+                    )
+                })?
+                .to_owned();
+        packages.push(Package {
+            name: package_metadata.name.clone(),
+            relative_manifest_path,
+            top_sources: package_top_sources(root, package_metadata),
+        });
+    }
+    Ok(packages)
+}
+
+/// Find all the top source files for selected packages.
+fn top_sources(root: &Utf8Path, packages: &[Package]) -> Result<Vec<SourceFile>> {
+    let mut sources = Vec::new();
+    for Package {
+        name, top_sources, ..
+    } in packages
+    {
+        for source_path in top_sources {
+            sources.extend(SourceFile::new(root, source_path.to_owned(), name, true)?);
+        }
+    }
+    Ok(sources)
+}
+
+/// Find all the files that are named in the `path` of targets in a
+/// Cargo manifest, if the kind of the target is one that we should mutate.
 ///
 /// These are the starting points for discovering source files.
-fn direct_package_sources(
+fn package_top_sources(
     workspace_root: &Utf8Path,
     package_metadata: &cargo_metadata::Package,
-) -> Result<Vec<Utf8PathBuf>> {
+) -> Vec<Utf8PathBuf> {
     let mut found = Vec::new();
     let pkg_dir = package_metadata.manifest_path.parent().unwrap();
     for target in &package_metadata.targets {
@@ -273,11 +304,11 @@ fn direct_package_sources(
     }
     found.sort();
     found.dedup();
-    Ok(found)
+    found
 }
 
 fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    for kind in target.kind.iter() {
+    for kind in &target.kind {
         if kind == "bin" || kind == "proc-macro" || kind.ends_with("lib") {
             return true;
         }
@@ -339,7 +370,7 @@ mod test {
     use crate::console::Console;
     use crate::options::Options;
     use crate::test_util::copy_of_testdata;
-    use crate::workspace::PackageFilter;
+    use crate::workspace::{top_sources, PackageFilter};
 
     use super::Workspace;
 
@@ -383,12 +414,14 @@ mod test {
             ["cargo_mutants_testdata_workspace_utils", "main", "main2"]
         );
         assert_eq!(
-            workspace
-                .top_sources(&PackageFilter::All)
-                .unwrap()
-                .iter()
-                .map(|sf| sf.tree_relative_path.clone())
-                .collect_vec(),
+            top_sources(
+                workspace.root(),
+                workspace.packages(&PackageFilter::All).unwrap().as_slice()
+            )
+            .unwrap()
+            .iter()
+            .map(|sf| sf.tree_relative_path.clone())
+            .collect_vec(),
             // ordered by package name
             ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
         );
@@ -411,7 +444,7 @@ mod test {
         let subdir_path = Utf8PathBuf::try_from(tmp.path().join("main")).unwrap();
         let workspace = Workspace::open(&subdir_path).expect("Find workspace root");
         let packages = workspace
-            .packages(&PackageFilter::Auto(subdir_path.to_owned()))
+            .packages(&PackageFilter::Auto(subdir_path.clone()))
             .unwrap();
         assert_eq!(packages.iter().map(|p| &p.name).collect_vec(), ["main"]);
     }
@@ -450,7 +483,8 @@ mod test {
                 .collect_vec(),
             ["main"]
         );
-        let top_sources = workspace.top_sources(&filter).unwrap();
+        let top_sources =
+            top_sources(workspace.root(), &workspace.packages(&filter).unwrap()).unwrap();
         println!("{top_sources:#?}");
         assert_eq!(
             top_sources

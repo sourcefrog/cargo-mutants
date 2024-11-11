@@ -80,7 +80,7 @@ pub fn walk_tree(
                 file_queue.extend(SourceFile::new(
                     workspace_dir,
                     mod_path,
-                    &source_file.package,
+                    &source_file.package_name,
                     false,
                 )?)
             }
@@ -729,7 +729,6 @@ mod test {
     use test_util::copy_of_testdata;
 
     use super::*;
-    use crate::package::Package;
 
     /// We should not generate mutants that produce the same tokens as the
     /// source.
@@ -740,10 +739,7 @@ mod test {
         "};
         let source_file = SourceFile {
             code: Arc::new(code.to_owned()),
-            package: Arc::new(Package {
-                name: "unimportant".to_owned(),
-                relative_manifest_path: "Cargo.toml".into(),
-            }),
+            package_name: "unimportant".to_owned(),
             tree_relative_path: Utf8PathBuf::from("src/lib.rs"),
             is_top: true,
         };
