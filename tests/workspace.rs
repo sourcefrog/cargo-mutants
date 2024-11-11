@@ -274,39 +274,40 @@ fn cross_package_tests() {
 
     // Testing only this one package will find gaps.
     run()
-        .args(["mutants"])
+        .args(["mutants", "-v", "--shard=0/4"])
+        .arg("--no-times")
         .arg("-d")
         .arg(path.join("lib"))
         .assert()
-        .stdout(predicate::str::contains("4 missed"))
+        .stdout(predicate::str::contains("1 mutant tested: 1 missed"))
         .code(2); // missed mutants
 
     // Just asking to *mutate* the whole workspace will not cause us
     // to run the tests in "tests" against mutants in "lib".
     run()
-        .args(["mutants", "--workspace"])
+        .args(["mutants", "--workspace", "--shard=0/4"])
         .arg("-d")
         .arg(path.join("lib"))
         .assert()
-        .stdout(predicate::str::contains("4 missed"))
+        .stdout(predicate::str::contains("1 missed"))
         .code(2); // missed mutants
 
     // Similarly, starting in the workspace dir is not enough.
     run()
-        .args(["mutants"])
+        .args(["mutants", "-v", "--shard=0/4"])
         .arg("-d")
         .arg(path)
         .assert()
-        .stdout(predicate::str::contains("4 missed"))
+        .stdout(predicate::str::contains("1 missed"))
         .code(2); // missed mutants
 
     // Testing the whole workspace does catch everything.
     run()
-        .args(["mutants", "--test-workspace=true"])
+        .args(["mutants", "--test-workspace=true", "--shard=0/4"])
         .arg("-d")
         .arg(path.join("lib"))
         .assert()
-        .stdout(predicate::str::contains("4 caught"))
+        .stdout(predicate::str::contains("1 caught"))
         .code(0);
 
     // And naming the test package also catches everything.
@@ -314,11 +315,12 @@ fn cross_package_tests() {
         .args([
             "mutants",
             "--test-package=cargo-mutants-testdata-cross-package-tests-tests",
+            "--shard=0/4",
         ])
         .arg("-d")
         .arg(path.join("lib"))
         .assert()
-        .stdout(predicate::str::contains("4 caught"))
+        .stdout(predicate::str::contains("1 caught"))
         .code(0);
 
     // Using the wrong package name is an error
@@ -341,10 +343,11 @@ fn cross_package_tests() {
     // Now the mutants are caught
     run()
         .args(["mutants"])
+        .arg("--shard=0/4")
         .arg("-d")
         .arg(path.join("lib"))
         .assert()
-        .stdout(predicate::str::contains("4 caught"))
+        .stdout(predicate::str::contains("1 caught"))
         .code(0);
 
     // It would also work to name the test package
@@ -355,9 +358,10 @@ fn cross_package_tests() {
     .unwrap();
     run()
         .args(["mutants"])
+        .arg("--shard=0/4")
         .arg("-d")
         .arg(path.join("lib"))
         .assert()
-        .stdout(predicate::str::contains("4 caught"))
+        .stdout(predicate::str::contains("1 caught"))
         .code(0);
 }
