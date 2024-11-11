@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 24.11.0
 
 - New: `--test-workspace` and `--test-package` arguments and config options support projects whose tests live in a different package.
 
