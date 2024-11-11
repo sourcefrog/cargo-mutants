@@ -129,6 +129,7 @@ pub fn test_mutants(
     Ok(lab_outcome)
 }
 
+#[mutants::skip] // it's a little hard to observe that the threads were collected?
 fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Result<()> {
     // The errors potentially returned from `join` are a special `std::thread::Result`
     // that does not implement error, indicating that the thread panicked.
