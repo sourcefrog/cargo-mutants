@@ -16,7 +16,7 @@ use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Attribute, BinOp, Block, Expr, File, ItemFn, ReturnType, Signature, UnOp};
+use syn::{Attribute, BinOp, Block, Expr, ExprPath, File, ItemFn, ReturnType, Signature, UnOp};
 use tracing::{debug, debug_span, error, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
@@ -66,7 +66,7 @@ pub fn walk_tree(
     while let Some(source_file) = file_queue.pop_front() {
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
-        let (mut file_mutants, external_mods) = walk_file(&source_file, &error_exprs)?;
+        let (mut file_mutants, external_mods) = walk_file(&source_file, &error_exprs, options)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -113,6 +113,7 @@ pub fn walk_tree(
 fn walk_file(
     source_file: &SourceFile,
     error_exprs: &[Expr],
+    options: &Options,
 ) -> Result<(Vec<Mutant>, Vec<ExternalModRef>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
@@ -126,6 +127,7 @@ fn walk_file(
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
         source_file: source_file.clone(),
+        options,
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.external_mods))
@@ -142,7 +144,7 @@ pub fn mutate_source_str(code: &str, options: &Options) -> Result<Vec<Mutant>> {
         "cargo-mutants-testdata-internal",
         true,
     );
-    let (mutants, _) = walk_file(&source_file, &options.parsed_error_exprs()?)?;
+    let (mutants, _) = walk_file(&source_file, &options.parsed_error_exprs()?, options)?;
     Ok(mutants)
 }
 
@@ -227,6 +229,8 @@ struct DiscoveryVisitor<'o> {
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
+
+    options: &'o Options,
 }
 
 impl DiscoveryVisitor<'_> {
@@ -319,6 +323,27 @@ impl DiscoveryVisitor<'_> {
 }
 
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
+    fn visit_expr_call(&mut self, i: &'ast syn::ExprCall) {
+        let _span = trace_span!("call", line = i.span().start().line, ?i).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        if !self.options.skip_calls.is_empty() {
+            if let Expr::Path(ExprPath { path, .. }) = &*i.func {
+                if let Some(last) = path.segments.last() {
+                    let ident = &last.ident;
+                    trace!(?ident, "call ident");
+                    if self.options.skip_calls.iter().any(|s| ident == s) {
+                        trace!("skip call to {ident}");
+                        return;
+                    }
+                }
+            }
+            // TODO: Also visit_expr_method_call
+        }
+        syn::visit::visit_expr_call(self, i);
+    }
+
     /// Visit a source file.
     fn visit_file(&mut self, i: &'ast File) {
         // No trace here; it's created per file for the whole visitor
@@ -772,7 +797,8 @@ mod test {
             tree_relative_path: Utf8PathBuf::from("src/lib.rs"),
             is_top: true,
         };
-        let (mutants, _files) = walk_file(&source_file, &[]).expect("walk_file");
+        let (mutants, _files) =
+            walk_file(&source_file, &[], &Options::default()).expect("walk_file");
         let mutant_names = mutants.iter().map(|m| m.name(false, false)).collect_vec();
         // It would be good to suggest replacing this with 'false', breaking a key behavior,
         // but bad to replace it with 'true', changing nothing.
@@ -881,5 +907,26 @@ mod test {
             mutants.iter().map(|m| m.name(false, false)).collect_vec(),
             ["src/main.rs: replace always_true -> bool with false"]
         );
+    }
+
+    /// Skip mutating arguments to a particular named function.
+    #[test]
+    fn skip_named_fn() {
+        let options = Options {
+            skip_calls: vec!["dont_touch_this".to_owned()],
+            ..Default::default()
+        };
+        let mut mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    dont_touch_this(2 + 3);
+                }
+            "},
+            &options,
+        )
+        .expect("walk_file_string");
+        // Ignore the main function itself
+        mutants.retain(|m| m.genre != Genre::FnValue);
+        assert_eq!(mutants, []);
     }
 }

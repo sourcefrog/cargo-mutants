@@ -91,6 +91,12 @@ pub struct Options {
     /// interesting results.
     pub shuffle: bool,
 
+    /// Don't mutate arguments to functions or methods matching any of these name.
+    ///
+    /// This matches as a string against the last component of the path, so should not include
+    /// `::`.
+    pub skip_calls: Vec<String>,
+
     /// Cargo profile.
     pub profile: Option<String>,
 
@@ -279,6 +285,7 @@ impl Options {
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
+            skip_calls: vec!["with_capacity".to_owned()], // TODO: args and config
             test_package,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
