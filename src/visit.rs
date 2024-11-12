@@ -117,7 +117,7 @@ pub fn walk_tree(
 fn walk_file(
     source_file: &SourceFile,
     error_exprs: &[Expr],
-) -> Result<(Vec<Mutant>, Vec<Vec<ModNamespace>>)> {
+) -> Result<(Vec<Mutant>, Vec<ExternalModRef>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(source_file.code())
@@ -133,6 +133,17 @@ fn walk_file(
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.external_mods))
+}
+
+/// Reference to an external module from a source file.
+///
+/// This is approximately a list of namespace components like `["foo", "bar"]` for
+/// `foo::bar`, but each may also be decorated with a `#[path="..."]` attribute,
+/// and they're attributed to a location in the source.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ExternalModRef {
+    /// Namespace components of the module path
+    parts: Vec<ModNamespace>,
 }
 
 /// Namespace for a module defined in a `mod foo { ... }` block or `mod foo;` statement
@@ -154,6 +165,7 @@ struct ModNamespace {
     /// Location of the module definition in the source file
     source_location: Span,
 }
+
 impl ModNamespace {
     /// Returns the name of the module for filesystem purposes
     fn get_filesystem_name(&self) -> &Utf8Path {
@@ -200,7 +212,7 @@ struct DiscoveryVisitor<'o> {
 
     /// The names from `mod foo;` statements that should be visited later,
     /// namespaced relative to the source file
-    external_mods: Vec<Vec<ModNamespace>>,
+    external_mods: Vec<ExternalModRef>,
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
@@ -436,7 +448,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if node.content.is_none() {
             // If we're already inside `mod a { ... }` and see `mod b;` then
             // remember [a, b] as an external module to visit later.
-            self.external_mods.push(self.mod_namespace_stack.clone());
+            self.external_mods.push(ExternalModRef {
+                parts: self.mod_namespace_stack.clone(),
+            });
         }
         self.in_namespace(&mod_namespace.name, |v| syn::visit::visit_item_mod(v, node));
         assert_eq!(self.mod_namespace_stack.pop(), Some(mod_namespace));
@@ -534,7 +548,7 @@ fn function_body_span(block: &Block) -> Option<Span> {
 fn find_mod_source(
     tree_root: &Utf8Path,
     parent: &SourceFile,
-    mod_namespace: &[ModNamespace],
+    mod_namespace: &ExternalModRef,
 ) -> Result<Option<Utf8PathBuf>> {
     // First, work out whether the mod will be a sibling in the same directory, or
     // in a child directory.
@@ -562,7 +576,10 @@ fn find_mod_source(
     // Having determined the right directory then we can follow the path attribute, or
     // if no path is specified, then look for either `foo.rs` or `foo/mod.rs`.
 
-    let (mod_child, mod_parents) = mod_namespace.split_last().expect("mod namespace is empty");
+    let (mod_child, mod_parents) = mod_namespace
+        .parts
+        .split_last()
+        .expect("mod namespace is empty");
 
     // TODO: Beyond #115, we should probably remove all special handling of
     // `mod.rs` here by remembering how we found this file, and whether it
