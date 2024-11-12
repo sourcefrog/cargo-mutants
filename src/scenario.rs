@@ -18,7 +18,7 @@ impl fmt::Display for Scenario {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Scenario::Baseline => f.write_str("baseline"),
-            Scenario::Mutant(mutant) => f.write_str(&mutant.name(true, false)),
+            Scenario::Mutant(mutant) => f.write_str(&mutant.name(true)),
         }
     }
 }

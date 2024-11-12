@@ -38,7 +38,7 @@ pub struct Discovered {
 impl Discovered {
     pub(crate) fn remove_previously_caught(&mut self, previously_caught: &[String]) {
         self.mutants.retain(|m| {
-            let name = m.name(true, false);
+            let name = m.name(true);
             let c = previously_caught.contains(&name);
             if c {
                 trace!(?name, "skip previously caught mutant");
@@ -102,7 +102,7 @@ pub fn walk_tree(
         files.push(source_file);
     }
     mutants.retain(|m| {
-        let name = m.name(true, false);
+        let name = m.name(true);
         (options.examine_names.is_empty() || options.examine_names.is_match(&name))
             && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
     });
@@ -744,7 +744,7 @@ mod test {
             is_top: true,
         };
         let (mutants, _files) = walk_file(&source_file, &[]).expect("walk_file");
-        let mutant_names = mutants.iter().map(|m| m.name(false, false)).collect_vec();
+        let mutant_names = mutants.iter().map(|m| m.name(false)).collect_vec();
         // It would be good to suggest replacing this with 'false', breaking a key behavior,
         // but bad to replace it with 'true', changing nothing.
         assert_eq!(

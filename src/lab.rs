@@ -236,7 +236,7 @@ impl Worker<'_> {
             let Some(mutant) = work_queue.lock().expect("Lock pending work queue").next() else {
                 return Ok(());
             };
-            let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
+            let _span = debug_span!("mutant", name = mutant.name(false)).entered();
             let test_package = match &self.options.test_package {
                 TestPackages::Workspace => PackageSelection::All,
                 TestPackages::Mutated => {

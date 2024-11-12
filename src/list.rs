@@ -39,7 +39,11 @@ pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
         // TODO: Use with_capacity when we can have mutants skip it (#315
         let mut out = String::new();
         for mutant in mutants {
-            out.push_str(&mutant.name(options.show_line_col, colors));
+            if colors {
+                out.push_str(&mutant.to_styled_string(options.show_line_col));
+            } else {
+                out.push_str(&mutant.name(options.show_line_col));
+            }
             out.push('\n');
             if options.emit_diffs {
                 out.push_str(&mutant.diff(&mutant.mutated_code()));

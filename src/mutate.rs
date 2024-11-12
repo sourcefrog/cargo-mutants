@@ -88,7 +88,28 @@ impl Mutant {
             .join("")
     }
 
-    pub fn name(&self, show_line_col: bool, styled: bool) -> String {
+    pub fn name(&self, show_line_col: bool) -> String {
+        let mut v = Vec::new();
+        v.push(self.source_file.tree_relative_slashes());
+        if show_line_col {
+            v.push(format!(
+                ":{}:{}: ",
+                self.span.start.line, self.span.start.column
+            ));
+        } else {
+            v.push(": ".to_owned());
+        }
+        v.extend(
+            self.styled_parts()
+                .into_iter()
+                .map(|x| x.force_styling(false).to_string()),
+        );
+        v.join("")
+    }
+
+    /// Return a one-line description of this mutant, with coloring, including the file names
+    /// and optionally the line and column.
+    pub fn to_styled_string(&self, show_line_col: bool) -> String {
         let mut v = Vec::new();
         v.push(self.source_file.tree_relative_slashes());
         if show_line_col {
@@ -98,16 +119,7 @@ impl Mutant {
             ));
         }
         v.push(": ".to_owned());
-        let parts = self.styled_parts();
-        if styled {
-            v.extend(parts.into_iter().map(|x| x.to_string()));
-        } else {
-            v.extend(
-                parts
-                    .into_iter()
-                    .map(|x| x.force_styling(false).to_string()),
-            );
-        }
+        v.extend(self.styled_parts().into_iter().map(|x| x.to_string()));
         v.join("")
     }
 
@@ -270,7 +282,7 @@ mod test {
             }
         );
         assert_eq!(
-            mutants[0].name(true, false),
+            mutants[0].name(true),
             "src/bin/factorial.rs:2:5: replace main with ()"
         );
         assert_eq!(
@@ -292,15 +304,15 @@ mod test {
             }
         );
         assert_eq!(
-            mutants[1].name(false, false),
+            mutants[1].name(false),
             "src/bin/factorial.rs: replace factorial -> u32 with 0"
         );
         assert_eq!(
-            mutants[1].name(true, false),
+            mutants[1].name(true),
             "src/bin/factorial.rs:8:5: replace factorial -> u32 with 0"
         );
         assert_eq!(
-            mutants[2].name(true, false),
+            mutants[2].name(true),
             "src/bin/factorial.rs:8:5: replace factorial -> u32 with 1"
         );
     }
