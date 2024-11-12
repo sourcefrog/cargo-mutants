@@ -754,6 +754,7 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
 mod test {
     use indoc::indoc;
     use itertools::Itertools;
+    use test_log::test;
     use test_util::copy_of_testdata;
 
     use super::*;
