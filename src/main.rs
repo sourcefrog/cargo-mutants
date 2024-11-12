@@ -57,7 +57,7 @@ use crate::console::Console;
 use crate::in_diff::diff_filter;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
-use crate::list::{list_files, list_mutants, FmtToIoWrite};
+use crate::list::{list_files, list_mutants};
 use crate::mutate::{Genre, Mutant};
 use crate::options::{Colors, Options, TestTool};
 use crate::outcome::{Phase, ScenarioOutcome};
@@ -461,7 +461,7 @@ fn main() -> Result<()> {
 
     console.clear();
     if args.list_files {
-        list_files(FmtToIoWrite::new(io::stdout()), &discovered.files, &options)?;
+        print!("{}", list_files(&discovered.files, &options));
         return Ok(());
     }
     let mut mutants = discovered.mutants;
@@ -475,7 +475,7 @@ fn main() -> Result<()> {
         mutants = shard.select(mutants);
     }
     if args.list {
-        list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
+        print!("{}", list_mutants(&mutants, &options));
     } else {
         let output_dir = OutputDir::new(&output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
