@@ -259,12 +259,9 @@ fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
 /// Find all the top source files for selected packages.
 fn top_sources(root: &Utf8Path, packages: &[Package]) -> Result<Vec<SourceFile>> {
     let mut sources = Vec::new();
-    for Package {
-        name, top_sources, ..
-    } in packages
-    {
-        for source_path in top_sources {
-            sources.extend(SourceFile::new(root, source_path.to_owned(), name, true)?);
+    for package in packages {
+        for source_path in &package.top_sources {
+            sources.extend(SourceFile::load(root, source_path, &package.name, true)?);
         }
     }
     Ok(sources)

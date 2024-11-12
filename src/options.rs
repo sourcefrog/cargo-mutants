@@ -11,6 +11,7 @@ use globset::GlobSet;
 use regex::RegexSet;
 use serde::Deserialize;
 use strum::{Display, EnumString};
+use syn::Expr;
 use tracing::warn;
 
 use crate::config::Config;
@@ -306,6 +307,17 @@ impl Options {
         } else {
             &[Phase::Build, Phase::Test]
         }
+    }
+
+    /// Return the syn ASTs for the error values, which should be inserted as return values
+    /// from functions returning `Result`.
+    pub(crate) fn parsed_error_exprs(&self) -> Result<Vec<Expr>> {
+        self.error_values
+            .iter()
+            .map(|e| {
+                syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}"))
+            })
+            .collect()
     }
 }
 
