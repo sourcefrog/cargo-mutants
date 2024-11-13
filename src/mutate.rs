@@ -237,8 +237,9 @@ mod test {
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
-    use test_util::copy_of_testdata;
 
+    use crate::test_util::copy_of_testdata;
+    use crate::visit::mutate_source_str;
     use crate::*;
 
     #[test]
@@ -324,6 +325,23 @@ mod test {
         replace * with / in controlled_loop
         "###
         );
+    }
+
+    #[test]
+    fn always_skip_constructors_called_new() {
+        let code = indoc! { r#"
+            struct S {
+                x: i32,
+            }
+
+            impl S {
+                fn new(x: i32) -> Self {
+                    Self { x }
+                }
+            }
+        "# };
+        let mutants = mutate_source_str(code, &Options::default()).unwrap();
+        assert_eq!(mutants, []);
     }
 
     #[test]

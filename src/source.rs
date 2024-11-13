@@ -2,6 +2,7 @@
 
 //! Access to a Rust source tree and files.
 
+use std::fs::read_to_string;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -42,31 +43,50 @@ impl SourceFile {
     /// Construct a SourceFile representing a file within a tree.
     ///
     /// This eagerly loads the text of the file.
-    pub fn new(
+    ///
+    /// This also skip files outside of the tree, returning `Ok(None)`.
+    pub fn load(
         tree_path: &Utf8Path,
-        tree_relative_path: Utf8PathBuf,
+        tree_relative_path: &Utf8Path,
         package_name: &str,
         is_top: bool,
     ) -> Result<Option<SourceFile>> {
-        if ascent(&tree_relative_path) > 0 {
+        // TODO: Perhaps the caller should be responsible for checking this?
+        if ascent(tree_relative_path) > 0 {
             warn!(
                 "skipping source outside of tree: {:?}",
                 tree_relative_path.to_slash_path()
             );
             return Ok(None);
         }
-        let full_path = tree_path.join(&tree_relative_path);
+        let full_path = tree_path.join(tree_relative_path);
         let code = Arc::new(
-            std::fs::read_to_string(&full_path)
+            read_to_string(&full_path)
                 .with_context(|| format!("failed to read source of {full_path:?}"))?
                 .replace("\r\n", "\n"),
         );
         Ok(Some(SourceFile {
-            tree_relative_path,
+            tree_relative_path: tree_relative_path.to_owned(),
             code,
             package_name: package_name.to_owned(),
             is_top,
         }))
+    }
+
+    /// Construct from in-memory text.
+    #[cfg(test)]
+    pub fn from_str(
+        tree_relative_path: &Utf8Path,
+        code: &str,
+        package_name: &str,
+        is_top: bool,
+    ) -> SourceFile {
+        SourceFile {
+            tree_relative_path: tree_relative_path.to_owned(),
+            code: Arc::new(code.to_owned()),
+            package_name: package_name.to_owned(),
+            is_top,
+        }
     }
 
     /// Return the path of this file relative to the tree root, with forward slashes.
@@ -109,9 +129,9 @@ mod test {
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
 
-        let source_file = SourceFile::new(
+        let source_file = SourceFile::load(
             temp_dir_path,
-            file_name.parse().unwrap(),
+            Utf8Path::new(file_name),
             "imaginary-package",
             true,
         )
@@ -122,9 +142,9 @@ mod test {
 
     #[test]
     fn skips_files_outside_of_workspace() {
-        let source_file = SourceFile::new(
-            &Utf8PathBuf::from("unimportant"),
-            "../outside_workspace.rs".parse().unwrap(),
+        let source_file = SourceFile::load(
+            Utf8Path::new("unimportant"),
+            Utf8Path::new("../outside_workspace.rs"),
             "imaginary-package",
             true,
         )
