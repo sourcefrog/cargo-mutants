@@ -190,7 +190,16 @@ Therefore when running `rustc` we configure all warnings off, with `--cap-lints`
 
 ## Testing
 
-Cargo-mutants is primarily tested on its public interface, which is the command line. These tests live in `tests/cli` and generally have the form of:
+Testing cargo-mutants is of course important: both so that it works reliably and also so that it's a good example of a well-tested project that should have few missed mutants.
+
+### integration and unit tests
+
+The tests have a combination of:
+
+1. Rust "unit" tests run in-process, declared in `mod test{}` within various files in `src`.
+2. Rust "integration" tests in the `tests` directory that actually run `cargo-mutants` as a subprocess and that test its overall behavior.
+
+The integration tests are in some sense more realistic because they drive the same interface as real users, but they will also typically be slower because they spawn subprocesses. As a result, my general idea is to have at least basic coverage of each feature with an integration test, and then to fill in the other cases with unit tests.
 
 1. Make a copy of a `testdata` tree, so that it's not accidentally modified.
 2. Run a `cargo-mutants` command on it.
@@ -212,15 +221,15 @@ To manage test time:
 
 ### `testdata` trees
 
-The primary means of testing is Rust source trees under `testdata`: you can copy an existing tree and modify it to show the new behavior that you want to test.
+Many tests run against trees under `testdata`.
 
-A selection of test trees are available for testing different scenarios. If there is an existing suitable tree, please use it. If you need to test a situation that is not covered yet, please add a new tree.
+These have been "disarmed" by renaming `Cargo.toml` to `Cargo_test.toml`, so `cargo` won't normally run them, or see them as part of the main workspace. (See <https://github.com/sourcefrog/cargo-mutants/issues/355> for context.)
+
+Tests should always run against a copy of these trees using `copy_of_testdata`, to make sure their work has no side effects on the main tree.
 
 Please describe the purpose of the testdata tree inside the tree, either in `Cargo.toml` or a `README.md` file.
 
 To make a new tree you can copy an existing tree, but make sure to change the package name in its `Cargo.toml`.
-
-All the trees need to be excluded from the overall workspace in the top-level `Cargo.toml`.
 
 ### `--list` tests
 
@@ -228,13 +237,9 @@ There is a general test that runs `cargo mutants --list` on each tree and compar
 
 Many features can be tested adequately by only looking at the list of mutants produced, with no need to actually test the mutants. In this case the generic list tests might be enough.
 
-### Unit tests
-
-Although we primarily want to test the public interface (which is the command line), unit tests can be added in a `mod test {}` within the source tree for any behavior that is inconvenient or overly slow to exercise from the command line.
-
 ### Nextest tests
 
-cargo-mutants tests require `nextest` to be installed.
+cargo-mutants tests require `nextest` to be installed so that we can test the integration.
 
 ## UI Style
 
