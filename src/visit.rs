@@ -877,7 +877,7 @@ mod test {
         )
         .expect("walk_file_string");
         assert_eq!(
-            mutants.iter().map(|m| m.name(false, false)).collect_vec(),
+            mutants.iter().map(|m| m.name(false)).collect_vec(),
             ["src/main.rs: replace always_true -> bool with false"]
         );
     }
