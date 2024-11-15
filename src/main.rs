@@ -440,15 +440,12 @@ fn main() -> Result<()> {
         PackageFilter::Auto(start_dir.to_owned())
     };
 
-    let output_parent_dir = options
-        .output_in_dir
-        .clone()
-        .unwrap_or_else(|| workspace.root().to_owned());
+    let output_parent_dir = options.output_in_dir.unwrap_or_else(|| workspace.root());
 
     let mut discovered = workspace.discover(&package_filter, &options, &console)?;
 
     let previously_caught = if args.iterate {
-        let previously_caught = load_previously_caught(&output_parent_dir)?;
+        let previously_caught = load_previously_caught(output_parent_dir)?;
         info!(
             "Iteration excludes {} previously caught or unviable mutants",
             previously_caught.len()
@@ -477,7 +474,7 @@ fn main() -> Result<()> {
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
     } else {
-        let output_dir = OutputDir::new(&output_parent_dir)?;
+        let output_dir = OutputDir::new(output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
             output_dir.write_previously_caught(&previously_caught)?;
         }

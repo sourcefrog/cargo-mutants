@@ -161,9 +161,14 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
             .iter()
             .map(|f| format!("--features={}", f)),
     );
-    cargo_args.extend(options.additional_cargo_args.iter().cloned());
+    cargo_args.extend(options.additional_cargo_args.iter().map(|s| s.to_string()));
     if phase == Phase::Test {
-        cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
+        cargo_args.extend(
+            options
+                .additional_cargo_test_args
+                .iter()
+                .map(|s| s.to_string()),
+        );
     }
     cargo_args
 }
@@ -212,6 +217,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
 
+    use crate::config::Config;
     use crate::Args;
 
     use super::*;
@@ -238,9 +244,7 @@ mod test {
         let mut options = Options::default();
         let package_name = "cargo-mutants-testdata-something";
         // let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
-        options
-            .additional_cargo_test_args
-            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+        options.additional_cargo_test_args = vec!["--lib", "--no-fail-fast"];
         // TODO: It wolud be a bit better to use `--manifest-path` here, to get
         // the fix for <https://github.com/sourcefrog/cargo-mutants/issues/117>
         // but it's temporarily regressed.
@@ -292,10 +296,8 @@ mod test {
         let mut options = Options::default();
         options
             .additional_cargo_test_args
-            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
-        options
-            .additional_cargo_args
-            .extend(["--release".to_owned()]);
+            .extend(["--lib", "--no-fail-fast"]);
+        options.additional_cargo_args.extend(["--release"]);
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
             ["check", "--tests", "--verbose", "--workspace", "--release"]
@@ -320,7 +322,8 @@ mod test {
     #[test]
     fn no_default_features_args_passed_to_cargo() {
         let args = Args::try_parse_from(["mutants", "--no-default-features"].as_slice()).unwrap();
-        let options = Options::from_args(&args).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
             [
@@ -336,7 +339,8 @@ mod test {
     #[test]
     fn all_features_args_passed_to_cargo() {
         let args = Args::try_parse_from(["mutants", "--all-features"].as_slice()).unwrap();
-        let options = Options::from_args(&args).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
             [
@@ -352,7 +356,8 @@ mod test {
     #[test]
     fn cap_lints_passed_to_cargo() {
         let args = Args::try_parse_from(["mutants", "--cap-lints=true"].as_slice()).unwrap();
-        let options = Options::from_args(&args).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
             ["check", "--tests", "--verbose", "--workspace",]
@@ -365,7 +370,8 @@ mod test {
             ["mutants", "--features", "foo", "--features", "bar,baz"].as_slice(),
         )
         .unwrap();
-        let options = Options::from_args(&args).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
             [
@@ -381,8 +387,9 @@ mod test {
 
     #[test]
     fn profile_arg_passed_to_cargo() {
+        let config = Config::default();
         let args = Args::try_parse_from(["mutants", "--profile", "mutants"].as_slice()).unwrap();
-        let options = Options::from_args(&args).unwrap();
+        let options = Options::new(&args, &config).unwrap();
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
             [
@@ -401,7 +408,8 @@ mod test {
             ["mutants", "--test-tool=nextest", "--profile", "mutants"].as_slice(),
         )
         .unwrap();
-        let options = Options::from_args(&args).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
         assert_eq!(
             cargo_argv(&PackageSelection::All, Phase::Build, &options)[1..],
             [
