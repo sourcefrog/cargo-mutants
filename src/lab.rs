@@ -163,7 +163,7 @@ fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Resul
 struct Lab<'a> {
     output_mutex: Mutex<OutputDir>,
     jobserver: Option<jobserver::Client>,
-    options: &'a Options,
+    options: &'a Options<'a>,
     console: &'a Console,
 }
 
@@ -218,7 +218,7 @@ struct Worker<'a> {
     build_dir: &'a BuildDir,
     output_mutex: &'a Mutex<OutputDir>,
     jobserver: &'a Option<jobserver::Client>,
-    options: &'a Options,
+    options: &'a Options<'a>,
     console: &'a Console,
 }
 
@@ -236,7 +236,7 @@ impl Worker<'_> {
             let Some(mutant) = work_queue.lock().expect("Lock pending work queue").next() else {
                 return Ok(());
             };
-            let _span = debug_span!("mutant", name = mutant.name(false, false)).entered();
+            let _span = debug_span!("mutant", name = mutant.name(false)).entered();
             let test_package = match &self.options.test_package {
                 TestPackages::Workspace => PackageSelection::All,
                 TestPackages::Mutated => {

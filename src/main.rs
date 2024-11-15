@@ -57,7 +57,7 @@ use crate::console::Console;
 use crate::in_diff::diff_filter;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
-use crate::list::{list_files, list_mutants, FmtToIoWrite};
+use crate::list::{list_files, list_mutants};
 use crate::mutate::{Genre, Mutant};
 use crate::options::{Colors, Options, TestTool};
 use crate::outcome::{Phase, ScenarioOutcome};
@@ -440,15 +440,12 @@ fn main() -> Result<()> {
         PackageFilter::Auto(start_dir.to_owned())
     };
 
-    let output_parent_dir = options
-        .output_in_dir
-        .clone()
-        .unwrap_or_else(|| workspace.root().to_owned());
+    let output_parent_dir = options.output_in_dir.unwrap_or_else(|| workspace.root());
 
     let mut discovered = workspace.discover(&package_filter, &options, &console)?;
 
     let previously_caught = if args.iterate {
-        let previously_caught = load_previously_caught(&output_parent_dir)?;
+        let previously_caught = load_previously_caught(output_parent_dir)?;
         info!(
             "Iteration excludes {} previously caught or unviable mutants",
             previously_caught.len()
@@ -461,7 +458,7 @@ fn main() -> Result<()> {
 
     console.clear();
     if args.list_files {
-        list_files(FmtToIoWrite::new(io::stdout()), &discovered.files, &options)?;
+        print!("{}", list_files(&discovered.files, &options));
         return Ok(());
     }
     let mut mutants = discovered.mutants;
@@ -475,9 +472,9 @@ fn main() -> Result<()> {
         mutants = shard.select(mutants);
     }
     if args.list {
-        list_mutants(FmtToIoWrite::new(io::stdout()), &mutants, &options)?;
+        print!("{}", list_mutants(&mutants, &options));
     } else {
-        let output_dir = OutputDir::new(&output_parent_dir)?;
+        let output_dir = OutputDir::new(output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
             output_dir.write_previously_caught(&previously_caught)?;
         }

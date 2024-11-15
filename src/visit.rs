@@ -38,7 +38,7 @@ pub struct Discovered {
 impl Discovered {
     pub(crate) fn remove_previously_caught(&mut self, previously_caught: &[String]) {
         self.mutants.retain(|m| {
-            let name = m.name(true, false);
+            let name = m.name(true);
             let c = previously_caught.contains(&name);
             if c {
                 trace!(?name, "skip previously caught mutant");
@@ -98,7 +98,7 @@ pub fn walk_tree(
         files.push(source_file);
     }
     mutants.retain(|m| {
-        let name = m.name(true, false);
+        let name = m.name(true);
         (options.examine_names.is_empty() || options.examine_names.is_match(&name))
             && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
     });
@@ -230,7 +230,7 @@ struct DiscoveryVisitor<'o> {
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
 
-    options: &'o Options,
+    options: &'o Options<'o>,
 }
 
 impl DiscoveryVisitor<'_> {
@@ -799,7 +799,7 @@ mod test {
         };
         let (mutants, _files) =
             walk_file(&source_file, &[], &Options::default()).expect("walk_file");
-        let mutant_names = mutants.iter().map(|m| m.name(false, false)).collect_vec();
+        let mutant_names = mutants.iter().map(|m| m.name(false)).collect_vec();
         // It would be good to suggest replacing this with 'false', breaking a key behavior,
         // but bad to replace it with 'true', changing nothing.
         assert_eq!(
@@ -904,7 +904,7 @@ mod test {
         )
         .expect("walk_file_string");
         assert_eq!(
-            mutants.iter().map(|m| m.name(false, false)).collect_vec(),
+            mutants.iter().map(|m| m.name(false)).collect_vec(),
             ["src/main.rs: replace always_true -> bool with false"]
         );
     }
@@ -913,7 +913,7 @@ mod test {
     #[test]
     fn skip_named_fn() {
         let options = Options {
-            skip_calls: vec!["dont_touch_this".to_owned()],
+            skip_calls: vec!["dont_touch_this"],
             ..Default::default()
         };
         let mut mutants = mutate_source_str(

@@ -1,41 +1,27 @@
 // Copyright 2023-2024 Martin Pool
 
-//! List mutants and files as text.
+//! List mutants and files as text or json.
 
-use std::fmt;
-use std::io;
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 
+use itertools::Itertools;
 use serde_json::{json, Value};
 
 use crate::mutate::Mutant;
 use crate::path::Utf8PathSlashes;
 use crate::source::SourceFile;
-use crate::{Options, Result};
+use crate::Options;
 
-/// Convert `fmt::Write` to `io::Write`.
-pub(crate) struct FmtToIoWrite<W: io::Write>(W);
-
-impl<W: io::Write> FmtToIoWrite<W> {
-    pub(crate) fn new(w: W) -> Self {
-        Self(w)
-    }
-}
-
-impl<W: io::Write> fmt::Write for FmtToIoWrite<W> {
-    fn write_str(&mut self, s: &str) -> Result<(), fmt::Error> {
-        self.0.write_all(s.as_bytes()).map_err(|_| fmt::Error)
-    }
-}
-
-pub(crate) fn list_mutants<W: fmt::Write>(
-    mut out: W,
-    mutants: &[Mutant],
-    options: &Options,
-) -> Result<()> {
+/// Return a string representation of a list of mutants.
+///
+/// The format is controlled by the `emit_json`, `emit_diffs`, `show_line_col`, and `colors` options.
+pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
     if options.emit_json {
+        // Panic: only if we created illegal json, which would be a bug.
         let mut list: Vec<serde_json::Value> = Vec::new();
         for mutant in mutants {
-            let mut obj = serde_json::to_value(mutant)?;
+            let mut obj = serde_json::to_value(mutant).expect("Serialize mutant");
             if options.emit_diffs {
                 obj.as_object_mut().unwrap().insert(
                     "diff".to_owned(),
@@ -44,26 +30,32 @@ pub(crate) fn list_mutants<W: fmt::Write>(
             }
             list.push(obj);
         }
-        out.write_str(&serde_json::to_string_pretty(&list)?)?;
+        serde_json::to_string_pretty(&list).expect("Serialize mutants")
     } else {
         // TODO: Do we need to check this? Could the console library strip them if they're not
         // supported?
         let colors = options.colors.active_stdout();
+        // let mut out = String::with_capacity(200 * mutants.len());
+        // TODO: Use with_capacity when we can have mutants skip it (#315
+        let mut out = String::new();
         for mutant in mutants {
-            writeln!(out, "{}", mutant.name(options.show_line_col, colors))?;
+            if colors {
+                out.push_str(&mutant.to_styled_string(options.show_line_col));
+            } else {
+                out.push_str(&mutant.name(options.show_line_col));
+            }
+            out.push('\n');
             if options.emit_diffs {
-                writeln!(out, "{}", mutant.diff(&mutant.mutated_code()))?;
+                out.push_str(&mutant.diff(&mutant.mutated_code()));
+                out.push('\n');
             }
         }
+        out
     }
-    Ok(())
 }
 
-pub(crate) fn list_files<W: fmt::Write>(
-    mut out: W,
-    source_files: &[SourceFile],
-    options: &Options,
-) -> Result<()> {
+/// List the source files as json or text.
+pub fn list_files(source_files: &[SourceFile], options: &Options) -> String {
     if options.emit_json {
         let json_list = Value::Array(
             source_files
@@ -76,11 +68,11 @@ pub(crate) fn list_files<W: fmt::Write>(
                 })
                 .collect(),
         );
-        writeln!(out, "{}", serde_json::to_string_pretty(&json_list)?)?;
+        serde_json::to_string_pretty(&json_list).expect("Serialize source files")
     } else {
-        for file in source_files {
-            writeln!(out, "{}", file.tree_relative_path.to_slash_path())?;
-        }
+        source_files
+            .iter()
+            .map(|file| file.tree_relative_path.to_slash_path() + "\n")
+            .join("")
     }
-    Ok(())
 }

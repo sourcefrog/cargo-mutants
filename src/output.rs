@@ -220,7 +220,7 @@ impl OutputDir {
                 SummaryOutcome::Unviable => &mut self.unviable_list,
                 _ => return Ok(()),
             };
-            writeln!(file, "{}", mutant.name(true, false)).context("write to list file")?;
+            writeln!(file, "{}", mutant.name(true)).context("write to list file")?;
         }
         Ok(())
     }

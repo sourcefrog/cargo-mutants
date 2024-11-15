@@ -630,8 +630,8 @@ fn style_mb(bytes: u64) -> StyledObject<String> {
 
 pub fn style_scenario(scenario: &Scenario, line_col: bool) -> Cow<'static, str> {
     match scenario {
-        Scenario::Baseline => "Unmutated baseline".into(),
-        Scenario::Mutant(mutant) => mutant.name(line_col, true).into(),
+        Scenario::Baseline => Cow::Borrowed("Unmutated baseline"),
+        Scenario::Mutant(mutant) => Cow::Owned(mutant.to_styled_string(line_col)),
     }
 }
 
