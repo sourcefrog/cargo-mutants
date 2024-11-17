@@ -2,8 +2,11 @@
 
 //! Global in-process options for experimenting on mutants.
 //!
-//! The [Options] structure is built from command-line options and then widely passed around.
-//! Options are also merged from the [config] after reading the command line arguments.
+//! The [`Options`] structure is built by combining, in priority order:
+//!
+//! 1. Command line options
+//! 2. Config options (read from `.cargo/mutants.toml`)
+//! 3. Built-in defaults
 
 use std::time::Duration;
 
@@ -241,6 +244,20 @@ impl<'a> Options<'a> {
             TestPackages::Mutated
         };
 
+        let mut skip_calls: Vec<&str> = args
+            .skip_calls
+            .iter()
+            .flat_map(|s| s.split(','))
+            .chain(config.skip_calls.iter().map(String::as_str))
+            .collect();
+        if args
+            .skip_calls_defaults
+            .or(config.skip_calls_defaults)
+            .unwrap_or(true)
+        {
+            skip_calls.push("with_capacity");
+        }
+
         let options = Options {
             additional_cargo_args: args
                 .cargo_arg
@@ -296,7 +313,7 @@ impl<'a> Options<'a> {
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
-            skip_calls: vec!["with_capacity"], // TODO: args and config
+            skip_calls,
             test_package,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
@@ -722,5 +739,86 @@ mod test {
             options.test_package,
             TestPackages::Named(vec!["foo".to_string(), "bar".to_string()])
         );
+    }
+
+    #[test]
+    fn default_skip_calls_includes_with_capacity() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.skip_calls, ["with_capacity"]);
+    }
+
+    #[test]
+    fn arg_configure_skip_calls_default_off() {
+        let args = Args::parse_from(["mutants", "--skip-calls-defaults=false"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.skip_calls, [""; 0]);
+    }
+
+    #[test]
+    fn arg_redundantly_configure_skip_calls_default_on() {
+        let args = Args::parse_from(["mutants", "--skip-calls-defaults=true"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.skip_calls, ["with_capacity"]);
+    }
+
+    #[test]
+    fn skip_calls_from_args() {
+        let args = Args::parse_from(["mutants", "--skip-calls=a", "--skip-calls=b,c"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.skip_calls, ["a", "b", "c", "with_capacity"]);
+    }
+
+    #[test]
+    fn skip_calls_from_args_and_options() {
+        let args = Args::parse_from(["mutants", "--skip-calls=a", "--skip-calls=b,c"]);
+        let config = Config::from_str(
+            r#"
+            skip_calls = ["d", "e"]
+        "#,
+        )
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // In this case the default is not used
+        assert_eq!(
+            options.skip_calls,
+            ["a", "b", "c", "d", "e", "with_capacity"]
+        );
+    }
+
+    #[test]
+    fn config_skip_calls_default_off() {
+        // You can configure off the default `with_capacity` skip_calls
+        let args = Args::try_parse_from(["mutants"]).unwrap();
+        let config = Config::from_str(
+            r#"
+            skip_calls_defaults = false
+            skip_calls = []
+            "#,
+        )
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // In this case the default is not used
+        assert_eq!(options.skip_calls, [""; 0]);
+    }
+
+    #[test]
+    fn arg_overrides_config_skip_calls_defaults() {
+        // You can configure off the default `with_capacity` skip_calls
+        let args = Args::parse_from(["mutants", "--skip-calls-defaults=true", "--skip-calls=x"]);
+        let config = Config::from_str(
+            r#"
+            skip_calls_defaults = false
+            skip_calls = ["y"]
+            "#,
+        )
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // In this case the default is not used
+        assert_eq!(options.skip_calls, ["x", "y", "with_capacity"]);
     }
 }
