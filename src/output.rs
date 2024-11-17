@@ -247,10 +247,8 @@ impl OutputDir {
     }
 
     pub fn write_previously_caught(&self, caught: &[String]) -> Result<()> {
-        let p = self.path.join(PREVIOUSLY_CAUGHT_TXT);
-        // TODO: with_capacity when mutants knows to skip that; https://github.com/sourcefrog/cargo-mutants/issues/315
-        // let mut b = String::with_capacity(caught.iter().map(|l| l.len() + 1).sum());
-        let mut b = String::new();
+        let path = self.path.join(PREVIOUSLY_CAUGHT_TXT);
+        let mut b = String::with_capacity(caught.iter().map(|l| l.len() + 1).sum());
         for l in caught {
             b.push_str(l);
             b.push('\n');
@@ -258,9 +256,9 @@ impl OutputDir {
         File::options()
             .create_new(true)
             .write(true)
-            .open(&p)
+            .open(&path)
             .and_then(|mut f| f.write_all(b.as_bytes()))
-            .with_context(|| format!("Write {p:?}"))
+            .with_context(|| format!("Write {path:?}"))
     }
 }
 
