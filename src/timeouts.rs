@@ -108,7 +108,7 @@ mod test {
 
     #[test]
     fn timeout_multiplier_from_option() {
-        let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5"]);
+        let args = Args::try_parse_from(["mutants", "--timeout-multiplier", "1.5"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -121,7 +121,8 @@ mod test {
 
     #[test]
     fn test_timeout_unaffected_by_in_place_build() {
-        let args = Args::parse_from(["mutants", "--timeout-multiplier", "1.5", "--in-place"]);
+        let args =
+            Args::try_parse_from(["mutants", "--timeout-multiplier", "1.5", "--in-place"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -133,7 +134,7 @@ mod test {
 
     #[test]
     fn build_timeout_multiplier_from_option() {
-        let args = Args::parse_from(["mutants", "--build-timeout-multiplier", "1.5"]);
+        let args = Args::try_parse_from(["mutants", "--build-timeout-multiplier", "1.5"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -146,7 +147,9 @@ mod test {
 
     #[test]
     fn build_timeout_is_affected_by_in_place_build() {
-        let args = Args::parse_from(["mutants", "--build-timeout-multiplier", "5", "--in-place"]);
+        let args =
+            Args::try_parse_from(["mutants", "--build-timeout-multiplier", "5", "--in-place"])
+                .unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -158,7 +161,7 @@ mod test {
 
     #[test]
     fn timeout_multiplier_from_config() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::from_str(indoc! {r#"
             timeout_multiplier = 2.0
         "#})
@@ -174,7 +177,7 @@ mod test {
 
     #[test]
     fn build_timeout_multiplier_from_config() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::from_str(indoc! {r#"
             build_timeout_multiplier = 2.0
         "#})
@@ -190,7 +193,7 @@ mod test {
 
     #[test]
     fn timeout_multiplier_default() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -203,7 +206,7 @@ mod test {
 
     #[test]
     fn build_timeout_multiplier_default() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -213,7 +216,7 @@ mod test {
 
     #[test]
     fn timeout_from_option() {
-        let args = Args::parse_from(["mutants", "--timeout=8"]);
+        let args = Args::try_parse_from(["mutants", "--timeout=8"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -222,7 +225,7 @@ mod test {
 
     #[test]
     fn build_timeout_from_option() {
-        let args = Args::parse_from(["mutants", "--build-timeout=4"]);
+        let args = Args::try_parse_from(["mutants", "--build-timeout=4"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -231,7 +234,7 @@ mod test {
 
     #[test]
     fn no_default_build_timeout() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 
@@ -242,7 +245,7 @@ mod test {
     fn timeout_multiplier_default_with_baseline_skip() {
         // The --baseline option is not used to set the timeout but it's
         // indicative of the realistic situation.
-        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let args = Args::try_parse_from(["mutants", "--baseline", "skip"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
 

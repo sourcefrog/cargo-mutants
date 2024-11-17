@@ -373,7 +373,7 @@ mod test {
 
     #[test]
     fn default_options() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.check_only);
@@ -383,7 +383,7 @@ mod test {
 
     #[test]
     fn options_from_test_tool_arg() {
-        let args = Args::parse_from(["mutants", "--test-tool", "nextest"]);
+        let args = Args::try_parse_from(["mutants", "--test-tool", "nextest"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
@@ -391,17 +391,17 @@ mod test {
 
     #[test]
     fn options_from_baseline_arg() {
-        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
+        let args = Args::try_parse_from(["mutants", "--baseline", "skip"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Skip);
 
-        let args = Args::parse_from(["mutants", "--baseline", "run"]);
+        let args = Args::try_parse_from(["mutants", "--baseline", "run"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Run);
 
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Run);
@@ -409,24 +409,24 @@ mod test {
 
     #[test]
     fn options_from_timeout_args() {
-        let args = Args::parse_from(["mutants", "--timeout=2.0"]);
+        let args = Args::try_parse_from(["mutants", "--timeout=2.0"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_timeout, Some(Duration::from_secs(2)));
 
-        let args = Args::parse_from(["mutants", "--timeout-multiplier=2.5"]);
+        let args = Args::try_parse_from(["mutants", "--timeout-multiplier=2.5"]).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_timeout_multiplier, Some(2.5));
 
-        let args = Args::parse_from(["mutants", "--minimum-test-timeout=60.0"]);
+        let args = Args::try_parse_from(["mutants", "--minimum-test-timeout=60.0"]).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.minimum_test_timeout, Duration::from_secs(60));
 
-        let args = Args::parse_from(["mutants", "--build-timeout=3.0"]);
+        let args = Args::try_parse_from(["mutants", "--build-timeout=3.0"]).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.build_timeout, Some(Duration::from_secs(3)));
 
-        let args = Args::parse_from(["mutants", "--build-timeout-multiplier=3.5"]);
+        let args = Args::try_parse_from(["mutants", "--build-timeout-multiplier=3.5"]).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.build_timeout_multiplier, Some(3.5));
     }
@@ -479,7 +479,7 @@ mod test {
         "#};
         let mut config_file = NamedTempFile::new().unwrap();
         config_file.write_all(config.as_bytes()).unwrap();
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::read_file(config_file.path()).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
@@ -528,7 +528,7 @@ mod test {
 
     #[test]
     fn default_jobserver_settings() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.jobserver);
@@ -537,7 +537,7 @@ mod test {
 
     #[test]
     fn disable_jobserver() {
-        let args = Args::parse_from(["mutants", "--jobserver=false"]);
+        let args = Args::try_parse_from(["mutants", "--jobserver=false"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.jobserver);
@@ -546,7 +546,7 @@ mod test {
 
     #[test]
     fn jobserver_tasks() {
-        let args = Args::parse_from(["mutants", "--jobserver-tasks=13"]);
+        let args = Args::try_parse_from(["mutants", "--jobserver-tasks=13"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.jobserver);
@@ -581,23 +581,23 @@ mod test {
             set_var("CARGO_TERM_COLOR", "always");
             remove_var("CLICOLOR_FORCE");
             remove_var("NO_COLOR");
-            let args = Args::parse_from(["mutants"]);
+            let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), Some(true));
 
             set_var("CARGO_TERM_COLOR", "never");
-            let args = Args::parse_from(["mutants"]);
+            let args = Args::try_parse_from(["mutants"]).unwrap();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), Some(false));
 
             set_var("CARGO_TERM_COLOR", "auto");
-            let args = Args::parse_from(["mutants"]);
+            let args = Args::try_parse_from(["mutants"]).unwrap();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), None);
 
             remove_var("CARGO_TERM_COLOR");
-            let args = Args::parse_from(["mutants"]);
+            let args = Args::try_parse_from(["mutants"]).unwrap();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), None);
         }
@@ -609,7 +609,7 @@ mod test {
             remove_var("CARGO_TERM_COLOR");
             remove_var("CLICOLOR_FORCE");
             remove_var("NO_COLOR");
-            let args = Args::parse_from(["mutants"]);
+            let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), None);
@@ -633,7 +633,7 @@ mod test {
 
     #[test]
     fn profile_option_from_args() {
-        let args = Args::parse_from(["mutants", "--profile=mutants"]);
+        let args = Args::try_parse_from(["mutants", "--profile=mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.profile.unwrap(), "mutants");
@@ -641,7 +641,7 @@ mod test {
 
     #[test]
     fn profile_from_config() {
-        let args = Args::parse_from(["mutants", "-j3"]);
+        let args = Args::try_parse_from(["mutants", "-j3"]).unwrap();
         let config = indoc! { r#"
                 profile = "mutants"
                 timeout_multiplier = 1.0
@@ -656,7 +656,7 @@ mod test {
 
     #[test]
     fn test_workspace_arg_true() {
-        let args = Args::parse_from(["mutants", "--test-workspace=true"]);
+        let args = Args::try_parse_from(["mutants", "--test-workspace=true"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Workspace);
@@ -664,7 +664,7 @@ mod test {
 
     #[test]
     fn test_workspace_arg_false() {
-        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
+        let args = Args::try_parse_from(["mutants", "--test-workspace=false"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Mutated);
@@ -672,7 +672,7 @@ mod test {
 
     #[test]
     fn test_workspace_config_true() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = indoc! { r#"
                 test_workspace = true
             "#};
@@ -683,7 +683,7 @@ mod test {
 
     #[test]
     fn test_workspace_config_false() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = indoc! { r#"
                 test_workspace = false
             "#};
@@ -694,7 +694,7 @@ mod test {
 
     #[test]
     fn test_workspace_args_override_config_true() {
-        let args = Args::parse_from(["mutants", "--test-workspace=true"]);
+        let args = Args::try_parse_from(["mutants", "--test-workspace=true"]).unwrap();
         let config = indoc! { r#"
                 test_workspace = false
             "#};
@@ -705,7 +705,7 @@ mod test {
 
     #[test]
     fn test_workspace_args_override_config_false() {
-        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
+        let args = Args::try_parse_from(["mutants", "--test-workspace=false"]).unwrap();
         let config = indoc! { r#"
                 test_workspace = true
             "#};
@@ -716,7 +716,7 @@ mod test {
 
     #[test]
     fn test_workspace_arg_false_allows_packages_from_config() {
-        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
+        let args = Args::try_parse_from(["mutants", "--test-workspace=false"]).unwrap();
         let config = indoc! { r#"
                 # Normally the packages would be ignored, but --test-workspace=false.
                 test_workspace = true
@@ -732,7 +732,7 @@ mod test {
 
     #[test]
     fn test_package_arg_with_commas() {
-        let args = Args::parse_from(["mutants", "--test-package=foo,bar"]);
+        let args = Args::try_parse_from(["mutants", "--test-package=foo,bar"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(
@@ -743,7 +743,7 @@ mod test {
 
     #[test]
     fn default_skip_calls_includes_with_capacity() {
-        let args = Args::parse_from(["mutants"]);
+        let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.skip_calls, ["with_capacity"]);
@@ -751,7 +751,7 @@ mod test {
 
     #[test]
     fn arg_configure_skip_calls_default_off() {
-        let args = Args::parse_from(["mutants", "--skip-calls-defaults=false"]);
+        let args = Args::try_parse_from(["mutants", "--skip-calls-defaults=false"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.skip_calls, [""; 0]);
@@ -759,7 +759,7 @@ mod test {
 
     #[test]
     fn arg_redundantly_configure_skip_calls_default_on() {
-        let args = Args::parse_from(["mutants", "--skip-calls-defaults=true"]);
+        let args = Args::try_parse_from(["mutants", "--skip-calls-defaults=true"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.skip_calls, ["with_capacity"]);
@@ -767,7 +767,7 @@ mod test {
 
     #[test]
     fn skip_calls_from_args() {
-        let args = Args::parse_from(["mutants", "--skip-calls=a", "--skip-calls=b,c"]);
+        let args = Args::try_parse_from(["mutants", "--skip-calls=a", "--skip-calls=b,c"]).unwrap();
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.skip_calls, ["a", "b", "c", "with_capacity"]);
@@ -775,7 +775,7 @@ mod test {
 
     #[test]
     fn skip_calls_from_args_and_options() {
-        let args = Args::parse_from(["mutants", "--skip-calls=a", "--skip-calls=b,c"]);
+        let args = Args::try_parse_from(["mutants", "--skip-calls=a", "--skip-calls=b,c"]).unwrap();
         let config = Config::from_str(
             r#"
             skip_calls = ["d", "e"]
@@ -809,7 +809,9 @@ mod test {
     #[test]
     fn arg_overrides_config_skip_calls_defaults() {
         // You can configure off the default `with_capacity` skip_calls
-        let args = Args::parse_from(["mutants", "--skip-calls-defaults=true", "--skip-calls=x"]);
+        let args =
+            Args::try_parse_from(["mutants", "--skip-calls-defaults=true", "--skip-calls=x"])
+                .unwrap();
         let config = Config::from_str(
             r#"
             skip_calls_defaults = false
