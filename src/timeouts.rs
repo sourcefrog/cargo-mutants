@@ -194,8 +194,7 @@ mod test {
     #[test]
     fn timeout_multiplier_default() {
         let args = Args::try_parse_from(["mutants"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.test_timeout_multiplier, None);
         assert_eq!(
@@ -207,8 +206,7 @@ mod test {
     #[test]
     fn build_timeout_multiplier_default() {
         let args = Args::try_parse_from(["mutants"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.build_timeout_multiplier, None);
         assert_eq!(build_timeout(Some(Duration::from_secs(42)), &options), None,);
@@ -217,8 +215,7 @@ mod test {
     #[test]
     fn timeout_from_option() {
         let args = Args::try_parse_from(["mutants", "--timeout=8"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.test_timeout, Some(Duration::from_secs(8)));
     }
@@ -226,8 +223,7 @@ mod test {
     #[test]
     fn build_timeout_from_option() {
         let args = Args::try_parse_from(["mutants", "--build-timeout=4"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.build_timeout, Some(Duration::from_secs(4)));
     }
@@ -235,8 +231,7 @@ mod test {
     #[test]
     fn no_default_build_timeout() {
         let args = Args::try_parse_from(["mutants"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.build_timeout, None);
     }
@@ -246,8 +241,7 @@ mod test {
         // The --baseline option is not used to set the timeout but it's
         // indicative of the realistic situation.
         let args = Args::try_parse_from(["mutants", "--baseline", "skip"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.test_timeout_multiplier, None);
         assert_eq!(test_timeout(None, &options), Some(Duration::from_secs(300)));

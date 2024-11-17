@@ -24,7 +24,7 @@ use crate::*;
 /// Options for mutation testing, based on both command-line arguments and the
 /// config file.
 #[derive(Default, Debug, Clone)]
-pub struct Options<'a> {
+pub struct Options {
     /// Run tests in an unmutated tree?
     pub baseline: BaselineStrategy,
 
@@ -98,16 +98,16 @@ pub struct Options<'a> {
     ///
     /// This matches as a string against the last component of the path, so should not include
     /// `::`.
-    pub skip_calls: Vec<&'a str>,
+    pub skip_calls: Vec<String>,
 
     /// Cargo profile.
-    pub profile: Option<&'a str>,
+    pub profile: Option<String>,
 
     /// Additional arguments for every cargo invocation.
-    pub additional_cargo_args: Vec<&'a str>,
+    pub additional_cargo_args: Vec<String>,
 
     /// Additional arguments to `cargo test`.
-    pub additional_cargo_test_args: Vec<&'a str>,
+    pub additional_cargo_test_args: Vec<String>,
 
     /// Selection of features for cargo.
     pub features: super::Features,
@@ -125,13 +125,13 @@ pub struct Options<'a> {
     pub exclude_names: RegexSet,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
-    pub output_in_dir: Option<&'a Utf8Path>,
+    pub output_in_dir: Option<Utf8PathBuf>,
 
     /// Run this many `cargo build` or `cargo test` tasks in parallel.
     pub jobs: Option<usize>,
 
     /// Insert these values as errors from functions returning `Result`.
-    pub error_values: Vec<&'a str>,
+    pub error_values: Vec<String>,
 
     /// Show ANSI colors.
     pub colors: Colors,
@@ -173,6 +173,11 @@ pub enum TestTool {
     Nextest,
 }
 
+/// Join two slices into a new vector.
+fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
+    a.iter().chain(b).cloned().collect()
+}
+
 /// Should ANSI colors be drawn?
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Display, Deserialize, ValueEnum)]
 #[strum(serialize_all = "snake_case")]
@@ -212,9 +217,9 @@ impl Colors {
     }
 }
 
-impl<'a> Options<'a> {
+impl Options {
     /// Build options by merging command-line args and config file.
-    pub(crate) fn new(args: &'a Args, config: &'a Config) -> Result<Options<'a>> {
+    pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
         if args.no_copy_target {
             warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
         }
@@ -244,33 +249,27 @@ impl<'a> Options<'a> {
             TestPackages::Mutated
         };
 
-        let mut skip_calls: Vec<&str> = args
+        let mut skip_calls: Vec<String> = args
             .skip_calls
             .iter()
             .flat_map(|s| s.split(','))
-            .chain(config.skip_calls.iter().map(String::as_str))
+            .map(|s| s.to_string())
+            .chain(config.skip_calls.iter().cloned())
             .collect();
         if args
             .skip_calls_defaults
             .or(config.skip_calls_defaults)
             .unwrap_or(true)
         {
-            skip_calls.push("with_capacity");
+            skip_calls.push("with_capacity".to_owned());
         }
 
         let options = Options {
-            additional_cargo_args: args
-                .cargo_arg
-                .iter()
-                .chain(&config.additional_cargo_args)
-                .map(String::as_str)
-                .collect(),
-            additional_cargo_test_args: args
-                .cargo_test_args
-                .iter()
-                .chain(&config.additional_cargo_test_args)
-                .map(String::as_str)
-                .collect(),
+            additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
+            additional_cargo_test_args: join_slices(
+                &args.cargo_test_args,
+                &config.additional_cargo_test_args,
+            ),
             baseline: args.baseline,
             build_timeout: args.build_timeout.map(Duration::from_secs_f64),
             build_timeout_multiplier: args
@@ -281,12 +280,7 @@ impl<'a> Options<'a> {
             colors: args.colors,
             emit_json: args.json,
             emit_diffs: args.diff,
-            error_values: args
-                .error
-                .iter()
-                .chain(&config.error_values)
-                .map(String::as_str)
-                .collect(),
+            error_values: join_slices(&args.error, &config.error_values),
             examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
                 .context("Failed to compile examine_re regex")?,
             exclude_names: RegexSet::new(or_slices(&args.exclude_re, &config.exclude_re))
@@ -301,14 +295,10 @@ impl<'a> Options<'a> {
             jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
-            output_in_dir: args.output.as_deref(),
+            output_in_dir: args.output.clone(),
             print_caught: args.caught,
             print_unviable: args.unviable,
-            profile: args
-                .profile
-                .as_ref()
-                .or(config.profile.as_ref())
-                .map(String::as_str),
+            profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),
             shuffle: !args.no_shuffle,
             show_line_col: args.line_col,
             show_times: !args.no_times,
@@ -328,6 +318,11 @@ impl<'a> Options<'a> {
             }
         });
         Ok(options)
+    }
+
+    #[cfg(test)]
+    pub fn from_args(args: &Args) -> Result<Options> {
+        Options::new(args, &Config::default())
     }
 
     /// Which phases to run for each mutant.
@@ -373,7 +368,7 @@ mod test {
 
     #[test]
     fn default_options() {
-        let args = Args::try_parse_from(["mutants"]).unwrap();
+        let args = Args::parse_from(["mutants"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.check_only);
@@ -383,7 +378,7 @@ mod test {
 
     #[test]
     fn options_from_test_tool_arg() {
-        let args = Args::try_parse_from(["mutants", "--test-tool", "nextest"]).unwrap();
+        let args = Args::parse_from(["mutants", "--test-tool", "nextest"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_tool, TestTool::Nextest);
@@ -391,17 +386,17 @@ mod test {
 
     #[test]
     fn options_from_baseline_arg() {
-        let args = Args::try_parse_from(["mutants", "--baseline", "skip"]).unwrap();
+        let args = Args::parse_from(["mutants", "--baseline", "skip"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Skip);
 
-        let args = Args::try_parse_from(["mutants", "--baseline", "run"]).unwrap();
+        let args = Args::parse_from(["mutants", "--baseline", "run"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Run);
 
-        let args = Args::try_parse_from(["mutants"]).unwrap();
+        let args = Args::parse_from(["mutants"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.baseline, BaselineStrategy::Run);
@@ -409,24 +404,24 @@ mod test {
 
     #[test]
     fn options_from_timeout_args() {
-        let args = Args::try_parse_from(["mutants", "--timeout=2.0"]).unwrap();
+        let args = Args::parse_from(["mutants", "--timeout=2.0"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_timeout, Some(Duration::from_secs(2)));
 
-        let args = Args::try_parse_from(["mutants", "--timeout-multiplier=2.5"]).unwrap();
+        let args = Args::parse_from(["mutants", "--timeout-multiplier=2.5"]);
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_timeout_multiplier, Some(2.5));
 
-        let args = Args::try_parse_from(["mutants", "--minimum-test-timeout=60.0"]).unwrap();
+        let args = Args::parse_from(["mutants", "--minimum-test-timeout=60.0"]);
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.minimum_test_timeout, Duration::from_secs(60));
 
-        let args = Args::try_parse_from(["mutants", "--build-timeout=3.0"]).unwrap();
+        let args = Args::parse_from(["mutants", "--build-timeout=3.0"]);
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.build_timeout, Some(Duration::from_secs(3)));
 
-        let args = Args::try_parse_from(["mutants", "--build-timeout-multiplier=3.5"]).unwrap();
+        let args = Args::parse_from(["mutants", "--build-timeout-multiplier=3.5"]);
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.build_timeout_multiplier, Some(3.5));
     }
@@ -489,7 +484,6 @@ mod test {
     #[test]
     fn features_arg() {
         let args = Args::try_parse_from(["mutants", "--features", "nice,shiny features"]).unwrap();
-        let config = Config::default();
         assert_eq!(
             args.features.features.iter().as_ref(),
             ["nice,shiny features"]
@@ -497,7 +491,7 @@ mod test {
         assert!(!args.features.no_default_features);
         assert!(!args.features.all_features);
 
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(
             options.features.features.iter().as_ref(),
             ["nice,shiny features"]
@@ -515,9 +509,8 @@ mod test {
             "nice,shiny features",
         ])
         .unwrap();
-        let config = Config::default();
 
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(
             options.features.features.iter().as_ref(),
             ["nice,shiny features"]
@@ -528,7 +521,7 @@ mod test {
 
     #[test]
     fn default_jobserver_settings() {
-        let args = Args::try_parse_from(["mutants"]).unwrap();
+        let args = Args::parse_from(["mutants"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.jobserver);
@@ -537,7 +530,7 @@ mod test {
 
     #[test]
     fn disable_jobserver() {
-        let args = Args::try_parse_from(["mutants", "--jobserver=false"]).unwrap();
+        let args = Args::parse_from(["mutants", "--jobserver=false"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.jobserver);
@@ -546,7 +539,7 @@ mod test {
 
     #[test]
     fn jobserver_tasks() {
-        let args = Args::try_parse_from(["mutants", "--jobserver-tasks=13"]).unwrap();
+        let args = Args::parse_from(["mutants", "--jobserver-tasks=13"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.jobserver);
@@ -562,9 +555,8 @@ mod test {
             "nice,shiny features",
         ])
         .unwrap();
-        let config = Config::default();
 
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &Config::default()).unwrap();
         assert_eq!(
             options.features.features.iter().as_ref(),
             ["nice,shiny features"]
@@ -581,23 +573,23 @@ mod test {
             set_var("CARGO_TERM_COLOR", "always");
             remove_var("CLICOLOR_FORCE");
             remove_var("NO_COLOR");
-            let args = Args::try_parse_from(["mutants"]).unwrap();
+            let args = Args::parse_from(["mutants"]);
         let config = Config::default();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), Some(true));
 
             set_var("CARGO_TERM_COLOR", "never");
-            let args = Args::try_parse_from(["mutants"]).unwrap();
+            let args = Args::parse_from(["mutants"]);
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), Some(false));
 
             set_var("CARGO_TERM_COLOR", "auto");
-            let args = Args::try_parse_from(["mutants"]).unwrap();
+            let args = Args::parse_from(["mutants"]);
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), None);
 
             remove_var("CARGO_TERM_COLOR");
-            let args = Args::try_parse_from(["mutants"]).unwrap();
+            let args = Args::parse_from(["mutants"]);
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), None);
         }
@@ -609,31 +601,31 @@ mod test {
             remove_var("CARGO_TERM_COLOR");
             remove_var("CLICOLOR_FORCE");
             remove_var("NO_COLOR");
-            let args = Args::try_parse_from(["mutants"]).unwrap();
+            let args = Args::parse_from(["mutants"]);
         let config = Config::default();
             let options = Options::new(&args, &config).unwrap();
             assert_eq!(options.colors.forced_value(), None);
 
             remove_var("CLICOLOR_FORCE");
             set_var("NO_COLOR", "1");
-            let options = Options::new(&args, &config).unwrap();
+            let options = Options::new(&args, &Config::default()).unwrap();
             assert_eq!(options.colors.forced_value(), Some(false));
 
             remove_var("NO_COLOR");
             set_var("CLICOLOR_FORCE", "1");
-            let options = Options::new(&args, &config).unwrap();
+            let options = Options::new(&args, &Config::default()).unwrap();
             assert_eq!(options.colors.forced_value(), Some(true));
 
             remove_var("CLICOLOR_FORCE");
             remove_var("NO_COLOR");
-            let options = Options::new(&args, &config).unwrap();
+            let options = Options::new(&args, &Config::default()).unwrap();
             assert_eq!(options.colors.forced_value(), None);
         }
     }
 
     #[test]
     fn profile_option_from_args() {
-        let args = Args::try_parse_from(["mutants", "--profile=mutants"]).unwrap();
+        let args = Args::parse_from(["mutants", "--profile=mutants"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.profile.unwrap(), "mutants");
@@ -656,7 +648,7 @@ mod test {
 
     #[test]
     fn test_workspace_arg_true() {
-        let args = Args::try_parse_from(["mutants", "--test-workspace=true"]).unwrap();
+        let args = Args::parse_from(["mutants", "--test-workspace=true"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Workspace);
@@ -664,7 +656,7 @@ mod test {
 
     #[test]
     fn test_workspace_arg_false() {
-        let args = Args::try_parse_from(["mutants", "--test-workspace=false"]).unwrap();
+        let args = Args::parse_from(["mutants", "--test-workspace=false"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Mutated);
@@ -732,7 +724,7 @@ mod test {
 
     #[test]
     fn test_package_arg_with_commas() {
-        let args = Args::try_parse_from(["mutants", "--test-package=foo,bar"]).unwrap();
+        let args = Args::parse_from(["mutants", "--test-package=foo,bar"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(

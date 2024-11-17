@@ -163,7 +163,7 @@ fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Resul
 struct Lab<'a> {
     output_mutex: Mutex<OutputDir>,
     jobserver: Option<jobserver::Client>,
-    options: &'a Options<'a>,
+    options: &'a Options,
     console: &'a Console,
 }
 
@@ -218,7 +218,7 @@ struct Worker<'a> {
     build_dir: &'a BuildDir,
     output_mutex: &'a Mutex<OutputDir>,
     jobserver: &'a Option<jobserver::Client>,
-    options: &'a Options<'a>,
+    options: &'a Options,
     console: &'a Console,
 }
 

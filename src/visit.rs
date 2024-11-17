@@ -230,7 +230,7 @@ struct DiscoveryVisitor<'o> {
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
 
-    options: &'o Options<'o>,
+    options: &'o Options,
 }
 
 impl DiscoveryVisitor<'_> {
@@ -914,7 +914,7 @@ mod test {
     #[test]
     fn skip_named_fn() {
         let options = Options {
-            skip_calls: vec!["dont_touch_this"],
+            skip_calls: vec!["dont_touch_this".to_owned()],
             ..Default::default()
         };
         let mut mutants = mutate_source_str(
