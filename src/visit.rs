@@ -777,6 +777,7 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
 
 #[cfg(test)]
 mod test {
+    use config::Config;
     use indoc::indoc;
     use itertools::Itertools;
     use test_log::test;
@@ -928,5 +929,43 @@ mod test {
         // Ignore the main function itself
         mutants.retain(|m| m.genre != Genre::FnValue);
         assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_with_capacity_by_default() {
+        let args = Args::try_parse_from(["mutants"]).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        let mut mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    let mut v = Vec::with_capacity(2 * 100);
+                }
+            "},
+            &options,
+        )
+        .expect("walk_file_string");
+        // Ignore the main function itself
+        mutants.retain(|m| m.genre != Genre::FnValue);
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn mutate_vec_with_capacity_when_default_skips_are_turned_off() {
+        let args = Args::try_parse_from(["mutants", "--skip-calls-defaults", "false"]).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    let mut v = Vec::with_capacity(2 * 100);
+                }
+            "},
+            &options,
+        )
+        .expect("walk_file_string");
+        dbg!(&mutants);
+        // The main fn plus two mutations of the `*` expression.
+        assert_eq!(mutants.len(), 3);
     }
 }
