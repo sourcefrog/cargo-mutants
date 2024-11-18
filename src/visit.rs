@@ -1003,7 +1003,7 @@ mod test {
         let mutants = mutate_source_str(
             indoc! {"
                 fn main() {
-                    let mut v = Vec::with_capacity(2 * 100);
+                    let mut _v = std::vec::Vec::<String>::with_capacity(2 * 100);
                 }
             "},
             &options,
