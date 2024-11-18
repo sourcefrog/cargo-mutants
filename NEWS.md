@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 24.11.1
 
 - Changed: The arguments of calls to functions or methods named `with_capacity` are not mutated by default. This can be turned off with `--skip-calls-defaults=false` on the command line or `skip_calls_defaults = false` in `.cargo/mutants.toml`.
 
