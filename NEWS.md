@@ -6,6 +6,8 @@
 
 - New: `--skip-calls=NAME,NAME` on the command line or `skip_calls = [NAMES..]` in `.cargo/mutants.toml` allows configuring other functions whose calls should never be mutated.
 
+- Changed: The mutant name for trait impls now includes the path of the trait as it occurs in the source file: for example `impl fmt::Display for Foo`.
+
 ## 24.11.0
 
 - New: `--test-workspace` and `--test-package` arguments and config options support projects whose tests live in a different package.

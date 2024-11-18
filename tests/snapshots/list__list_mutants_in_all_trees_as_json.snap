@@ -6628,7 +6628,7 @@ expression: buf
   {
     "file": "src/methods.rs",
     "function": {
-      "function_name": "<impl Display for Foo>::fmt",
+      "function_name": "<impl fmt::Display for Foo>::fmt",
       "return_type": "-> fmt::Result",
       "span": {
         "end": {
@@ -6658,7 +6658,7 @@ expression: buf
   {
     "file": "src/methods.rs",
     "function": {
-      "function_name": "<impl Debug for &Foo>::fmt",
+      "function_name": "<impl fmt::Debug for &Foo>::fmt",
       "return_type": "-> fmt::Result",
       "span": {
         "end": {
@@ -9842,5 +9842,3 @@ expression: buf
   }
 ]
 ```
-
-
