@@ -47,6 +47,12 @@ pub struct Config {
     pub minimum_test_timeout: Option<f64>,
     /// Cargo profile.
     pub profile: Option<String>,
+    /// Skip calls to functions or methods with these names.
+    ///
+    /// This is combined with values from the --skip-calls argument.
+    pub skip_calls: Vec<String>,
+    /// Use built-in defaults for `skip_calls` in addition to any explicit values.
+    pub skip_calls_defaults: Option<bool>,
     /// Run tests from these packages for all mutants.
     pub test_package: Vec<String>,
     /// Choice of test tool: cargo or nextest.

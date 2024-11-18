@@ -35,9 +35,7 @@ pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
         // TODO: Do we need to check this? Could the console library strip them if they're not
         // supported?
         let colors = options.colors.active_stdout();
-        // let mut out = String::with_capacity(200 * mutants.len());
-        // TODO: Use with_capacity when we can have mutants skip it (#315
-        let mut out = String::new();
+        let mut out = String::with_capacity(200 * mutants.len());
         for mutant in mutants {
             if colors {
                 out.push_str(&mutant.to_styled_string(options.show_line_col));

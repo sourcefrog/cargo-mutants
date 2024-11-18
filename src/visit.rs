@@ -16,7 +16,7 @@ use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
-use syn::{Attribute, BinOp, Block, Expr, File, ItemFn, ReturnType, Signature, UnOp};
+use syn::{Attribute, BinOp, Block, Expr, ExprPath, File, ItemFn, ReturnType, Signature, UnOp};
 use tracing::{debug, debug_span, error, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
@@ -66,7 +66,7 @@ pub fn walk_tree(
     while let Some(source_file) = file_queue.pop_front() {
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
-        let (mut file_mutants, external_mods) = walk_file(&source_file, &error_exprs)?;
+        let (mut file_mutants, external_mods) = walk_file(&source_file, &error_exprs, options)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -113,6 +113,7 @@ pub fn walk_tree(
 fn walk_file(
     source_file: &SourceFile,
     error_exprs: &[Expr],
+    options: &Options,
 ) -> Result<(Vec<Mutant>, Vec<ExternalModRef>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     debug!("visit source file");
@@ -126,6 +127,7 @@ fn walk_file(
         namespace_stack: Vec::new(),
         fn_stack: Vec::new(),
         source_file: source_file.clone(),
+        options,
     };
     visitor.visit_file(&syn_file);
     Ok((visitor.mutants, visitor.external_mods))
@@ -142,7 +144,7 @@ pub fn mutate_source_str(code: &str, options: &Options) -> Result<Vec<Mutant>> {
         "cargo-mutants-testdata-internal",
         true,
     );
-    let (mutants, _) = walk_file(&source_file, &options.parsed_error_exprs()?)?;
+    let (mutants, _) = walk_file(&source_file, &options.parsed_error_exprs()?, options)?;
     Ok(mutants)
 }
 
@@ -227,6 +229,8 @@ struct DiscoveryVisitor<'o> {
 
     /// Parsed error expressions, from the config file or command line.
     error_exprs: &'o [Expr],
+
+    options: &'o Options,
 }
 
 impl DiscoveryVisitor<'_> {
@@ -319,6 +323,38 @@ impl DiscoveryVisitor<'_> {
 }
 
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
+    fn visit_expr_call(&mut self, i: &'ast syn::ExprCall) {
+        let _span = trace_span!("expr_call", line = i.span().start().line, ?i).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        if let Expr::Path(ExprPath { path, .. }) = &*i.func {
+            debug!(?path, "visit call");
+            if let Some(hit) = self
+                .options
+                .skip_calls
+                .iter()
+                .find(|s| path_ends_with(path, s))
+            {
+                trace!("skip call to {hit}");
+                return;
+            }
+        }
+        syn::visit::visit_expr_call(self, i);
+    }
+
+    fn visit_expr_method_call(&mut self, i: &'ast syn::ExprMethodCall) {
+        let _span = trace_span!("expr_method_call", line = i.span().start().line, ?i).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        if let Some(hit) = self.options.skip_calls.iter().find(|s| i.method == s) {
+            trace!("skip method call to {hit}");
+            return;
+        }
+        syn::visit::visit_expr_method_call(self, i);
+    }
+
     /// Visit a source file.
     fn visit_file(&mut self, i: &'ast File) {
         // No trace here; it's created per file for the whole visitor
@@ -402,12 +438,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         let type_name = i.self_ty.to_pretty_string();
         let name = if let Some((_, trait_path, _)) = &i.trait_ {
-            let trait_name = &trait_path.segments.last().unwrap().ident;
-            if trait_name == "Default" {
+            if path_ends_with(trait_path, "Default") {
                 // Can't think of how to generate a viable different default.
                 return;
             }
-            format!("<impl {trait_name} for {type_name}>")
+            format!("<impl {trait} for {type_name}>", trait = trait_path.segments.last().unwrap().ident)
+            // TODO: trait = trait_path.to_pretty_string()) and update tests to match
         } else {
             type_name
         };
@@ -694,6 +730,20 @@ fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
     path.segments.iter().map(|ps| &ps.ident).eq(idents.iter())
 }
 
+/// True if the path ends with this identifier.
+///
+/// This is used as a heuristic to match types without being sensitive to which
+/// module they are in, or to match functions without being sensitive to which
+/// type they might be associated with.
+///
+/// This does not check type arguments.
+fn path_ends_with(path: &syn::Path, ident: &str) -> bool {
+    path.segments
+        .last()
+        .map(|s| s.ident == ident)
+        .unwrap_or(false)
+}
+
 /// True if the attribute contains `mutants::skip`.
 ///
 /// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
@@ -752,11 +802,33 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
 
 #[cfg(test)]
 mod test {
+    use config::Config;
     use indoc::indoc;
     use itertools::Itertools;
+    use test_log::test;
     use test_util::copy_of_testdata;
 
     use super::*;
+
+    #[test]
+    fn path_ends_with() {
+        use super::path_ends_with;
+        use syn::parse_quote;
+
+        let path = parse_quote! { foo::bar::baz };
+        assert!(path_ends_with(&path, "baz"));
+        assert!(!path_ends_with(&path, "bar"));
+        assert!(!path_ends_with(&path, "foo"));
+
+        let path = parse_quote! { baz };
+        assert!(path_ends_with(&path, "baz"));
+        assert!(!path_ends_with(&path, "bar"));
+
+        let path = parse_quote! { BTreeMap<K, V> };
+        assert!(path_ends_with(&path, "BTreeMap"));
+        assert!(!path_ends_with(&path, "V"));
+        assert!(!path_ends_with(&path, "K"));
+    }
 
     /// We should not generate mutants that produce the same tokens as the
     /// source.
@@ -771,7 +843,8 @@ mod test {
             tree_relative_path: Utf8PathBuf::from("src/lib.rs"),
             is_top: true,
         };
-        let (mutants, _files) = walk_file(&source_file, &[]).expect("walk_file");
+        let (mutants, _files) =
+            walk_file(&source_file, &[], &Options::default()).expect("walk_file");
         let mutant_names = mutants.iter().map(|m| m.name(false)).collect_vec();
         // It would be good to suggest replacing this with 'false', breaking a key behavior,
         // but bad to replace it with 'true', changing nothing.
@@ -879,6 +952,88 @@ mod test {
         assert_eq!(
             mutants.iter().map(|m| m.name(false)).collect_vec(),
             ["src/main.rs: replace always_true -> bool with false"]
+        );
+    }
+
+    /// Skip mutating arguments to a particular named function.
+    #[test]
+    fn skip_named_fn() {
+        let options = Options {
+            skip_calls: vec!["dont_touch_this".to_owned()],
+            ..Default::default()
+        };
+        let mut mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    dont_touch_this(2 + 3);
+                }
+            "},
+            &options,
+        )
+        .expect("walk_file_string");
+        // Ignore the main function itself
+        mutants.retain(|m| m.genre != Genre::FnValue);
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_with_capacity_by_default() {
+        let args = Args::try_parse_from(["mutants"]).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        let mut mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    let mut v = Vec::with_capacity(2 * 100);
+                }
+            "},
+            &options,
+        )
+        .expect("walk_file_string");
+        // Ignore the main function itself
+        mutants.retain(|m| m.genre != Genre::FnValue);
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn mutate_vec_with_capacity_when_default_skips_are_turned_off() {
+        let args = Args::try_parse_from(["mutants", "--skip-calls-defaults", "false"]).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    let mut _v = std::vec::Vec::<String>::with_capacity(2 * 100);
+                }
+            "},
+            &options,
+        )
+        .expect("walk_file_string");
+        dbg!(&mutants);
+        // The main fn plus two mutations of the `*` expression.
+        assert_eq!(mutants.len(), 3);
+    }
+
+    #[test]
+    fn skip_method_calls_by_name() {
+        let options = Options::from_arg_strs(["mutants", "--skip-calls", "dont_touch_this"]);
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    let mut v = V::new();
+                    v.dont_touch_this(2 + 3);
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+        dbg!(&mutants);
+        assert_eq!(
+            mutants
+                .iter()
+                .filter(|mutant| mutant.genre != Genre::FnValue)
+                .count(),
+            0
         );
     }
 }

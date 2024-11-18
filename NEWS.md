@@ -1,5 +1,11 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Changed: The arguments of calls to functions or methods named `with_capacity` are not mutated by default. This can be turned off with `--skip-calls-defaults=false` on the command line or `skip_calls_defaults = false` in `.cargo/mutants.toml`.
+
+- New: `--skip-calls=NAME,NAME` on the command line or `skip_calls = [NAMES..]` in `.cargo/mutants.toml` allows configuring other functions whose calls should never be mutated.
+
 ## 24.11.0
 
 - New: `--test-workspace` and `--test-package` arguments and config options support projects whose tests live in a different package.

@@ -9,6 +9,7 @@
   - [The `mutants.out` directory](mutants-out.md)
 - [Skipping untestable code](skip.md)
   - [Skipping functions with an attribute](attrs.md)
+  - [Skipping function calls](skip_calls.md)
   - [Filtering files](skip_files.md)
   - [Filtering functions and mutants](filter_mutants.md)
 - [Controlling cargo-mutants](controlling.md)

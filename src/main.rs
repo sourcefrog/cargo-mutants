@@ -304,6 +304,23 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     shard: Option<Shard>,
 
+    /// Skip calls to functions and methods named in this list.
+    ///
+    /// The list may contain comma-separated names and may be repeated.
+    ///
+    /// If a qualified path is given in the source then this matches only the final component,
+    /// and it ignores type parameters.
+    ///
+    /// This value is combined with the names from the config `skip_calls` key.
+    #[arg(long, help_heading = "Filters")]
+    skip_calls: Vec<String>,
+
+    /// Use built-in defaults for `skip_calls`, in addition to any explicit values.
+    ///
+    /// The default is `with_capacity`.
+    #[arg(long)]
+    skip_calls_defaults: Option<bool>,
+
     /// Run tests from these packages for all mutants.
     #[arg(long, help_heading = "Tests")]
     test_package: Vec<String>,
