@@ -1013,4 +1013,27 @@ mod test {
         // The main fn plus two mutations of the `*` expression.
         assert_eq!(mutants.len(), 3);
     }
+
+    #[test]
+    fn skip_method_calls_by_name() {
+        let options = Options::from_arg_strs(["mutants", "--skip-calls", "dont_touch_this"]);
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    let mut v = V::new();
+                    v.dont_touch_this(2 + 3);
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+        dbg!(&mutants);
+        assert_eq!(
+            mutants
+                .iter()
+                .filter(|mutant| mutant.genre != Genre::FnValue)
+                .count(),
+            0
+        );
+    }
 }
