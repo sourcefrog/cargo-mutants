@@ -108,9 +108,7 @@ mod test {
 
     #[test]
     fn timeout_multiplier_from_option() {
-        let args = Args::try_parse_from(["mutants", "--timeout-multiplier", "1.5"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::from_arg_strs(["mutants", "--timeout-multiplier", "1.5"]);
 
         assert_eq!(options.test_timeout_multiplier, Some(1.5));
         assert_eq!(
@@ -121,10 +119,8 @@ mod test {
 
     #[test]
     fn test_timeout_unaffected_by_in_place_build() {
-        let args =
-            Args::try_parse_from(["mutants", "--timeout-multiplier", "1.5", "--in-place"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options =
+            Options::from_arg_strs(["mutants", "--timeout-multiplier", "1.5", "--in-place"]);
 
         assert_eq!(
             test_timeout(Some(Duration::from_secs(40)), &options),

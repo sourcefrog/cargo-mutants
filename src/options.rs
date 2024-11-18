@@ -8,6 +8,8 @@
 //! 2. Config options (read from `.cargo/mutants.toml`)
 //! 3. Built-in defaults
 
+#[cfg(test)]
+use std::ffi::OsString;
 use std::time::Duration;
 
 use globset::GlobSet;
@@ -323,6 +325,17 @@ impl Options {
     #[cfg(test)]
     pub fn from_args(args: &Args) -> Result<Options> {
         Options::new(args, &Config::default())
+    }
+
+    /// Parse options from command-line arguments, using the default config.
+    ///
+    /// # Panics
+    ///
+    /// If the arguments are invalid.
+    #[cfg(test)]
+    pub fn from_arg_strs<I: IntoIterator<Item = S>, S: Into<OsString> + Clone>(args: I) -> Options {
+        let args = Args::try_parse_from(args).expect("Failed to parse args");
+        Options::from_args(&args).expect("Build options from args")
     }
 
     /// Which phases to run for each mutant.
