@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Changed: Show more type parameters in mutant names, like `impl From<&str> for Foo` rather than `impl From for Foo`.
+
 ## 25.0.0
 
 - Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
@@ -21,6 +25,8 @@
 - Changed: The arguments of calls to functions or methods named `with_capacity` are not mutated by default. This can be turned off with `--skip-calls-defaults=false` on the command line or `skip_calls_defaults = false` in `.cargo/mutants.toml`.
 
 - New: `--skip-calls=NAME,NAME` on the command line or `skip_calls = [NAMES..]` in `.cargo/mutants.toml` allows configuring other functions whose calls should never be mutated.
+
+- Changed: The mutant name for trait impls now includes the path of the trait as it occurs in the source file: for example `impl fmt::Display for Foo`.
 
 ## 24.11.0
 

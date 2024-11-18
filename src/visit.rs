@@ -462,8 +462,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 // Can't think of how to generate a viable different default.
                 return;
             }
-            format!("<impl {trait} for {type_name}>", trait = trait_path.segments.last().unwrap().ident)
-            // TODO: trait = trait_path.to_pretty_string()) and update tests to match
+            format!("<impl {trait} for {type_name}>", trait = trait_path.to_pretty_string())
         } else {
             type_name
         };
@@ -818,6 +817,7 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
 mod test {
     use indoc::indoc;
     use itertools::Itertools;
+    use pretty_assertions::assert_eq;
     use test_log::test;
 
     use crate::test_util::copy_of_testdata;
@@ -1026,7 +1026,7 @@ mod test {
         let mutants = mutate_source_str(
             indoc! {"
                 fn main() {
-                    let mut v = V::new();
+                    let mut v = v::new();
                     v.dont_touch_this(2 + 3);
                 }
             "},
@@ -1040,6 +1040,48 @@ mod test {
                 .filter(|mutant| mutant.genre != Genre::FnValue)
                 .count(),
             0
+        );
+    }
+
+    #[test]
+    fn mutant_name_includes_type_parameters() {
+        // From https://github.com/sourcefrog/cargo-mutants/issues/334
+        let options = Options::from_arg_strs(["mutants"]);
+        let mutants = mutate_source_str(
+            indoc! {r#"
+            impl AsRef<str> for Apath {
+                fn as_ref(&self) -> &str {
+                    &self.0
+                }
+            }
+
+            impl From<Apath> for String {
+                fn from(a: Apath) -> String {
+                    a.0
+                }
+            }
+
+            impl<'a> From<&'a str> for Apath {
+                fn from(s: &'a str) -> Apath {
+                    assert!(Apath::is_valid(s), "invalid apath: {s:?}");
+                    Apath(s.to_string())
+                }
+            }
+            "#},
+            &options,
+        )
+        .unwrap();
+        dbg!(&mutants);
+        let mutant_names = mutants.iter().map(|m| m.name(false) + "\n").join("");
+        assert_eq!(
+            mutant_names,
+            indoc! {r#"
+                src/main.rs: replace <impl AsRef<str> for Apath>::as_ref -> &str with ""
+                src/main.rs: replace <impl AsRef<str> for Apath>::as_ref -> &str with "xyzzy"
+                src/main.rs: replace <impl From<Apath> for String>::from -> String with String::new()
+                src/main.rs: replace <impl From<Apath> for String>::from -> String with "xyzzy".into()
+                src/main.rs: replace <impl From<&'a str> for Apath>::from -> Apath with Default::default()
+            "#}
         );
     }
 }
