@@ -32,6 +32,6 @@ The motivating example for this feature is Rust's `with_capacity` function on `V
 
 cargo-mutants normally mutates expressions in function calls, and in this case it will try mutating the capacity expression to `4 / n` etc.
 
-These mutations would change the program behavior. Assuming the original calculation is correct the mutation then the mutation will likly be wrong.
+These mutations would change the program behavior. Assuming the original calculation is correct the mutation then the mutation will likely be wrong.
 
 However, many authors may feel that preallocating the estimated memory needs is worth doing but not worth specifically writing tests or assertions for, and so they would like to skip generating mutants in any calls to these functions.
