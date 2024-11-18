@@ -324,24 +324,35 @@ impl DiscoveryVisitor<'_> {
 
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     fn visit_expr_call(&mut self, i: &'ast syn::ExprCall) {
-        let _span = trace_span!("call", line = i.span().start().line, ?i).entered();
+        let _span = trace_span!("expr_call", line = i.span().start().line, ?i).entered();
         if attrs_excluded(&i.attrs) {
             return;
         }
-        if !self.options.skip_calls.is_empty() {
-            if let Expr::Path(ExprPath { path, .. }) = &*i.func {
-                if let Some(last) = path.segments.last() {
-                    let ident = &last.ident;
-                    trace!(?ident, "call ident");
-                    if self.options.skip_calls.iter().any(|s| ident == s) {
-                        trace!("skip call to {ident}");
-                        return;
-                    }
-                }
+        if let Expr::Path(ExprPath { path, .. }) = &*i.func {
+            debug!(?path, "visit call");
+            if let Some(hit) = self
+                .options
+                .skip_calls
+                .iter()
+                .find(|s| path_ends_with(path, s))
+            {
+                trace!("skip call to {hit}");
+                return;
             }
-            // TODO: Also visit_expr_method_call
         }
         syn::visit::visit_expr_call(self, i);
+    }
+
+    fn visit_expr_method_call(&mut self, i: &'ast syn::ExprMethodCall) {
+        let _span = trace_span!("expr_method_call", line = i.span().start().line, ?i).entered();
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+        if let Some(hit) = self.options.skip_calls.iter().find(|s| i.method == s) {
+            trace!("skip method call to {hit}");
+            return;
+        }
+        syn::visit::visit_expr_method_call(self, i);
     }
 
     /// Visit a source file.
@@ -427,12 +438,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         let type_name = i.self_ty.to_pretty_string();
         let name = if let Some((_, trait_path, _)) = &i.trait_ {
-            let trait_name = &trait_path.segments.last().unwrap().ident;
-            if trait_name == "Default" {
+            if path_ends_with(trait_path, "Default") {
                 // Can't think of how to generate a viable different default.
                 return;
             }
-            format!("<impl {trait_name} for {type_name}>")
+            format!("<impl {trait} for {type_name}>", trait = trait_path.segments.last().unwrap().ident)
+            // TODO: trait = trait_path.to_pretty_string()) and update tests to match
         } else {
             type_name
         };
@@ -719,6 +730,20 @@ fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
     path.segments.iter().map(|ps| &ps.ident).eq(idents.iter())
 }
 
+/// True if the path ends with this identifier.
+///
+/// This is used as a heuristic to match types without being sensitive to which
+/// module they are in, or to match functions without being sensitive to which
+/// type they might be associated with.
+///
+/// This does not check type arguments.
+fn path_ends_with(path: &syn::Path, ident: &str) -> bool {
+    path.segments
+        .last()
+        .map(|s| s.ident == ident)
+        .unwrap_or(false)
+}
+
 /// True if the attribute contains `mutants::skip`.
 ///
 /// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
@@ -784,6 +809,26 @@ mod test {
     use test_util::copy_of_testdata;
 
     use super::*;
+
+    #[test]
+    fn path_ends_with() {
+        use super::path_ends_with;
+        use syn::parse_quote;
+
+        let path = parse_quote! { foo::bar::baz };
+        assert!(path_ends_with(&path, "baz"));
+        assert!(!path_ends_with(&path, "bar"));
+        assert!(!path_ends_with(&path, "foo"));
+
+        let path = parse_quote! { baz };
+        assert!(path_ends_with(&path, "baz"));
+        assert!(!path_ends_with(&path, "bar"));
+
+        let path = parse_quote! { BTreeMap<K, V> };
+        assert!(path_ends_with(&path, "BTreeMap"));
+        assert!(!path_ends_with(&path, "V"));
+        assert!(!path_ends_with(&path, "K"));
+    }
 
     /// We should not generate mutants that produce the same tokens as the
     /// source.
