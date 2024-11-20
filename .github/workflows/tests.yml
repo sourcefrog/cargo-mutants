@@ -67,6 +67,10 @@ jobs:
           tool: nextest
       - name: Test
         run: cargo test --workspace
+      - name: Check rustfmt
+        run: cargo fmt --all --check
+      - name: Check clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Build release binary
         run: cargo build --release
       - name: Upload binary artifact
