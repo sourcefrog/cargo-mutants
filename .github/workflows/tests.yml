@@ -206,7 +206,8 @@ jobs:
       - name: Mutants in-diff
         # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
         run: >
-          cargo mutants --no-shuffle -vV --in-diff git.diff --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
+          cargo mutants --no-shuffle -vV --in-diff git.diff
+          --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
@@ -261,3 +262,26 @@ jobs:
 
       - name: Check spelling
         uses: crate-ci/typos@master
+
+  overall-result:
+    needs:
+      [
+        test,
+        minimal-versions,
+        maximal-versions,
+        tests-from-tarball,
+        install,
+        release-binary,
+        pr-mutants,
+        cargo-mutants,
+        typos,
+      ]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Successful workflow
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: exit 0
+      - name: Failing workflow
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
