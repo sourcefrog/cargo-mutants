@@ -50,7 +50,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.version }}
-          components: rustfmt
+          components: rustfmt clippy
       - name: Show Cargo and rustc version
         run: |
           cargo --version
@@ -210,7 +210,8 @@ jobs:
       - name: Mutants in-diff
         # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
         run: >
-          cargo mutants --no-shuffle -vV --in-diff git.diff --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
+          cargo mutants --no-shuffle -vV --in-diff git.diff
+          --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
