@@ -117,6 +117,10 @@ jobs:
       - name: Check clippy
         # TODO: Deny warnings
         run: cargo clippy --all-targets --all-features
+      - name: Install locked
+        run: cargo install --locked --path .
+      - name: Install unlocked
+        run: cargo install --path .
 
   minimal-versions:
     needs: [quick-test]
@@ -184,30 +188,6 @@ jobs:
         run: |
           cd target/package/cargo-mutants-*.*.[0-9]
           cargo test
-
-  # Install from a checkout of the source, to find broken dependencies etc.
-  # We run this on various versions because some dependencies might have changed
-  # their MSRV, and on every platform because there are platform-specific
-  # dependencies.
-  install:
-    needs: [quick-test]
-    strategy:
-      matrix:
-        os: [macOS-latest, ubuntu-latest, windows-latest]
-        version: [stable, nightly, "1.74"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.version }}
-      - name: Show Cargo and rustc version
-        run: |
-          cargo --version
-          rustc --version
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo install --locked --path .
-      - run: cargo install --path .
 
   pr-mutants:
     runs-on: ubuntu-latest
@@ -297,10 +277,8 @@ jobs:
         minimal-versions,
         maximal-versions,
         tests-from-tarball,
-        install,
         pr-mutants,
         cargo-mutants,
-        typos,
       ]
     runs-on: ubuntu-latest
     if: always()
