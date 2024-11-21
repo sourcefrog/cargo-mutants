@@ -73,6 +73,8 @@ jobs:
       - name: Check clippy
         # TODO:  -- -D warnings
         run: cargo clippy --all-targets --all-features
+      - name: Check typos
+        uses: crate-ci/typos@master
       - name: Build release binary
         run: cargo build --release
       - name: Upload binary artifact
@@ -286,16 +288,6 @@ jobs:
         with:
           name: mutants-${{matrix.test_tool}}-shard${{matrix.shard}}.out
           path: mutants.out
-
-  typos:
-    name: Spell check with Typos
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check spelling
-        uses: crate-ci/typos@master
 
   overall-result:
     needs:
