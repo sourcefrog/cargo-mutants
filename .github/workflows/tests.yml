@@ -117,46 +117,19 @@ jobs:
       - name: Check clippy
         # TODO: Deny warnings
         run: cargo clippy --all-targets --all-features
+      - run: cargo update
+      - name: Test after cargo update
+        run: cargo test --workspace
+      - name: Downgrade to minimal versions
+        if: matrix.version == 'nightly'
+        run: cargo +nightly -Zdirect-minimal-versions update
+      - name: Test on minimal versions
+        if: matrix.version == 'nightly'
+        run: cargo test
       - name: Install locked
-        run: cargo install --locked --path .
+        run: cargo install --path . --locked
       - name: Install unlocked
         run: cargo install --path .
-
-  minimal-versions:
-    needs: [quick-test]
-    strategy:
-      matrix:
-        os: [macOS-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo +nightly -Zdirect-minimal-versions update
-      - run: cargo build --all-targets
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - run: cargo test
-
-  # Run `cargo update` and check the tests still pass
-  maximal-versions:
-    needs: [quick-test]
-    strategy:
-      matrix:
-        os: [macOS-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo update
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - run: cargo test
 
   tests-from-tarball:
     needs: [quick-test]
@@ -270,16 +243,7 @@ jobs:
           path: mutants.out
 
   overall-result:
-    needs:
-      [
-        quick-test,
-        test,
-        minimal-versions,
-        maximal-versions,
-        tests-from-tarball,
-        pr-mutants,
-        cargo-mutants,
-      ]
+    needs: [quick-test, test, tests-from-tarball, pr-mutants, cargo-mutants]
     runs-on: ubuntu-latest
     if: always()
     steps:
