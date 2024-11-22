@@ -141,7 +141,7 @@ impl OutputDir {
         let log_dir = output_dir.join("log");
         create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
         let diff_dir = output_dir.join("diff");
-        create_dir(&diff_dir).context("create diff dir")?;
+        create_dir(diff_dir).context("create diff dir")?;
 
         // Create text list files.
         let mut list_file_options = OpenOptions::new();

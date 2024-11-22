@@ -96,7 +96,7 @@ impl Process {
     /// Check if the child process has finished; if so, return its status.
     #[mutants::skip] // It's hard to avoid timeouts if this never works...
     pub fn poll(&mut self) -> Result<Option<ProcessStatus>> {
-        if self.timeout.map_or(false, |t| self.start.elapsed() > t) {
+        if self.timeout.is_some_and(|t| self.start.elapsed() > t) {
             debug!("timeout, terminating child process...",);
             self.terminate()?;
             Ok(Some(ProcessStatus::Timeout))
