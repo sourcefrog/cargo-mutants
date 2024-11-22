@@ -115,6 +115,9 @@ jobs:
       - name: Check clippy
         # TODO: Deny warnings
         run: cargo clippy --all-targets --all-features
+      - run: cargo update
+      - name: Test after cargo update
+        run: cargo test --workspace
 
   minimal-versions:
     needs: [quick-test]
@@ -128,24 +131,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo +nightly -Zdirect-minimal-versions update
       - run: cargo build --all-targets
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - run: cargo test
-
-  # Run `cargo update` and check the tests still pass
-  maximal-versions:
-    needs: [quick-test]
-    strategy:
-      matrix:
-        os: [macOS-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo update
       - uses: taiki-e/install-action@v2
         name: Install nextest using install-action
         with:
@@ -303,7 +288,6 @@ jobs:
         quick-test,
         test,
         minimal-versions,
-        maximal-versions,
         tests-from-tarball,
         install,
         pr-mutants,
