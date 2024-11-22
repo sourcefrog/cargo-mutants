@@ -236,7 +236,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
 }
 
 fn path_ends_with(path: &Path, ident: &str) -> bool {
-    path.segments.last().map_or(false, |s| s.ident == ident)
+    path.segments.last().is_some_and(|s| s.ident == ident)
 }
 
 fn match_impl_iterator(TypeImplTrait { bounds, .. }: &TypeImplTrait) -> Option<&Type> {

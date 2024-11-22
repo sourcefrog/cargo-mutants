@@ -199,9 +199,9 @@ impl Colors {
     /// detected terminal characteristics.
     pub fn forced_value(&self) -> Option<bool> {
         // From https://bixense.com/clicolors/
-        if env::var("NO_COLOR").map_or(false, |x| x != "0") {
+        if env::var("NO_COLOR").is_ok_and(|x| x != "0") {
             Some(false)
-        } else if env::var("CLICOLOR_FORCE").map_or(false, |x| x != "0") {
+        } else if env::var("CLICOLOR_FORCE").is_ok_and(|x| x != "0") {
             Some(true)
         } else {
             match self {

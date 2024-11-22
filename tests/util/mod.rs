@@ -70,7 +70,7 @@ impl CommandInstaExt for assert_cmd::Command {
 // Copy the source for one testdata tree.
 pub fn copy_of_testdata(tree_name: &str) -> TempDir {
     assert!(
-        !tree_name.contains("/"),
+        !tree_name.contains('/'),
         "testdata tree name {tree_name:?} should be just the directory name"
     );
     let tmp = TempDir::with_prefix(format!("cargo-mutants-testdata-{tree_name}-")).unwrap();
