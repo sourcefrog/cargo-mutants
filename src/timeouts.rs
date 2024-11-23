@@ -69,6 +69,9 @@ fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Durat
             );
         }
         timeout
+    } else if options.check_only {
+        // We won't have run baseline tests, and we won't run any other tests either.
+        Duration::from_secs(0)
     } else {
         warn_fallback_timeout("test", "--baseline=skip");
         Duration::from_secs(FALLBACK_TIMEOUT_SECS)
