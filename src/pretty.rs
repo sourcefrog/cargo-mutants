@@ -10,10 +10,10 @@ pub(crate) trait ToPrettyString {
     fn to_pretty_string(&self) -> String;
 }
 
-/// Convert a TokenStream representing some code to a reasonably formatted
+/// Convert a `TokenStream` representing some code to a reasonably formatted
 /// string of Rust code.
 ///
-/// [TokenStream] has a `to_string`, but it adds spaces in places that don't
+/// `TokenStream` has a `to_string`, but it adds spaces in places that don't
 /// look idiomatic, so this reimplements it in a way that looks better.
 ///
 /// This is probably not correctly formatted for all Rust syntax, and only tries

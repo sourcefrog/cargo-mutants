@@ -36,7 +36,7 @@ pub enum Phase {
 }
 
 impl Phase {
-    pub fn name(&self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             Phase::Check => "check",
             Phase::Build => "build",
@@ -53,6 +53,7 @@ impl fmt::Display for Phase {
 
 /// The outcome from a whole lab run containing multiple mutants.
 #[derive(Debug, Default, Serialize)]
+#[allow(clippy::module_name_repetitions)]
 pub struct LabOutcome {
     /// All the scenario outcomes, including baseline builds.
     pub outcomes: Vec<ScenarioOutcome>,
@@ -140,6 +141,7 @@ impl LabOutcome {
 
 /// The result of running one mutation scenario.
 #[derive(Debug, Clone, Eq, PartialEq)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
@@ -173,9 +175,9 @@ impl Serialize for ScenarioOutcome {
 impl ScenarioOutcome {
     pub fn new(scenario_output: &ScenarioOutput, scenario: Scenario) -> ScenarioOutcome {
         ScenarioOutcome {
-            output_dir: scenario_output.output_dir.to_owned(),
+            output_dir: scenario_output.output_dir.clone(),
             log_path: scenario_output.log_path().to_owned(),
-            diff_path: scenario_output.diff_path.to_owned(),
+            diff_path: scenario_output.diff_path.clone(),
             scenario,
             phase_results: Vec::new(),
         }
@@ -311,6 +313,7 @@ impl Serialize for PhaseResult {
 
 /// Overall summary outcome for one mutant.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Hash)]
+#[allow(clippy::module_name_repetitions)]
 pub enum SummaryOutcome {
     Success,
     CaughtMutant,

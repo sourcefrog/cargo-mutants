@@ -3,7 +3,7 @@
 //! Locations (line/column) and spans between them in source code.
 //!
 //! This is similar to, and can be automatically derived from,
-//! [proc_macro2::Span] and [proc_macro2::LineColumn], but is
+//! `proc_macro2::Span` and `proc_macro2::LineColumn`, but is
 //! a bit more convenient for our purposes.
 
 use std::fmt;
@@ -183,13 +183,13 @@ mod test {
     #[test]
     fn linecolumn_debug_form() {
         let lc = LineColumn { line: 1, column: 2 };
-        assert_eq!(format!("{:?}", lc), "LineColumn(1, 2)");
+        assert_eq!(format!("{lc:?}"), "LineColumn(1, 2)");
     }
 
     #[test]
     fn span_debug_form() {
         let span = Span::quad(1, 2, 3, 4);
-        assert_eq!(format!("{:?}", span), "Span(1, 2, 3, 4)");
+        assert_eq!(format!("{span:?}"), "Span(1, 2, 3, 4)");
     }
 
     #[test]
@@ -230,7 +230,7 @@ mod test {
     }
     #[test]
     fn span_ops() {
-        let source = indoc! { r#"
+        let source = indoc! { r"
 
             fn foo() {
                 some();
@@ -238,19 +238,19 @@ mod test {
             }
 
             const BAR: u32 = 32;
-        "# };
+        " };
         // typical multi-line case
         let span = Span::quad(2, 10, 5, 2);
         assert_eq!(span.extract(source), "{\n    some();\n    stuff();\n}");
         let replaced = span.replace(source, "{ /* body deleted */ }");
         assert_eq!(
             replaced,
-            indoc! { r#"
+            indoc! { r"
 
                 fn foo() { /* body deleted */ }
 
                 const BAR: u32 = 32;
-            "# }
+            " }
         );
 
         // single-line case
@@ -259,7 +259,7 @@ mod test {
         let replaced = span.replace(source, "69");
         assert_eq!(
             replaced,
-            indoc! { r#"
+            indoc! { r"
 
                 fn foo() {
                     some();
@@ -267,7 +267,7 @@ mod test {
                 }
 
                 const BAR: u32 = 69;
-            "# }
+            " }
         );
     }
 }

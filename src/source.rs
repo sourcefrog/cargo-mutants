@@ -21,6 +21,7 @@ use crate::span::LineColumn;
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[allow(clippy::module_name_repetitions)]
 pub struct SourceFile {
     /// Which package within the workspace contains this file?
     pub package_name: String,
@@ -30,7 +31,7 @@ pub struct SourceFile {
 
     /// Full copy of the unmodified source.
     ///
-    /// This is held in an [Arc] so that SourceFiles can be cloned without using excessive
+    /// This is held in an [Arc] so that `SourceFile`s can be cloned without using excessive
     /// amounts of memory.
     pub code: Arc<String>,
 
@@ -40,7 +41,7 @@ pub struct SourceFile {
 }
 
 impl SourceFile {
-    /// Construct a SourceFile representing a file within a tree.
+    /// Construct a `SourceFile` representing a file within a tree.
     ///
     /// This eagerly loads the text of the file.
     ///

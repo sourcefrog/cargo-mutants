@@ -20,6 +20,7 @@ pub struct Package {
 
 /// A more specific view of which packages to mutate, after resolving `PackageFilter::Auto`.
 #[derive(Debug, Clone)]
+#[allow(clippy::module_name_repetitions)]
 pub enum PackageSelection {
     All,
     Explicit(Vec<String>),
