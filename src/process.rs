@@ -5,8 +5,8 @@
 //! On Unix, the subprocess runs as its own process group, so that any
 //! grandchild processes are also signalled if it's interrupted.
 
-// #![allow(clippy::option_map_unit_fn)] // I don't think it's clearer with if/let.
 #![warn(clippy::pedantic)]
+#![allow(clippy::redundant_else)]
 
 use std::ffi::OsStr;
 #[cfg(unix)]
@@ -80,7 +80,9 @@ impl Process {
             .stdout(scenario_output.open_log_append()?)
             .stderr(scenario_output.open_log_append()?)
             .current_dir(cwd);
-        jobserver.as_ref().map(|js| js.configure(&mut child));
+        if let Some(js) = jobserver {
+            js.configure(&mut child);
+        }
         #[cfg(unix)]
         child.process_group(0);
         let child = child
@@ -109,12 +111,16 @@ impl Process {
                 if code == 0 {
                     return Ok(Some(ProcessStatus::Success));
                 } else {
-                    return Ok(Some(ProcessStatus::Failure(code as u32)));
+                    return Ok(Some(ProcessStatus::Failure(
+                        code.try_into().context("Read exit code as u32")?,
+                    )));
                 }
             }
             #[cfg(unix)]
             if let Some(signal) = status.signal() {
-                return Ok(Some(ProcessStatus::Signalled(signal as u8)));
+                return Ok(Some(ProcessStatus::Signalled(
+                    signal.try_into().context("Read signal as u8")?,
+                )));
             }
             Ok(Some(ProcessStatus::Other))
         } else {
@@ -187,15 +193,15 @@ pub enum ProcessStatus {
 }
 
 impl ProcessStatus {
-    pub fn is_success(&self) -> bool {
-        *self == ProcessStatus::Success
+    pub fn is_success(self) -> bool {
+        self == ProcessStatus::Success
     }
 
-    pub fn is_timeout(&self) -> bool {
-        *self == ProcessStatus::Timeout
+    pub fn is_timeout(self) -> bool {
+        self == ProcessStatus::Timeout
     }
 
-    pub fn is_failure(&self) -> bool {
+    pub fn is_failure(self) -> bool {
         matches!(self, ProcessStatus::Failure(_))
     }
 }
@@ -226,7 +232,7 @@ mod test {
     fn shell_quoting() {
         assert_eq!(cheap_shell_quote(["foo".to_string()]), "foo");
         assert_eq!(
-            cheap_shell_quote(["foo bar", r#"\blah\t"#, r#""quoted""#]),
+            cheap_shell_quote(["foo bar", r"\blah\t", r#""quoted""#]),
             r#"foo\ bar \\blah\\t \"quoted\""#
         );
     }
