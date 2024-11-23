@@ -9,7 +9,6 @@ use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use console::{style, StyledObject};
 use humantime::format_duration;
@@ -22,7 +21,7 @@ use crate::options::Colors;
 use crate::outcome::{LabOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::tail_file::TailFile;
-use crate::{Mutant, Options, Phase, Result, ScenarioOutcome};
+use crate::{Mutant, Options, Phase, ScenarioOutcome};
 
 /// An interface to the console for the rest of cargo-mutants.
 ///
@@ -62,18 +61,12 @@ impl Console {
     }
 
     /// Update that a cargo task is starting.
-    pub fn scenario_started(
-        &self,
-        dir: &Utf8Path,
-        scenario: &Scenario,
-        log_file: File,
-    ) -> Result<()> {
+    pub fn scenario_started(&self, dir: &Utf8Path, scenario: &Scenario, log_file: File) {
         let start = Instant::now();
-        let scenario_model = ScenarioModel::new(dir, scenario, start, log_file)?;
+        let scenario_model = ScenarioModel::new(dir, scenario, start, log_file);
         self.view.update(|model| {
             model.scenario_models.push(scenario_model);
         });
-        Ok(())
     }
 
     /// Update that cargo finished.
@@ -498,21 +491,15 @@ struct ScenarioModel {
 }
 
 impl ScenarioModel {
-    fn new(
-        dir: &Utf8Path,
-        scenario: &Scenario,
-        start: Instant,
-        log_file: File,
-    ) -> Result<ScenarioModel> {
-        let log_tail = TailFile::new(log_file).context("Failed to open log file")?;
-        Ok(ScenarioModel {
+    fn new(dir: &Utf8Path, scenario: &Scenario, start: Instant, log_file: File) -> ScenarioModel {
+        ScenarioModel {
             dir: dir.to_owned(),
             name: style_scenario(scenario, true),
             phase: None,
             phase_start: start,
-            log_tail,
+            log_tail: TailFile::new(log_file),
             previous_phase_durations: Vec::new(),
-        })
+        }
     }
 
     fn phase_started(&mut self, phase: Phase) {
