@@ -126,6 +126,7 @@ impl Mutant {
     fn styled_parts(&self) -> Vec<StyledObject<String>> {
         // This is like `impl Display for Mutant`, but with colors.
         // The text content should be the same.
+        #[allow(clippy::needless_pass_by_value)] // actually is needed for String vs &str?
         fn s<S: ToString>(s: S) -> StyledObject<String> {
             style(s.to_string())
         }
