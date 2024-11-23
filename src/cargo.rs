@@ -23,7 +23,7 @@ use crate::Result;
 #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 pub fn run_cargo(
     build_dir: &BuildDir,
-    jobserver: &Option<jobserver::Client>,
+    jobserver: Option<&jobserver::Client>,
     packages: &PackageSelection,
     phase: Phase,
     timeout: Option<Duration>,
