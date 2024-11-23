@@ -172,7 +172,7 @@ impl Console {
                 .iter_mut()
                 .find(|m| m.dest == dest)
                 .expect("copy in progress")
-                .bytes_copied(total_bytes)
+                .bytes_copied(total_bytes);
         });
     }
 
@@ -186,7 +186,7 @@ impl Console {
         self.view.update(|model| {
             model.n_mutants = n_mutants;
             model.lab_start_time = Some(Instant::now());
-        })
+        });
     }
 
     /// Update that work is starting on testing a given number of mutants.
@@ -199,13 +199,13 @@ impl Console {
     pub fn scenario_phase_started(&self, dir: &Utf8Path, phase: Phase) {
         self.view.update(|model| {
             model.find_scenario_mut(dir).phase_started(phase);
-        })
+        });
     }
 
     pub fn scenario_phase_finished(&self, dir: &Utf8Path, phase: Phase) {
         self.view.update(|model| {
             model.find_scenario_mut(dir).phase_finished(phase);
-        })
+        });
     }
 
     pub fn lab_finished(&self, lab_outcome: &LabOutcome, start_time: Instant, options: &Options) {
@@ -219,7 +219,7 @@ impl Console {
     }
 
     pub fn clear(&self) {
-        self.view.clear()
+        self.view.clear();
     }
 
     pub fn message(&self, message: &str) {
@@ -231,7 +231,7 @@ impl Console {
     }
 
     pub fn tick(&self) {
-        self.view.update(|_| ())
+        self.view.update(|_| ());
     }
 
     /// Return a tracing `MakeWriter` that will send messages via nutmeg to the console.
@@ -377,7 +377,7 @@ impl nutmeg::Model for LabModel {
         }
         for copy_model in self.copy_models.iter_mut() {
             if !s.is_empty() {
-                s.push('\n')
+                s.push('\n');
             }
             s.push_str(&copy_model.render(width));
         }
@@ -573,7 +573,7 @@ impl CopyModel {
     ///
     /// `bytes_copied` is the total bytes copied so far.
     fn bytes_copied(&mut self, bytes_copied: u64) {
-        self.bytes_copied = bytes_copied
+        self.bytes_copied = bytes_copied;
     }
 }
 

@@ -44,7 +44,7 @@ impl Discovered {
                 trace!(?name, "skip previously caught mutant");
             }
             !c
-        })
+        });
     }
 }
 
@@ -78,7 +78,7 @@ pub fn walk_tree(
                     &mod_path,
                     &source_file.package_name,
                     false,
-                )?)
+                )?);
             }
         }
         let path = &source_file.tree_relative_path;
@@ -270,7 +270,7 @@ impl DiscoveryVisitor<'_> {
             span,
             replacement: replacement.to_pretty_string(),
             genre,
-        })
+        });
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
@@ -757,7 +757,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     let mut skip = false;
     if let Err(err) = attr.parse_nested_meta(|meta| {
         if path_is(&meta.path, &["mutants", "skip"]) {
-            skip = true
+            skip = true;
         }
         Ok(())
     }) {

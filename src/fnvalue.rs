@@ -701,7 +701,7 @@ mod test {
             parse_quote! { -> (bool, usize) },
             &[],
             &["(true, 0)", "(true, 1)", "(false, 0)", "(false, 1)"],
-        )
+        );
     }
 
     #[test]
@@ -717,7 +717,7 @@ mod test {
                 "(false, Some(String::new()))",
                 r#"(false, Some("xyzzy".into()))"#,
             ],
-        )
+        );
     }
 
     #[test]
