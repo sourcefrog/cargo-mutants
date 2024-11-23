@@ -4,6 +4,9 @@
 //!
 //! See <https://mutants.rs> for the manual and more information.
 
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions, clippy::needless_raw_string_hashes)]
+
 mod build_dir;
 mod cargo;
 mod config;
