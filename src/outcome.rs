@@ -3,9 +3,11 @@
 //! The outcome of running a single mutation scenario, or a whole lab.
 
 use std::fmt;
-use std::time::Duration;
-use std::time::Instant;
+use std::fs::read_to_string;
+use std::time::{Duration, Instant};
 
+use anyhow::Context;
+use camino::Utf8PathBuf;
 use humantime::format_duration;
 use output::ScenarioOutput;
 use serde::ser::SerializeStruct;
@@ -15,7 +17,7 @@ use tracing::warn;
 
 use crate::console::plural;
 use crate::process::Exit;
-use crate::*;
+use crate::{exit_code, output, Options, Result, Scenario};
 
 /// What phase of running a scenario.
 ///

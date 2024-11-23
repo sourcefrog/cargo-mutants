@@ -2,14 +2,14 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::fs::{create_dir, remove_dir_all, rename, write, File, OpenOptions};
+use std::collections::{hash_map::Entry, HashMap};
+use std::fs::{create_dir, read_to_string, remove_dir_all, rename, write, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
+use camino::{Utf8Path, Utf8PathBuf};
 use fs2::FileExt;
 use path_slash::PathExt;
 use serde::Serialize;
@@ -18,7 +18,7 @@ use time::OffsetDateTime;
 use tracing::{info, trace};
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
-use crate::*;
+use crate::{check_interrupted, Context, Mutant, Result, Scenario, ScenarioOutcome};
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
@@ -372,6 +372,7 @@ mod test {
     use tempfile::{tempdir, TempDir};
 
     use super::*;
+    use crate::workspace::Workspace;
 
     fn minimal_source_tree() -> TempDir {
         let tmp = tempdir().unwrap();
