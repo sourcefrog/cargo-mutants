@@ -45,7 +45,7 @@ impl Process {
         jobserver: Option<&jobserver::Client>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
-    ) -> Result<ProcessStatus> {
+    ) -> Result<Exit> {
         let mut child = Process::start(argv, env, cwd, timeout, jobserver, scenario_output)?;
         let process_status = loop {
             if let Some(exit_status) = child.poll()? {
@@ -97,11 +97,11 @@ impl Process {
 
     /// Check if the child process has finished; if so, return its status.
     #[mutants::skip] // It's hard to avoid timeouts if this never works...
-    pub fn poll(&mut self) -> Result<Option<ProcessStatus>> {
+    pub fn poll(&mut self) -> Result<Option<Exit>> {
         if self.timeout.is_some_and(|t| self.start.elapsed() > t) {
             debug!("timeout, terminating child process...",);
             self.terminate()?;
-            Ok(Some(ProcessStatus::Timeout))
+            Ok(Some(Exit::Timeout))
         } else if let Err(e) = check_interrupted() {
             debug!("interrupted, terminating child process...");
             self.terminate()?;
@@ -109,20 +109,20 @@ impl Process {
         } else if let Some(status) = self.child.try_wait()? {
             if let Some(code) = status.code() {
                 if code == 0 {
-                    return Ok(Some(ProcessStatus::Success));
+                    return Ok(Some(Exit::Success));
                 } else {
-                    return Ok(Some(ProcessStatus::Failure(
+                    return Ok(Some(Exit::Failure(
                         code.try_into().context("Read exit code as u32")?,
                     )));
                 }
             }
             #[cfg(unix)]
             if let Some(signal) = status.signal() {
-                return Ok(Some(ProcessStatus::Signalled(
+                return Ok(Some(Exit::Signalled(
                     signal.try_into().context("Read signal as u8")?,
                 )));
             }
-            Ok(Some(ProcessStatus::Other))
+            Ok(Some(Exit::Other))
         } else {
             Ok(None)
         }
@@ -179,7 +179,7 @@ fn terminate_child_impl(child: &mut Child) -> Result<()> {
 
 /// The result of running a single child process.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
-pub enum ProcessStatus {
+pub enum Exit {
     /// Exited with status 0.
     Success,
     /// Exited with status non-0.
@@ -192,17 +192,17 @@ pub enum ProcessStatus {
     Other,
 }
 
-impl ProcessStatus {
+impl Exit {
     pub fn is_success(self) -> bool {
-        self == ProcessStatus::Success
+        self == Exit::Success
     }
 
     pub fn is_timeout(self) -> bool {
-        self == ProcessStatus::Timeout
+        self == Exit::Timeout
     }
 
     pub fn is_failure(self) -> bool {
-        matches!(self, ProcessStatus::Failure(_))
+        matches!(self, Exit::Failure(_))
     }
 }
 
