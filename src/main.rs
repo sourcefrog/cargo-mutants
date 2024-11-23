@@ -49,6 +49,7 @@ use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use color_print::cstr;
+use console::enable_console_colors;
 use output::{load_previously_caught, OutputDir};
 use tracing::{debug, info};
 
@@ -426,8 +427,8 @@ fn main() -> Result<()> {
     }
 
     let console = Console::new();
-    console.setup_global_trace(args.level, args.colors)?; // We don't have Options yet.
-    console.set_colors_enabled(args.colors);
+    console.setup_global_trace(args.level, args.colors); // We don't have Options yet.
+    enable_console_colors(args.colors);
     interrupt::install_handler();
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
@@ -515,7 +516,7 @@ mod test {
         let args = super::Args::command();
         let mut problems = Vec::new();
         for arg in args.get_arguments() {
-            if let Some(help) = arg.get_help().map(|s| s.to_string()) {
+            if let Some(help) = arg.get_help().map(ToString::to_string) {
                 if !help.starts_with(char::is_uppercase) {
                     problems.push(format!(
                         "Help for {:?} does not start with a capital letter: {:?}",
@@ -539,9 +540,9 @@ mod test {
                 problems.push(format!("No help for {:?}", arg.get_id()));
             }
         }
-        problems.iter().for_each(|s| eprintln!("{s}"));
-        if !problems.is_empty() {
-            panic!("Problems with help text");
+        for problem in &problems {
+            eprintln!("{problem}");
         }
+        assert!(problems.is_empty(), "Problems with help text");
     }
 }

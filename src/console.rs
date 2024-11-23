@@ -43,14 +43,6 @@ impl Console {
         }
     }
 
-    pub fn set_colors_enabled(&self, colors: Colors) {
-        if let Some(colors) = colors.forced_value() {
-            ::console::set_colors_enabled(colors);
-            ::console::set_colors_enabled_stderr(colors);
-        }
-        // Otherwise, let the console crate decide, based on isatty, etc.
-    }
-
     pub fn walk_tree_start(&self) {
         self.view
             .update(|model| model.walk_tree = Some(WalkModel::default()));
@@ -93,7 +85,9 @@ impl Console {
         options: &Options,
     ) {
         self.view.update(|model| {
-            model.mutants_done += scenario.is_mutant() as usize;
+            if scenario.is_mutant() {
+                model.mutants_done += 1;
+            }
             match outcome.summary() {
                 SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
                 SummaryOutcome::MissedMutant => model.mutants_missed += 1,
@@ -227,7 +221,7 @@ impl Console {
         // stderr...
         // <https://github.com/sourcefrog/nutmeg/issues/11>
         self.view.clear();
-        print!("{}", message);
+        print!("{message}");
     }
 
     pub fn tick(&self) {
@@ -254,8 +248,8 @@ impl Console {
 
     /// Configure tracing to send messages to the console and debug log.
     ///
-    /// The debug log is opened later and provided by [Console::set_debug_log].
-    pub fn setup_global_trace(&self, console_trace_level: Level, colors: Colors) -> Result<()> {
+    /// The debug log is opened later and provided by [`Console::set_debug_log`].
+    pub fn setup_global_trace(&self, console_trace_level: Level, colors: Colors) {
         // Show time relative to the start of the program.
         let uptime = tracing_subscriber::fmt::time::uptime();
         let stderr_colors = colors
@@ -278,8 +272,15 @@ impl Console {
             .with(debug_log_layer)
             .with(console_layer)
             .init();
-        Ok(())
     }
+}
+
+pub fn enable_console_colors(colors: Colors) {
+    if let Some(colors) = colors.forced_value() {
+        ::console::set_colors_enabled(colors);
+        ::console::set_colors_enabled_stderr(colors);
+    }
+    // Otherwise, let the console crate decide, based on isatty, etc.
 }
 
 impl Default for Console {
@@ -375,13 +376,13 @@ impl nutmeg::Model for LabModel {
         if let Some(walk_tree) = &mut self.walk_tree {
             s += &walk_tree.render(width);
         }
-        for copy_model in self.copy_models.iter_mut() {
+        for copy_model in &mut self.copy_models {
             if !s.is_empty() {
                 s.push('\n');
             }
             s.push_str(&copy_model.render(width));
         }
-        for sm in self.scenario_models.iter_mut() {
+        for sm in &mut self.scenario_models {
             s.push_str(&sm.render(width));
             s.push('\n');
         }

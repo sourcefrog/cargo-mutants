@@ -32,7 +32,7 @@ static SOURCE_EXCLUDE: &[&str] = &[
 /// If `git` is true, ignore files that are excluded by all the various `.gitignore`
 /// files.
 ///
-/// Regardless, anything matching [SOURCE_EXCLUDE] is excluded.
+/// Regardless, anything matching [`SOURCE_EXCLUDE`] is excluded.
 pub fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,

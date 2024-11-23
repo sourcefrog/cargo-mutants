@@ -57,6 +57,7 @@ pub struct Mutant {
 #[derive(Eq, PartialEq, Debug, Serialize)]
 pub struct Function {
     /// The function that's being mutated, including any containing namespaces.
+    #[allow(clippy::struct_field_names)]
     pub function_name: String,
 
     /// The return type of the function, including a leading "-> ", as a fragment of Rust syntax.
@@ -84,8 +85,7 @@ impl Mutant {
         self.styled_parts()
             .into_iter()
             .map(|x| x.force_styling(false).to_string())
-            .collect::<Vec<_>>()
-            .join("")
+            .collect::<String>()
     }
 
     pub fn name(&self, show_line_col: bool) -> String {
