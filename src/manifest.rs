@@ -1,11 +1,11 @@
-// Copyright 2022-2023 Martin Pool.
+// Copyright 2022-2024 Martin Pool.
 
 //! Manipulate Cargo manifest and config files.
 //!
 //! In particular, when the tree is copied we have to fix up relative paths, so
 //! that they still work from the new location of the scratch directory.
 
-use std::fs;
+use std::fs::{read_to_string, write};
 
 use anyhow::Context;
 use camino::Utf8Path;
@@ -19,11 +19,15 @@ use crate::Result;
 /// `manifest_source_dir` is the directory originally containing the manifest, from
 /// which the absolute paths are calculated.
 pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> Result<()> {
-    let toml_str = fs::read_to_string(manifest_scratch_path).context("read manifest")?;
+    let toml_str = read_to_string(manifest_scratch_path).with_context(|| {
+        format!("failed to read manifest from build directory: {manifest_scratch_path}")
+    })?;
     if let Some(changed_toml) = fix_manifest_toml(&toml_str, source_dir)? {
         let toml_str =
             toml::to_string_pretty(&changed_toml).context("serialize changed manifest")?;
-        fs::write(manifest_scratch_path, toml_str.as_bytes()).context("write manifest")?;
+        write(manifest_scratch_path, toml_str.as_bytes()).with_context(|| {
+            format!("Failed to write fixed manifest to {manifest_scratch_path}")
+        })?;
     }
     Ok(())
 }
@@ -101,9 +105,9 @@ fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Ut
 pub fn fix_cargo_config(build_path: &Utf8Path, source_path: &Utf8Path) -> Result<()> {
     let config_path = build_path.join(".cargo/config.toml");
     if config_path.exists() {
-        let toml_str = fs::read_to_string(&config_path).context("read .cargo/config.toml")?;
+        let toml_str = read_to_string(&config_path).context("read .cargo/config.toml")?;
         if let Some(changed_toml) = fix_cargo_config_toml(&toml_str, source_path)? {
-            fs::write(build_path.join(&config_path), changed_toml.as_bytes())
+            write(build_path.join(&config_path), changed_toml.as_bytes())
                 .context("write .cargo/config.toml")?;
         }
     }
