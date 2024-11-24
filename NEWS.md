@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
+
 ## 24.11.2
 
 - Changed: `.gitignore` (and other git ignore files) are only consulted when copying the tree if it is contained within a directory with a `.git` directory.
