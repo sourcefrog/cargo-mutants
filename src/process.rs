@@ -76,7 +76,7 @@ impl Process {
         scenario_output: &mut ScenarioOutput,
     ) -> Result<Process> {
         let start = Instant::now();
-        let quoted_argv = cheap_shell_quote(argv);
+        let quoted_argv = quote_argv(argv);
         scenario_output.message(&quoted_argv)?;
         debug!(%quoted_argv, "start process");
         let os_env = env.iter().map(|(k, v)| (OsStr::new(k), OsStr::new(v)));
@@ -169,8 +169,9 @@ impl Exit {
 
 /// Quote an argv slice in Unix shell style.
 ///
-/// This is not completely guaranteed, but is only for debug logs.
-fn cheap_shell_quote<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> String {
+/// This isn't guaranteed to match the interpretation of a shell or to be safe.
+/// It's just for debug logs.
+fn quote_argv<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> String {
     let mut r = String::new();
     for s in argv {
         if !r.is_empty() {
@@ -178,10 +179,15 @@ fn cheap_shell_quote<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> Strin
         }
         for c in s.as_ref().chars() {
             match c {
-                ' ' | '\t' | '\n' | '\r' | '\\' | '\'' | '"' => r.push('\\'),
-                _ => (),
+                '\t' => r.push_str(r"\t"),
+                '\n' => r.push_str(r"\n"),
+                '\r' => r.push_str(r"\r"),
+                ' ' | '\\' | '\'' | '"' => {
+                    r.push('\\');
+                    r.push(c);
+                }
+                _ => r.push(c),
             }
-            r.push(c);
         }
     }
     r
@@ -189,14 +195,19 @@ fn cheap_shell_quote<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> Strin
 
 #[cfg(test)]
 mod test {
-    use super::cheap_shell_quote;
+    use super::quote_argv;
 
     #[test]
     fn shell_quoting() {
-        assert_eq!(cheap_shell_quote(["foo".to_string()]), "foo");
+        assert_eq!(quote_argv(["foo".to_string()]), "foo");
         assert_eq!(
-            cheap_shell_quote(["foo bar", r#"\blah\t"#, r#""quoted""#]),
-            r#"foo\ bar \\blah\\t \"quoted\""#
+            quote_argv(["foo bar", r#"\blah\x"#, r#""quoted""#]),
+            r#"foo\ bar \\blah\\x \"quoted\""#
+        );
+        assert_eq!(quote_argv([""]), "");
+        assert_eq!(
+            quote_argv(["with whitespace", "\r\n\t\t"]),
+            r#"with\ whitespace \r\n\t\t"#
         );
     }
 }
