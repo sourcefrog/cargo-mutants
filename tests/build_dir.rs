@@ -1,6 +1,6 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023-2024 Martin Pool
 
-use std::fs::write;
+use std::fs::{create_dir, write};
 
 mod util;
 use util::{copy_of_testdata, run};
@@ -10,6 +10,9 @@ fn gitignore_respected_in_copy_by_default() {
     // Make a tree with a (dumb) gitignore that excludes the source file; when you copy it
     // to a build directory, the source file should not be there and so the check will fail.
     let tmp = copy_of_testdata("factorial");
+    // There must be something that looks like a `.git` dir, otherwise we don't read
+    // `.gitignore` files.
+    create_dir(tmp.path().join(".git")).unwrap();
     write(tmp.path().join(".gitignore"), b"src\n").unwrap();
     run()
         .args(["mutants", "--check", "-d"])
