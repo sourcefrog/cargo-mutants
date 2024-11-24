@@ -3,7 +3,6 @@
 //! Print messages and progress bars on the terminal.
 
 use std::borrow::Cow;
-use std::fmt::Write;
 use std::fs::File;
 use std::io;
 use std::sync::{Arc, Mutex};
@@ -19,10 +18,10 @@ use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::prelude::*;
 
 use crate::options::Colors;
-use crate::outcome::{LabOutcome, SummaryOutcome};
+use crate::outcome::{LabOutcome, ScenarioOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::tail_file::TailFile;
-use crate::{Mutant, Options, Phase, Result, ScenarioOutcome};
+use crate::{Mutant, Options, Phase, Result};
 
 /// An interface to the console for the rest of cargo-mutants.
 ///
@@ -113,14 +112,11 @@ impl Console {
             return;
         }
 
-        let mut s = String::with_capacity(100);
-        write!(
-            s,
+        let mut s = format!(
             "{:8} {}",
             style_outcome(outcome),
             style_scenario(scenario, true),
-        )
-        .unwrap();
+        );
         if options.show_times {
             let prs: Vec<String> = outcome
                 .phase_results()
@@ -133,7 +129,8 @@ impl Console {
                     )
                 })
                 .collect();
-            let _ = write!(s, " in {}", prs.join(" + "));
+            s.push_str(" in ");
+            s.push_str(&prs.join(" + "));
         }
         if outcome.should_show_logs() || options.show_all_logs {
             s.push('\n');
@@ -382,41 +379,40 @@ impl nutmeg::Model for LabModel {
             s.push_str(&copy_model.render(width));
         }
         for sm in self.scenario_models.iter_mut() {
+            if !s.is_empty() {
+                s.push('\n')
+            }
             s.push_str(&sm.render(width));
-            s.push('\n');
         }
         if let Some(lab_start_time) = self.lab_start_time {
+            if !s.is_empty() {
+                s.push('\n')
+            }
             let elapsed = lab_start_time.elapsed();
-            write!(
-                s,
+            s += &format!(
                 "{}/{} mutants tested",
                 style(self.mutants_done).cyan(),
                 style(self.n_mutants).cyan(),
-            )
-            .unwrap();
+            );
             if self.mutants_missed > 0 {
-                write!(
-                    s,
+                s += &format!(
                     ", {} {}",
                     style(self.mutants_missed).cyan(),
                     style("MISSED").red()
-                )
-                .unwrap();
+                );
             }
             if self.timeouts > 0 {
-                write!(
-                    s,
+                s += &format!(
                     ", {} {}",
                     style(self.timeouts).cyan(),
                     style("timeout").red()
-                )
-                .unwrap();
+                );
             }
             if self.mutants_caught > 0 {
-                write!(s, ", {} caught", style(self.mutants_caught).cyan()).unwrap();
+                s.push_str(&format!(", {} caught", style(self.mutants_caught).cyan()));
             }
             if self.unviable > 0 {
-                write!(s, ", {} unviable", style(self.unviable).cyan()).unwrap();
+                s.push_str(&format!(", {} unviable", style(self.unviable).cyan()));
             }
             // Maybe don't report these, because they're uninteresting?
             // if self.successes > 0 {
@@ -425,25 +421,21 @@ impl nutmeg::Model for LabModel {
             // if self.failures > 0 {
             //     write!(s, ", {} failures", self.failures).unwrap();
             // }
-            write!(s, ", {} elapsed", style_duration(elapsed)).unwrap();
+            s.push_str(&format!(", {} elapsed", style_duration(elapsed)));
             if self.mutants_done > 2 {
-                let done = self.mutants_done as u64;
-                let remain = self.n_mutants as u64 - done;
-                let mut remaining_secs = lab_start_time.elapsed().as_secs() * remain / done;
-                if remaining_secs > 300 {
-                    remaining_secs = (remaining_secs + 30) / 60 * 60;
+                let done = self.mutants_done as f64;
+                let remain = self.n_mutants as f64 - done;
+                let mut remaining_secs =
+                    self.mutants_start_time.unwrap().elapsed().as_secs_f64() * remain / done;
+                if remaining_secs > 300.0 {
+                    // Round up to minutes
+                    remaining_secs = ((remaining_secs + 30.0) / 60.0).ceil() * 60.0;
                 }
-                write!(
-                    s,
+                s += &format!(
                     ", about {} remaining",
-                    style_duration(Duration::from_secs(remaining_secs))
-                )
-                .unwrap();
+                    style_duration(Duration::from_secs_f64(remaining_secs.ceil()))
+                );
             }
-            writeln!(s).unwrap();
-        }
-        while s.ends_with('\n') {
-            s.pop();
         }
         s
     }
@@ -547,7 +539,11 @@ impl nutmeg::Model for ScenarioModel {
         // parts.push(prs.join(" + "));
         let mut s = parts.join(" ");
         if let Ok(last_line) = self.log_tail.last_line() {
-            write!(s, "\n{:8} {}", style("└").cyan(), style(last_line).dim()).unwrap();
+            s.push_str(&format!(
+                "\n{:8} {}",
+                style("└").cyan(),
+                style(last_line).dim()
+            ));
         }
         s
     }
