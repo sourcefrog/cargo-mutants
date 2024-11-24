@@ -1,8 +1,10 @@
-use std::process::Child;
+use std::process::{Child, Command, ExitStatus};
 
 use anyhow::Context;
 
 use crate::Result;
+
+use super::ProcessStatus;
 
 #[mutants::skip] // hard to exercise the ESRCH edge case
 pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
