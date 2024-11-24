@@ -28,12 +28,12 @@ const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-use windows::terminate_child_impl;
+use windows::{configure_command, interpret_exit, terminate_child};
 
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
-use unix::terminate_child_impl;
+use unix::{configure_command, interpret_exit, terminate_child};
 
 pub struct Process {
     child: Child,
@@ -80,18 +80,17 @@ impl Process {
         scenario_output.message(&quoted_argv)?;
         debug!(%quoted_argv, "start process");
         let os_env = env.iter().map(|(k, v)| (OsStr::new(k), OsStr::new(v)));
-        let mut child = Command::new(&argv[0]);
-        child
+        let mut command = Command::new(&argv[0]);
+        command
             .args(&argv[1..])
             .envs(os_env)
             .stdin(Stdio::null())
             .stdout(scenario_output.open_log_append()?)
             .stderr(scenario_output.open_log_append()?)
             .current_dir(cwd);
-        jobserver.as_ref().map(|js| js.configure(&mut child));
-        #[cfg(unix)]
-        child.process_group(0);
-        let child = child
+        jobserver.as_ref().map(|js| js.configure(&mut command));
+        configure_command(&mut command);
+        let child = command
             .spawn()
             .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
         Ok(Process {
@@ -113,18 +112,7 @@ impl Process {
             self.terminate()?;
             Err(e)
         } else if let Some(status) = self.child.try_wait()? {
-            if let Some(code) = status.code() {
-                if code == 0 {
-                    return Ok(Some(ProcessStatus::Success));
-                } else {
-                    return Ok(Some(ProcessStatus::Failure(code as u32)));
-                }
-            }
-            #[cfg(unix)]
-            if let Some(signal) = status.signal() {
-                return Ok(Some(ProcessStatus::Signalled(signal as u8)));
-            }
-            Ok(Some(ProcessStatus::Other))
+            Ok(Some(interpret_exit(status)))
         } else {
             Ok(None)
         }
@@ -139,7 +127,7 @@ impl Process {
     fn terminate(&mut self) -> Result<()> {
         let _span = span!(Level::DEBUG, "terminate_child", pid = self.child.id()).entered();
         debug!("terminating child process");
-        terminate_child_impl(&mut self.child)?;
+        terminate_child(&mut self.child)?;
         trace!("wait for child after termination");
         match self.child.wait() {
             Err(err) => debug!(?err, "Failed to wait for child after termination"),

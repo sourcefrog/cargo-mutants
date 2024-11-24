@@ -1,17 +1,19 @@
 use std::os::unix::process::{CommandExt, ExitStatusExt};
-use std::process::Child;
+use std::process::{Child, Command, ExitStatus};
 
-use anyhow::{bail, Context};
+use anyhow::bail;
 use nix::errno::Errno;
 use nix::sys::signal::{killpg, Signal};
 use nix::unistd::Pid;
-use trace::warn;
+use tracing::warn;
 
 use crate::Result;
 
+use super::ProcessStatus;
+
 #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
 #[mutants::skip] // hard to exercise the ESRCH edge case
-pub(super) fn terminate_child_impl(child: &mut Child) -> Result<()> {
+pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
     let pid = Pid::from_raw(child.id().try_into().unwrap());
     match killpg(pid, Signal::SIGTERM) {
         Ok(()) => Ok(()),
@@ -27,5 +29,24 @@ pub(super) fn terminate_child_impl(child: &mut Child) -> Result<()> {
             warn!("{}", message);
             bail!(message);
         }
+    }
+}
+
+#[mutants::skip]
+pub(super) fn configure_command(command: &mut Command) {
+    command.process_group(0);
+}
+
+pub(super) fn interpret_exit(status: ExitStatus) -> ProcessStatus {
+    if let Some(code) = status.code() {
+        if code == 0 {
+            ProcessStatus::Success
+        } else {
+            ProcessStatus::Failure(code as u32)
+        }
+    } else if let Some(signal) = status.signal() {
+        return ProcessStatus::Signalled(signal as u8);
+    } else {
+        ProcessStatus::Other
     }
 }
