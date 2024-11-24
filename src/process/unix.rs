@@ -37,16 +37,18 @@ pub(super) fn configure_command(command: &mut Command) {
     command.process_group(0);
 }
 
-pub(super) fn interpret_exit(status: ExitStatus) -> Exit {
-    if let Some(code) = status.code() {
-        if code == 0 {
-            Exit::Success
+impl From<ExitStatus> for Exit {
+    fn from(status: ExitStatus) -> Self {
+        if let Some(code) = status.code() {
+            if code == 0 {
+                Exit::Success
+            } else {
+                Exit::Failure(code as u32)
+            }
+        } else if let Some(signal) = status.signal() {
+            return Exit::Signalled(signal as u8);
         } else {
-            Exit::Failure(code as u32)
+            Exit::Other
         }
-    } else if let Some(signal) = status.signal() {
-        return Exit::Signalled(signal as u8);
-    } else {
-        Exit::Other
     }
 }

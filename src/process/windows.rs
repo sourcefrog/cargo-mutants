@@ -14,14 +14,16 @@ pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
 #[mutants::skip]
 pub(super) fn configure_command(_command: &mut Command) {}
 
-pub(super) fn interpret_exit(status: ExitStatus) -> Exit {
-    if let Some(code) = status.code() {
-        if code == 0 {
-            Exit::Success
+impl From<ExitStatus> for Exit {
+    fn from(status: ExitStatus) -> Self {
+        if let Some(code) = status.code() {
+            if code == 0 {
+                Exit::Success
+            } else {
+                Exit::Failure(code as u32)
+            }
         } else {
-            Exit::Failure(code as u32)
+            Exit::Other
         }
-    } else {
-        Exit::Other
     }
 }

@@ -28,12 +28,12 @@ const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-use windows::{configure_command, interpret_exit, terminate_child};
+use windows::{configure_command, terminate_child};
 
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
-use unix::{configure_command, interpret_exit, terminate_child};
+use unix::{configure_command, terminate_child};
 
 pub struct Process {
     child: Child,
@@ -112,7 +112,7 @@ impl Process {
             self.terminate()?;
             Err(e)
         } else if let Some(status) = self.child.try_wait()? {
-            Ok(Some(interpret_exit(status)))
+            Ok(Some(status.into()))
         } else {
             Ok(None)
         }
