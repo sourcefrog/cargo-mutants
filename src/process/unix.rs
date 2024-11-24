@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::Result;
 
-use super::ProcessStatus;
+use super::Exit;
 
 #[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
 #[mutants::skip] // hard to exercise the ESRCH edge case
@@ -37,16 +37,16 @@ pub(super) fn configure_command(command: &mut Command) {
     command.process_group(0);
 }
 
-pub(super) fn interpret_exit(status: ExitStatus) -> ProcessStatus {
+pub(super) fn interpret_exit(status: ExitStatus) -> Exit {
     if let Some(code) = status.code() {
         if code == 0 {
-            ProcessStatus::Success
+            Exit::Success
         } else {
-            ProcessStatus::Failure(code as u32)
+            Exit::Failure(code as u32)
         }
     } else if let Some(signal) = status.signal() {
-        return ProcessStatus::Signalled(signal as u8);
+        return Exit::Signalled(signal as u8);
     } else {
-        ProcessStatus::Other
+        Exit::Other
     }
 }

@@ -16,7 +16,7 @@ use crate::options::{Options, TestTool};
 use crate::outcome::{Phase, PhaseResult};
 use crate::output::ScenarioOutput;
 use crate::package::PackageSelection;
-use crate::process::{Process, ProcessStatus};
+use crate::process::{Exit, Process};
 use crate::Result;
 
 /// Run cargo build, check, or test.
@@ -56,7 +56,7 @@ pub fn run_cargo(
     )?;
     check_interrupted()?;
     debug!(?process_status, elapsed = ?start.elapsed());
-    if let ProcessStatus::Failure(code) = process_status {
+    if let Exit::Failure(code) = process_status {
         // 100 "one or more tests failed" from <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>;
         // I'm not addind a dependency to just get one integer.
         if argv[1] == "nextest" && code != 100 {
