@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 24.11.2
 
 - Changed: `.gitignore` (and other git ignore files) are only consulted when copying the tree if it is contained within a directory with a `.git` directory.
 
