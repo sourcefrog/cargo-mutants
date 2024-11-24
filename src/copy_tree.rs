@@ -219,11 +219,13 @@ mod test {
     }
 
     #[test]
-    fn dont_copy_git_dir_by_default() -> Result<()> {
+    fn dont_copy_git_dir_or_mutants_out_by_default() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
         let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
         create_dir(tmp.join(".git"))?;
         write(tmp.join(".git/foo"), "bar")?;
+        create_dir(tmp.join("mutants.out"))?;
+        write(tmp.join("mutants.out/foo"), "bar")?;
 
         write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
         let src = tmp.join("src");
@@ -237,6 +239,10 @@ mod test {
         assert!(
             !dest.join(".git/foo").is_file(),
             ".git/foo should not be copied"
+        );
+        assert!(
+            !dest.join("mutants.out").exists(),
+            "mutants.out should not be copied"
         );
         assert!(
             dest.join("Cargo.toml").is_file(),
