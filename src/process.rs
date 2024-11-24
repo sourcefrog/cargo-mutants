@@ -8,16 +8,14 @@
 #![allow(clippy::option_map_unit_fn)] // I don't think it's clearer with if/let.
 
 use std::ffi::OsStr;
-#[cfg(unix)]
-use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::process::{Child, Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 use camino::Utf8Path;
 use serde::Serialize;
-use tracing::{debug, span, trace, warn, Level};
+use tracing::{debug, span, trace, Level};
 
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
@@ -26,6 +24,16 @@ use crate::Result;
 
 /// How frequently to check if a subprocess finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
+
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+use windows::terminate_child_impl;
+
+#[cfg(unix)]
+mod unix;
+#[cfg(unix)]
+use unix::terminate_child_impl;
 
 pub struct Process {
     child: Child,
@@ -126,7 +134,7 @@ impl Process {
     ///
     /// Blocks until the subprocess is terminated and then returns the exit status.
     ///
-    /// The status might not be Timeout if this raced with a normal exit.
+    /// The status might not be `Timeout` if this raced with a normal exit.
     #[mutants::skip] // would leak processes from tests if skipped
     fn terminate(&mut self) -> Result<()> {
         let _span = span!(Level::DEBUG, "terminate_child", pid = self.child.id()).entered();
@@ -139,36 +147,6 @@ impl Process {
         }
         Ok(())
     }
-}
-
-#[cfg(unix)]
-#[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
-#[mutants::skip] // hard to exercise the ESRCH edge case
-fn terminate_child_impl(child: &mut Child) -> Result<()> {
-    use nix::errno::Errno;
-    use nix::sys::signal::{killpg, Signal};
-
-    let pid = nix::unistd::Pid::from_raw(child.id().try_into().unwrap());
-    match killpg(pid, Signal::SIGTERM) {
-        Ok(()) => Ok(()),
-        Err(Errno::ESRCH) => {
-            Ok(()) // Probably already gone
-        }
-        Err(Errno::EPERM) if cfg!(target_os = "macos") => {
-            Ok(()) // If the process no longer exists then macos can return EPERM (maybe?)
-        }
-        Err(errno) => {
-            let message = format!("failed to terminate child: {errno}");
-            warn!("{}", message);
-            bail!(message);
-        }
-    }
-}
-
-#[cfg(windows)]
-#[mutants::skip] // hard to exercise the ESRCH edge case
-fn terminate_child_impl(child: &mut Child) -> Result<()> {
-    child.kill().context("Kill child")
 }
 
 /// The result of running a single child process.
