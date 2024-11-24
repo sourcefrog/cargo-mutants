@@ -59,9 +59,9 @@ pub fn copy_tree(
     console.start_copy(dest);
     for entry in WalkBuilder::new(from_path)
         .standard_filters(gitignore)
-        .hidden(false)
-        .ignore(false)
-        .require_git(false)
+        .hidden(false) // copy hidden files
+        .ignore(false) // don't use .ignore
+        .require_git(true) // stop at git root; only read gitignore files inside git trees
         .filter_entry(|entry| {
             !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
         })
@@ -110,4 +110,40 @@ pub fn copy_tree(
     console.finish_copy(dest);
     debug!(?total_bytes, ?total_files, temp_dir = ?temp_dir.path(), "Copied source tree");
     Ok(temp_dir)
+}
+
+#[cfg(test)]
+mod test {
+    use std::fs::{create_dir, write};
+
+    use camino::Utf8PathBuf;
+    use tempfile::TempDir;
+
+    use crate::console::Console;
+    use crate::Result;
+
+    use super::copy_tree;
+
+    /// Test for regression of <https://github.com/sourcefrog/cargo-mutants/issues/450>
+    #[test]
+    fn copy_tree_with_parent_ignoring_star() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = tmp_dir.path();
+        write(tmp.join(".gitignore"), "*\n")?;
+
+        let a = Utf8PathBuf::try_from(tmp.join("a")).unwrap();
+        create_dir(&a)?;
+        write(a.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = a.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let dest_tmpdir = copy_tree(&a, "a", true, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(dest.join("Cargo.toml").is_file());
+        assert!(dest.join("src").is_dir());
+        assert!(dest.join("src/main.rs").is_file());
+
+        Ok(())
+    }
 }
