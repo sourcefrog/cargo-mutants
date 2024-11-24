@@ -171,18 +171,20 @@ impl Exit {
 ///
 /// This is not completely guaranteed, but is only for debug logs.
 fn cheap_shell_quote<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> String {
-    argv.into_iter()
-        .map(|s| {
-            s.as_ref()
-                .chars()
-                .flat_map(|c| match c {
-                    ' ' | '\t' | '\n' | '\r' | '\\' | '\'' | '"' => vec!['\\', c],
-                    _ => vec![c],
-                })
-                .collect::<String>()
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
+    let mut r = String::new();
+    for s in argv {
+        if !r.is_empty() {
+            r.push(' ');
+        }
+        for c in s.as_ref().chars() {
+            match c {
+                ' ' | '\t' | '\n' | '\r' | '\\' | '\'' | '"' => r.push('\\'),
+                _ => (),
+            }
+            r.push(c);
+        }
+    }
+    r
 }
 
 #[cfg(test)]
