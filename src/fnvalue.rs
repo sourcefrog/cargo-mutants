@@ -2,6 +2,8 @@
 
 //! Mutations of replacing a function body with a value of a (hopefully) appropriate type.
 
+#![warn(clippy::pedantic)]
+
 use std::iter;
 
 use itertools::Itertools;
@@ -25,8 +27,7 @@ pub(crate) fn return_type_replacements(
 }
 
 /// Generate some values that we hope are reasonable replacements for a type.
-///
-/// This is really the heart of cargo-mutants.
+#[allow(clippy::too_many_lines)]
 fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item = TokenStream> {
     // This could probably change to run from some configuration rather than
     // hardcoding various types, which would make it easier to support tree-specific
@@ -292,7 +293,7 @@ fn known_container(path: &Path) -> Option<(&Ident, &Type)> {
 /// Match known simple collections that can be empty or constructed from an
 /// iterator.
 ///
-/// Returns the short name (like "VecDeque") and the inner type.
+/// Returns the short name (like `"VecDeque"`) and the inner type.
 fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
     let last = path.segments.last()?;
     if ![
@@ -445,7 +446,7 @@ mod test {
     #[test]
     fn recurse_into_result_bool() {
         check_replacements(
-            parse_quote! {-> std::result::Result<bool> },
+            &parse_quote! {-> std::result::Result<bool> },
             &[],
             &["Ok(true)", "Ok(false)"],
         );
@@ -454,7 +455,7 @@ mod test {
     #[test]
     fn recurse_into_result_result_bool_with_error_values() {
         check_replacements(
-            parse_quote! {-> std::result::Result<Result<bool>> },
+            &parse_quote! {-> std::result::Result<Result<bool>> },
             &[parse_quote! { anyhow!("mutated") }],
             &[
                 "Ok(Ok(true))",
@@ -467,43 +468,43 @@ mod test {
 
     #[test]
     fn u16_replacements() {
-        check_replacements(parse_quote! { -> u16 }, &[], &["0", "1"]);
+        check_replacements(&parse_quote! { -> u16 }, &[], &["0", "1"]);
     }
 
     #[test]
     fn isize_replacements() {
-        check_replacements(parse_quote! { -> isize }, &[], &["0", "1", "-1"]);
+        check_replacements(&parse_quote! { -> isize }, &[], &["0", "1", "-1"]);
     }
 
     #[test]
     fn nonzero_integer_replacements() {
         check_replacements(
-            parse_quote! { -> std::num::NonZeroIsize },
+            &parse_quote! { -> std::num::NonZeroIsize },
             &[],
             &["1", "-1"],
         );
 
-        check_replacements(parse_quote! { -> std::num::NonZeroUsize }, &[], &["1"]);
+        check_replacements(&parse_quote! { -> std::num::NonZeroUsize }, &[], &["1"]);
 
-        check_replacements(parse_quote! { -> std::num::NonZeroU32 }, &[], &["1"]);
+        check_replacements(&parse_quote! { -> std::num::NonZeroU32 }, &[], &["1"]);
     }
 
     #[test]
     fn unit_replacement() {
-        check_replacements(parse_quote! { -> () }, &[], &["()"]);
+        check_replacements(&parse_quote! { -> () }, &[], &["()"]);
     }
 
     #[test]
     fn result_unit_replacement() {
-        check_replacements(parse_quote! { -> Result<(), Error> }, &[], &["Ok(())"]);
+        check_replacements(&parse_quote! { -> Result<(), Error> }, &[], &["Ok(())"]);
 
-        check_replacements(parse_quote! { -> Result<()> }, &[], &["Ok(())"]);
+        check_replacements(&parse_quote! { -> Result<()> }, &[], &["Ok(())"]);
     }
 
     #[test]
     fn http_response_replacement() {
         check_replacements(
-            parse_quote! { -> HttpResponse },
+            &parse_quote! { -> HttpResponse },
             &[],
             &["HttpResponse::Ok().finish()"],
         );
@@ -512,7 +513,7 @@ mod test {
     #[test]
     fn option_usize_replacement() {
         check_replacements(
-            parse_quote! { -> Option<usize> },
+            &parse_quote! { -> Option<usize> },
             &[],
             &["None", "Some(0)", "Some(1)"],
         );
@@ -521,7 +522,7 @@ mod test {
     #[test]
     fn box_usize_replacement() {
         check_replacements(
-            parse_quote! { -> Box<usize> },
+            &parse_quote! { -> Box<usize> },
             &[],
             &["Box::new(0)", "Box::new(1)"],
         );
@@ -530,7 +531,7 @@ mod test {
     #[test]
     fn box_unrecognized_type_replacement() {
         check_replacements(
-            parse_quote! { -> Box<MyObject> },
+            &parse_quote! { -> Box<MyObject> },
             &[],
             &["Box::new(Default::default())"],
         );
@@ -539,7 +540,7 @@ mod test {
     #[test]
     fn vec_string_replacement() {
         check_replacements(
-            parse_quote! { -> std::vec::Vec<String> },
+            &parse_quote! { -> std::vec::Vec<String> },
             &[],
             &["vec![]", "vec![String::new()]", r#"vec!["xyzzy".into()]"#],
         );
@@ -547,18 +548,18 @@ mod test {
 
     #[test]
     fn float_replacement() {
-        check_replacements(parse_quote! { -> f32 }, &[], &["0.0", "1.0", "-1.0"]);
+        check_replacements(&parse_quote! { -> f32 }, &[], &["0.0", "1.0", "-1.0"]);
     }
 
     #[test]
     fn ref_replacement_recurses() {
-        check_replacements(parse_quote! { -> &bool }, &[], &["&true", "&false"]);
+        check_replacements(&parse_quote! { -> &bool }, &[], &["&true", "&false"]);
     }
 
     #[test]
     fn array_replacement() {
         check_replacements(
-            parse_quote! { -> [u8; 256] },
+            &parse_quote! { -> [u8; 256] },
             &[],
             &["[0; 256]", "[1; 256]"],
         );
@@ -569,7 +570,7 @@ mod test {
         // Also checks that it matches the path, even using an atypical path.
         // TODO: Ideally this would be fully qualified like `alloc::sync::Arc::new(String::new())`.
         check_replacements(
-            parse_quote! { -> alloc::sync::Arc<String> },
+            &parse_quote! { -> alloc::sync::Arc<String> },
             &[],
             &["Arc::new(String::new())", r#"Arc::new("xyzzy".into())"#],
         );
@@ -580,7 +581,7 @@ mod test {
         // Also checks that it matches the path, even using an atypical path.
         // TODO: Ideally this would be fully qualified like `alloc::sync::Rc::new(String::new())`.
         check_replacements(
-            parse_quote! { -> alloc::sync::Rc<String> },
+            &parse_quote! { -> alloc::sync::Rc<String> },
             &[],
             &["Rc::new(String::new())", r#"Rc::new("xyzzy".into())"#],
         );
@@ -652,7 +653,7 @@ mod test {
     #[test]
     fn btreeset_replacement() {
         check_replacements(
-            parse_quote! { -> std::collections::BTreeSet<String> },
+            &parse_quote! { -> std::collections::BTreeSet<String> },
             &[],
             &[
                 "BTreeSet::new()",
@@ -665,7 +666,7 @@ mod test {
     #[test]
     fn cow_generates_borrowed_and_owned() {
         check_replacements(
-            parse_quote! { -> Cow<'static, str> },
+            &parse_quote! { -> Cow<'static, str> },
             &[],
             &[
                 r#"Cow::Borrowed("")"#,
@@ -681,7 +682,7 @@ mod test {
         // This looks like something that holds a &str, and maybe can be constructed
         // from a &str, but we don't know anything else about it, so we just guess.
         check_replacements(
-            parse_quote! { -> UnknownContainer<'static, str> },
+            &parse_quote! { -> UnknownContainer<'static, str> },
             &[],
             &[
                 "UnknownContainer::new()",
@@ -698,16 +699,16 @@ mod test {
     #[test]
     fn tuple_combinations() {
         check_replacements(
-            parse_quote! { -> (bool, usize) },
+            &parse_quote! { -> (bool, usize) },
             &[],
             &["(true, 0)", "(true, 1)", "(false, 0)", "(false, 1)"],
-        )
+        );
     }
 
     #[test]
     fn tuple_combination_longer() {
         check_replacements(
-            parse_quote! { -> (bool, Option<String>) },
+            &parse_quote! { -> (bool, Option<String>) },
             &[],
             &[
                 "(true, None)",
@@ -717,13 +718,13 @@ mod test {
                 "(false, Some(String::new()))",
                 r#"(false, Some("xyzzy".into()))"#,
             ],
-        )
+        );
     }
 
     #[test]
     fn iter_replacement() {
         check_replacements(
-            parse_quote! { -> impl Iterator<Item = String> },
+            &parse_quote! { -> impl Iterator<Item = String> },
             &[],
             &[
                 "::std::iter::empty()",
@@ -755,7 +756,7 @@ mod test {
     #[test]
     fn slice_replacement() {
         check_replacements(
-            parse_quote! { -> [u8] },
+            &parse_quote! { -> [u8] },
             &[],
             &[
                 "Vec::leak(Vec::new())",
@@ -768,7 +769,7 @@ mod test {
     #[test]
     fn btreemap_replacement() {
         check_replacements(
-            parse_quote! { -> BTreeMap<String, bool> },
+            &parse_quote! { -> BTreeMap<String, bool> },
             &[],
             &[
                 "BTreeMap::new()",
@@ -780,9 +781,9 @@ mod test {
         );
     }
 
-    fn check_replacements(return_type: ReturnType, error_exprs: &[Expr], expected: &[&str]) {
+    fn check_replacements(return_type: &ReturnType, error_exprs: &[Expr], expected: &[&str]) {
         assert_eq!(
-            return_type_replacements(&return_type, error_exprs)
+            return_type_replacements(return_type, error_exprs)
                 .into_iter()
                 .map(|t| t.to_pretty_string())
                 .collect_vec(),

@@ -7,10 +7,13 @@
 //! e.g. for cargo they are identified from the targets. The tree walker then
 //! follows `mod` statements to recursively visit other referenced files.
 
+#![warn(clippy::pedantic)]
+
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::vec;
 
+use camino::{Utf8Path, Utf8PathBuf};
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
 use syn::ext::IdentExt;
@@ -24,7 +27,7 @@ use crate::mutate::Function;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
 use crate::span::Span;
-use crate::*;
+use crate::{check_interrupted, Console, Context, Genre, Mutant, Options, Result};
 
 /// Mutants and files discovered in a source tree.
 ///
@@ -44,7 +47,7 @@ impl Discovered {
                 trace!(?name, "skip previously caught mutant");
             }
             !c
-        })
+        });
     }
 }
 
@@ -72,13 +75,13 @@ pub fn walk_tree(
         // collect any mutants from them, and they don't count as "seen" for
         // `--list-files`.
         for mod_namespace in &external_mods {
-            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace)? {
+            if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace) {
                 file_queue.extend(SourceFile::load(
                     workspace_dir,
                     &mod_path,
                     &source_file.package_name,
                     false,
-                )?)
+                )?);
             }
         }
         let path = &source_file.tree_relative_path;
@@ -184,8 +187,7 @@ impl ModNamespace {
     fn get_filesystem_name(&self) -> &Utf8Path {
         self.path_attribute
             .as_ref()
-            .map(Utf8PathBuf::as_path)
-            .unwrap_or(Utf8Path::new(&self.name))
+            .map_or(Utf8Path::new(&self.name), Utf8PathBuf::as_path)
     }
 }
 
@@ -263,14 +265,14 @@ impl DiscoveryVisitor<'_> {
     }
 
     /// Record that we generated some mutants.
-    fn collect_mutant(&mut self, span: Span, replacement: TokenStream, genre: Genre) {
+    fn collect_mutant(&mut self, span: Span, replacement: &TokenStream, genre: Genre) {
         self.mutants.push(Mutant {
             source_file: self.source_file.clone(),
             function: self.fn_stack.last().cloned(),
             span,
             replacement: replacement.to_pretty_string(),
             genre,
-        })
+        });
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
@@ -299,7 +301,7 @@ impl DiscoveryVisitor<'_> {
                     if orig_block == new_block {
                         debug!("Replacement is the same as the function body; skipping");
                     } else {
-                        self.collect_mutant(body_span, rep, Genre::FnValue);
+                        self.collect_mutant(body_span, &rep, Genre::FnValue);
                     }
                 }
             }
@@ -527,10 +529,8 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Ge(_) => vec![quote! {<}],
             BinOp::Add(_) => vec![quote! {-}, quote! {*}],
             BinOp::AddAssign(_) => vec![quote! {-=}, quote! {*=}],
-            BinOp::Sub(_) => vec![quote! {+}, quote! {/}],
-            BinOp::SubAssign(_) => vec![quote! {+=}, quote! {/=}],
-            BinOp::Mul(_) => vec![quote! {+}, quote! {/}],
-            BinOp::MulAssign(_) => vec![quote! {+=}, quote! {/=}],
+            BinOp::Sub(_) | BinOp::Mul(_) => vec![quote! {+}, quote! {/}],
+            BinOp::SubAssign(_) | BinOp::MulAssign(_) => vec![quote! {+=}, quote! {/=}],
             BinOp::Div(_) => vec![quote! {%}, quote! {*}],
             BinOp::DivAssign(_) => vec![quote! {%=}, quote! {*=}],
             BinOp::Rem(_) => vec![quote! {/}, quote! {+}],
@@ -555,7 +555,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         };
         replacements
             .into_iter()
-            .for_each(|rep| self.collect_mutant(i.op.span().into(), rep, Genre::BinaryOperator));
+            .for_each(|rep| self.collect_mutant(i.op.span().into(), &rep, Genre::BinaryOperator));
         syn::visit::visit_expr_binary(self, i);
     }
 
@@ -567,7 +567,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         match i.op {
             UnOp::Not(_) | UnOp::Neg(_) => {
-                self.collect_mutant(i.op.span().into(), quote! {}, Genre::UnaryOperator);
+                self.collect_mutant(i.op.span().into(), &quote! {}, Genre::UnaryOperator);
             }
             _ => {
                 trace!(
@@ -596,7 +596,7 @@ fn find_mod_source(
     tree_root: &Utf8Path,
     parent: &SourceFile,
     mod_namespace: &ExternalModRef,
-) -> Result<Option<Utf8PathBuf>> {
+) -> Option<Utf8PathBuf> {
     // First, work out whether the mod will be a sibling in the same directory, or
     // in a child directory.
     //
@@ -663,15 +663,14 @@ fn find_mod_source(
         let full_path = tree_root.join(&relative_path);
         if full_path.is_file() {
             trace!("found submodule in {full_path}");
-            return Ok(Some(relative_path));
-        } else {
-            tried_paths.push(full_path);
+            return Some(relative_path);
         }
+        tried_paths.push(full_path);
     }
     let mod_name = &mod_child.name;
     let definition_site = parent.format_source_location(mod_child.source_location.start);
     warn!(?definition_site, %mod_name, ?tried_paths, "referent of mod not found");
-    Ok(None)
+    None
 }
 
 /// True if the signature of a function is such that it should be excluded.
@@ -738,15 +737,12 @@ fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
 ///
 /// This does not check type arguments.
 fn path_ends_with(path: &syn::Path, ident: &str) -> bool {
-    path.segments
-        .last()
-        .map(|s| s.ident == ident)
-        .unwrap_or(false)
+    path.segments.last().is_some_and(|s| s.ident == ident)
 }
 
 /// True if the attribute contains `mutants::skip`.
 ///
-/// This for example returns true for `#[mutants::skip] or `#[cfg_attr(test, mutants::skip)]`.
+/// This for example returns true for `#[mutants::skip]` or `#[cfg_attr(test, mutants::skip)]`.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     if path_is(attr.path(), &["mutants", "skip"]) {
         return true;
@@ -757,7 +753,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     let mut skip = false;
     if let Err(err) = attr.parse_nested_meta(|meta| {
         if path_is(&meta.path, &["mutants", "skip"]) {
-            skip = true
+            skip = true;
         }
         Ok(())
     }) {
@@ -802,11 +798,12 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
 
 #[cfg(test)]
 mod test {
-    use config::Config;
     use indoc::indoc;
     use itertools::Itertools;
     use test_log::test;
-    use test_util::copy_of_testdata;
+
+    use crate::test_util::copy_of_testdata;
+    use crate::workspace::{PackageFilter, Workspace};
 
     use super::*;
 
@@ -869,7 +866,7 @@ mod test {
 
     /// Helper function for `find_path_attribute` tests
     fn run_find_path_attribute(
-        token_stream: TokenStream,
+        token_stream: &TokenStream,
     ) -> std::result::Result<Option<Utf8PathBuf>, String> {
         let token_string = token_stream.to_string();
         let item_mod = syn::parse_str::<syn::ItemMod>(&token_string).unwrap_or_else(|err| {
@@ -880,13 +877,13 @@ mod test {
 
     #[test]
     fn find_path_attribute_on_module_item() {
-        let outer = run_find_path_attribute(quote! {
+        let outer = run_find_path_attribute(&quote! {
             #[path = "foo_file.rs"]
             mod foo;
         });
         assert_eq!(outer, Ok(Some(Utf8PathBuf::from("foo_file.rs"))));
 
-        let inner = run_find_path_attribute(quote! {
+        let inner = run_find_path_attribute(&quote! {
             mod foo {
                 #![path = "foo_folder"]
 
@@ -900,26 +897,26 @@ mod test {
     #[test]
     fn reject_module_path_absolute() {
         // dots are valid
-        let dots = run_find_path_attribute(quote! {
+        let dots = run_find_path_attribute(&quote! {
             #[path = "contains/../dots.rs"]
             mod dots;
         });
         assert_eq!(dots, Ok(Some(Utf8PathBuf::from("contains/../dots.rs"))));
 
-        let dots_inner = run_find_path_attribute(quote! {
+        let dots_inner = run_find_path_attribute(&quote! {
             mod dots_in_path {
                 #![path = "contains/../dots"]
             }
         });
         assert_eq!(dots_inner, Ok(Some(Utf8PathBuf::from("contains/../dots"))));
 
-        let leading_slash = run_find_path_attribute(quote! {
+        let leading_slash = run_find_path_attribute(&quote! {
             #[path = "/leading_slash.rs"]
             mod dots;
         });
         assert_eq!(leading_slash, Err("/leading_slash.rs".to_owned()));
 
-        let allow_other_slashes = run_find_path_attribute(quote! {
+        let allow_other_slashes = run_find_path_attribute(&quote! {
             #[path = "foo/other/slashes/are/allowed.rs"]
             mod dots;
         });
@@ -928,7 +925,7 @@ mod test {
             Ok(Some(Utf8PathBuf::from("foo/other/slashes/are/allowed.rs")))
         );
 
-        let leading_slash2 = run_find_path_attribute(quote! {
+        let leading_slash2 = run_find_path_attribute(&quote! {
             #[path = "/leading_slash/../and_dots.rs"]
             mod dots;
         });
@@ -978,9 +975,7 @@ mod test {
 
     #[test]
     fn skip_with_capacity_by_default() {
-        let args = Args::try_parse_from(["mutants"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::from_arg_strs(["mutants"]);
         let mut mutants = mutate_source_str(
             indoc! {"
                 fn main() {
@@ -997,9 +992,7 @@ mod test {
 
     #[test]
     fn mutate_vec_with_capacity_when_default_skips_are_turned_off() {
-        let args = Args::try_parse_from(["mutants", "--skip-calls-defaults", "false"]).unwrap();
-        let config = Config::default();
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::from_arg_strs(["mutants", "--skip-calls-defaults", "false"]);
         let mutants = mutate_source_str(
             indoc! {"
                 fn main() {

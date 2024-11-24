@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2024 Martin Pool
 
 //! Convert a token stream back to (reasonably) pretty Rust code in a string.
 
@@ -10,10 +10,10 @@ pub(crate) trait ToPrettyString {
     fn to_pretty_string(&self) -> String;
 }
 
-/// Convert a TokenStream representing some code to a reasonably formatted
+/// Convert a `TokenStream` representing some code to a reasonably formatted
 /// string of Rust code.
 ///
-/// [TokenStream] has a `to_string`, but it adds spaces in places that don't
+/// `TokenStream` has a `to_string`, but it adds spaces in places that don't
 /// look idiomatic, so this reimplements it in a way that looks better.
 ///
 /// This is probably not correctly formatted for all Rust syntax, and only tries
@@ -23,7 +23,7 @@ where
     T: ToTokens,
 {
     fn to_pretty_string(&self) -> String {
-        use TokenTree::*;
+        use TokenTree::{Group, Ident, Literal, Punct};
         let mut b = String::with_capacity(200);
         let mut ts = self.to_token_stream().into_iter().peekable();
         while let Some(tt) = ts.next() {

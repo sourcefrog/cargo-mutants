@@ -18,6 +18,7 @@ use crate::Result;
 ///
 /// `manifest_source_dir` is the directory originally containing the manifest, from
 /// which the absolute paths are calculated.
+#[allow(clippy::module_name_repetitions)]
 pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> Result<()> {
     let toml_str = read_to_string(manifest_scratch_path).with_context(|| {
         format!("failed to read manifest from build directory: {manifest_scratch_path}")

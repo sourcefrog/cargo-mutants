@@ -89,7 +89,7 @@ pub fn copy_testdata_to<P: AsRef<Path>>(tree_name: &str, dest: P) {
         })
         .after_entry_copied(|path, _file_type, _stats| {
             if path.ends_with("Cargo_test.toml") || path.ends_with(".cargo_test") {
-                renames.push(dest.join(path))
+                renames.push(dest.join(path));
             }
             Ok(())
         })

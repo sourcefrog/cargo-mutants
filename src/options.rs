@@ -8,10 +8,14 @@
 //! 2. Config options (read from `.cargo/mutants.toml`)
 //! 3. Built-in defaults
 
+#![warn(clippy::pedantic)]
+
+use std::env;
 #[cfg(test)]
 use std::ffi::OsString;
 use std::time::Duration;
 
+use camino::Utf8PathBuf;
 use globset::GlobSet;
 use regex::RegexSet;
 use serde::Deserialize;
@@ -21,11 +25,12 @@ use tracing::warn;
 
 use crate::config::Config;
 use crate::glob::build_glob_set;
-use crate::*;
+use crate::{Args, BaselineStrategy, Context, Phase, Result, ValueEnum};
 
 /// Options for mutation testing, based on both command-line arguments and the
 /// config file.
 #[derive(Default, Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Options {
     /// Run tests in an unmutated tree?
     pub baseline: BaselineStrategy,
@@ -197,7 +202,7 @@ impl Colors {
     ///
     /// Otherwise, return None, meaning we should decide based on the
     /// detected terminal characteristics.
-    pub fn forced_value(&self) -> Option<bool> {
+    pub fn forced_value(self) -> Option<bool> {
         // From https://bixense.com/clicolors/
         if env::var("NO_COLOR").is_ok_and(|x| x != "0") {
             Some(false)
@@ -213,7 +218,7 @@ impl Colors {
     }
 
     #[mutants::skip] // depends on a real tty etc, hard to test
-    pub fn active_stdout(&self) -> bool {
+    pub fn active_stdout(self) -> bool {
         self.forced_value()
             .unwrap_or_else(::console::colors_enabled)
     }
@@ -240,7 +245,7 @@ impl Options {
                 args.test_package
                     .iter()
                     .flat_map(|s| s.split(','))
-                    .map(|s| s.to_string())
+                    .map(ToString::to_string)
                     .collect(),
             )
         } else if args.test_workspace.is_none() && config.test_workspace == Some(true) {
@@ -255,7 +260,7 @@ impl Options {
             .skip_calls
             .iter()
             .flat_map(|s| s.split(','))
-            .map(|s| s.to_string())
+            .map(ToString::to_string)
             .chain(config.skip_calls.iter().cloned())
             .collect();
         if args
@@ -334,6 +339,8 @@ impl Options {
     /// If the arguments are invalid.
     #[cfg(test)]
     pub fn from_arg_strs<I: IntoIterator<Item = S>, S: Into<OsString> + Clone>(args: I) -> Options {
+        use crate::Args;
+        use clap::Parser;
         let args = Args::try_parse_from(args).expect("Failed to parse args");
         Options::from_args(&args).expect("Build options from args")
     }
@@ -373,11 +380,13 @@ mod test {
     use std::io::Write;
     use std::str::FromStr;
 
+    use clap::Parser;
     use indoc::indoc;
     use rusty_fork::rusty_fork_test;
     use tempfile::NamedTempFile;
 
     use super::*;
+    use crate::Args;
 
     #[test]
     fn default_options() {
@@ -441,10 +450,10 @@ mod test {
 
     #[test]
     fn cli_timeout_multiplier_overrides_config() {
-        let config = indoc! { r#"
+        let config = indoc! { r"
             timeout_multiplier = 1.0
             build_timeout_multiplier = 2.0
-        "#};
+        "};
         let mut config_file = NamedTempFile::new().unwrap();
         config_file.write_all(config.as_bytes()).unwrap();
         let args = Args::parse_from([
@@ -678,9 +687,9 @@ mod test {
     #[test]
     fn test_workspace_config_true() {
         let args = Args::try_parse_from(["mutants"]).unwrap();
-        let config = indoc! { r#"
+        let config = indoc! { r"
                 test_workspace = true
-            "#};
+            "};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Workspace);
@@ -689,9 +698,9 @@ mod test {
     #[test]
     fn test_workspace_config_false() {
         let args = Args::try_parse_from(["mutants"]).unwrap();
-        let config = indoc! { r#"
+        let config = indoc! { r"
                 test_workspace = false
-            "#};
+            "};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Mutated);
@@ -700,9 +709,9 @@ mod test {
     #[test]
     fn test_workspace_args_override_config_true() {
         let args = Args::try_parse_from(["mutants", "--test-workspace=true"]).unwrap();
-        let config = indoc! { r#"
+        let config = indoc! { r"
                 test_workspace = false
-            "#};
+            "};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Workspace);
@@ -711,9 +720,9 @@ mod test {
     #[test]
     fn test_workspace_args_override_config_false() {
         let args = Args::try_parse_from(["mutants", "--test-workspace=false"]).unwrap();
-        let config = indoc! { r#"
+        let config = indoc! { r"
                 test_workspace = true
-            "#};
+            "};
         let config = Config::from_str(config).unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.test_package, TestPackages::Mutated);
@@ -800,10 +809,10 @@ mod test {
         // You can configure off the default `with_capacity` skip_calls
         let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::from_str(
-            r#"
+            r"
             skip_calls_defaults = false
             skip_calls = []
-            "#,
+            ",
         )
         .unwrap();
         let options = Options::new(&args, &config).unwrap();
