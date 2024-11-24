@@ -22,17 +22,7 @@ mod windows;
 #[cfg(windows)]
 use windows::copy_symlink;
 
-/// Filenames excluded from being copied with the source.
-static SOURCE_EXCLUDE: &[&str] = &[
-    ".git",
-    ".hg",
-    ".bzr",
-    ".svn",
-    "_darcs",
-    ".pijul",
-    "mutants.out",
-    "mutants.out.old",
-];
+static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
 ///
@@ -64,7 +54,11 @@ pub fn copy_tree(
         .ignore(false) // don't use .ignore
         .require_git(true) // stop at git root; only read gitignore files inside git trees
         .filter_entry(|entry| {
-            !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
+            let name = entry.file_name().to_string_lossy();
+            if name == "mutants.out" || name == "mutants.out.old" {
+                return false;
+            }
+            !VCS_DIRS.contains(&name.as_ref())
         });
     debug!(?walk_builder);
     for entry in walk_builder.build() {
@@ -142,7 +136,7 @@ mod test {
         create_dir(&src)?;
         write(src.join("main.rs"), "fn main() {}")?;
 
-        let options = Options::from_arg_strs(&["--gitignore=true"]);
+        let options = Options::from_arg_strs(["--gitignore=true"]);
         let dest_tmpdir = copy_tree(&a, "a", &options, &Console::new())?;
         let dest = dest_tmpdir.path();
         assert!(dest.join("Cargo.toml").is_file());
@@ -223,4 +217,34 @@ mod test {
 
         Ok(())
     }
+
+    #[test]
+    fn dont_copy_git_dir_by_default() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        create_dir(tmp.join(".git"))?;
+        write(tmp.join(".git/foo"), "bar")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs([""; 0]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(!dest.join(".git").is_dir(), ".git should not be copied");
+        assert!(
+            !dest.join(".git/foo").is_file(),
+            ".git/foo should not be copied"
+        );
+        assert!(
+            dest.join("Cargo.toml").is_file(),
+            "Cargo.toml should be copied"
+        );
+
+        Ok(())
+    }
+
+    // fn copy_git_dir_when_requested() -> Result<()> {}
 }
