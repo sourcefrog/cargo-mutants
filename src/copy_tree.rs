@@ -46,6 +46,7 @@ pub fn copy_tree(
         .context("Convert path to UTF-8")?;
     console.start_copy(dest);
     let mut walk_builder = WalkBuilder::new(from_path);
+    let copy_vcs = options.copy_vcs; // for lifetime
     walk_builder
         .git_ignore(options.gitignore)
         .git_exclude(options.gitignore)
@@ -53,12 +54,11 @@ pub fn copy_tree(
         .hidden(false) // copy hidden files
         .ignore(false) // don't use .ignore
         .require_git(true) // stop at git root; only read gitignore files inside git trees
-        .filter_entry(|entry| {
+        .filter_entry(move |entry| {
             let name = entry.file_name().to_string_lossy();
-            if name == "mutants.out" || name == "mutants.out.old" {
-                return false;
-            }
-            !VCS_DIRS.contains(&name.as_ref())
+            name != "mutants.out"
+                && name != "mutants.out.old"
+                && (copy_vcs || !VCS_DIRS.contains(&name.as_ref()))
         });
     debug!(?walk_builder);
     for entry in walk_builder.build() {
@@ -184,7 +184,7 @@ mod test {
         write(src.join("main.rs"), "fn main() {}")?;
         write(tmp.join("foo"), "bar")?;
 
-        let options = Options::from_arg_strs(["--gitignore=true"]);
+        let options = Options::from_arg_strs(["mutants", "--gitignore=true"]);
         let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
         let dest = dest_tmpdir.path();
         assert!(
@@ -209,7 +209,7 @@ mod test {
         write(src.join("main.rs"), "fn main() {}")?;
         write(tmp.join("foo"), "bar")?;
 
-        let options = Options::from_arg_strs(["--gitignore=false"]);
+        let options = Options::from_arg_strs(["mutants", "--gitignore=false"]);
         let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
         let dest = dest_tmpdir.path();
         // gitignore didn't exclude `foo`
@@ -232,7 +232,7 @@ mod test {
         create_dir(&src)?;
         write(src.join("main.rs"), "fn main() {}")?;
 
-        let options = Options::from_arg_strs([""; 0]);
+        let options = Options::from_arg_strs(["mutants"]);
         let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
         let dest = dest_tmpdir.path();
         assert!(!dest.join(".git").is_dir(), ".git should not be copied");
@@ -252,5 +252,34 @@ mod test {
         Ok(())
     }
 
-    // fn copy_git_dir_when_requested() -> Result<()> {}
+    #[test]
+    fn copy_git_dir_when_requested() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        create_dir(tmp.join(".git"))?;
+        write(tmp.join(".git/foo"), "bar")?;
+        create_dir(tmp.join("mutants.out"))?;
+        write(tmp.join("mutants.out/foo"), "bar")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs(["mutants", "--copy-vcs=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(dest.join(".git").is_dir(), ".git should be copied");
+        assert!(dest.join(".git/foo").is_file(), ".git/foo should be copied");
+        assert!(
+            !dest.join("mutants.out").exists(),
+            "mutants.out should not be copied"
+        );
+        assert!(
+            dest.join("Cargo.toml").is_file(),
+            "Cargo.toml should be copied"
+        );
+
+        Ok(())
+    }
 }
