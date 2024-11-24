@@ -57,16 +57,17 @@ pub fn copy_tree(
         .try_into()
         .context("Convert path to UTF-8")?;
     console.start_copy(dest);
-    for entry in WalkBuilder::new(from_path)
+    let mut walk_builder = WalkBuilder::new(from_path);
+    walk_builder
         .standard_filters(gitignore)
         .hidden(false) // copy hidden files
         .ignore(false) // don't use .ignore
         .require_git(true) // stop at git root; only read gitignore files inside git trees
         .filter_entry(|entry| {
             !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
-        })
-        .build()
-    {
+        });
+    debug!(?walk_builder);
+    for entry in walk_builder.build() {
         check_interrupted()?;
         let entry = entry?;
         let relative_path = entry
