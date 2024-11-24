@@ -9,6 +9,7 @@ use path_slash::PathExt;
 use tempfile::TempDir;
 use tracing::{debug, warn};
 
+use crate::options::Options;
 use crate::{check_interrupted, Console, Result};
 
 #[cfg(unix)]
@@ -35,14 +36,11 @@ static SOURCE_EXCLUDE: &[&str] = &[
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
 ///
-/// If `git` is true, ignore files that are excluded by all the various `.gitignore`
-/// files.
-///
 /// Regardless, anything matching [SOURCE_EXCLUDE] is excluded.
 pub fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,
-    gitignore: bool,
+    options: &Options,
     console: &Console,
 ) -> Result<TempDir> {
     let mut total_bytes = 0;
@@ -59,7 +57,9 @@ pub fn copy_tree(
     console.start_copy(dest);
     let mut walk_builder = WalkBuilder::new(from_path);
     walk_builder
-        .standard_filters(gitignore)
+        .git_ignore(options.gitignore)
+        .git_exclude(options.gitignore)
+        .git_global(options.gitignore)
         .hidden(false) // copy hidden files
         .ignore(false) // don't use .ignore
         .require_git(true) // stop at git root; only read gitignore files inside git trees
@@ -115,12 +115,15 @@ pub fn copy_tree(
 
 #[cfg(test)]
 mod test {
+    // TODO: Maybe run these with $HOME set to a temp dir so that global git config has no effect?
+
     use std::fs::{create_dir, write};
 
     use camino::Utf8PathBuf;
     use tempfile::TempDir;
 
     use crate::console::Console;
+    use crate::options::Options;
     use crate::Result;
 
     use super::copy_tree;
@@ -139,11 +142,84 @@ mod test {
         create_dir(&src)?;
         write(src.join("main.rs"), "fn main() {}")?;
 
-        let dest_tmpdir = copy_tree(&a, "a", true, &Console::new())?;
+        let options = Options::from_arg_strs(&["--gitignore=true"]);
+        let dest_tmpdir = copy_tree(&a, "a", &options, &Console::new())?;
         let dest = dest_tmpdir.path();
         assert!(dest.join("Cargo.toml").is_file());
         assert!(dest.join("src").is_dir());
         assert!(dest.join("src/main.rs").is_file());
+
+        Ok(())
+    }
+
+    /// With `gitignore` set to `true`, but no `.git`, don't exclude anything.
+    #[test]
+    fn copy_with_gitignore_but_without_git_dir() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["--gitignore=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            dest.join("foo").is_file(),
+            "foo should be copied because gitignore is not used without .git"
+        );
+
+        Ok(())
+    }
+
+    /// With `gitignore` set to `true`, in a tree with `.git`, `.gitignore` is respected.
+    #[test]
+    fn copy_with_gitignore_and_git_dir() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+        create_dir(tmp.join(".git"))?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["--gitignore=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            !dest.join("foo").is_file(),
+            "foo should have been excluded by gitignore"
+        );
+
+        Ok(())
+    }
+
+    /// With `gitignore` set to `false`, patterns in that file have no effect.
+    #[test]
+    fn copy_without_gitignore() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+        create_dir(tmp.join(".git"))?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["--gitignore=false"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        // gitignore didn't exclude `foo`
+        assert!(dest.join("foo").is_file());
 
         Ok(())
     }

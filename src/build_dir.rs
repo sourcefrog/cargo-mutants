@@ -57,7 +57,7 @@ impl BuildDir {
         let source_abs = source
             .canonicalize_utf8()
             .context("canonicalize source path")?;
-        let temp_dir = copy_tree(source, &name_base, options.gitignore, console)?;
+        let temp_dir = copy_tree(source, &name_base, options, console)?;
         let path: Utf8PathBuf = temp_dir
             .path()
             .to_owned()
