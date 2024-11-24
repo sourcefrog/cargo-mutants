@@ -159,6 +159,7 @@ pub enum ProcessStatus {
     /// Exceeded its timeout, and killed.
     Timeout,
     /// Killed by some signal.
+    #[cfg(unix)]
     Signalled(u8),
     /// Unknown or unexpected situation.
     Other,
