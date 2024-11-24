@@ -14,7 +14,7 @@ use serde::Serializer;
 use tracing::warn;
 
 use crate::console::plural;
-use crate::process::ProcessStatus;
+use crate::process::Exit;
 use crate::*;
 
 /// What phase of running a scenario.
@@ -193,7 +193,7 @@ impl ScenarioOutcome {
         self.phase_results.last().unwrap().phase
     }
 
-    pub fn last_phase_result(&self) -> ProcessStatus {
+    pub fn last_phase_result(&self) -> Exit {
         self.phase_results.last().unwrap().process_status
     }
 
@@ -284,7 +284,7 @@ pub struct PhaseResult {
     /// How long did it take?
     pub duration: Duration,
     /// Did it succeed?
-    pub process_status: ProcessStatus,
+    pub process_status: Exit,
     /// What command was run, as an argv list.
     pub argv: Vec<String>,
 }
@@ -324,7 +324,7 @@ pub enum SummaryOutcome {
 mod test {
     use std::time::Duration;
 
-    use crate::process::ProcessStatus;
+    use crate::process::Exit;
 
     use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
 
@@ -339,13 +339,13 @@ mod test {
                 PhaseResult {
                     phase: Phase::Build,
                     duration: Duration::from_secs(2),
-                    process_status: ProcessStatus::Success,
+                    process_status: Exit::Success,
                     argv: vec!["cargo".into(), "build".into()],
                 },
                 PhaseResult {
                     phase: Phase::Test,
                     duration: Duration::from_secs(3),
-                    process_status: ProcessStatus::Success,
+                    process_status: Exit::Success,
                     argv: vec!["cargo".into(), "test".into()],
                 },
             ],
@@ -355,7 +355,7 @@ mod test {
             Some(&PhaseResult {
                 phase: Phase::Build,
                 duration: Duration::from_secs(2),
-                process_status: ProcessStatus::Success,
+                process_status: Exit::Success,
                 argv: vec!["cargo".into(), "build".into()],
             })
         );
