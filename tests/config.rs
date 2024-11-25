@@ -273,7 +273,7 @@ fn output_option_use_config() {
     let testdata = copy_of_testdata("factorial");
     write_config_file(
         &testdata,
-        &format!("output = \"{}\"\n", output_via_config.to_str().unwrap()),
+        &format!("output = \"{}\"\n", output_via_config.display()),
     );
 
     assert!(
