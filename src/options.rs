@@ -302,7 +302,7 @@ impl Options {
             jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
-            output_in_dir: args.output.clone(),
+            output_in_dir: args.output.clone().or(config.output.clone()),
             print_caught: args.caught,
             print_unviable: args.unviable,
             profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),

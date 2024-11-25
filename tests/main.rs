@@ -495,6 +495,46 @@ fn output_option() {
 }
 
 #[test]
+/// Set the `--output` directory via environment variable `CARGO_MUTANTS_OUTPUT`
+fn output_option_use_env() {
+    let tmp_src_dir = copy_of_testdata("factorial");
+    let output_tmpdir = TempDir::new().unwrap();
+    let output_via_env = output_tmpdir.path().join("output_via_env");
+    assert!(
+        !tmp_src_dir.path().join("mutants.out").exists(),
+        "mutants.out should not be in a clean copy of the test data"
+    );
+    run()
+        .env("CARGO_MUTANTS_OUTPUT", &output_via_env)
+        .arg("mutants")
+        .args(["--check", "--no-times"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+    assert!(
+        !tmp_src_dir.path().join("mutants.out").exists(),
+        "mutants.out should not be in the source directory"
+    );
+    let mutants_out = output_via_env.join("mutants.out");
+    assert!(
+        mutants_out.exists(),
+        "mutants.out is in $CARGO_MUTANTS_OUTPUT directory"
+    );
+    for name in [
+        "mutants.json",
+        "debug.log",
+        "outcomes.json",
+        "missed.txt",
+        "caught.txt",
+        "timeout.txt",
+        "unviable.txt",
+    ] {
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+    }
+}
+
+#[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");

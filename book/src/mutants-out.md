@@ -1,6 +1,7 @@
 # The `mutants.out` directory
 
-A `mutants.out` directory is created in the original source directory. You can put the output directory elsewhere with the `--output` option.
+A `mutants.out` directory is created in the original source directory. You can put the output directory elsewhere with the `--output` option
+or using `CARGO_MUTANTS_OUTPUT` environment variable or via `output` directive in the config file.
 
 On each run, any existing `mutants.out` is renamed to `mutants.out.old`, and any
 existing `mutants.out.old` is deleted.
