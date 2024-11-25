@@ -269,12 +269,13 @@ fn additional_cargo_test_args() {
 fn output_option_use_config() {
     let output_tmpdir = TempDir::new().unwrap();
     let output_via_config = output_tmpdir.path().join("output_via_config");
-
     let testdata = copy_of_testdata("factorial");
-    write_config_file(
-        &testdata,
-        &format!("output = \"{}\"\n", output_via_config.display()),
-    );
+
+    let out_path_str = output_via_config
+        .to_string_lossy()
+        .escape_default()
+        .to_string();
+    write_config_file(&testdata, &format!("output = \"{out_path_str}\""));
 
     assert!(
         !testdata.path().join("mutants.out").exists(),
