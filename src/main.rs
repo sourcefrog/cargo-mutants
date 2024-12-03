@@ -274,7 +274,12 @@ pub struct Args {
     line_col: bool,
 
     /// Create mutants.out within this directory.
-    #[arg(long, short = 'o', help_heading = "Output")]
+    #[arg(
+        long,
+        short = 'o',
+        env = "CARGO_MUTANTS_OUTPUT",
+        help_heading = "Output"
+    )]
     output: Option<Utf8PathBuf>,
 
     /// Include only mutants in code touched by this diff.
