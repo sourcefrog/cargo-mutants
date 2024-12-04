@@ -22,7 +22,7 @@ use std::process::Command;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::Metadata;
+use cargo_metadata::{Metadata, TargetKind};
 use itertools::Itertools;
 use serde_json::Value;
 use tracing::{debug, debug_span, error, warn};
@@ -306,7 +306,17 @@ fn package_top_sources(
 
 fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
     for kind in &target.kind {
-        if kind == "bin" || kind == "proc-macro" || kind.ends_with("lib") {
+        // bin / proc-macro / *lib
+        if matches!(
+            kind,
+            TargetKind::Bin
+                | TargetKind::ProcMacro
+                | TargetKind::CDyLib
+                | TargetKind::DyLib
+                | TargetKind::Lib
+                | TargetKind::RLib
+                | TargetKind::StaticLib
+        ) {
             return true;
         }
     }
