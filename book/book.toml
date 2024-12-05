@@ -6,6 +6,8 @@ src = "src"
 title = "cargo-mutants"
 
 [output.html]
+git-repository-url = "https://github.com/sourcefrog/cargo-mutants"
+edit-url-template = "https://github.com/sourcefrog/cargo-mutants/edit/main/book/{path}"
 
 [output.linkcheck]
 follow-web-links = true
