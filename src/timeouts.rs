@@ -31,17 +31,17 @@ impl Timeouts {
                 baseline.phase_result(Phase::Build).map(|pr| pr.duration),
                 options,
             ),
-            test: test_timeout(
+            test: Some(test_timeout(
                 baseline.phase_result(Phase::Test).map(|pr| pr.duration),
                 options,
-            ),
+            )),
         }
     }
 
     pub fn without_baseline(options: &Options) -> Timeouts {
         Timeouts {
             build: build_timeout(None, options),
-            test: test_timeout(None, options),
+            test: Some(test_timeout(None, options)),
         }
     }
 }
@@ -51,15 +51,15 @@ fn warn_fallback_timeout(phase_name: &str, option: &str) {
     warn!("An explicit {phase_name} timeout is recommended when using {option}; using {FALLBACK_TIMEOUT_SECS} seconds by default");
 }
 
-fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Option<Duration> {
+fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Duration {
     if let Some(explicit) = options.test_timeout {
-        Some(explicit)
+        explicit
     } else if let Some(baseline_duration) = baseline_duration {
         let timeout = max(
             options.minimum_test_timeout,
-            Duration::from_secs(
+            Duration::from_secs_f64(
                 (baseline_duration.as_secs_f64() * options.test_timeout_multiplier.unwrap_or(5.0))
-                    .ceil() as u64,
+                    .ceil(),
             ),
         );
         if options.show_times {
@@ -68,10 +68,13 @@ fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Optio
                 humantime::format_duration(timeout)
             );
         }
-        Some(timeout)
+        timeout
+    } else if options.check_only {
+        // We won't have run baseline tests, and we won't run any other tests either.
+        Duration::from_secs(0)
     } else {
         warn_fallback_timeout("test", "--baseline=skip");
-        Some(Duration::from_secs(FALLBACK_TIMEOUT_SECS))
+        Duration::from_secs(FALLBACK_TIMEOUT_SECS)
     }
 }
 
@@ -113,7 +116,7 @@ mod test {
         assert_eq!(options.test_timeout_multiplier, Some(1.5));
         assert_eq!(
             test_timeout(Some(Duration::from_secs(40)), &options),
-            Some(Duration::from_secs(60)),
+            Duration::from_secs(60),
         );
     }
 
@@ -124,7 +127,7 @@ mod test {
 
         assert_eq!(
             test_timeout(Some(Duration::from_secs(40)), &options),
-            Some(Duration::from_secs(60)),
+            Duration::from_secs(60),
         );
     }
 
@@ -167,7 +170,7 @@ mod test {
         assert_eq!(options.test_timeout_multiplier, Some(2.0));
         assert_eq!(
             test_timeout(Some(Duration::from_secs(42)), &options),
-            Some(Duration::from_secs(42 * 2)),
+            Duration::from_secs(42 * 2),
         );
     }
 
@@ -195,7 +198,7 @@ mod test {
         assert_eq!(options.test_timeout_multiplier, None);
         assert_eq!(
             test_timeout(Some(Duration::from_secs(42)), &options),
-            Some(Duration::from_secs(42 * 5)),
+            Duration::from_secs(42 * 5),
         );
     }
 
@@ -240,7 +243,7 @@ mod test {
         let options = Options::new(&args, &Config::default()).unwrap();
 
         assert_eq!(options.test_timeout_multiplier, None);
-        assert_eq!(test_timeout(None, &options), Some(Duration::from_secs(300)));
+        assert_eq!(test_timeout(None, &options), Duration::from_secs(300));
         assert_eq!(build_timeout(None, &options), None);
     }
 }

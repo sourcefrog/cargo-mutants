@@ -4,6 +4,9 @@
 //!
 //! See <https://mutants.rs> for the manual and more information.
 
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions, clippy::needless_raw_string_hashes)]
+
 mod build_dir;
 mod cargo;
 mod config;
@@ -49,6 +52,7 @@ use clap::builder::Styles;
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
 use clap_complete::{generate, Shell};
 use color_print::cstr;
+use console::enable_console_colors;
 use output::{load_previously_caught, OutputDir};
 use tracing::{debug, info};
 
@@ -102,6 +106,7 @@ pub enum BaselineStrategy {
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///
 /// See <https://mutants.rs/> for more information.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Parser, PartialEq, Debug)]
 #[command(
     author,
@@ -269,7 +274,12 @@ pub struct Args {
     line_col: bool,
 
     /// Create mutants.out within this directory.
-    #[arg(long, short = 'o', help_heading = "Output")]
+    #[arg(
+        long,
+        short = 'o',
+        env = "CARGO_MUTANTS_OUTPUT",
+        help_heading = "Output"
+    )]
     output: Option<Utf8PathBuf>,
 
     /// Include only mutants in code touched by this diff.
@@ -425,8 +435,8 @@ fn main() -> Result<()> {
     }
 
     let console = Console::new();
-    console.setup_global_trace(args.level, args.colors)?; // We don't have Options yet.
-    console.set_colors_enabled(args.colors);
+    console.setup_global_trace(args.level, args.colors); // We don't have Options yet.
+    enable_console_colors(args.colors);
     interrupt::install_handler();
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
@@ -514,7 +524,7 @@ mod test {
         let args = super::Args::command();
         let mut problems = Vec::new();
         for arg in args.get_arguments() {
-            if let Some(help) = arg.get_help().map(|s| s.to_string()) {
+            if let Some(help) = arg.get_help().map(ToString::to_string) {
                 if !help.starts_with(char::is_uppercase) {
                     problems.push(format!(
                         "Help for {:?} does not start with a capital letter: {:?}",
@@ -538,9 +548,9 @@ mod test {
                 problems.push(format!("No help for {:?}", arg.get_id()));
             }
         }
-        problems.iter().for_each(|s| eprintln!("{s}"));
-        if !problems.is_empty() {
-            panic!("Problems with help text");
+        for problem in &problems {
+            eprintln!("{problem}");
         }
+        assert!(problems.is_empty(), "Problems with help text");
     }
 }

@@ -23,12 +23,12 @@ pub struct TailFile {
 
 impl TailFile {
     /// Watch lines appended to the given file, which should be open for reading.
-    pub fn new(file: File) -> Result<Self> {
-        Ok(TailFile {
+    pub fn new(file: File) -> TailFile {
+        TailFile {
             file,
             last_line_seen: String::new(),
             read_buf: Vec::new(),
-        })
+        }
     }
 
     /// Return the last non-empty, non-whitespace line from this file, or an empty string
@@ -67,7 +67,7 @@ mod test {
         let mut tempfile = tempfile::NamedTempFile::new().unwrap();
         let path: Utf8PathBuf = tempfile.path().to_owned().try_into().unwrap();
         let reopened = File::open(&path).unwrap();
-        let mut tailer = TailFile::new(reopened).unwrap();
+        let mut tailer = TailFile::new(reopened);
 
         assert_eq!(
             tailer.last_line().unwrap(),

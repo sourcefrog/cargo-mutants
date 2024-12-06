@@ -14,7 +14,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use anyhow::Context;
-use camino::Utf8Path;
+use camino::{Utf8Path, Utf8PathBuf};
 use serde::Deserialize;
 
 use crate::options::TestTool;
@@ -45,6 +45,8 @@ pub struct Config {
     pub additional_cargo_test_args: Vec<String>,
     /// Minimum test timeout, in seconds, as a floor on the autoset value.
     pub minimum_test_timeout: Option<f64>,
+    /// Output directory.
+    pub output: Option<Utf8PathBuf>,
     /// Cargo profile.
     pub profile: Option<String>,
     /// Skip calls to functions or methods with these names.

@@ -6,8 +6,6 @@ use std::collections::HashSet;
 use std::env;
 use std::fs::{self, create_dir, read_dir, read_to_string};
 use std::path::Path;
-use std::thread::sleep;
-use std::time::Duration;
 
 use indoc::indoc;
 use itertools::Itertools;
@@ -18,7 +16,7 @@ use pretty_assertions::assert_eq;
 use tempfile::TempDir;
 
 mod util;
-use util::{copy_of_testdata, copy_testdata_to, run, MAIN_BINARY, OUTER_TIMEOUT};
+use util::{copy_of_testdata, copy_testdata_to, run, OUTER_TIMEOUT};
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -497,6 +495,46 @@ fn output_option() {
 }
 
 #[test]
+/// Set the `--output` directory via environment variable `CARGO_MUTANTS_OUTPUT`
+fn output_option_use_env() {
+    let tmp_src_dir = copy_of_testdata("factorial");
+    let output_tmpdir = TempDir::new().unwrap();
+    let output_via_env = output_tmpdir.path().join("output_via_env");
+    assert!(
+        !tmp_src_dir.path().join("mutants.out").exists(),
+        "mutants.out should not be in a clean copy of the test data"
+    );
+    run()
+        .env("CARGO_MUTANTS_OUTPUT", &output_via_env)
+        .arg("mutants")
+        .args(["--check", "--no-times"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+    assert!(
+        !tmp_src_dir.path().join("mutants.out").exists(),
+        "mutants.out should not be in the source directory"
+    );
+    let mutants_out = output_via_env.join("mutants.out");
+    assert!(
+        mutants_out.exists(),
+        "mutants.out is in $CARGO_MUTANTS_OUTPUT directory"
+    );
+    for name in [
+        "mutants.json",
+        "debug.log",
+        "outcomes.json",
+        "missed.txt",
+        "caught.txt",
+        "timeout.txt",
+        "unviable.txt",
+    ] {
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+    }
+}
+
+#[test]
 fn check_succeeds_in_tree_that_builds_but_fails_tests() {
     // --check doesn't actually run the tests so won't discover that they fail.
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
@@ -655,90 +693,6 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .stderr(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
-}
-
-/// If the test hangs and the user (in this case the test suite) interrupts it, then
-/// the `cargo test` child should be killed.
-///
-/// This is a bit hard to directly observe: the property that we really most care
-/// about is that _all_ grandchild processes are also killed and nothing is left
-/// behind. (On Unix, this is accomplished by use of a pgroup.) However that's a bit
-/// hard to mechanically check without reading and interpreting the process tree, which
-/// seems likely to be a bit annoying to do portably and without flakes.
-/// (But maybe we still should?)
-///
-/// An easier thing to test is that the cargo-mutants process _thinks_ it has killed
-/// the children, and we can observe this in the debug log.
-///
-/// In this test cargo-mutants has a very long timeout, but the test driver has a
-/// short timeout, so it should kill cargo-mutants.
-#[test]
-#[cfg(unix)] // Should in principle work on Windows, but does not at the moment.
-fn interrupt_caught_and_kills_children() {
-    // Test a tree that has enough tests that we'll probably kill it before it completes.
-
-    use std::process::{Command, Stdio};
-
-    use nix::libc::pid_t;
-    use nix::sys::signal::{kill, SIGTERM};
-    use nix::unistd::Pid;
-
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
-    // which doesn't give it a chance to clean up. And, `std::process::Command` only
-    // has an abrupt kill.
-
-    // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
-    // and we want to check that the process does not panic.
-
-    // Skip baseline because firstly it should already pass but more importantly
-    // #333 exhibited only during non-baseline scenarios.
-    let args = [
-        MAIN_BINARY.to_str().unwrap(),
-        "mutants",
-        "--timeout=300",
-        "--baseline=skip",
-        "--level=trace",
-    ];
-
-    println!("Running: {args:?}");
-    let mut child = Command::new(args[0])
-        .args(&args[1..])
-        .current_dir(&tmp_src_dir)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .env_remove("RUST_BACKTRACE")
-        .spawn()
-        .expect("spawn child");
-
-    sleep(Duration::from_secs(2)); // Let it get started
-    assert!(
-        child.try_wait().expect("try to wait for child").is_none(),
-        "child exited early"
-    );
-
-    println!("Sending SIGTERM to cargo-mutants...");
-    kill(Pid::from_raw(child.id() as pid_t), SIGTERM).expect("send SIGTERM");
-
-    println!("Wait for cargo-mutants to exit...");
-    let output = child
-        .wait_with_output()
-        .expect("wait for child after SIGTERM");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("stdout:\n{stdout}");
-    println!("stderr:\n{stderr}");
-
-    assert!(stderr.contains("interrupted"));
-    // We used to look here for some other trace messages about how it's interrupted, but
-    // that seems to be racy: sometimes the parent sees the child interrupted before it
-    // emits these messages? Anyhow, it's not essential.
-
-    // This shouldn't cause a panic though (#333)
-    assert!(!stderr.contains("panic"));
-    // And we don't want duplicate messages about workers failing.
-    assert!(!stderr.contains("Worker thread failed"));
 }
 
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants

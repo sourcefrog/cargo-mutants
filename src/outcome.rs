@@ -3,9 +3,11 @@
 //! The outcome of running a single mutation scenario, or a whole lab.
 
 use std::fmt;
-use std::time::Duration;
-use std::time::Instant;
+use std::fs::read_to_string;
+use std::time::{Duration, Instant};
 
+use anyhow::Context;
+use camino::Utf8PathBuf;
 use humantime::format_duration;
 use output::ScenarioOutput;
 use serde::ser::SerializeStruct;
@@ -14,8 +16,8 @@ use serde::Serializer;
 use tracing::warn;
 
 use crate::console::plural;
-use crate::process::ProcessStatus;
-use crate::*;
+use crate::process::Exit;
+use crate::{exit_code, output, Options, Result, Scenario};
 
 /// What phase of running a scenario.
 ///
@@ -36,7 +38,7 @@ pub enum Phase {
 }
 
 impl Phase {
-    pub fn name(&self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             Phase::Check => "check",
             Phase::Build => "build",
@@ -53,6 +55,7 @@ impl fmt::Display for Phase {
 
 /// The outcome from a whole lab run containing multiple mutants.
 #[derive(Debug, Default, Serialize)]
+#[allow(clippy::module_name_repetitions)]
 pub struct LabOutcome {
     /// All the scenario outcomes, including baseline builds.
     pub outcomes: Vec<ScenarioOutcome>,
@@ -140,6 +143,7 @@ impl LabOutcome {
 
 /// The result of running one mutation scenario.
 #[derive(Debug, Clone, Eq, PartialEq)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
@@ -173,9 +177,9 @@ impl Serialize for ScenarioOutcome {
 impl ScenarioOutcome {
     pub fn new(scenario_output: &ScenarioOutput, scenario: Scenario) -> ScenarioOutcome {
         ScenarioOutcome {
-            output_dir: scenario_output.output_dir.to_owned(),
+            output_dir: scenario_output.output_dir.clone(),
             log_path: scenario_output.log_path().to_owned(),
-            diff_path: scenario_output.diff_path.to_owned(),
+            diff_path: scenario_output.diff_path.clone(),
             scenario,
             phase_results: Vec::new(),
         }
@@ -193,7 +197,7 @@ impl ScenarioOutcome {
         self.phase_results.last().unwrap().phase
     }
 
-    pub fn last_phase_result(&self) -> ProcessStatus {
+    pub fn last_phase_result(&self) -> Exit {
         self.phase_results.last().unwrap().process_status
     }
 
@@ -284,7 +288,7 @@ pub struct PhaseResult {
     /// How long did it take?
     pub duration: Duration,
     /// Did it succeed?
-    pub process_status: ProcessStatus,
+    pub process_status: Exit,
     /// What command was run, as an argv list.
     pub argv: Vec<String>,
 }
@@ -311,6 +315,7 @@ impl Serialize for PhaseResult {
 
 /// Overall summary outcome for one mutant.
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Hash)]
+#[allow(clippy::module_name_repetitions)]
 pub enum SummaryOutcome {
     Success,
     CaughtMutant,
@@ -324,7 +329,7 @@ pub enum SummaryOutcome {
 mod test {
     use std::time::Duration;
 
-    use crate::process::ProcessStatus;
+    use crate::process::Exit;
 
     use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
 
@@ -339,13 +344,13 @@ mod test {
                 PhaseResult {
                     phase: Phase::Build,
                     duration: Duration::from_secs(2),
-                    process_status: ProcessStatus::Success,
+                    process_status: Exit::Success,
                     argv: vec!["cargo".into(), "build".into()],
                 },
                 PhaseResult {
                     phase: Phase::Test,
                     duration: Duration::from_secs(3),
-                    process_status: ProcessStatus::Success,
+                    process_status: Exit::Success,
                     argv: vec!["cargo".into(), "test".into()],
                 },
             ],
@@ -355,7 +360,7 @@ mod test {
             Some(&PhaseResult {
                 phase: Phase::Build,
                 duration: Duration::from_secs(2),
-                process_status: ProcessStatus::Success,
+                process_status: Exit::Success,
                 argv: vec!["cargo".into(), "build".into()],
             })
         );

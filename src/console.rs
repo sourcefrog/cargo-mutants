@@ -3,13 +3,11 @@
 //! Print messages and progress bars on the terminal.
 
 use std::borrow::Cow;
-use std::fmt::Write;
 use std::fs::File;
 use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use console::{style, StyledObject};
 use humantime::format_duration;
@@ -19,10 +17,10 @@ use tracing_subscriber::fmt::MakeWriter;
 use tracing_subscriber::prelude::*;
 
 use crate::options::Colors;
-use crate::outcome::{LabOutcome, SummaryOutcome};
+use crate::outcome::{LabOutcome, ScenarioOutcome, SummaryOutcome};
 use crate::scenario::Scenario;
 use crate::tail_file::TailFile;
-use crate::{Mutant, Options, Phase, Result, ScenarioOutcome};
+use crate::{Mutant, Options, Phase};
 
 /// An interface to the console for the rest of cargo-mutants.
 ///
@@ -41,14 +39,6 @@ impl Console {
             view: Arc::new(nutmeg::View::new(LabModel::default(), nutmeg_options())),
             debug_log: Arc::new(Mutex::new(None)),
         }
-    }
-
-    pub fn set_colors_enabled(&self, colors: Colors) {
-        if let Some(colors) = colors.forced_value() {
-            ::console::set_colors_enabled(colors);
-            ::console::set_colors_enabled_stderr(colors);
-        }
-        // Otherwise, let the console crate decide, based on isatty, etc.
     }
 
     pub fn walk_tree_start(&self) {
@@ -70,18 +60,12 @@ impl Console {
     }
 
     /// Update that a cargo task is starting.
-    pub fn scenario_started(
-        &self,
-        dir: &Utf8Path,
-        scenario: &Scenario,
-        log_file: File,
-    ) -> Result<()> {
+    pub fn scenario_started(&self, dir: &Utf8Path, scenario: &Scenario, log_file: File) {
         let start = Instant::now();
-        let scenario_model = ScenarioModel::new(dir, scenario, start, log_file)?;
+        let scenario_model = ScenarioModel::new(dir, scenario, start, log_file);
         self.view.update(|model| {
             model.scenario_models.push(scenario_model);
         });
-        Ok(())
     }
 
     /// Update that cargo finished.
@@ -93,7 +77,9 @@ impl Console {
         options: &Options,
     ) {
         self.view.update(|model| {
-            model.mutants_done += scenario.is_mutant() as usize;
+            if scenario.is_mutant() {
+                model.mutants_done += 1;
+            }
             match outcome.summary() {
                 SummaryOutcome::CaughtMutant => model.mutants_caught += 1,
                 SummaryOutcome::MissedMutant => model.mutants_missed += 1,
@@ -113,14 +99,11 @@ impl Console {
             return;
         }
 
-        let mut s = String::with_capacity(100);
-        write!(
-            s,
+        let mut s = format!(
             "{:8} {}",
             style_outcome(outcome),
             style_scenario(scenario, true),
-        )
-        .unwrap();
+        );
         if options.show_times {
             let prs: Vec<String> = outcome
                 .phase_results()
@@ -133,7 +116,8 @@ impl Console {
                     )
                 })
                 .collect();
-            let _ = write!(s, " in {}", prs.join(" + "));
+            s.push_str(" in ");
+            s.push_str(&prs.join(" + "));
         }
         if outcome.should_show_logs() || options.show_all_logs {
             s.push('\n');
@@ -172,7 +156,7 @@ impl Console {
                 .iter_mut()
                 .find(|m| m.dest == dest)
                 .expect("copy in progress")
-                .bytes_copied(total_bytes)
+                .bytes_copied(total_bytes);
         });
     }
 
@@ -186,7 +170,7 @@ impl Console {
         self.view.update(|model| {
             model.n_mutants = n_mutants;
             model.lab_start_time = Some(Instant::now());
-        })
+        });
     }
 
     /// Update that work is starting on testing a given number of mutants.
@@ -199,13 +183,13 @@ impl Console {
     pub fn scenario_phase_started(&self, dir: &Utf8Path, phase: Phase) {
         self.view.update(|model| {
             model.find_scenario_mut(dir).phase_started(phase);
-        })
+        });
     }
 
     pub fn scenario_phase_finished(&self, dir: &Utf8Path, phase: Phase) {
         self.view.update(|model| {
             model.find_scenario_mut(dir).phase_finished(phase);
-        })
+        });
     }
 
     pub fn lab_finished(&self, lab_outcome: &LabOutcome, start_time: Instant, options: &Options) {
@@ -219,7 +203,7 @@ impl Console {
     }
 
     pub fn clear(&self) {
-        self.view.clear()
+        self.view.clear();
     }
 
     pub fn message(&self, message: &str) {
@@ -227,11 +211,11 @@ impl Console {
         // stderr...
         // <https://github.com/sourcefrog/nutmeg/issues/11>
         self.view.clear();
-        print!("{}", message);
+        print!("{message}");
     }
 
     pub fn tick(&self) {
-        self.view.update(|_| ())
+        self.view.update(|_| ());
     }
 
     /// Return a tracing `MakeWriter` that will send messages via nutmeg to the console.
@@ -254,8 +238,8 @@ impl Console {
 
     /// Configure tracing to send messages to the console and debug log.
     ///
-    /// The debug log is opened later and provided by [Console::set_debug_log].
-    pub fn setup_global_trace(&self, console_trace_level: Level, colors: Colors) -> Result<()> {
+    /// The debug log is opened later and provided by [`Console::set_debug_log`].
+    pub fn setup_global_trace(&self, console_trace_level: Level, colors: Colors) {
         // Show time relative to the start of the program.
         let uptime = tracing_subscriber::fmt::time::uptime();
         let stderr_colors = colors
@@ -278,8 +262,15 @@ impl Console {
             .with(debug_log_layer)
             .with(console_layer)
             .init();
-        Ok(())
     }
+}
+
+pub fn enable_console_colors(colors: Colors) {
+    if let Some(colors) = colors.forced_value() {
+        ::console::set_colors_enabled(colors);
+        ::console::set_colors_enabled_stderr(colors);
+    }
+    // Otherwise, let the console crate decide, based on isatty, etc.
 }
 
 impl Default for Console {
@@ -370,53 +361,53 @@ struct LabModel {
 }
 
 impl nutmeg::Model for LabModel {
+    #[allow(clippy::cast_precision_loss)]
     fn render(&mut self, width: usize) -> String {
         let mut s = String::with_capacity(1024);
         if let Some(walk_tree) = &mut self.walk_tree {
             s += &walk_tree.render(width);
         }
-        for copy_model in self.copy_models.iter_mut() {
+        for copy_model in &mut self.copy_models {
             if !s.is_empty() {
-                s.push('\n')
+                s.push('\n');
             }
             s.push_str(&copy_model.render(width));
         }
-        for sm in self.scenario_models.iter_mut() {
+        for sm in &mut self.scenario_models {
+            if !s.is_empty() {
+                s.push('\n');
+            }
             s.push_str(&sm.render(width));
-            s.push('\n');
         }
         if let Some(lab_start_time) = self.lab_start_time {
+            if !s.is_empty() {
+                s.push('\n');
+            }
             let elapsed = lab_start_time.elapsed();
-            write!(
-                s,
+            s += &format!(
                 "{}/{} mutants tested",
                 style(self.mutants_done).cyan(),
                 style(self.n_mutants).cyan(),
-            )
-            .unwrap();
+            );
             if self.mutants_missed > 0 {
-                write!(
-                    s,
+                s += &format!(
                     ", {} {}",
                     style(self.mutants_missed).cyan(),
                     style("MISSED").red()
-                )
-                .unwrap();
+                );
             }
             if self.timeouts > 0 {
-                write!(
-                    s,
+                s += &format!(
                     ", {} {}",
                     style(self.timeouts).cyan(),
                     style("timeout").red()
-                )
-                .unwrap();
+                );
             }
             if self.mutants_caught > 0 {
-                write!(s, ", {} caught", style(self.mutants_caught).cyan()).unwrap();
+                s.push_str(&format!(", {} caught", style(self.mutants_caught).cyan()));
             }
             if self.unviable > 0 {
-                write!(s, ", {} unviable", style(self.unviable).cyan()).unwrap();
+                s.push_str(&format!(", {} unviable", style(self.unviable).cyan()));
             }
             // Maybe don't report these, because they're uninteresting?
             // if self.successes > 0 {
@@ -425,25 +416,21 @@ impl nutmeg::Model for LabModel {
             // if self.failures > 0 {
             //     write!(s, ", {} failures", self.failures).unwrap();
             // }
-            write!(s, ", {} elapsed", style_duration(elapsed)).unwrap();
+            s.push_str(&format!(", {} elapsed", style_duration(elapsed)));
             if self.mutants_done > 2 {
-                let done = self.mutants_done as u64;
-                let remain = self.n_mutants as u64 - done;
-                let mut remaining_secs = lab_start_time.elapsed().as_secs() * remain / done;
-                if remaining_secs > 300 {
-                    remaining_secs = (remaining_secs + 30) / 60 * 60;
+                let done = self.mutants_done as f64;
+                let remain = self.n_mutants as f64 - done;
+                let mut remaining_secs =
+                    self.mutants_start_time.unwrap().elapsed().as_secs_f64() * remain / done;
+                if remaining_secs > 300.0 {
+                    // Round up to minutes
+                    remaining_secs = ((remaining_secs + 30.0) / 60.0).ceil() * 60.0;
                 }
-                write!(
-                    s,
+                s += &format!(
                     ", about {} remaining",
-                    style_duration(Duration::from_secs(remaining_secs))
-                )
-                .unwrap();
+                    style_duration(Duration::from_secs_f64(remaining_secs.ceil()))
+                );
             }
-            writeln!(s).unwrap();
-        }
-        while s.ends_with('\n') {
-            s.pop();
         }
         s
     }
@@ -497,21 +484,15 @@ struct ScenarioModel {
 }
 
 impl ScenarioModel {
-    fn new(
-        dir: &Utf8Path,
-        scenario: &Scenario,
-        start: Instant,
-        log_file: File,
-    ) -> Result<ScenarioModel> {
-        let log_tail = TailFile::new(log_file).context("Failed to open log file")?;
-        Ok(ScenarioModel {
+    fn new(dir: &Utf8Path, scenario: &Scenario, start: Instant, log_file: File) -> ScenarioModel {
+        ScenarioModel {
             dir: dir.to_owned(),
             name: style_scenario(scenario, true),
             phase: None,
             phase_start: start,
-            log_tail,
+            log_tail: TailFile::new(log_file),
             previous_phase_durations: Vec::new(),
-        })
+        }
     }
 
     fn phase_started(&mut self, phase: Phase) {
@@ -547,7 +528,11 @@ impl nutmeg::Model for ScenarioModel {
         // parts.push(prs.join(" + "));
         let mut s = parts.join(" ");
         if let Ok(last_line) = self.log_tail.last_line() {
-            write!(s, "\n{:8} {}", style("└").cyan(), style(last_line).dim()).unwrap();
+            s.push_str(&format!(
+                "\n{:8} {}",
+                style("└").cyan(),
+                style(last_line).dim()
+            ));
         }
         s
     }
@@ -573,7 +558,7 @@ impl CopyModel {
     ///
     /// `bytes_copied` is the total bytes copied so far.
     fn bytes_copied(&mut self, bytes_copied: u64) {
-        self.bytes_copied = bytes_copied
+        self.bytes_copied = bytes_copied;
     }
 }
 

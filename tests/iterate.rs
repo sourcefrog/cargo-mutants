@@ -15,6 +15,7 @@ use tempfile::tempdir;
 use self::util::run;
 
 #[test]
+#[allow(clippy::too_many_lines)] // long but pretty straightforward
 fn iterate() {
     let temp = tempdir().unwrap();
 

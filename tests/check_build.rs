@@ -2,6 +2,7 @@
 
 //! Tests for `--check`
 
+use indoc::indoc;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
@@ -16,8 +17,7 @@ fn small_well_tested_tree_check_only() {
         .current_dir(tmp_src_dir.path())
         .assert()
         .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout, @r###"
+        .stdout(indoc! {r"
             Found 4 mutants to test
             ok       Unmutated baseline
             ok       src/lib.rs:5:5: replace factorial -> u32 with 0
@@ -25,9 +25,8 @@ fn small_well_tested_tree_check_only() {
             ok       src/lib.rs:7:11: replace *= with += in factorial
             ok       src/lib.rs:7:11: replace *= with /= in factorial
             4 mutants tested: 4 succeeded
-            "###);
-            true
-        }));
+        "})
+        .stderr("");
     let outcomes = outcome_json_counts(&tmp_src_dir);
     assert_eq!(
         outcomes,
@@ -124,8 +123,7 @@ fn check_tree_with_mutants_skip() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout, @r###"
+        .stdout(indoc! { r"
             Found 5 mutants to test
             ok       Unmutated baseline
             ok       src/lib.rs:15:5: replace controlled_loop with ()
@@ -134,9 +132,8 @@ fn check_tree_with_mutants_skip() {
             ok       src/lib.rs:21:53: replace * with + in controlled_loop
             ok       src/lib.rs:21:53: replace * with / in controlled_loop
             5 mutants tested: 5 succeeded
-            "###);
-            true
-        }));
+            "})
+        .stderr("");
     assert_eq!(
         outcome_json_counts(&tmp_src_dir),
         serde_json::json!({

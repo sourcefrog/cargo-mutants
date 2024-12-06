@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
+
+## 24.11.2
+
+- Changed: `.gitignore` (and other git ignore files) are only consulted when copying the tree if it is contained within a directory with a `.git` directory.
+
+- Fixed: `.gitignore` files above the git root directory are no longer read. In particular this fixes the problem where `.gitignore *` in the home directory would prevent copying any source trees.
+
+## 24.11.1
+
 - Changed: The arguments of calls to functions or methods named `with_capacity` are not mutated by default. This can be turned off with `--skip-calls-defaults=false` on the command line or `skip_calls_defaults = false` in `.cargo/mutants.toml`.
 
 - New: `--skip-calls=NAME,NAME` on the command line or `skip_calls = [NAMES..]` in `.cargo/mutants.toml` allows configuring other functions whose calls should never be mutated.

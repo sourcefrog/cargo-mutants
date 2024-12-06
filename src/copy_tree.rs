@@ -2,8 +2,6 @@
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
-use std::fs::FileType;
-
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use ignore::WalkBuilder;
@@ -11,9 +9,17 @@ use path_slash::PathExt;
 use tempfile::TempDir;
 use tracing::{debug, warn};
 
-use crate::check_interrupted;
-use crate::Console;
-use crate::Result;
+use crate::{check_interrupted, Console, Result};
+
+#[cfg(unix)]
+mod unix;
+#[cfg(unix)]
+use unix::copy_symlink;
+
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+use windows::copy_symlink;
 
 /// Filenames excluded from being copied with the source.
 static SOURCE_EXCLUDE: &[&str] = &[
@@ -32,7 +38,7 @@ static SOURCE_EXCLUDE: &[&str] = &[
 /// If `git` is true, ignore files that are excluded by all the various `.gitignore`
 /// files.
 ///
-/// Regardless, anything matching [SOURCE_EXCLUDE] is excluded.
+/// Regardless, anything matching [`SOURCE_EXCLUDE`] is excluded.
 pub fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,
@@ -51,16 +57,17 @@ pub fn copy_tree(
         .try_into()
         .context("Convert path to UTF-8")?;
     console.start_copy(dest);
-    for entry in WalkBuilder::new(from_path)
+    let mut walk_builder = WalkBuilder::new(from_path);
+    walk_builder
         .standard_filters(gitignore)
-        .hidden(false)
-        .ignore(false)
-        .require_git(false)
+        .hidden(false) // copy hidden files
+        .ignore(false) // don't use .ignore
+        .require_git(true) // stop at git root; only read gitignore files inside git trees
         .filter_entry(|entry| {
             !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
-        })
-        .build()
-    {
+        });
+    debug!(?walk_builder);
+    for entry in walk_builder.build() {
         check_interrupted()?;
         let entry = entry?;
         let relative_path = entry
@@ -106,29 +113,38 @@ pub fn copy_tree(
     Ok(temp_dir)
 }
 
-#[cfg(unix)]
-fn copy_symlink(_ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Result<()> {
-    let link_target = std::fs::read_link(src_path)
-        .with_context(|| format!("Failed to read link {src_path:?}"))?;
-    std::os::unix::fs::symlink(link_target, dest_path)
-        .with_context(|| format!("Failed to create symlink {dest_path:?}",))?;
-    Ok(())
-}
+#[cfg(test)]
+mod test {
+    use std::fs::{create_dir, write};
 
-#[cfg(windows)]
-#[mutants::skip] // Mutant tests run on Linux
-fn copy_symlink(ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Result<()> {
-    use std::os::windows::fs::FileTypeExt;
-    let link_target =
-        std::fs::read_link(src_path).with_context(|| format!("read link {src_path:?}"))?;
-    if ft.is_symlink_dir() {
-        std::os::windows::fs::symlink_dir(link_target, dest_path)
-            .with_context(|| format!("create symlink {dest_path:?}"))?;
-    } else if ft.is_symlink_file() {
-        std::os::windows::fs::symlink_file(link_target, dest_path)
-            .with_context(|| format!("create symlink {dest_path:?}"))?;
-    } else {
-        anyhow::bail!("Unknown symlink type: {:?}", ft);
+    use camino::Utf8PathBuf;
+    use tempfile::TempDir;
+
+    use crate::console::Console;
+    use crate::Result;
+
+    use super::copy_tree;
+
+    /// Test for regression of <https://github.com/sourcefrog/cargo-mutants/issues/450>
+    #[test]
+    fn copy_tree_with_parent_ignoring_star() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = tmp_dir.path();
+        write(tmp.join(".gitignore"), "*\n")?;
+
+        let a = Utf8PathBuf::try_from(tmp.join("a")).unwrap();
+        create_dir(&a)?;
+        write(a.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = a.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let dest_tmpdir = copy_tree(&a, "a", true, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(dest.join("Cargo.toml").is_file());
+        assert!(dest.join("src").is_dir());
+        assert!(dest.join("src/main.rs").is_file());
+
+        Ok(())
     }
-    Ok(())
 }

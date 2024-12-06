@@ -2,14 +2,14 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use std::fs::{create_dir, remove_dir_all, rename, write, File, OpenOptions};
+use std::collections::{hash_map::Entry, HashMap};
+use std::fs::{create_dir, read_to_string, remove_dir_all, rename, write, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
+use camino::{Utf8Path, Utf8PathBuf};
 use fs2::FileExt;
 use path_slash::PathExt;
 use serde::Serialize;
@@ -18,7 +18,7 @@ use time::OffsetDateTime;
 use tracing::{info, trace};
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
-use crate::*;
+use crate::{check_interrupted, Context, Mutant, Result, Scenario, ScenarioOutcome};
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
@@ -86,6 +86,7 @@ impl LockFile {
 
 /// A `mutants.out` directory holding logs and other output information.
 #[derive(Debug)]
+#[allow(clippy::module_name_repetitions)]
 pub struct OutputDir {
     path: Utf8PathBuf,
 
@@ -276,7 +277,7 @@ pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String
                 read_to_string(&p)
                     .with_context(|| format!("Read previously caught mutants from {p:?}"))?
                     .lines()
-                    .map(|s| s.to_owned()),
+                    .map(str::to_string),
             );
         }
     }
@@ -284,6 +285,7 @@ pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String
 }
 
 /// Where to write output about a particular Scenario.
+#[allow(clippy::module_name_repetitions)]
 pub struct ScenarioOutput {
     pub output_dir: Utf8PathBuf,
     log_path: Utf8PathBuf,
@@ -320,7 +322,7 @@ impl ScenarioOutput {
     }
 
     pub fn write_diff(&mut self, diff: &str) -> Result<()> {
-        self.message(&format!("mutation diff:\n{}", diff))?;
+        self.message(&format!("mutation diff:\n{diff}"))?;
         let diff_path = self.diff_path.as_ref().expect("should know the diff path");
         write(self.output_dir.join(diff_path), diff.as_bytes())
             .with_context(|| format!("write diff to {diff_path}"))
@@ -332,7 +334,7 @@ impl ScenarioOutput {
         OpenOptions::new()
             .read(true)
             .open(&path)
-            .with_context(|| format!("reopen {} for read", path))
+            .with_context(|| format!("reopen {path} for read"))
     }
 
     /// Open a new handle that appends to the log file, so that it can be passed to a subprocess.
@@ -341,7 +343,7 @@ impl ScenarioOutput {
         OpenOptions::new()
             .append(true)
             .open(&path)
-            .with_context(|| format!("reopen {} for append", path))
+            .with_context(|| format!("reopen {path} for append"))
     }
 
     /// Write a message, with a marker.
@@ -370,6 +372,7 @@ mod test {
     use tempfile::{tempdir, TempDir};
 
     use super::*;
+    use crate::workspace::Workspace;
 
     fn minimal_source_tree() -> TempDir {
         let tmp = tempdir().unwrap();
