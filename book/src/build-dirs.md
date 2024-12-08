@@ -1,6 +1,6 @@
 # Copying the tree
 
-By default, cargo-mutants copies your tree to a temporary directory before mutating and building it. This behavior is turned of by the [`--in-place`](in_place.md) option, which builds mutated code in the original source directory.
+By default, cargo-mutants copies your tree to a temporary directory before mutating and building it. This behavior is turned of by the [`--in-place`](in-place.md) option, which builds mutated code in the original source directory.
 
 When the [`--jobs`](parallelism.md) option is used, one build directory is created per job.
 
