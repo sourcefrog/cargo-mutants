@@ -144,6 +144,15 @@ pub struct Args {
     )]
     colors: Colors,
 
+    /// Copy `.git` and other VCS directories to the build directory.
+    ///
+    /// This is useful if you have tests that depend on the presence of these directories.
+    ///
+    /// Known VCS directories are
+    /// `.git`, `.hg`, `.bzr`, `.svn`, `_darcs`, `.pijul`.
+    #[arg(long, help_heading = "Copying", visible_alias = "copy_git")]
+    copy_vcs: Option<bool>,
+
     /// Show the mutation diffs.
     #[arg(long, help_heading = "Filters")]
     diff: bool,

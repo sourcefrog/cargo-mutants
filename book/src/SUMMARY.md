@@ -17,7 +17,7 @@
   - [Listing and previewing mutations](list.md)
   - [Workspaces and packages](workspaces.md)
   - [Passing options to Cargo](cargo-args.md)
-  - [Build directories](build-dirs.md)
+  - [Copying the tree](build-dirs.md)
   - [Using nextest](nextest.md)
   - [Baseline tests](baseline.md)
   - [Testing in-place](in-place.md)

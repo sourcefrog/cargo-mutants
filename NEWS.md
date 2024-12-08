@@ -4,6 +4,8 @@
 
 - Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
 
+- New: `--copy-vcs` option and config option will copy `.git` and other VCS directories, to accommodate trees whose tests depend on the contents or presence of the VCS directory.
+
 ## 24.11.2
 
 - Changed: `.gitignore` (and other git ignore files) are only consulted when copying the tree if it is contained within a directory with a `.git` directory.

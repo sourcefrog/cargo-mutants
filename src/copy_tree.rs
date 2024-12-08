@@ -9,6 +9,7 @@ use path_slash::PathExt;
 use tempfile::TempDir;
 use tracing::{debug, warn};
 
+use crate::options::Options;
 use crate::{check_interrupted, Console, Result};
 
 #[cfg(unix)]
@@ -21,28 +22,13 @@ mod windows;
 #[cfg(windows)]
 use windows::copy_symlink;
 
-/// Filenames excluded from being copied with the source.
-static SOURCE_EXCLUDE: &[&str] = &[
-    ".git",
-    ".hg",
-    ".bzr",
-    ".svn",
-    "_darcs",
-    ".pijul",
-    "mutants.out",
-    "mutants.out.old",
-];
+static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
-///
-/// If `git` is true, ignore files that are excluded by all the various `.gitignore`
-/// files.
-///
-/// Regardless, anything matching [`SOURCE_EXCLUDE`] is excluded.
 pub fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,
-    gitignore: bool,
+    options: &Options,
     console: &Console,
 ) -> Result<TempDir> {
     let mut total_bytes = 0;
@@ -58,13 +44,19 @@ pub fn copy_tree(
         .context("Convert path to UTF-8")?;
     console.start_copy(dest);
     let mut walk_builder = WalkBuilder::new(from_path);
+    let copy_vcs = options.copy_vcs; // for lifetime
     walk_builder
-        .standard_filters(gitignore)
+        .git_ignore(options.gitignore)
+        .git_exclude(options.gitignore)
+        .git_global(options.gitignore)
         .hidden(false) // copy hidden files
         .ignore(false) // don't use .ignore
         .require_git(true) // stop at git root; only read gitignore files inside git trees
-        .filter_entry(|entry| {
-            !SOURCE_EXCLUDE.contains(&entry.file_name().to_string_lossy().as_ref())
+        .filter_entry(move |entry| {
+            let name = entry.file_name().to_string_lossy();
+            name != "mutants.out"
+                && name != "mutants.out.old"
+                && (copy_vcs || !VCS_DIRS.contains(&name.as_ref()))
         });
     debug!(?walk_builder);
     for entry in walk_builder.build() {
@@ -115,12 +107,15 @@ pub fn copy_tree(
 
 #[cfg(test)]
 mod test {
+    // TODO: Maybe run these with $HOME set to a temp dir so that global git config has no effect?
+
     use std::fs::{create_dir, write};
 
     use camino::Utf8PathBuf;
     use tempfile::TempDir;
 
     use crate::console::Console;
+    use crate::options::Options;
     use crate::Result;
 
     use super::copy_tree;
@@ -139,11 +134,149 @@ mod test {
         create_dir(&src)?;
         write(src.join("main.rs"), "fn main() {}")?;
 
-        let dest_tmpdir = copy_tree(&a, "a", true, &Console::new())?;
+        let options = Options::from_arg_strs(["--gitignore=true"]);
+        let dest_tmpdir = copy_tree(&a, "a", &options, &Console::new())?;
         let dest = dest_tmpdir.path();
         assert!(dest.join("Cargo.toml").is_file());
         assert!(dest.join("src").is_dir());
         assert!(dest.join("src/main.rs").is_file());
+
+        Ok(())
+    }
+
+    /// With `gitignore` set to `true`, but no `.git`, don't exclude anything.
+    #[test]
+    fn copy_with_gitignore_but_without_git_dir() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["--gitignore=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            dest.join("foo").is_file(),
+            "foo should be copied because gitignore is not used without .git"
+        );
+
+        Ok(())
+    }
+
+    /// With `gitignore` set to `true`, in a tree with `.git`, `.gitignore` is respected.
+    #[test]
+    fn copy_with_gitignore_and_git_dir() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+        create_dir(tmp.join(".git"))?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["mutants", "--gitignore=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            !dest.join("foo").is_file(),
+            "foo should have been excluded by gitignore"
+        );
+
+        Ok(())
+    }
+
+    /// With `gitignore` set to `false`, patterns in that file have no effect.
+    #[test]
+    fn copy_without_gitignore() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+        create_dir(tmp.join(".git"))?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["mutants", "--gitignore=false"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        // gitignore didn't exclude `foo`
+        assert!(dest.join("foo").is_file());
+
+        Ok(())
+    }
+
+    #[test]
+    fn dont_copy_git_dir_or_mutants_out_by_default() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        create_dir(tmp.join(".git"))?;
+        write(tmp.join(".git/foo"), "bar")?;
+        create_dir(tmp.join("mutants.out"))?;
+        write(tmp.join("mutants.out/foo"), "bar")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs(["mutants"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(!dest.join(".git").is_dir(), ".git should not be copied");
+        assert!(
+            !dest.join(".git/foo").is_file(),
+            ".git/foo should not be copied"
+        );
+        assert!(
+            !dest.join("mutants.out").exists(),
+            "mutants.out should not be copied"
+        );
+        assert!(
+            dest.join("Cargo.toml").is_file(),
+            "Cargo.toml should be copied"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn copy_git_dir_when_requested() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        create_dir(tmp.join(".git"))?;
+        write(tmp.join(".git/foo"), "bar")?;
+        create_dir(tmp.join("mutants.out"))?;
+        write(tmp.join("mutants.out/foo"), "bar")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs(["mutants", "--copy-vcs=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(dest.join(".git").is_dir(), ".git should be copied");
+        assert!(dest.join(".git/foo").is_file(), ".git/foo should be copied");
+        assert!(
+            !dest.join("mutants.out").exists(),
+            "mutants.out should not be copied"
+        );
+        assert!(
+            dest.join("Cargo.toml").is_file(),
+            "Cargo.toml should be copied"
+        );
 
         Ok(())
     }
