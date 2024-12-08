@@ -444,8 +444,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 // Can't think of how to generate a viable different default.
                 return;
             }
-            format!("<impl {trait} for {type_name}>", trait = trait_path.segments.last().unwrap().ident)
-            // TODO: trait = trait_path.to_pretty_string()) and update tests to match
+            format!("<impl {trait} for {type_name}>", trait = trait_path.to_pretty_string())
         } else {
             type_name
         };
