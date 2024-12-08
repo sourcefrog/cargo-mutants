@@ -59,7 +59,6 @@ jobs:
         run: |
           cargo --version
           rustc --version
-      # TODO: Maybe also check clippy and rustfmt here.
       - name: Build
         run: cargo build --all-targets
       - uses: taiki-e/install-action@v2
@@ -71,8 +70,7 @@ jobs:
       - name: Check rustfmt
         run: cargo fmt --all --check
       - name: Check clippy
-        # TODO:  -- -D warnings
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Check typos
         uses: crate-ci/typos@master
       - name: Build release binary
@@ -115,8 +113,10 @@ jobs:
       - name: Check rustfmt
         run: cargo fmt --all --check
       - name: Check clippy
-        # TODO: Deny warnings
-        run: cargo clippy --all-targets --all-features
+        if: matrix.version == 'stable'
+        # Clippy checks can vary between versions in a way that makes it a bit
+        # fiddly to satisfy them all, so only insist that they pass on stable.
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo update
       - name: Test after cargo update
         run: cargo test --workspace
