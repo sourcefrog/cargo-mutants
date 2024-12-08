@@ -28,7 +28,7 @@ pub fn ascent(path: &Utf8Path) -> isize {
     max_ascent
 }
 
-/// An extension trait that helps Utf8Path print with forward slashes,
+/// An extension trait that helps `Utf8Path` print with forward slashes,
 /// even on Windows.
 ///
 /// This makes the output more consistent across platforms and so easier

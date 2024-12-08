@@ -51,7 +51,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
         }
     }
     let mut matched: Vec<Mutant> = Vec::with_capacity(mutants.len());
-    'mutant: for mutant in mutants.into_iter() {
+    'mutant: for mutant in mutants {
         let path = mutant.source_file.path();
         if let Some(lines_changed) = lines_changed_by_path.get(path) {
             // We could do be smarter about searching for an intersection of ranges, rather
@@ -206,8 +206,8 @@ fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
             }
         }
         debug_assert_eq!(
-            lineno,
-            (hunk.new_range.start + hunk.new_range.count) as usize,
+            Ok(lineno),
+            (hunk.new_range.start + hunk.new_range.count).try_into(),
             "Wrong number of resulting lines?"
         );
     }
@@ -271,7 +271,7 @@ index eb42779..a0091b7 100644
 
     #[test]
     fn affected_lines_from_single_insertion() {
-        let orig_lines = (1..=4).map(|i| format!("line {}\n", i)).collect_vec();
+        let orig_lines = (1..=4).map(|i| format!("line {i}\n")).collect_vec();
         for i in 1..=5 {
             let mut new = orig_lines.clone();
             let new_value = "new line\n".to_owned();
@@ -291,7 +291,7 @@ index eb42779..a0091b7 100644
 
     #[test]
     fn affected_lines_from_single_deletion() {
-        let orig_lines = (1..=5).map(|i| format!("line {}\n", i)).collect_vec();
+        let orig_lines = (1..=5).map(|i| format!("line {i}\n")).collect_vec();
         for i in 1..=5 {
             let mut new = orig_lines.clone();
             new.remove(i - 1);
@@ -312,7 +312,7 @@ index eb42779..a0091b7 100644
 
     #[test]
     fn affected_lines_from_double_deletion() {
-        let orig_lines = (1..=5).map(|i| format!("line {}\n", i)).collect_vec();
+        let orig_lines = (1..=5).map(|i| format!("line {i}\n")).collect_vec();
         for i in 1..=4 {
             let mut new = orig_lines.clone();
             new.remove(i - 1);
@@ -332,7 +332,7 @@ index eb42779..a0091b7 100644
 
     #[test]
     fn affected_lines_from_replacement() {
-        let orig_lines = (1..=5).map(|i| format!("line {}\n", i)).collect_vec();
+        let orig_lines = (1..=5).map(|i| format!("line {i}\n")).collect_vec();
         for i in 1..=5 {
             let insertion = ["new 1\n".to_owned(), "new 2\n".to_owned()];
             let new = orig_lines[..(i - 1)]

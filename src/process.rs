@@ -5,7 +5,8 @@
 //! On Unix, the subprocess runs as its own process group, so that any
 //! grandchild processes are also signalled if it's interrupted.
 
-#![allow(clippy::option_map_unit_fn)] // I don't think it's clearer with if/let.
+#![warn(clippy::pedantic)]
+#![allow(clippy::redundant_else)]
 
 use std::ffi::OsStr;
 use std::process::{Child, Command, Stdio};
@@ -49,7 +50,7 @@ impl Process {
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
-        jobserver: &Option<jobserver::Client>,
+        jobserver: Option<&jobserver::Client>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
     ) -> Result<Exit> {
@@ -57,10 +58,9 @@ impl Process {
         let process_status = loop {
             if let Some(exit_status) = child.poll()? {
                 break exit_status;
-            } else {
-                console.tick();
-                sleep(WAIT_POLL_INTERVAL);
             }
+            console.tick();
+            sleep(WAIT_POLL_INTERVAL);
         };
         scenario_output.message(&format!("result: {process_status:?}"))?;
         Ok(process_status)
@@ -72,7 +72,7 @@ impl Process {
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
-        jobserver: &Option<jobserver::Client>,
+        jobserver: Option<&jobserver::Client>,
         scenario_output: &mut ScenarioOutput,
     ) -> Result<Process> {
         let start = Instant::now();
@@ -88,7 +88,9 @@ impl Process {
             .stdout(scenario_output.open_log_append()?)
             .stderr(scenario_output.open_log_append()?)
             .current_dir(cwd);
-        jobserver.as_ref().map(|js| js.configure(&mut command));
+        if let Some(js) = jobserver {
+            js.configure(&mut command);
+        }
         configure_command(&mut command);
         let child = command
             .spawn()
@@ -143,26 +145,26 @@ pub enum Exit {
     /// Exited with status 0.
     Success,
     /// Exited with status non-0.
-    Failure(u32),
+    Failure(i32),
     /// Exceeded its timeout, and killed.
     Timeout,
     /// Killed by some signal.
     #[cfg(unix)]
-    Signalled(u8),
+    Signalled(i32),
     /// Unknown or unexpected situation.
     Other,
 }
 
 impl Exit {
-    pub fn is_success(&self) -> bool {
-        *self == Exit::Success
+    pub fn is_success(self) -> bool {
+        self == Exit::Success
     }
 
-    pub fn is_timeout(&self) -> bool {
-        *self == Exit::Timeout
+    pub fn is_timeout(self) -> bool {
+        self == Exit::Timeout
     }
 
-    pub fn is_failure(&self) -> bool {
+    pub fn is_failure(self) -> bool {
         matches!(self, Exit::Failure(_))
     }
 }
@@ -201,13 +203,13 @@ mod test {
     fn shell_quoting() {
         assert_eq!(quote_argv(["foo".to_string()]), "foo");
         assert_eq!(
-            quote_argv(["foo bar", r#"\blah\x"#, r#""quoted""#]),
+            quote_argv(["foo bar", r"\blah\x", r#""quoted""#]),
             r#"foo\ bar \\blah\\x \"quoted\""#
         );
         assert_eq!(quote_argv([""]), "");
         assert_eq!(
             quote_argv(["with whitespace", "\r\n\t\t"]),
-            r#"with\ whitespace \r\n\t\t"#
+            r"with\ whitespace \r\n\t\t"
         );
     }
 }

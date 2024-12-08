@@ -263,3 +263,51 @@ fn additional_cargo_test_args() {
         .assert()
         .success();
 }
+
+#[test]
+/// Set the `--output` directory via `output` config directive.
+fn output_option_use_config() {
+    let output_tmpdir = TempDir::new().unwrap();
+    let output_via_config = output_tmpdir.path().join("output_via_config");
+    let testdata = copy_of_testdata("factorial");
+
+    let out_path_str = output_via_config
+        .to_string_lossy()
+        .escape_default()
+        .to_string();
+    write_config_file(&testdata, &format!("output = \"{out_path_str}\""));
+
+    assert!(
+        !testdata.path().join("mutants.out").exists(),
+        "mutants.out should not be in a clean copy of the test data"
+    );
+
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times"])
+        .arg("-d")
+        .arg(testdata.path())
+        .assert()
+        .success();
+
+    assert!(
+        !testdata.path().join("mutants.out").exists(),
+        "mutants.out should not be in the source directory"
+    );
+    let mutants_out = output_via_config.join("mutants.out");
+    assert!(
+        mutants_out.exists(),
+        "mutants.out is in changed `output` directory"
+    );
+    for name in [
+        "mutants.json",
+        "debug.log",
+        "outcomes.json",
+        "missed.txt",
+        "caught.txt",
+        "timeout.txt",
+        "unviable.txt",
+    ] {
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+    }
+}

@@ -57,6 +57,7 @@ pub struct Mutant {
 #[derive(Eq, PartialEq, Debug, Serialize)]
 pub struct Function {
     /// The function that's being mutated, including any containing namespaces.
+    #[allow(clippy::struct_field_names)]
     pub function_name: String,
 
     /// The return type of the function, including a leading "-> ", as a fragment of Rust syntax.
@@ -84,8 +85,7 @@ impl Mutant {
         self.styled_parts()
             .into_iter()
             .map(|x| x.force_styling(false).to_string())
-            .collect::<Vec<_>>()
-            .join("")
+            .collect::<String>()
     }
 
     pub fn name(&self, show_line_col: bool) -> String {
@@ -126,6 +126,7 @@ impl Mutant {
     fn styled_parts(&self) -> Vec<StyledObject<String>> {
         // This is like `impl Display for Mutant`, but with colors.
         // The text content should be the same.
+        #[allow(clippy::needless_pass_by_value)] // actually is needed for String vs &str?
         fn s<S: ToString>(s: S) -> StyledObject<String> {
             style(s.to_string())
         }
@@ -186,7 +187,7 @@ impl Mutant {
             .to_string()
     }
 
-    /// Apply this mutant to the relevant file within a BuildDir.
+    /// Apply this mutant to the relevant file within a `BuildDir`.
     pub fn apply(&self, build_dir: &BuildDir, mutated_code: &str) -> Result<()> {
         trace!(?self, "Apply mutant");
         build_dir.overwrite_file(&self.source_file.tree_relative_path, mutated_code)
@@ -236,7 +237,7 @@ impl Serialize for Mutant {
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
         ss.serialize_field("package", &self.source_file.package_name)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
-        ss.serialize_field("function", &self.function.as_ref().map(|a| a.as_ref()))?;
+        ss.serialize_field("function", &self.function.as_ref().map(Arc::as_ref))?;
         ss.serialize_field("span", &self.span)?;
         ss.serialize_field("replacement", &self.replacement)?;
         ss.serialize_field("genre", &self.genre)?;
@@ -327,21 +328,21 @@ mod test {
             .unwrap()
             .mutants;
         let descriptions = mutants.iter().map(Mutant::describe_change).collect_vec();
-        insta::assert_snapshot!(
-            descriptions.join("\n"),
-            @r###"
-        replace controlled_loop with ()
-        replace > with == in controlled_loop
-        replace > with < in controlled_loop
-        replace * with + in controlled_loop
-        replace * with / in controlled_loop
-        "###
+        assert_eq!(
+            descriptions,
+            [
+                "replace controlled_loop with ()",
+                "replace > with == in controlled_loop",
+                "replace > with < in controlled_loop",
+                "replace * with + in controlled_loop",
+                "replace * with / in controlled_loop",
+            ]
         );
     }
 
     #[test]
     fn always_skip_constructors_called_new() {
-        let code = indoc! { r#"
+        let code = indoc! { r"
             struct S {
                 x: i32,
             }
@@ -351,7 +352,7 @@ mod test {
                     Self { x }
                 }
             }
-        "# };
+        " };
         let mutants = mutate_source_str(code, &Options::default()).unwrap();
         assert_eq!(mutants, []);
     }
@@ -422,6 +423,6 @@ mod test {
 
     fn strip_trailing_space(s: &str) -> String {
         // Split on \n so that we retain empty lines etc
-        s.split('\n').map(|l| l.trim_end()).join("\n")
+        s.split('\n').map(str::trim_end).join("\n")
     }
 }

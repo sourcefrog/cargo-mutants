@@ -203,7 +203,7 @@ impl Lab<'_> {
         Worker {
             build_dir,
             output_mutex: &self.output_mutex,
-            jobserver: &self.jobserver,
+            jobserver: self.jobserver.as_ref(),
             options: self.options,
             console: self.console,
         }
@@ -217,7 +217,7 @@ impl Lab<'_> {
 struct Worker<'a> {
     build_dir: &'a BuildDir,
     output_mutex: &'a Mutex<OutputDir>,
-    jobserver: &'a Option<jobserver::Client>,
+    jobserver: Option<&'a jobserver::Client>,
     options: &'a Options,
     console: &'a Console,
 }
@@ -262,7 +262,7 @@ impl Worker<'_> {
             .start_scenario(scenario)?;
         let dir = self.build_dir.path();
         self.console
-            .scenario_started(dir, scenario, scenario_output.open_log_read()?)?;
+            .scenario_started(dir, scenario, scenario_output.open_log_read()?);
 
         if let Some(mutant) = scenario.mutant() {
             let mutated_code = mutant.mutated_code();

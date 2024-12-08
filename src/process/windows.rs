@@ -20,7 +20,7 @@ impl From<ExitStatus> for Exit {
             if code == 0 {
                 Exit::Success
             } else {
-                Exit::Failure(code as u32)
+                Exit::Failure(code)
             }
         } else {
             Exit::Other

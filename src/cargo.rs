@@ -2,6 +2,9 @@
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+
 use std::env;
 use std::iter::once;
 use std::time::{Duration, Instant};
@@ -23,7 +26,7 @@ use crate::Result;
 #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 pub fn run_cargo(
     build_dir: &BuildDir,
-    jobserver: &Option<jobserver::Client>,
+    jobserver: Option<&jobserver::Client>,
     packages: &PackageSelection,
     phase: Phase,
     timeout: Option<Duration>,
@@ -155,12 +158,7 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
         cargo_args.push("--all-features".to_owned());
     }
     // N.B. it can make sense to have --all-features and also explicit features from non-default packages.`
-    cargo_args.extend(
-        features
-            .features
-            .iter()
-            .map(|f| format!("--features={}", f)),
-    );
+    cargo_args.extend(features.features.iter().map(|f| format!("--features={f}")));
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
         cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
@@ -168,7 +166,7 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
     cargo_args
 }
 
-/// Return adjusted CARGO_ENCODED_RUSTFLAGS, including any changes to cap-lints.
+/// Return adjusted `CARGO_ENCODED_RUSTFLAGS`, including any changes to cap-lints.
 ///
 /// It seems we have to set this in the environment because Cargo doesn't expose
 /// a way to pass it in as an option from all commands?
@@ -240,7 +238,7 @@ mod test {
         // let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
         options
             .additional_cargo_test_args
-            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+            .extend(["--lib", "--no-fail-fast"].iter().map(ToString::to_string));
         // TODO: It wolud be a bit better to use `--manifest-path` here, to get
         // the fix for <https://github.com/sourcefrog/cargo-mutants/issues/117>
         // but it's temporarily regressed.
@@ -292,7 +290,7 @@ mod test {
         let mut options = Options::default();
         options
             .additional_cargo_test_args
-            .extend(["--lib", "--no-fail-fast"].iter().map(|s| s.to_string()));
+            .extend(["--lib", "--no-fail-fast"].iter().map(|&s| s.to_string()));
         options
             .additional_cargo_args
             .extend(["--release".to_owned()]);

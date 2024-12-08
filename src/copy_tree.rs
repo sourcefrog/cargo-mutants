@@ -25,8 +25,6 @@ use windows::copy_symlink;
 static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
-///
-/// Regardless, anything matching [SOURCE_EXCLUDE] is excluded.
 pub fn copy_tree(
     from_path: &Utf8Path,
     name_base: &str,
