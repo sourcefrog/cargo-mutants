@@ -34,3 +34,7 @@ The filter, based on the [`ignore` crate](https://docs.rs/ignore/), also respect
 This behavior can be turned off with `--gitignore=false`, causing ignored files to be copied.
 
 Rust projects typically configure gitignore to exclude the `target/` directory.
+
+## `mutants.out`
+
+`mutants.out` and `mutants.out.old` are never copied, even if they're not covered by `.gitignore`.
