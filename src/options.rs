@@ -41,6 +41,9 @@ pub struct Options {
     /// Don't run the tests, just see if each mutant builds.
     pub check_only: bool,
 
+    /// Copy `.git` and other VCS directories to build directories.
+    pub copy_vcs: bool,
+
     /// Don't copy files matching gitignore patterns to build directories.
     pub gitignore: bool,
 
@@ -285,6 +288,7 @@ impl Options {
             cap_lints: args.cap_lints.unwrap_or(config.cap_lints),
             check_only: args.check,
             colors: args.colors,
+            copy_vcs: args.copy_vcs.or(config.copy_vcs).unwrap_or(false),
             emit_json: args.json,
             emit_diffs: args.diff,
             error_values: join_slices(&args.error, &config.error_values),
@@ -836,5 +840,28 @@ mod test {
         let options = Options::new(&args, &config).unwrap();
         // In this case the default is not used
         assert_eq!(options.skip_calls, ["x", "y", "with_capacity"]);
+    }
+
+    #[test]
+    fn copy_vcs() {
+        let args = Args::parse_from(["mutants", "--copy-vcs=true"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.copy_vcs);
+
+        let args = Args::parse_from(["mutants", "--copy-vcs=false"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.copy_vcs);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("copy_vcs = true").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.copy_vcs);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.copy_vcs);
     }
 }
