@@ -69,10 +69,23 @@ cargo-mutants is invoked from within, or given with `-d`, a single directory, ca
 
 This is done basically by parsing the output of `cargo locate-project` and `cargo metadata`.
 
-We often want to test only one or a subset of packages in the workspace. This can be set explicitly with `--package` and `--workspace`, or heuristically depending on the project metadata and the start directory.
+Within the workspace there can be multiple packages.
 
-For each package, cargo tells us the build targets including tests and the main library or binary. The tests are not considered for mutation, so this leaves us with
-some targets of interest, and for each of them cargo tells us one top source file, typically something like `src/lib.rs` or `src/main.rs`.
+The implementation of this tries to keep the path open to later supporting build systems other than Cargo, such as perhaps Bazel. In Bazel, most likely, package names will be Bazel package names (or possibly target names.)
+
+Packages are used in several ways in cargo-mutants:
+
+1. The user can select which packages to mutate, with `--package` or `--workspace`. If neither is specified we try to give the same heuristic behavior as other cargo commands, based on the start directory.
+
+2. Packages are the unit at which we can ask cargo to build code or run tests.
+
+### Package targets
+
+For each package, cargo tells us the build targets. Each target is a _crate_, the rustc translation unit.
+
+Targets may have various types: tests, binaries, libraries, and potentially others.
+
+Test targets are not considered for mutation, so this leaves us with some targets of interest, and for each of them cargo tells us one _top source file_, typically something like `src/lib.rs` or `src/main.rs`.
 
 ### Discovering mutants
 
@@ -86,9 +99,7 @@ and then walk its AST. In the course of that walk we can find three broad catego
 * A source pattern that cargo-mutants knows how to mutate, such as a function returning a value.
 * A pattern that tells cargo-mutants not to look further into this branch of the tree, such as `#[test]` or `#[mutants::skip]`.
 
-For baseline builds and tests, we test all the packages that will later be mutated. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
-
-We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
+For baseline builds and tests, we test all the packages that will later be mutated. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests. However, this can be changed using `--test-package` or `--test-workspace`.
 
 ### Copying the source tree
 
