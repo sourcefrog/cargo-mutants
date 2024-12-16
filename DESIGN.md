@@ -56,23 +56,47 @@ core of cargo-mutants logic to guess at valid replacements.
 
 ## Major processing stages
 
-1. Find the workspace enclosing the start directory, and the packages within it.
-1. Determine which packages to mutate.
-1. Generate mutants by walking each package.
+1. Find the workspace enclosing the start directory.
+1. Find packages within the workspace, and determine which packages to mutate.
+1. Find targets within selected packages.
+1. Generate mutants by walking down from the top source file of each target.
 1. Copy the source tree.
 1. Run baseline tests.
 1. Test each mutant in parallel.
 
-### Finding the workspace and packages
+### Finding the workspace
 
 cargo-mutants is invoked from within, or given with `-d`, a single directory, called the _start directory_. To find mutants and run tests we first need to find the enclosing workspace and the packages within it.
 
 This is done basically by parsing the output of `cargo locate-project` and `cargo metadata`.
 
-We often want to test only one or a subset of packages in the workspace. This can be set explicitly with `--package` and `--workspace`, or heuristically depending on the project metadata and the start directory.
+### Finding packages
 
-For each package, cargo tells us the build targets including tests and the main library or binary. The tests are not considered for mutation, so this leaves us with
-some targets of interest, and for each of them cargo tells us one top source file, typically something like `src/lib.rs` or `src/main.rs`.
+Within the workspace there can be multiple packages.
+
+The implementation of this tries to keep the path open to later supporting build systems other than Cargo, such as perhaps Bazel. In Bazel, most likely, package names will be Bazel package names (or possibly target names.)
+
+Packages are used in several ways in cargo-mutants:
+
+1. The user can select which packages to mutate, with `--package` or `--workspace`. If neither is specified we try to give the same heuristic behavior as other cargo commands, based on the start directory.
+
+2. Packages are the unit at which we can ask cargo to build code or run tests.
+
+#### Package ids
+
+It is rare but legal in Cargo to have multiple packages with the same base name but different versions within a tree: this can happen when a package recursively depends on a different version of itself. (`itertools` is a good example because its package depends on `criterion` which depends on an older version of `itertools`.)
+
+In that case, `cargo build -p itertools` will fail because the name is ambiguous: even though there is only one package of that name in the working tree, the `cargo -p` option can also match against dependencies.
+
+To avoid these problems we invoke cargo with the ["package id"](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html) which should be unambiguous. The package id has a form like `path+file:///tmp/xyz#packagename` and so needs to be synthetisized including the path of the build directory.
+
+### Package targets
+
+For each package, cargo tells us the build targets. Each target is a _crate_, the rustc translation unit.
+
+Targets may have various types: tests, binaries, libraries, and potentially others.
+
+Test targets are not considered for mutation, so this leaves us with some targets of interest, and for each of them cargo tells us one _top source file_, typically something like `src/lib.rs` or `src/main.rs`.
 
 ### Discovering mutants
 
@@ -87,8 +111,6 @@ and then walk its AST. In the course of that walk we can find three broad catego
 * A pattern that tells cargo-mutants not to look further into this branch of the tree, such as `#[test]` or `#[mutants::skip]`.
 
 For baseline builds and tests, we test all the packages that will later be mutated. For mutant builds and tests, we pass `--package` to build and test only the package containing the mutant, on the assumption that each mutant should be caught by its own package's tests.
-
-We may later mutate at a granularity smaller than a single function, for example by cutting out an `if` statement or a loop, but that is not yet implemented. (<https://github.com/sourcefrog/cargo-mutants/issues/73>)
 
 ### Copying the source tree
 
