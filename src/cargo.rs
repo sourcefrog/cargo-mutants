@@ -239,7 +239,7 @@ mod test {
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(ToString::to_string));
-        // TODO: It wolud be a bit better to use `--manifest-path` here, to get
+        // TODO: It would be a bit better to use `--manifest-path` here, to get
         // the fix for <https://github.com/sourcefrog/cargo-mutants/issues/117>
         // but it's temporarily regressed.
         assert_eq!(
