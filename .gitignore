@@ -5,3 +5,4 @@ mutants.out.old
 wiki
 .vscode/
 book/book
+*.snap.new
