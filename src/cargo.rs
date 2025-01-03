@@ -88,7 +88,7 @@ pub fn cargo_bin() -> String {
 /// cargo binary itself.
 // (This is split out so it's easier to test.)
 fn cargo_argv(
-    _build_bir: &Utf8Path,
+    build_dir: &Utf8Path,
     packages: &PackageSelection,
     phase: Phase,
     options: &Options,
@@ -149,7 +149,11 @@ fn cargo_argv(
             cargo_args.push("--workspace".to_string());
         }
         PackageSelection::Explicit(packages) => {
-            cargo_args.extend(packages.iter().map(|p| format!("--package={}", p.name)));
+            cargo_args.extend(
+                packages
+                    .iter()
+                    .map(|p| format!("--package={}", p.to_path_url(&build_dir))),
+            );
         }
     }
     let features = &options.features;
@@ -263,7 +267,7 @@ mod test {
                 "check",
                 "--tests",
                 "--verbose",
-                "--package=cargo-mutants-testdata-something",
+                "--package=path+file:///tmp/xyz#cargo-mutants-testdata-something",
             ]
         );
     }

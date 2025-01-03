@@ -62,6 +62,15 @@ impl Package {
             relative_dir,
         })
     }
+
+    pub fn to_path_url(&self, dir: &Utf8Path) -> String {
+        let mut dir = dir.to_string();
+        if !self.relative_dir.as_str().is_empty() {
+            dir.push('/');
+            dir.push_str(self.relative_dir.as_str());
+        }
+        format!("path+file://{dir}#{name}", name = self.name)
+    }
 }
 
 /// Find all the files that are named in the `path` of targets in a
