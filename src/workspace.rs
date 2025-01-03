@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Martin Pool
+// Copyright 2023-2025 Martin Pool
 
 //! Understand cargo workspaces, which can contain multiple packages.
 //!
@@ -163,7 +163,7 @@ impl Workspace {
             .exec()
             .with_context(|| format!("Failed to run cargo metadata on {manifest_path}"))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
-        let packages = packages_from_metadata(&metadata)?;
+        let packages = packages_from_metadata(&metadata);
         Ok(Workspace { metadata, packages })
     }
 
