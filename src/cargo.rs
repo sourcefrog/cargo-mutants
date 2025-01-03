@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Run Cargo as a subprocess, including timeouts and propagating signals.
 
@@ -9,7 +9,6 @@ use std::env;
 use std::iter::once;
 use std::time::{Duration, Instant};
 
-use itertools::Itertools;
 use tracing::{debug, debug_span, warn};
 
 use crate::build_dir::BuildDir;
@@ -143,11 +142,8 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
         PackageSelection::All => {
             cargo_args.push("--workspace".to_string());
         }
-        PackageSelection::Explicit(package_names) => {
-            for package in package_names.iter().sorted() {
-                cargo_args.push("--package".to_owned());
-                cargo_args.push(package.to_string());
-            }
+        PackageSelection::Explicit(packages) => {
+            cargo_args.extend(packages.iter().map(|p| format!("--package={}", p.name)));
         }
     }
     let features = &options.features;
@@ -157,7 +153,7 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
     if features.all_features {
         cargo_args.push("--all-features".to_owned());
     }
-    // N.B. it can make sense to have --all-features and also explicit features from non-default packages.`
+    // N.B. it can make sense to have --all-features and also explicit features from non-default packages.
     cargo_args.extend(features.features.iter().map(|f| format!("--features={f}")));
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
@@ -206,10 +202,12 @@ fn encoded_rustflags(options: &Options) -> Option<String> {
 
 #[cfg(test)]
 mod test {
+    use camino::Utf8PathBuf;
     use clap::Parser;
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
 
+    use crate::package::Package;
     use crate::Args;
 
     use super::*;
@@ -234,8 +232,11 @@ mod test {
     #[test]
     fn generate_cargo_args_with_additional_cargo_test_args_and_package() {
         let mut options = Options::default();
-        let package_name = "cargo-mutants-testdata-something";
-        // let relative_manifest_path = Utf8PathBuf::from("testdata/something/Cargo.toml");
+        let package = Package {
+            name: "cargo-mutants-testdata-something".to_owned(),
+            relative_dir: Utf8PathBuf::new(),
+            top_sources: vec!["src/lib.rs".into()],
+        };
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(ToString::to_string));
@@ -244,45 +245,17 @@ mod test {
         // but it's temporarily regressed.
         assert_eq!(
             cargo_argv(
-                &PackageSelection::explicit([package_name]),
+                &PackageSelection::Explicit(vec![package]),
                 Phase::Check,
                 &options
             )[1..],
-            ["check", "--tests", "--verbose", "--package", package_name]
+            [
+                "check",
+                "--tests",
+                "--verbose",
+                "--package=cargo-mutants-testdata-something",
+            ]
         );
-
-        // let build_manifest_path = build_dir.join(relative_manifest_path);
-        // assert_eq!(
-        //     cargo_argv(build_dir, Some(&[package_name]), Phase::Check, &options)[1..],
-        //     [
-        //         "check",
-        //         "--tests",
-        //         "--verbose",
-        //         "--manifest-path",
-        //         build_manifest_path.as_str(),
-        //     ]
-        // );
-        // assert_eq!(
-        //     cargo_argv(build_dir, Some(&[package_name]), Phase::Build, &options)[1..],
-        //     [
-        //         "test",
-        //         "--no-run",
-        //         "--verbose",
-        //         "--manifest-path",
-        //         build_manifest_path.as_str(),
-        //     ]
-        // );
-        // assert_eq!(
-        //     cargo_argv(build_dir, Some(&[package_name]), Phase::Test, &options)[1..],
-        //     [
-        //         "test",
-        //         "--verbose",
-        //         "--manifest-path",
-        //         build_manifest_path.as_str(),
-        //         "--lib",
-        //         "--no-fail-fast"
-        //     ]
-        // );
     }
 
     #[test]

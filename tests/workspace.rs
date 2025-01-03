@@ -38,7 +38,7 @@ fn list_warns_about_unmatched_packages() {
         ])
         .assert()
         .stderr(predicates::str::contains(
-            "package \"notapackage\" not found in source tree",
+            "Package \"notapackage\" not found in source tree",
         ))
         .code(0);
 }
@@ -130,8 +130,21 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap().iter().map(|v| v.as_str().unwrap()).skip(1).collect_vec().join(" "),
-            "test --no-run --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2"
+            baseline_phases[0]["argv"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .skip(1)
+                .collect_vec(),
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils",
+                "--package=main",
+                "--package=main2"
+            ]
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
@@ -141,9 +154,14 @@ fn workspace_tree_is_well_tested() {
                 .iter()
                 .map(|v| v.as_str().unwrap())
                 .skip(1)
-                .collect_vec()
-                .join(" "),
-            "test --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2"
+                .collect_vec(),
+            [
+                "test",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils",
+                "--package=main",
+                "--package=main2"
+            ],
         );
     }
 
@@ -174,16 +192,32 @@ fn workspace_tree_is_well_tested() {
         assert_eq!(baseline_phases.len(), 2);
         assert_eq!(baseline_phases[0]["process_status"], "Success");
         assert_eq!(
-            baseline_phases[0]["argv"].as_array().unwrap()[1..].iter().map(|v| v.as_str().unwrap()).join(" "),
-            "test --no-run --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2",
+            baseline_phases[0]["argv"].as_array().unwrap()[1..]
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect_vec(),
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils",
+                "--package=main",
+                "--package=main2"
+            ],
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
         assert_eq!(
             baseline_phases[1]["argv"].as_array().unwrap()[1..]
                 .iter()
                 .map(|v| v.as_str().unwrap())
-                .join(" "),
-            "test --verbose --package cargo_mutants_testdata_workspace_utils --package main --package main2",
+                .collect_vec(),
+            [
+                "test",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils",
+                "--package=main",
+                "--package=main2"
+            ],
         );
     }
 }
@@ -323,17 +357,17 @@ fn cross_package_tests() {
         .stdout(predicate::str::contains("1 caught"))
         .code(0);
 
-    // Using the wrong package name is an error
+    // Using the wrong package name gives a warning
     run()
         .args(["mutants", "--test-package=tests"])
         .arg("-d")
         .arg(path.join("lib"))
         .env_remove("RUST_BACKTRACE")
         .assert()
-        .stderr(
-            "Error: Some package names in --test-package are not present in the workspace: tests\n",
-        )
-        .code(1);
+        .stderr(predicate::str::contains(
+            "WARN Package \"tests\" not found in source tree\n",
+        ))
+        .success();
 
     // You can configure the test package in the workspace
     let cargo_dir = path.join(".cargo");
