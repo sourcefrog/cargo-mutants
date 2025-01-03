@@ -110,8 +110,8 @@ fn package_top_sources(
 }
 
 fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    for kind in &target.kind {
-        if matches!(
+    target.kind.iter().any(|kind| {
+        matches!(
             kind,
             TargetKind::Bin
                 | TargetKind::ProcMacro
@@ -120,11 +120,8 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
                 | TargetKind::Lib
                 | TargetKind::RLib
                 | TargetKind::StaticLib
-        ) {
-            return true;
-        }
-    }
-    false
+        )
+    })
 }
 
 /// A more specific view of which packages to mutate, after resolving `PackageFilter::Auto`.
