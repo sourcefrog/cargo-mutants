@@ -3,9 +3,10 @@
 //! Discover and represent cargo packages within a workspace.
 
 use camino::Utf8PathBuf;
+use serde::Serialize;
 
 /// A package built and tested as a unit.
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize)]
 pub struct Package {
     /// The short name of the package, like "mutants".
     pub name: String,
