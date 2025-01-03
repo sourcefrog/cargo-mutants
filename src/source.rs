@@ -30,6 +30,13 @@ pub struct SourceFile {
     /// Path of this source file relative to workspace.
     pub tree_relative_path: Utf8PathBuf,
 
+    /// The tree-relative directory for the *package* containing this file.
+    ///
+    /// This might be an ancestor of `tree_relative_path` if the file is
+    /// in a subdirectory, or potentially even another directory if the
+    /// `file` attribute is used.
+    pub package_relative_dir: Utf8PathBuf,
+
     /// Full copy of the unmodified source.
     ///
     /// This is held in an [Arc] so that `SourceFile`s can be cloned without using excessive
@@ -71,6 +78,7 @@ impl SourceFile {
             tree_relative_path: tree_relative_path.to_owned(),
             code,
             package_name: package.name.clone(),
+            package_relative_dir: package.relative_dir.clone(),
             is_top,
         }))
     }
@@ -87,6 +95,7 @@ impl SourceFile {
             tree_relative_path: tree_relative_path.to_owned(),
             code: Arc::new(code.to_owned()),
             package_name: package_name.to_owned(),
+            package_relative_dir: Utf8PathBuf::new(),
             is_top,
         }
     }
@@ -132,7 +141,7 @@ mod test {
             .unwrap();
         let package = Package {
             name: "imaginary-package".to_owned(),
-            relative_manifest_path: Utf8PathBuf::from("Cargo.toml"),
+            relative_dir: Utf8PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
         };
         let source_file = SourceFile::load(temp_dir_path, Utf8Path::new(file_name), &package, true)
@@ -145,7 +154,7 @@ mod test {
     fn skips_files_outside_of_workspace() {
         let package = Package {
             name: "imaginary-package".to_owned(),
-            relative_manifest_path: Utf8PathBuf::from("Cargo.toml"),
+            relative_dir: Utf8PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
         };
         let source_file = SourceFile::load(
