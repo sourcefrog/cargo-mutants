@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Successively apply mutations to the source code and run cargo to check,
 //! build, and test them.
@@ -16,9 +16,7 @@ use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::{
     cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
-    package::PackageSelection, timeouts::Timeouts, workspace::Workspace,
-};
-use crate::{
+    package::Package, package::PackageSelection, timeouts::Timeouts, workspace::Workspace,
     BaselineStrategy, BuildDir, Console, Context, Mutant, Options, Phase, Result, Scenario,
     ScenarioOutcome,
 };
@@ -42,14 +40,12 @@ pub fn test_mutants(
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
-    workspace.check_test_packages_are_present(&options.test_package)?;
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
         warn!("No mutants found under the active filters");
         return Ok(LabOutcome::default());
     }
-
     let output_mutex = Mutex::new(output_dir);
     let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;
     let jobserver = options
@@ -61,9 +57,11 @@ pub fn test_mutants(
         })
         .transpose()
         .context("Start jobserver")?;
+    let tests_for_mutant = TestsForMutant::new(options, workspace);
     let lab = Lab {
         output_mutex,
         jobserver,
+        tests_for_mutant,
         options,
         console,
     };
@@ -163,6 +161,7 @@ fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Resul
 struct Lab<'a> {
     output_mutex: Mutex<OutputDir>,
     jobserver: Option<jobserver::Client>,
+    tests_for_mutant: TestsForMutant,
     options: &'a Options,
     console: &'a Console,
 }
@@ -177,12 +176,13 @@ impl Lab<'_> {
     fn run_baseline(&self, build_dir: &BuildDir, mutants: &[Mutant]) -> Result<ScenarioOutcome> {
         let all_mutated_packages = mutants
             .iter()
-            .map(|m| m.source_file.package.name.clone())
+            .map(|m| m.source_file.package.clone())
+            .sorted_by_key(|p| p.name.clone())
             .unique()
             .collect_vec();
         self.make_worker(build_dir).run_one_scenario(
             &Scenario::Baseline,
-            &PackageSelection::explicit(all_mutated_packages),
+            &PackageSelection::Explicit(all_mutated_packages),
             Timeouts::for_baseline(self.options),
         )
     }
@@ -204,6 +204,7 @@ impl Lab<'_> {
             build_dir,
             output_mutex: &self.output_mutex,
             jobserver: self.jobserver.as_ref(),
+            tests_for_mutant: &self.tests_for_mutant,
             options: self.options,
             console: self.console,
         }
@@ -218,6 +219,7 @@ struct Worker<'a> {
     build_dir: &'a BuildDir,
     output_mutex: &'a Mutex<OutputDir>,
     jobserver: Option<&'a jobserver::Client>,
+    tests_for_mutant: &'a TestsForMutant,
     options: &'a Options,
     console: &'a Console,
 }
@@ -237,22 +239,21 @@ impl Worker<'_> {
                 return Ok(());
             };
             let _span = debug_span!("mutant", name = mutant.name(false)).entered();
-            let test_package = match &self.options.test_package {
-                TestPackages::Workspace => PackageSelection::All,
-                TestPackages::Mutated => {
-                    PackageSelection::Explicit(vec![mutant.source_file.package.name.clone()])
+            let test_packages = match self.tests_for_mutant {
+                TestsForMutant::Workspace => PackageSelection::All,
+                TestsForMutant::Mutated => {
+                    PackageSelection::Explicit(vec![mutant.source_file.package.clone()])
                 }
-                TestPackages::Named(named) => PackageSelection::Explicit(named.clone()),
+                TestsForMutant::Explicit(packages) => PackageSelection::Explicit(packages.clone()),
             };
-            debug!(?test_package);
-            self.run_one_scenario(&Scenario::Mutant(mutant), &test_package, timeouts)?;
+            self.run_one_scenario(&Scenario::Mutant(mutant), &test_packages, timeouts)?;
         }
     }
 
     fn run_one_scenario(
         &mut self,
         scenario: &Scenario,
-        test_package: &PackageSelection,
+        test_packages: &PackageSelection,
         timeouts: Timeouts,
     ) -> Result<ScenarioOutcome> {
         let mut scenario_output = self
@@ -263,6 +264,7 @@ impl Worker<'_> {
         let dir = self.build_dir.path();
         self.console
             .scenario_started(dir, scenario, scenario_output.open_log_read()?);
+        debug!(?test_packages);
 
         if let Some(mutant) = scenario.mutant() {
             let mutated_code = mutant.mutated_code();
@@ -281,7 +283,7 @@ impl Worker<'_> {
             match run_cargo(
                 self.build_dir,
                 self.jobserver,
-                test_package,
+                test_packages,
                 phase,
                 timeout,
                 &mut scenario_output,
@@ -318,5 +320,28 @@ impl Worker<'_> {
             .scenario_finished(dir, scenario, &outcome, self.options);
 
         Ok(outcome)
+    }
+}
+
+/// Which packages to test
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TestsForMutant {
+    /// Test all packages in the workspace
+    Workspace,
+    /// Test only the package that was mutated
+    Mutated,
+    /// Test specific packages
+    Explicit(Vec<Package>),
+}
+
+impl TestsForMutant {
+    fn new(options: &Options, workspace: &Workspace) -> Self {
+        match options.test_package {
+            TestPackages::Workspace => TestsForMutant::Workspace,
+            TestPackages::Mutated => TestsForMutant::Mutated,
+            TestPackages::Named(ref package_names) => {
+                TestsForMutant::Explicit(workspace.packages_by_name(package_names))
+            }
+        }
     }
 }

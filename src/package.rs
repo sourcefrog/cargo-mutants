@@ -9,6 +9,9 @@ use serde::Serialize;
 use tracing::{debug, debug_span, warn};
 
 /// A package built and tested as a unit.
+///
+/// This is an internal representation derived from and similar to a `cargo_metadata::Package`,
+/// in a more digested form and as an extension point for later supporting tools other than Cargo.
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize)]
 pub struct Package {
     /// The short name of the package, like "mutants".
@@ -81,8 +84,8 @@ fn package_top_sources(
                 .map(ToOwned::to_owned)
             {
                 debug!(
-                    "found mutation target {} of kind {:?}",
-                    relpath, target.kind
+                    "found mutation target {relpath} of kind {kind:?}",
+                    kind = target.kind
                 );
                 found.push(relpath);
             } else {
@@ -115,18 +118,12 @@ fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
     })
 }
 
-/// A more specific view of which packages to mutate, after resolving `PackageFilter::Auto`.
+/// Selection of which specific packages to mutate or test.
 #[derive(Debug, Clone)]
 #[allow(clippy::module_name_repetitions)]
 pub enum PackageSelection {
+    /// All packages in the workspace.
     All,
-    /// Explicitly selected packages, by qualname.
-    Explicit(Vec<String>),
-}
-
-impl PackageSelection {
-    /// Helper constructor for `PackageSelection::Explicit`.
-    pub fn explicit<I: IntoIterator<Item = S>, S: ToString>(names: I) -> Self {
-        Self::Explicit(names.into_iter().map(|s| s.to_string()).collect())
-    }
+    /// Explicitly selected packages.
+    Explicit(Vec<Package>),
 }
