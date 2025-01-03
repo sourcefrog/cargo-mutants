@@ -20,7 +20,7 @@ use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Attribute, BinOp, Block, Expr, ExprPath, File, ItemFn, ReturnType, Signature, UnOp};
-use tracing::{debug, debug_span, error, trace, trace_span, warn};
+use tracing::{debug, debug_span, error, info, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
@@ -84,6 +84,7 @@ pub fn walk_tree(
 
 /// Walk one package, starting from its top files, discovering files
 /// and mutants.
+#[allow(clippy::from_iter_instead_of_collect)]
 fn walk_package(
     workspace_dir: &Utf8Path,
     package: &Package,
@@ -93,16 +94,14 @@ fn walk_package(
     options: &Options,
     console: &Console,
 ) -> Result<()> {
-    let mut file_queue: VecDeque<SourceFile> = VecDeque::new();
-    for source_path in &package.top_sources {
-        file_queue.extend(SourceFile::load(
-            workspace_dir,
-            source_path,
-            &package.name,
-            true,
-        )?);
-    }
-    while let Some(source_file) = file_queue.pop_front() {
+    let mut filename_queue =
+        VecDeque::from_iter(package.top_sources.iter().map(|p| (p.to_owned(), true)));
+    while let Some((path, package_top)) = filename_queue.pop_front() {
+        let Some(source_file) = SourceFile::load(workspace_dir, &path, &package.name, package_top)?
+        else {
+            info!("Skipping source file outside of tree: {path:?}");
+            continue;
+        };
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
         let (mut file_mutants, external_mods) = walk_file(&source_file, error_exprs, options)?;
@@ -112,12 +111,7 @@ fn walk_package(
         // `--list-files`.
         for mod_namespace in &external_mods {
             if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace) {
-                file_queue.extend(SourceFile::load(
-                    workspace_dir,
-                    &mod_path,
-                    &source_file.package_name,
-                    false,
-                )?);
+                filename_queue.push_back((mod_path, false));
             }
         }
         let path = &source_file.tree_relative_path;
