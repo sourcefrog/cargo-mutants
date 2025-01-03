@@ -858,6 +858,7 @@ mod test {
         let source_file = SourceFile {
             code: Arc::new(code.to_owned()),
             package_name: "unimportant".to_owned(),
+            package_relative_dir: Utf8PathBuf::from(""),
             tree_relative_path: Utf8PathBuf::from("src/lib.rs"),
             is_top: true,
         };

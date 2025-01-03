@@ -237,7 +237,7 @@ fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
         let _span = debug_span!("package", %name).entered();
         let manifest_path = &package_metadata.manifest_path;
         debug!(%manifest_path, "walk package");
-        let relative_manifest_path = manifest_path
+        let relative_dir = manifest_path
                 .strip_prefix(root)
                 .map_err(|_| {
                     // TODO: Maybe just warn and skip?
@@ -245,11 +245,13 @@ fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
                         "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {root:?}",
                     )
                 })?
+                .parent()
+                .expect("remove Cargo.toml")
                 .to_owned();
         packages.push(Package {
             name: package_metadata.name.clone(),
-            relative_manifest_path,
             top_sources: package_top_sources(root, package_metadata),
+            relative_dir,
         });
     }
     Ok(packages)

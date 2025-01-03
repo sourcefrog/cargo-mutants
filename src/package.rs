@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Martin Pool
+// Copyright 2023-2025 Martin Pool
 
 //! Discover and represent cargo packages within a workspace.
 
@@ -10,8 +10,10 @@ pub struct Package {
     /// The short name of the package, like "mutants".
     pub name: String,
 
-    /// For Cargo, the path of the `Cargo.toml` manifest file, relative to the top of the tree.
-    pub relative_manifest_path: Utf8PathBuf,
+    /// The directory for this package relative to the workspace.
+    ///
+    /// For a package in the root, this is `""`.
+    pub relative_dir: Utf8PathBuf,
 
     /// The top source files for this package, relative to the workspace root,
     /// like `["src/lib.rs"]`.
@@ -23,6 +25,7 @@ pub struct Package {
 #[allow(clippy::module_name_repetitions)]
 pub enum PackageSelection {
     All,
+    /// Explicitly selected packages, by qualname.
     Explicit(Vec<String>),
 }
 
