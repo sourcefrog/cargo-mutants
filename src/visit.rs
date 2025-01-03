@@ -24,6 +24,7 @@ use tracing::{debug, debug_span, error, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
 use crate::mutate::Function;
+use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
 use crate::span::Span;
@@ -53,17 +54,29 @@ impl Discovered {
 
 /// Discover all mutants and all source files.
 ///
-/// The list of source files includes even those with no mutants.
-///
+/// The returned `Discovered` struct contains all mutants found in the
+/// source tree, and also a list of all source files visited (whether
+/// they generated mutants or not).
 pub fn walk_tree(
     workspace_dir: &Utf8Path,
-    top_source_files: &[SourceFile],
+    packages: &[Package],
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
     let error_exprs = options.parsed_error_exprs()?;
     console.walk_tree_start();
-    let mut file_queue: VecDeque<SourceFile> = top_source_files.iter().cloned().collect();
+    // TODO: Maybe split out a function to walk one package, then join the results.
+    let mut file_queue: VecDeque<SourceFile> = VecDeque::new();
+    for package in packages {
+        for source_path in &package.top_sources {
+            file_queue.extend(SourceFile::load(
+                workspace_dir,
+                source_path,
+                &package.name,
+                true,
+            )?);
+        }
+    }
     let mut mutants = Vec::new();
     let mut files: Vec<SourceFile> = Vec::new();
     while let Some(source_file) = file_queue.pop_front() {

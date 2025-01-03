@@ -32,7 +32,6 @@ use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::options::{Options, TestPackages};
 use crate::package::{Package, PackageSelection};
-use crate::source::SourceFile;
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
 
@@ -217,7 +216,7 @@ impl Workspace {
     ) -> Result<Discovered> {
         walk_tree(
             self.root(),
-            &top_sources(self.root(), &self.packages(package_filter)?)?,
+            &self.packages(package_filter)?,
             options,
             console,
         )
@@ -254,17 +253,6 @@ fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
         });
     }
     Ok(packages)
-}
-
-/// Find all the top source files for selected packages.
-fn top_sources(root: &Utf8Path, packages: &[Package]) -> Result<Vec<SourceFile>> {
-    let mut sources = Vec::new();
-    for package in packages {
-        for source_path in &package.top_sources {
-            sources.extend(SourceFile::load(root, source_path, &package.name, true)?);
-        }
-    }
-    Ok(sources)
 }
 
 /// Find all the files that are named in the `path` of targets in a
@@ -371,13 +359,13 @@ fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use camino::{Utf8Path, Utf8PathBuf};
+    use camino::Utf8PathBuf;
     use itertools::Itertools;
 
     use crate::console::Console;
     use crate::options::Options;
     use crate::test_util::copy_of_testdata;
-    use crate::workspace::{top_sources, PackageFilter};
+    use crate::workspace::PackageFilter;
 
     use super::Workspace;
 
@@ -411,27 +399,13 @@ mod test {
     fn find_top_source_files_from_subdirectory_of_workspace() {
         let tmp = copy_of_testdata("workspace");
         let workspace = Workspace::open(tmp.path()).expect("Find workspace root");
-        assert_eq!(
-            workspace
-                .packages(&PackageFilter::All)
-                .unwrap()
-                .iter()
-                .map(|p| p.name.clone())
-                .collect_vec(),
-            ["cargo_mutants_testdata_workspace_utils", "main", "main2"]
-        );
-        assert_eq!(
-            top_sources(
-                workspace.root(),
-                workspace.packages(&PackageFilter::All).unwrap().as_slice()
-            )
-            .unwrap()
-            .iter()
-            .map(|sf| sf.tree_relative_path.clone())
-            .collect_vec(),
-            // ordered by package name
-            ["utils/src/lib.rs", "main/src/main.rs", "main2/src/main.rs"]
-        );
+        let packages = workspace.packages(&PackageFilter::All).unwrap();
+        assert_eq!(packages[0].name, "cargo_mutants_testdata_workspace_utils");
+        assert_eq!(packages[0].top_sources, ["utils/src/lib.rs"]);
+        assert_eq!(packages[1].name, "main");
+        assert_eq!(packages[1].top_sources, ["main/src/main.rs"]);
+        assert_eq!(packages[2].name, "main2");
+        assert_eq!(packages[2].top_sources, ["main2/src/main.rs"]);
     }
 
     #[test]
@@ -481,25 +455,11 @@ mod test {
             tmp.path().canonicalize().unwrap()
         );
         let filter = PackageFilter::explicit(["main"]);
-        assert_eq!(
-            workspace
-                .packages(&filter)
-                .unwrap()
-                .iter()
-                .map(|p| p.name.clone())
-                .collect_vec(),
-            ["main"]
-        );
-        let top_sources =
-            top_sources(workspace.root(), &workspace.packages(&filter).unwrap()).unwrap();
-        println!("{top_sources:#?}");
-        assert_eq!(
-            top_sources
-                .iter()
-                .map(|sf| sf.tree_relative_path.clone())
-                .collect_vec(),
-            [Utf8Path::new("main/src/main.rs")]
-        );
+        let packages = workspace.packages(&filter).unwrap();
+        println!("{packages:#?}");
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].name, "main");
+        assert_eq!(packages[0].top_sources, ["main/src/main.rs"]);
     }
 
     #[test]
