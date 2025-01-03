@@ -375,13 +375,14 @@ impl Options {
     /// That is: it matches the examine globset (if specified) and does not match the exclude globset
     /// (if specified).
     pub fn allows_source_file_path(&self, path: &Utf8Path) -> bool {
+        // TODO: Use Option::is_none_or when MSRV>1.80
         self.examine_globset
             .as_ref()
             .map_or(true, |g| g.is_match(path))
             && !self
                 .exclude_globset
                 .as_ref()
-                .map_or(false, |g| g.is_match(path))
+                .is_some_and(|g| g.is_match(path))
     }
 
     /// True if the options allow this mutant to be tested.
