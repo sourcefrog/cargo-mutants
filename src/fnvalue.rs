@@ -15,6 +15,8 @@ use syn::{
 };
 use tracing::trace;
 
+use crate::pretty::ToPrettyString;
+
 /// Generate replacement text for a function based on its return type.
 pub(crate) fn return_type_replacements(
     return_type: &ReturnType,
@@ -141,7 +143,10 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                     }))
                     .collect_vec()
             } else {
-                trace!(?type_, "Return type is not recognized, trying Default");
+                trace!(
+                    type_ = type_.to_pretty_string(),
+                    "Return type is not recognized, trying Default"
+                );
                 vec![quote! { Default::default() }]
             }
         }

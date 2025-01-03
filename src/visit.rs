@@ -326,12 +326,12 @@ impl DiscoveryVisitor<'_> {
 
 impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     fn visit_expr_call(&mut self, i: &'ast syn::ExprCall) {
-        let _span = trace_span!("expr_call", line = i.span().start().line, ?i).entered();
+        let _span = trace_span!("expr_call", line = i.span().start().line).entered();
         if attrs_excluded(&i.attrs) {
             return;
         }
         if let Expr::Path(ExprPath { path, .. }) = &*i.func {
-            debug!(?path, "visit call");
+            debug!(path = path.to_pretty_string(), "visit call");
             if let Some(hit) = self
                 .options
                 .skip_calls
@@ -346,7 +346,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
     }
 
     fn visit_expr_method_call(&mut self, i: &'ast syn::ExprMethodCall) {
-        let _span = trace_span!("expr_method_call", line = i.span().start().line, ?i).entered();
+        let _span = trace_span!("expr_method_call", line = i.span().start().line).entered();
         if attrs_excluded(&i.attrs) {
             return;
         }
@@ -712,8 +712,8 @@ fn attr_is_cfg_test(attr: &Attribute) -> bool {
     }) {
         debug!(
             ?err,
-            ?attr,
-            "Attribute is not in conventional form; skipped"
+            attr = attr.to_pretty_string(),
+            "Attribute is in an unrecognized form so skipped",
         );
         return false;
     }
