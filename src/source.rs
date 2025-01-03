@@ -1,4 +1,4 @@
-// Copyright 2021-2023 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Access to a Rust source tree and files.
 
@@ -24,18 +24,11 @@ use crate::span::LineColumn;
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[allow(clippy::module_name_repetitions)]
 pub struct SourceFile {
-    /// Which package within the workspace contains this file?
-    pub package_name: String,
+    /// What package includes this file?
+    pub package: Package,
 
     /// Path of this source file relative to workspace.
     pub tree_relative_path: Utf8PathBuf,
-
-    /// The tree-relative directory for the *package* containing this file.
-    ///
-    /// This might be an ancestor of `tree_relative_path` if the file is
-    /// in a subdirectory, or potentially even another directory if the
-    /// `file` attribute is used.
-    pub package_relative_dir: Utf8PathBuf,
 
     /// Full copy of the unmodified source.
     ///
@@ -77,25 +70,33 @@ impl SourceFile {
         Ok(Some(SourceFile {
             tree_relative_path: tree_relative_path.to_owned(),
             code,
-            package_name: package.name.clone(),
-            package_relative_dir: package.relative_dir.clone(),
+            package: package.clone(),
             is_top,
         }))
     }
 
     /// Construct from in-memory text.
     #[cfg(test)]
-    pub fn from_str(
-        tree_relative_path: &Utf8Path,
+    pub fn for_tests<P: Into<Utf8PathBuf>>(
+        tree_relative_path: P,
         code: &str,
         package_name: &str,
         is_top: bool,
     ) -> SourceFile {
+        let tree_relative_path = tree_relative_path.into();
+        let top_sources = if is_top {
+            vec![tree_relative_path.clone()]
+        } else {
+            vec!["src/lib.rs".into()]
+        };
         SourceFile {
-            tree_relative_path: tree_relative_path.to_owned(),
+            tree_relative_path,
             code: Arc::new(code.to_owned()),
-            package_name: package_name.to_owned(),
-            package_relative_dir: Utf8PathBuf::new(),
+            package: Package {
+                name: package_name.to_owned(),
+                relative_dir: Utf8PathBuf::new(),
+                top_sources,
+            },
             is_top,
         }
     }

@@ -61,7 +61,7 @@ pub fn list_files(source_files: &[SourceFile], options: &Options) -> String {
                 .map(|source_file| {
                     json!({
                         "path": source_file.tree_relative_path.to_slash_path(),
-                        "package": source_file.package_name,
+                        "package": source_file.package.name,
                     })
                 })
                 .collect(),

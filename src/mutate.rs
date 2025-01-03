@@ -223,7 +223,7 @@ impl fmt::Debug for Mutant {
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
             .field("span", &self.span)
-            .field("package_name", &self.source_file.package_name)
+            .field("package_name", &self.source_file.package.name)
             .finish()
     }
 }
@@ -235,7 +235,7 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
-        ss.serialize_field("package", &self.source_file.package_name)?;
+        ss.serialize_field("package", &self.source_file.package.name)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("function", &self.function.as_ref().map(Arc::as_ref))?;
         ss.serialize_field("span", &self.span)?;

@@ -177,7 +177,7 @@ impl Lab<'_> {
     fn run_baseline(&self, build_dir: &BuildDir, mutants: &[Mutant]) -> Result<ScenarioOutcome> {
         let all_mutated_packages = mutants
             .iter()
-            .map(|m| m.source_file.package_name.as_str())
+            .map(|m| m.source_file.package.name.clone())
             .unique()
             .collect_vec();
         self.make_worker(build_dir).run_one_scenario(
@@ -240,7 +240,7 @@ impl Worker<'_> {
             let test_package = match &self.options.test_package {
                 TestPackages::Workspace => PackageSelection::All,
                 TestPackages::Mutated => {
-                    PackageSelection::Explicit(vec![mutant.source_file.package_name.clone()])
+                    PackageSelection::Explicit(vec![mutant.source_file.package.name.clone()])
                 }
                 TestPackages::Named(named) => PackageSelection::Explicit(named.clone()),
             };
