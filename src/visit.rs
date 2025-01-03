@@ -63,26 +63,49 @@ pub fn walk_tree(
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
+    let mut mutants = Vec::new();
+    let mut files = Vec::new();
     let error_exprs = options.parsed_error_exprs()?;
     console.walk_tree_start();
-    // TODO: Maybe split out a function to walk one package, then join the results.
-    let mut file_queue: VecDeque<SourceFile> = VecDeque::new();
     for package in packages {
-        for source_path in &package.top_sources {
-            file_queue.extend(SourceFile::load(
-                workspace_dir,
-                source_path,
-                &package.name,
-                true,
-            )?);
-        }
+        walk_package(
+            workspace_dir,
+            package,
+            &error_exprs,
+            &mut mutants,
+            &mut files,
+            options,
+            console,
+        )?;
     }
-    let mut mutants = Vec::new();
-    let mut files: Vec<SourceFile> = Vec::new();
+    console.walk_tree_done();
+    Ok(Discovered { mutants, files })
+}
+
+/// Walk one package, starting from its top files, discovering files
+/// and mutants.
+fn walk_package(
+    workspace_dir: &Utf8Path,
+    package: &Package,
+    error_exprs: &[Expr],
+    mutants: &mut Vec<Mutant>,
+    files: &mut Vec<SourceFile>,
+    options: &Options,
+    console: &Console,
+) -> Result<()> {
+    let mut file_queue: VecDeque<SourceFile> = VecDeque::new();
+    for source_path in &package.top_sources {
+        file_queue.extend(SourceFile::load(
+            workspace_dir,
+            source_path,
+            &package.name,
+            true,
+        )?);
+    }
     while let Some(source_file) = file_queue.pop_front() {
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
-        let (mut file_mutants, external_mods) = walk_file(&source_file, &error_exprs, options)?;
+        let (mut file_mutants, external_mods) = walk_file(&source_file, error_exprs, options)?;
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -118,8 +141,7 @@ pub fn walk_tree(
         (options.examine_names.is_empty() || options.examine_names.is_match(&name))
             && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
     });
-    console.walk_tree_done();
-    Ok(Discovered { mutants, files })
+    Ok(())
 }
 
 /// Find all possible mutants in a source file.
