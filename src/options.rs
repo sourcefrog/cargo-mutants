@@ -15,7 +15,7 @@ use std::env;
 use std::ffi::OsString;
 use std::time::Duration;
 
-use camino::Utf8PathBuf;
+use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
 use regex::RegexSet;
 use serde::Deserialize;
@@ -25,6 +25,7 @@ use tracing::warn;
 
 use crate::config::Config;
 use crate::glob::build_glob_set;
+use crate::mutate::Mutant;
 use crate::{Args, BaselineStrategy, Context, Phase, Result, ValueEnum};
 
 /// Options for mutation testing, based on both command-line arguments and the
@@ -367,6 +368,27 @@ impl Options {
                 syn::parse_str(e).with_context(|| format!("Failed to parse error value {e:?}"))
             })
             .collect()
+    }
+
+    /// True if the options allow mutants to be generated from the given path.
+    ///
+    /// That is: it matches the examine globset (if specified) and does not match the exclude globset
+    /// (if specified).
+    pub fn allows_source_file_path(&self, path: &Utf8Path) -> bool {
+        self.examine_globset
+            .as_ref()
+            .map_or(true, |g| g.is_match(path))
+            && !self
+                .exclude_globset
+                .as_ref()
+                .map_or(false, |g| g.is_match(path))
+    }
+
+    /// True if the options allow this mutant to be tested.
+    pub fn allows_mutant(&self, mutant: &Mutant) -> bool {
+        let name = mutant.name(true);
+        (self.examine_names.is_empty() || self.examine_names.is_match(&name))
+            && (self.exclude_names.is_empty() || !self.exclude_names.is_match(&name))
     }
 }
 

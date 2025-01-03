@@ -105,6 +105,12 @@ fn walk_package(
         console.walk_tree_update(files.len(), mutants.len());
         check_interrupted()?;
         let (mut file_mutants, external_mods) = walk_file(&source_file, error_exprs, options)?;
+        // TODO: It would be better not to spend time generating mutants from
+        // files that are not going to be visited later. However, we probably do
+        // still want to walk them to find modules that are referenced by them.
+        // since otherwise it could be pretty confusing that lower files are not
+        // visited.
+        //
         // We'll still walk down through files that don't match globs, so that
         // we have a chance to find modules underneath them. However, we won't
         // collect any mutants from them, and they don't count as "seen" for
@@ -114,27 +120,13 @@ fn walk_package(
                 filename_queue.push_back((mod_path, false));
             }
         }
-        let path = &source_file.tree_relative_path;
-        if let Some(examine_globset) = &options.examine_globset {
-            if !examine_globset.is_match(path) {
-                trace!("{path:?} does not match examine globset");
-                continue;
-            }
+        if !options.allows_source_file_path(&source_file.tree_relative_path) {
+            continue;
         }
-        if let Some(exclude_globset) = &options.exclude_globset {
-            if exclude_globset.is_match(path) {
-                trace!("{path:?} excluded by globset");
-                continue;
-            }
-        }
+        file_mutants.retain(|m| options.allows_mutant(m));
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
-    mutants.retain(|m| {
-        let name = m.name(true);
-        (options.examine_names.is_empty() || options.examine_names.is_match(&name))
-            && (options.exclude_names.is_empty() || !options.exclude_names.is_match(&name))
-    });
     Ok(())
 }
 
