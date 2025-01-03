@@ -22,16 +22,16 @@ use std::process::Command;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
-use cargo_metadata::{Metadata, TargetKind};
+use cargo_metadata::Metadata;
 use itertools::Itertools;
 use serde_json::Value;
-use tracing::{debug, debug_span, error, warn};
+use tracing::{debug, error, warn};
 
 use crate::cargo::cargo_bin;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::options::{Options, TestPackages};
-use crate::package::{Package, PackageSelection};
+use crate::package::{packages_from_metadata, Package, PackageSelection};
 use crate::visit::{walk_tree, Discovered};
 use crate::Result;
 
@@ -221,96 +221,6 @@ impl Workspace {
             console,
         )
     }
-}
-
-/// Read `cargo-metadata` parsed output, and produce our package representation.
-fn packages_from_metadata(metadata: &Metadata) -> Result<Vec<Package>> {
-    let mut packages = Vec::new();
-    let root = &metadata.workspace_root;
-    for package_metadata in metadata
-        .workspace_packages()
-        .into_iter()
-        .sorted_by_key(|p| &p.name)
-    {
-        check_interrupted()?;
-        let name = &package_metadata.name;
-        let _span = debug_span!("package", %name).entered();
-        let manifest_path = &package_metadata.manifest_path;
-        debug!(%manifest_path, "walk package");
-        let relative_dir = manifest_path
-                .strip_prefix(root)
-                .map_err(|_| {
-                    // TODO: Maybe just warn and skip?
-                    anyhow!(
-                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {root:?}",
-                    )
-                })?
-                .parent()
-                .expect("remove Cargo.toml")
-                .to_owned();
-        packages.push(Package {
-            name: package_metadata.name.clone(),
-            top_sources: package_top_sources(root, package_metadata),
-            relative_dir,
-        });
-    }
-    Ok(packages)
-}
-
-/// Find all the files that are named in the `path` of targets in a
-/// Cargo manifest, if the kind of the target is one that we should mutate.
-///
-/// These are the starting points for discovering source files.
-fn package_top_sources(
-    workspace_root: &Utf8Path,
-    package_metadata: &cargo_metadata::Package,
-) -> Vec<Utf8PathBuf> {
-    let mut found = Vec::new();
-    let pkg_dir = package_metadata.manifest_path.parent().unwrap();
-    for target in &package_metadata.targets {
-        if should_mutate_target(target) {
-            if let Ok(relpath) = target
-                .src_path
-                .strip_prefix(workspace_root)
-                .map(ToOwned::to_owned)
-            {
-                debug!(
-                    "found mutation target {} of kind {:?}",
-                    relpath, target.kind
-                );
-                found.push(relpath);
-            } else {
-                warn!("{:?} is not in {:?}", target.src_path, pkg_dir);
-            }
-        } else {
-            debug!(
-                "skipping target {:?} of kinds {:?}",
-                target.name, target.kind
-            );
-        }
-    }
-    found.sort();
-    found.dedup();
-    found
-}
-
-fn should_mutate_target(target: &cargo_metadata::Target) -> bool {
-    for kind in &target.kind {
-        // bin / proc-macro / *lib
-        if matches!(
-            kind,
-            TargetKind::Bin
-                | TargetKind::ProcMacro
-                | TargetKind::CDyLib
-                | TargetKind::DyLib
-                | TargetKind::Lib
-                | TargetKind::RLib
-                | TargetKind::StaticLib
-        ) {
-            return true;
-        }
-    }
-    false
 }
 
 /// Return the path of the workspace or package directory enclosing a given directory.
