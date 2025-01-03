@@ -2,14 +2,11 @@
 
 //! Discover and represent cargo packages within a workspace.
 
-use anyhow::{anyhow, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::TargetKind;
 use itertools::Itertools;
 use serde::Serialize;
 use tracing::{debug, debug_span, warn};
-
-use crate::interrupt::check_interrupted;
 
 /// A package built and tested as a unit.
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize)]
@@ -28,45 +25,39 @@ pub struct Package {
 }
 
 /// Read `cargo-metadata` parsed output, and produce our package representation.
-pub fn packages_from_metadata(metadata: &cargo_metadata::Metadata) -> Result<Vec<Package>> {
-    let mut packages = Vec::new();
-    for package_metadata in metadata
+pub fn packages_from_metadata(metadata: &cargo_metadata::Metadata) -> Vec<Package> {
+    metadata
         .workspace_packages()
         .into_iter()
         .sorted_by_key(|p| &p.name)
-    {
-        check_interrupted()?;
-        packages.push(Package::from_cargo_metadata(
-            package_metadata,
-            &metadata.workspace_root,
-        )?);
-    }
-    Ok(packages)
+        .filter_map(|p| Package::from_cargo_metadata(p, &metadata.workspace_root))
+        .collect()
 }
 
 impl Package {
     pub fn from_cargo_metadata(
         package_metadata: &cargo_metadata::Package,
         workspace_root: &Utf8Path,
-    ) -> Result<Self> {
-        let name = &from.name;
+    ) -> Option<Self> {
+        let name = package_metadata.name.clone();
         let _span = debug_span!("package", %name).entered();
         let manifest_path = &package_metadata.manifest_path;
         debug!(%manifest_path, "walk package");
-        let relative_dir = manifest_path
-                .strip_prefix(workspace_root)
-                .map_err(|_| {
-                    // TODO: Maybe just warn and skip?
-                    anyhow!(
-                        "manifest path {manifest_path:?} for package {name:?} is not within the detected source root path {workspace_root:?}",
-                    )
-                })?
-                .parent()
-                .ok_or_else(|| anyhow!("manifest path {manifest_path:?} for package {name:?} has no parent"))?
-                .to_owned();
-        Ok(Package {
-            name: from.name.clone(),
-            top_sources: package_top_sources(workspace_root, from),
+        let Some(relative_dir) = manifest_path
+            .strip_prefix(workspace_root)
+            .ok()
+            .and_then(|p| p.parent())
+            .map(ToOwned::to_owned)
+        else {
+            warn!(
+                "manifest path {manifest_path:?} for package {name:?} is not within \
+                the detected source root path {workspace_root:?} or has no parent"
+            );
+            return None;
+        };
+        Some(Package {
+            name,
+            top_sources: package_top_sources(workspace_root, package_metadata),
             relative_dir,
         })
     }
