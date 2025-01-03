@@ -10,6 +10,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
+use crate::package::Package;
 use crate::path::{ascent, Utf8PathSlashes};
 use crate::span::LineColumn;
 
@@ -49,7 +50,7 @@ impl SourceFile {
     pub fn load(
         tree_path: &Utf8Path,
         tree_relative_path: &Utf8Path,
-        package_name: &str,
+        package: &Package,
         is_top: bool,
     ) -> Result<Option<SourceFile>> {
         // TODO: Perhaps the caller should be responsible for checking this?
@@ -69,7 +70,7 @@ impl SourceFile {
         Ok(Some(SourceFile {
             tree_relative_path: tree_relative_path.to_owned(),
             code,
-            package_name: package_name.to_owned(),
+            package_name: package.name.clone(),
             is_top,
         }))
     }
@@ -129,24 +130,28 @@ mod test {
             .unwrap()
             .write_all(b"fn main() {\r\n    640 << 10;\r\n}\r\n")
             .unwrap();
-
-        let source_file = SourceFile::load(
-            temp_dir_path,
-            Utf8Path::new(file_name),
-            "imaginary-package",
-            true,
-        )
-        .unwrap()
-        .unwrap();
+        let package = Package {
+            name: "imaginary-package".to_owned(),
+            relative_manifest_path: Utf8PathBuf::from("Cargo.toml"),
+            top_sources: vec!["src/lib.rs".into()],
+        };
+        let source_file = SourceFile::load(temp_dir_path, Utf8Path::new(file_name), &package, true)
+            .unwrap()
+            .unwrap();
         assert_eq!(source_file.code(), "fn main() {\n    640 << 10;\n}\n");
     }
 
     #[test]
     fn skips_files_outside_of_workspace() {
+        let package = Package {
+            name: "imaginary-package".to_owned(),
+            relative_manifest_path: Utf8PathBuf::from("Cargo.toml"),
+            top_sources: vec!["src/lib.rs".into()],
+        };
         let source_file = SourceFile::load(
             Utf8Path::new("unimportant"),
             Utf8Path::new("../outside_workspace.rs"),
-            "imaginary-package",
+            &package,
             true,
         )
         .unwrap();
