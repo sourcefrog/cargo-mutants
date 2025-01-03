@@ -97,7 +97,7 @@ fn walk_package(
     let mut filename_queue =
         VecDeque::from_iter(package.top_sources.iter().map(|p| (p.to_owned(), true)));
     while let Some((path, package_top)) = filename_queue.pop_front() {
-        let Some(source_file) = SourceFile::load(workspace_dir, &path, &package.name, package_top)?
+        let Some(source_file) = SourceFile::load(workspace_dir, &path, package, package_top)?
         else {
             info!("Skipping source file outside of tree: {path:?}");
             continue;
