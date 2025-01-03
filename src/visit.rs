@@ -162,7 +162,7 @@ fn walk_file(
 /// The source code is assumed to be named `src/main.rs` with a fixed package name.
 #[cfg(test)]
 pub fn mutate_source_str(code: &str, options: &Options) -> Result<Vec<Mutant>> {
-    let source_file = SourceFile::from_str(
+    let source_file = SourceFile::for_tests(
         Utf8Path::new("src/main.rs"),
         code,
         "cargo-mutants-testdata-internal",
@@ -855,13 +855,7 @@ mod test {
         let code = indoc! { "
             fn always_true() -> bool { true }
         "};
-        let source_file = SourceFile {
-            code: Arc::new(code.to_owned()),
-            package_name: "unimportant".to_owned(),
-            package_relative_dir: Utf8PathBuf::from(""),
-            tree_relative_path: Utf8PathBuf::from("src/lib.rs"),
-            is_top: true,
-        };
+        let source_file = SourceFile::for_tests("src/lib.rs", code, "unimportant", true);
         let (mutants, _files) =
             walk_file(&source_file, &[], &Options::default()).expect("walk_file");
         let mutant_names = mutants.iter().map(|m| m.name(false)).collect_vec();
