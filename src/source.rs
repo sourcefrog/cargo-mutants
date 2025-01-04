@@ -25,7 +25,7 @@ use crate::span::LineColumn;
 #[allow(clippy::module_name_repetitions)]
 pub struct SourceFile {
     /// What package includes this file?
-    pub package: Package,
+    pub package: Arc<Package>,
 
     /// Path of this source file relative to workspace.
     pub tree_relative_path: Utf8PathBuf,
@@ -70,7 +70,7 @@ impl SourceFile {
         Ok(Some(SourceFile {
             tree_relative_path: tree_relative_path.to_owned(),
             code,
-            package: package.clone(),
+            package: Arc::new(package.clone()),
             is_top,
         }))
     }
@@ -92,12 +92,12 @@ impl SourceFile {
         SourceFile {
             tree_relative_path,
             code: Arc::new(code.to_owned()),
-            package: Package {
+            package: Arc::new(Package {
                 name: package_name.to_owned(),
                 relative_dir: Utf8PathBuf::new(),
                 top_sources,
                 version: "0.1.0".to_owned(),
-            },
+            }),
             is_top,
         }
     }
@@ -155,12 +155,12 @@ mod test {
 
     #[test]
     fn skips_files_outside_of_workspace() {
-        let package = Package {
+        let package = Arc::new(Package {
             name: "imaginary-package".to_owned(),
             relative_dir: Utf8PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
             version: "0.1.0".to_owned(),
-        };
+        });
         let source_file = SourceFile::load(
             Utf8Path::new("unimportant"),
             Utf8Path::new("../outside_workspace.rs"),

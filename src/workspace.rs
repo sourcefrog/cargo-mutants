@@ -19,6 +19,7 @@ use std::fmt;
 use std::panic::catch_unwind;
 use std::path::Path;
 use std::process::Command;
+use std::sync::Arc;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -67,7 +68,7 @@ impl PackageFilter {
 /// A cargo workspace.
 pub struct Workspace {
     metadata: cargo_metadata::Metadata,
-    packages: Vec<Package>,
+    packages: Vec<Arc<Package>>,
 }
 
 impl fmt::Debug for Workspace {
@@ -110,17 +111,18 @@ impl Workspace {
         Ok(Workspace { metadata, packages })
     }
 
-    pub fn packages_by_name<S: AsRef<str>>(&self, names: &[S]) -> Vec<Package> {
+    pub fn packages_by_name<S: AsRef<str>>(&self, names: &[S]) -> Vec<Arc<Package>> {
         names
             .iter()
             .map(AsRef::as_ref)
             .sorted()
             .filter_map(|name| {
-                let p = self.packages.iter().find(|p| p.name == name);
-                if p.is_none() {
+                if let Some(p) = self.packages.iter().find(|p| p.name == name) {
+                    Some(Arc::clone(p))
+                } else {
                     warn!("Package {name:?} not found in source tree");
+                    None
                 }
-                p.cloned()
             })
             .collect()
     }
@@ -166,7 +168,7 @@ impl Workspace {
         }
     }
 
-    fn expand_selection(&self, selection: PackageSelection) -> Vec<Package> {
+    fn expand_selection(&self, selection: PackageSelection) -> Vec<Arc<Package>> {
         match selection {
             PackageSelection::All => self.packages.clone(),
             PackageSelection::Explicit(packages) => packages,

@@ -7,7 +7,7 @@
 
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::{thread, vec};
 
@@ -174,9 +174,9 @@ impl Lab<'_> {
     ///
     /// If it succeeds, return the timeouts to be used for the other scenarios.
     fn run_baseline(&self, build_dir: &BuildDir, mutants: &[Mutant]) -> Result<ScenarioOutcome> {
-        let all_mutated_packages = mutants
+        let all_mutated_packages: Vec<Arc<Package>> = mutants
             .iter()
-            .map(|m| m.source_file.package.clone())
+            .map(|m| Arc::clone(&m.source_file.package))
             .sorted_by_key(|p| p.name.clone())
             .unique()
             .collect_vec();
@@ -331,7 +331,7 @@ pub enum TestsForMutant {
     /// Test only the package that was mutated
     Mutated,
     /// Test specific packages
-    Explicit(Vec<Package>),
+    Explicit(Vec<Arc<Package>>),
 }
 
 impl TestsForMutant {

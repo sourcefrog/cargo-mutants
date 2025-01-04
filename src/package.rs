@@ -2,6 +2,8 @@
 
 //! Discover and represent cargo packages within a workspace.
 
+use std::sync::Arc;
+
 use camino::{Utf8Path, Utf8PathBuf};
 use cargo_metadata::TargetKind;
 use itertools::Itertools;
@@ -31,12 +33,13 @@ pub struct Package {
 }
 
 /// Read `cargo-metadata` parsed output, and produce our package representation.
-pub fn packages_from_metadata(metadata: &cargo_metadata::Metadata) -> Vec<Package> {
+pub fn packages_from_metadata(metadata: &cargo_metadata::Metadata) -> Vec<Arc<Package>> {
     metadata
         .workspace_packages()
         .into_iter()
         .sorted_by_key(|p| &p.name)
         .filter_map(|p| Package::from_cargo_metadata(p, &metadata.workspace_root))
+        .map(Arc::new)
         .collect()
 }
 
@@ -133,5 +136,22 @@ pub enum PackageSelection {
     /// All packages in the workspace.
     All,
     /// Explicitly selected packages.
-    Explicit(Vec<Package>),
+    Explicit(Vec<Arc<Package>>),
+}
+
+impl PackageSelection {
+    #[cfg(test)]
+    pub fn one<P: Into<Utf8PathBuf>>(
+        name: &str,
+        version: &str,
+        relative_dir: P,
+        top_source: &str,
+    ) -> Self {
+        Self::Explicit(vec![Arc::new(Package {
+            name: name.to_string(),
+            version: version.to_string(),
+            relative_dir: relative_dir.into(),
+            top_sources: vec![top_source.into()],
+        })])
+    }
 }
