@@ -26,6 +26,7 @@ mod outcome;
 mod output;
 mod package;
 mod path;
+mod plan;
 mod pretty;
 mod process;
 mod scenario;

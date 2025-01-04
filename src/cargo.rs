@@ -18,6 +18,7 @@ use crate::options::{Options, TestTool};
 use crate::outcome::{Phase, PhaseResult};
 use crate::output::ScenarioOutput;
 use crate::package::PackageSelection;
+use crate::plan::concrete::Command;
 use crate::process::{Exit, Process};
 use crate::Result;
 
@@ -35,6 +36,36 @@ pub fn run_cargo(
 ) -> Result<PhaseResult> {
     let _span = debug_span!("run", ?phase).entered();
     let start = Instant::now();
+    let command = cargo_command(packages, phase, options);
+    let process_status = Process::run(
+        &command.argv,
+        &command.env,
+        build_dir.path(),
+        timeout,
+        jobserver,
+        scenario_output,
+        console,
+    )?;
+    check_interrupted()?;
+    debug!(?process_status, elapsed = ?start.elapsed());
+    if let Exit::Failure(code) = process_status {
+        // 100 "one or more tests failed" from <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>;
+        // I'm not addind a dependency to just get one integer.
+        if options.test_tool == TestTool::Nextest && phase != Phase::Check && code != 100 {
+            // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
+            // error, but we can at least warn if it's unexpected.
+            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
+        }
+    }
+    Ok(PhaseResult {
+        phase,
+        duration: start.elapsed(),
+        process_status,
+        argv: command.argv,
+    })
+}
+
+fn cargo_command(packages: &PackageSelection, phase: Phase, options: &Options) -> Command {
     let argv = cargo_argv(packages, phase, options);
     let mut env = vec![
         // The tests might use Insta <https://insta.rs>, and we don't want it to write
@@ -47,32 +78,7 @@ pub fn run_cargo(
         debug!(?encoded_rustflags);
         env.push(("CARGO_ENCODED_RUSTFLAGS".to_owned(), encoded_rustflags));
     }
-    let process_status = Process::run(
-        &argv,
-        &env,
-        build_dir.path(),
-        timeout,
-        jobserver,
-        scenario_output,
-        console,
-    )?;
-    check_interrupted()?;
-    debug!(?process_status, elapsed = ?start.elapsed());
-    if let Exit::Failure(code) = process_status {
-        // 100 "one or more tests failed" from <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>;
-        // I'm not addind a dependency to just get one integer.
-        if argv[1] == "nextest" && code != 100 {
-            // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
-            // error, but we can at least warn if it's unexpected.
-            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
-        }
-    }
-    Ok(PhaseResult {
-        phase,
-        duration: start.elapsed(),
-        process_status,
-        argv,
-    })
+    Command { argv, env }
 }
 
 /// Return the name of the cargo binary.
