@@ -25,7 +25,7 @@ use tracing::warn;
 
 use crate::config::Config;
 use crate::glob::build_glob_set;
-use crate::mutate::Mutant;
+use crate::mutant::Mutant;
 use crate::{Args, BaselineStrategy, Context, Phase, Result, ValueEnum};
 
 /// Options for mutation testing, based on both command-line arguments and the

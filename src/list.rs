@@ -8,7 +8,7 @@
 use itertools::Itertools;
 use serde_json::{json, Value};
 
-use crate::mutate::Mutant;
+use crate::mutant::Mutant;
 use crate::path::Utf8PathSlashes;
 use crate::source::SourceFile;
 use crate::Options;

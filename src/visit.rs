@@ -23,7 +23,7 @@ use syn::{Attribute, BinOp, Block, Expr, ExprPath, File, ItemFn, ReturnType, Sig
 use tracing::{debug, debug_span, error, info, trace, trace_span, warn};
 
 use crate::fnvalue::return_type_replacements;
-use crate::mutate::Function;
+use crate::mutant::Function;
 use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;

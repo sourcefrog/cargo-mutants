@@ -13,7 +13,7 @@ use itertools::Itertools;
 use patch::{Line, Patch};
 use tracing::{info, trace, warn};
 
-use crate::mutate::Mutant;
+use crate::mutant::Mutant;
 use crate::source::SourceFile;
 use crate::Result;
 
