@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Martin Pool
+// Copyright 2023-2025 Martin Pool
 
 //! Tests for cargo workspaces with multiple packages.
 
@@ -7,6 +7,7 @@ use std::fs::{self, create_dir, read_to_string, write};
 use insta::assert_snapshot;
 use itertools::Itertools;
 use predicates::prelude::predicate;
+use pretty_assertions::assert_eq;
 use serde_json::json;
 
 mod util;
@@ -141,9 +142,9 @@ fn workspace_tree_is_well_tested() {
                 "test",
                 "--no-run",
                 "--verbose",
-                "--package=cargo_mutants_testdata_workspace_utils",
-                "--package=main",
-                "--package=main2"
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
             ]
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
@@ -158,9 +159,9 @@ fn workspace_tree_is_well_tested() {
             [
                 "test",
                 "--verbose",
-                "--package=cargo_mutants_testdata_workspace_utils",
-                "--package=main",
-                "--package=main2"
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
             ],
         );
     }
@@ -200,9 +201,9 @@ fn workspace_tree_is_well_tested() {
                 "test",
                 "--no-run",
                 "--verbose",
-                "--package=cargo_mutants_testdata_workspace_utils",
-                "--package=main",
-                "--package=main2"
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
             ],
         );
         assert_eq!(baseline_phases[1]["process_status"], "Success");
@@ -214,9 +215,9 @@ fn workspace_tree_is_well_tested() {
             [
                 "test",
                 "--verbose",
-                "--package=cargo_mutants_testdata_workspace_utils",
-                "--package=main",
-                "--package=main2"
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
             ],
         );
     }

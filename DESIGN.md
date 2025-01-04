@@ -88,7 +88,7 @@ It is rare but legal in Cargo to have multiple packages with the same base name 
 
 In that case, `cargo build -p itertools` will fail because the name is ambiguous: even though there is only one package of that name in the working tree, the `cargo -p` option can also match against dependencies.
 
-To avoid these problems we invoke cargo with the ["package id"](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html) which should be unambiguous. The package id has a form like `path+file:///tmp/xyz#packagename` and so needs to be synthetisized including the path of the build directory.
+To avoid these problems we invoke cargo with the ["package id"](https://doc.rust-lang.org/cargo/reference/pkgid-spec.html) including the version, which should be ambiguous?
 
 ### Package targets
 

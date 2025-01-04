@@ -96,6 +96,7 @@ impl SourceFile {
                 name: package_name.to_owned(),
                 relative_dir: Utf8PathBuf::new(),
                 top_sources,
+                version: "0.1.0".to_owned(),
             },
             is_top,
         }
@@ -144,6 +145,7 @@ mod test {
             name: "imaginary-package".to_owned(),
             relative_dir: Utf8PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
+            version: "0.1.0".to_owned(),
         };
         let source_file = SourceFile::load(temp_dir_path, Utf8Path::new(file_name), &package, true)
             .unwrap()
@@ -157,6 +159,7 @@ mod test {
             name: "imaginary-package".to_owned(),
             relative_dir: Utf8PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
+            version: "0.1.0".to_owned(),
         };
         let source_file = SourceFile::load(
             Utf8Path::new("unimportant"),
