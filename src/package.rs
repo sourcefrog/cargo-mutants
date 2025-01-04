@@ -17,6 +17,9 @@ pub struct Package {
     /// The short name of the package, like "mutants".
     pub name: String,
 
+    /// The version of the package, like `"0.1.0"`.
+    pub version: String,
+
     /// The directory for this package relative to the workspace.
     ///
     /// For a package in the root, this is `""`.
@@ -61,8 +64,13 @@ impl Package {
         Some(Package {
             name,
             top_sources: package_top_sources(workspace_root, package_metadata),
+            version: package_metadata.version.to_string(),
             relative_dir,
         })
+    }
+
+    pub fn version_qualified_name(&self) -> String {
+        format!("{}@{}", self.name, self.version)
     }
 }
 

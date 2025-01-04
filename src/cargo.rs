@@ -143,7 +143,11 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
             cargo_args.push("--workspace".to_string());
         }
         PackageSelection::Explicit(packages) => {
-            cargo_args.extend(packages.iter().map(|p| format!("--package={}", p.name)));
+            cargo_args.extend(
+                packages
+                    .iter()
+                    .map(|p| format!("--package={}", p.version_qualified_name())),
+            );
         }
     }
     let features = &options.features;
@@ -236,6 +240,7 @@ mod test {
             name: "cargo-mutants-testdata-something".to_owned(),
             relative_dir: Utf8PathBuf::new(),
             top_sources: vec!["src/lib.rs".into()],
+            version: "0.1.0".to_owned(),
         };
         options
             .additional_cargo_test_args
@@ -253,7 +258,7 @@ mod test {
                 "check",
                 "--tests",
                 "--verbose",
-                "--package=cargo-mutants-testdata-something",
+                "--package=cargo-mutants-testdata-something@0.1.0",
             ]
         );
     }
