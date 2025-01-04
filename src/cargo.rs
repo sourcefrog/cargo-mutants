@@ -197,12 +197,10 @@ fn encoded_rustflags(options: &Options) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use camino::Utf8PathBuf;
     use clap::Parser;
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
 
-    use crate::package::Package;
     use crate::Args;
 
     use super::*;
@@ -227,18 +225,17 @@ mod test {
     #[test]
     fn generate_cargo_args_with_additional_cargo_test_args_and_package() {
         let mut options = Options::default();
-        let package = Package {
-            name: "cargo-mutants-testdata-something".to_owned(),
-            relative_dir: Utf8PathBuf::new(),
-            top_sources: vec!["src/lib.rs".into()],
-            version: "0.1.0".to_owned(),
-        };
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(ToString::to_string));
         assert_eq!(
             cargo_argv(
-                &PackageSelection::Explicit(vec![package]),
+                &PackageSelection::one(
+                    "cargo-mutants-testdata-something",
+                    "0.1.0",
+                    "",
+                    "src/lib.rs"
+                ),
                 Phase::Check,
                 &options
             )[1..],

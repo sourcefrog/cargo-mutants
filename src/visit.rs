@@ -59,7 +59,7 @@ impl Discovered {
 /// they generated mutants or not).
 pub fn walk_tree(
     workspace_dir: &Utf8Path,
-    packages: &[Package],
+    packages: &[Arc<Package>],
     options: &Options,
     console: &Console,
 ) -> Result<Discovered> {
