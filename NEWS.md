@@ -6,6 +6,8 @@
 
 - New: `--copy-vcs` option and config option will copy `.git` and other VCS directories, to accommodate trees whose tests depend on the contents or presence of the VCS directory.
 
+- Fixed: `cargo --package` options now include the version number of the targeted package, like `foo@0.1.2`. This avoids cargo failing with an error that the package name is ambiguous in trees whose dependencies include multiple versions of one of the packages being tested.
+
 ## 24.11.2
 
 - Changed: `.gitignore` (and other git ignore files) are only consulted when copying the tree if it is contained within a directory with a `.git` directory.
