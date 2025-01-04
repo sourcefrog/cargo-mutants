@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021 - 2025 Martin Pool
 
 //! Visit all the files in a source tree, and then the AST of each file,
 //! to discover mutation opportunities.
@@ -69,15 +69,10 @@ pub fn walk_tree(
     let error_exprs = options.parsed_error_exprs()?;
     let progress = console.start_walk_tree();
     for package in packages {
-        walk_package(
-            workspace_dir,
-            package,
-            &error_exprs,
-            &mut mutants,
-            &mut files,
-            &progress,
-            options,
-        )?;
+        let (mut package_mutants, mut package_files) =
+            walk_package(workspace_dir, package, &error_exprs, &progress, options)?;
+        mutants.append(&mut package_mutants);
+        files.append(&mut package_files);
     }
     progress.finish();
     Ok(Discovered { mutants, files })
@@ -90,11 +85,11 @@ fn walk_package(
     workspace_dir: &Utf8Path,
     package: &Package,
     error_exprs: &[Expr],
-    mutants: &mut Vec<Mutant>,
-    files: &mut Vec<SourceFile>,
     progress: &WalkProgress,
     options: &Options,
-) -> Result<()> {
+) -> Result<(Vec<Mutant>, Vec<SourceFile>)> {
+    let mut mutants = Vec::new();
+    let mut files = Vec::new();
     let mut filename_queue =
         VecDeque::from_iter(package.top_sources.iter().map(|p| (p.to_owned(), true)));
     while let Some((path, package_top)) = filename_queue.pop_front() {
@@ -129,7 +124,7 @@ fn walk_package(
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
-    Ok(())
+    Ok((mutants, files))
 }
 
 /// Find all possible mutants in a source file.
