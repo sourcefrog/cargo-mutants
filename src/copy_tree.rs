@@ -1,4 +1,4 @@
-// Copyright 2023 - 2024 Martin Pool
+// Copyright 2023 - 2025 Martin Pool
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
@@ -22,7 +22,7 @@ mod windows;
 #[cfg(windows)]
 use windows::copy_symlink;
 
-static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".pijul"];
+static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".jj", ".pijul"];
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
 pub fn copy_tree(

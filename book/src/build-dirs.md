@@ -16,6 +16,7 @@ By default, files or directories matching these patterns are not copied, because
 
     .git
     .hg
+    .jj
     .bzr
     .svn
     _darcs

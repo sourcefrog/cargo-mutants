@@ -6,6 +6,8 @@
 
 - New: `--copy-vcs` option and config option will copy `.git` and other VCS directories, to accommodate trees whose tests depend on the contents or presence of the VCS directory.
 
+- New: Add `.jj` to the list of known VCS directories. These are excluded by default when copying the tree, but can be included using `--copy-vcs=true`.
+
 ## 24.11.2
 
 - Changed: `.gitignore` (and other git ignore files) are only consulted when copying the tree if it is contained within a directory with a `.git` directory.
