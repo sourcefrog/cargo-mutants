@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 25.0.0
 
 - Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
 
