@@ -129,15 +129,6 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
         }
     }
     cargo_args.push("--verbose".to_string());
-    // TODO: If there's just one package then look up its manifest path in the
-    // workspace and use that instead, because it's less ambiguous when there's
-    // multiple different-version packages with the same name in the workspace.
-    // (A rare case, but it happens in itertools.)
-    // if let Some([package]) = package_names {
-    //     // Use the unambiguous form for this case; it works better when the same
-    //     // package occurs multiple times in the tree with different versions?
-    //     cargo_args.push("--manifest-path".to_owned());
-    //     cargo_args.push(build_dir.join(&package.relative_manifest_path).to_string());
     match packages {
         PackageSelection::All => {
             cargo_args.push("--workspace".to_string());
@@ -245,9 +236,6 @@ mod test {
         options
             .additional_cargo_test_args
             .extend(["--lib", "--no-fail-fast"].iter().map(ToString::to_string));
-        // TODO: It would be a bit better to use `--manifest-path` here, to get
-        // the fix for <https://github.com/sourcefrog/cargo-mutants/issues/117>
-        // but it's temporarily regressed.
         assert_eq!(
             cargo_argv(
                 &PackageSelection::Explicit(vec![package]),
