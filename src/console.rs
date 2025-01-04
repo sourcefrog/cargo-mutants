@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Print messages and progress bars on the terminal.
 
@@ -41,22 +41,8 @@ impl Console {
         }
     }
 
-    pub fn walk_tree_start(&self) {
-        self.view
-            .update(|model| model.walk_tree = Some(WalkModel::default()));
-    }
-
-    pub fn walk_tree_update(&self, files_done: usize, mutants_found: usize) {
-        self.view.update(|model| {
-            *model.walk_tree.as_mut().expect("walk tree started") = WalkModel {
-                files_done,
-                mutants_found,
-            }
-        });
-    }
-
-    pub fn walk_tree_done(&self) {
-        self.view.update(|model| model.walk_tree = None);
+    pub fn start_walk_tree(&self) -> WalkProgress {
+        WalkProgress::new(&self.view)
     }
 
     /// Update that a cargo task is starting.
@@ -262,6 +248,38 @@ impl Console {
             .with(debug_log_layer)
             .with(console_layer)
             .init();
+    }
+}
+
+/// An interface for tree-walking code to publish progress.
+pub(crate) struct WalkProgress {
+    view: Arc<nutmeg::View<LabModel>>,
+}
+
+impl WalkProgress {
+    fn new(view: &Arc<nutmeg::View<LabModel>>) -> WalkProgress {
+        view.update(|model| {
+            model.walk_tree = Some(WalkModel::default());
+        });
+        WalkProgress {
+            view: Arc::clone(view),
+        }
+    }
+
+    pub fn increment_files(&self, files_done: usize) {
+        self.view.update(|model| {
+            model.walk_tree.as_mut().unwrap().files_done += files_done;
+        });
+    }
+
+    pub fn increment_mutants(&self, mutants_found: usize) {
+        self.view.update(|model| {
+            model.walk_tree.as_mut().unwrap().mutants_found += mutants_found;
+        });
+    }
+
+    pub fn finish(self) {
+        self.view.update(|model| model.walk_tree = None);
     }
 }
 

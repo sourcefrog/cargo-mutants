@@ -22,6 +22,7 @@ use syn::visit::Visit;
 use syn::{Attribute, BinOp, Block, Expr, ExprPath, File, ItemFn, ReturnType, Signature, UnOp};
 use tracing::{debug, debug_span, error, info, trace, trace_span, warn};
 
+use crate::console::WalkProgress;
 use crate::fnvalue::return_type_replacements;
 use crate::mutant::Function;
 use crate::package::Package;
@@ -66,7 +67,7 @@ pub fn walk_tree(
     let mut mutants = Vec::new();
     let mut files = Vec::new();
     let error_exprs = options.parsed_error_exprs()?;
-    console.walk_tree_start();
+    let progress = console.start_walk_tree();
     for package in packages {
         walk_package(
             workspace_dir,
@@ -74,11 +75,11 @@ pub fn walk_tree(
             &error_exprs,
             &mut mutants,
             &mut files,
+            &progress,
             options,
-            console,
         )?;
     }
-    console.walk_tree_done();
+    progress.finish();
     Ok(Discovered { mutants, files })
 }
 
@@ -91,8 +92,8 @@ fn walk_package(
     error_exprs: &[Expr],
     mutants: &mut Vec<Mutant>,
     files: &mut Vec<SourceFile>,
+    progress: &WalkProgress,
     options: &Options,
-    console: &Console,
 ) -> Result<()> {
     let mut filename_queue =
         VecDeque::from_iter(package.top_sources.iter().map(|p| (p.to_owned(), true)));
@@ -102,9 +103,11 @@ fn walk_package(
             info!("Skipping source file outside of tree: {path:?}");
             continue;
         };
-        console.walk_tree_update(files.len(), mutants.len());
+        progress.increment_files(1);
         check_interrupted()?;
         let (mut file_mutants, external_mods) = walk_file(&source_file, error_exprs, options)?;
+        file_mutants.retain(|m| options.allows_mutant(m));
+        progress.increment_mutants(file_mutants.len());
         // TODO: It would be better not to spend time generating mutants from
         // files that are not going to be visited later. However, we probably do
         // still want to walk them to find modules that are referenced by them.
@@ -123,7 +126,6 @@ fn walk_package(
         if !options.allows_source_file_path(&source_file.tree_relative_path) {
             continue;
         }
-        file_mutants.retain(|m| options.allows_mutant(m));
         mutants.append(&mut file_mutants);
         files.push(source_file);
     }
