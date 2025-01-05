@@ -4,6 +4,8 @@
 
 - Changed: Show more type parameters in mutant names, like `impl From<&str> for Foo` rather than `impl From for Foo`.
 
+- Fixed: Support crates that use a non-default Cargo registry. Previously, `cargo metadata` failed with "registry index was not found."
+
 ## 25.0.1-pre2 2025-01-05
 
 - Fixed: Build binaries into releases.

@@ -102,6 +102,7 @@ impl Workspace {
         let metadata = cargo_metadata::MetadataCommand::new()
             .no_deps()
             .manifest_path(&manifest_path)
+            .current_dir(&dir)
             .verbose(false)
             .exec()
             .with_context(|| format!("Failed to run cargo metadata on {manifest_path}"))?;
