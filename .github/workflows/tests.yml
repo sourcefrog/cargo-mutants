@@ -4,18 +4,7 @@ permissions:
   contents: read
 
 on:
-  pull_request:
-    paths:
-      - ".cargo/*.toml"
-      - ".github/workflows/tests.yml"
-      - "Cargo.*"
-      - "mutants_attrs/**"
-      - "src/**"
-      - "testdata/**"
-      - "tests/**"
-
   push:
-    # Actions doesn't support YAML references, so it's repeated here
     paths:
       - ".cargo/*.toml"
       - ".github/workflows/tests.yml"
