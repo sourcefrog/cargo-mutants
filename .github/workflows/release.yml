@@ -10,9 +10,9 @@ permissions:
   contents: write
 
 on:
-  release:
-    types:
-      - created
+  # release:
+  #   types:
+  #     - created
   push:
     tags:
       - v[0-9]+.*
