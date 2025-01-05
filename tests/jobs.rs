@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Martin Pool.
+// Copyright 2022 - 2025 Martin Pool.
 
 //! Test handling of `--jobs` concurrency option.
 
@@ -42,4 +42,20 @@ fn jobs_option_accepted_and_causes_multiple_threads() {
         "expected more than {} thread ids in debug log",
         matches.len()
     );
+}
+
+#[test]
+fn warn_about_too_many_jobs() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j40")
+        .arg("--shard=0/1000")
+        .assert()
+        .stderr(predicates::str::contains(
+            "WARN --jobs=40 is probably too high",
+        ))
+        .success();
 }
