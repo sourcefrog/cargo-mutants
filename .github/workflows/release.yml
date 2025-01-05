@@ -1,0 +1,31 @@
+# 1. Populate the release object when a new release is created
+#    in GitHub.
+#    <https://github.com/taiki-e/create-gh-release-action>
+# 2. (not yet) Attach binaries to releases
+#    <https://github.com/taiki-e/upload-rust-binary-action>
+
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types:
+      - created
+  push:
+    tags:
+      - v[0-9]+.*
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          changelog: NEWS.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
+          # TODO: maybe also `branch: main` as in general we
+          # should not release from other branches
