@@ -232,15 +232,3 @@ jobs:
         with:
           name: mutants-${{matrix.test_tool}}-shard${{matrix.shard}}.out
           path: mutants.out
-
-  overall-result:
-    needs: [quick-test, test, tests-from-tarball, pr-mutants, cargo-mutants]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Successful workflow
-        if: ${{ !(contains(needs.*.result, 'failure')) }}
-        run: exit 0
-      - name: Failing workflow
-        if: ${{ contains(needs.*.result, 'failure') }}
-        run: exit 1
