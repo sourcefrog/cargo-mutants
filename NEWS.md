@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## 25.0.1-pre3 2025-01-05
+
+- Fixed: Build arm64 binaries for macOS.
+
 ## 25.0.1-pre2 2025-01-05
 
 - Fixed: Build binaries into releases.
