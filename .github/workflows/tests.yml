@@ -15,8 +15,6 @@ on:
       - "tests/**"
 
   push:
-    branches:
-      - main
     # Actions doesn't support YAML references, so it's repeated here
     paths:
       - ".cargo/*.toml"
