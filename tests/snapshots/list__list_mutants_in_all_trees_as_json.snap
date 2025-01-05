@@ -1,6 +1,7 @@
 ---
 source: tests/list.rs
 expression: buf
+snapshot_kind: text
 ---
 ## testdata/already_failing_doctests
 
@@ -291,6 +292,12 @@ expression: buf
     }
   }
 ]
+```
+
+## testdata/alternate_registry
+
+```json
+[]
 ```
 
 ## testdata/cdylib

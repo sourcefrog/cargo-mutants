@@ -330,3 +330,25 @@ fn no_mutants_in_tree_everything_skipped() {
         .stdout(predicate::str::is_empty())
         .success();
 }
+
+#[test]
+fn list_mutants_with_alternate_registry() {
+    // For https://github.com/sourcefrog/cargo-mutants/issues/428
+
+    // This tree has a non-default registry that ends up just pointing back to crates.io, but under another name.
+    //
+    // Without running cargo metadata properly this will fail.
+    //
+    // The tree doesn't actually generate any mutants.
+    //
+    // To reproduce the failure it's important that we *don't* run from the tree's directory.
+    let tmp = copy_of_testdata("alternate_registry");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--dir")
+        .arg(tmp.path())
+        .assert()
+        .stdout("")
+        .success();
+}
