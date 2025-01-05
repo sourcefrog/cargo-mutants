@@ -4,7 +4,15 @@
 
 - Changed: Show more type parameters in mutant names, like `impl From<&str> for Foo` rather than `impl From for Foo`.
 
-## 25.0.0
+## 25.0.1-pre2 2025-01-05
+
+- Fixed: Build binaries into releases.
+
+## 25.0.1-pre1 2025-01-05
+
+- Internal: Change  to `taiki-e/create-gh-release-action`
+
+## 25.0.0 2025-01-04
 
 - Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
 
