@@ -26,7 +26,6 @@ jobs:
         with:
           changelog: NEWS.md
           token: ${{ secrets.GITHUB_TOKEN }}
-          draft: true
           # TODO: maybe also `branch: main` as in general we
           # should not release from other branches
   upload-assets:
