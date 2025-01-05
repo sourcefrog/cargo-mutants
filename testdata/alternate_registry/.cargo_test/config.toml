@@ -1,0 +1,2 @@
+[registries]
+my-registry = { index = "https://crates.io/" }

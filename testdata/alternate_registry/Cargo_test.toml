@@ -1,0 +1,7 @@
+[package]
+name = "cargo-mutants-testdata-alternate-registry"
+publish = false
+edition = "2021"
+
+[dependencies]
+mutants = { version = "1", registry = "my-registry" }

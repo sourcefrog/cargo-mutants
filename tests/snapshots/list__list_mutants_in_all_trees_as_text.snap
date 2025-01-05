@@ -1,6 +1,7 @@
 ---
 source: tests/list.rs
 expression: buf
+snapshot_kind: text
 ---
 ## testdata/already_failing_doctests
 
@@ -24,6 +25,11 @@ src/lib.rs:4:11: replace *= with /= in factorial
 
 ```
 src/lib.rs:12:5: replace infinite_loop with ()
+```
+
+## testdata/alternate_registry
+
+```
 ```
 
 ## testdata/cdylib
