@@ -151,6 +151,48 @@ jobs:
           cd target/package/cargo-mutants-*[0-9]
           cargo test
 
+  branch-mutants:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    needs: [quick-test]
+    strategy:
+      matrix:
+        test_tool: [cargo, nextest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Relative diff
+        run: |
+          git branch -av
+          git diff origin/main.. | tee git.diff
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - name: Download cargo-mutants binary
+        uses: actions/download-artifact@v4
+        with:
+          name: cargo-mutants-linux
+      - name: Install cargo-mutants binary
+        run: |
+          install cargo-mutants ~/.cargo/bin/
+      - name: Mutants in-diff
+        run: >
+          cargo mutants --no-shuffle -vV --in-diff=git.diff --in-place
+          --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
+          --exclude=windows.rs --exclude=console.rs
+      - name: Archive mutants.out
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutants-incremental-${{ matrix.test_tool}}.out
+          path: mutants.out
+
   pr-mutants:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
