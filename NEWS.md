@@ -1,6 +1,10 @@
 # cargo-mutants changelog
 
-## 25.0.0
+## 25.0.1-pre1 2025-01-05
+
+- Fixed: Binary releases onto GitHub.
+
+## 25.0.0 2025-01-04
 
 - Better estimation of time remaining, based on the time taken to test mutants so far, excluding the time for the baseline.
 
