@@ -87,8 +87,13 @@ jobs:
           cargo --version
           rustc --version
       - uses: Swatinem/rust-cache@v2
-      - name: rustfmt
-        run: cargo fmt --all -- --check
+      - name: Check rustfmt
+        run: cargo fmt --all --check
+      - name: Check clippy
+        if: matrix.version == 'stable'
+        # Clippy checks can vary between versions in a way that makes it a bit
+        # fiddly to satisfy them all, so only insist that they pass on stable.
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - uses: taiki-e/install-action@v2
         name: Install nextest using install-action
         with:
@@ -97,13 +102,6 @@ jobs:
         run: cargo build --all-targets
       - name: Test
         run: cargo test --workspace
-      - name: Check rustfmt
-        run: cargo fmt --all --check
-      - name: Check clippy
-        if: matrix.version == 'stable'
-        # Clippy checks can vary between versions in a way that makes it a bit
-        # fiddly to satisfy them all, so only insist that they pass on stable.
-        run: cargo clippy --all-targets --all-features -- -D warnings
       - run: cargo update
       - name: Test after cargo update
         run: cargo test --workspace
