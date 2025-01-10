@@ -1,9 +1,10 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! `cargo-mutants`: Find test gaps by inserting bugs.
 //!
 //! See <https://mutants.rs> for the manual and more information.
 
+#![warn(rust_2024_compatibility)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::needless_raw_string_hashes)]
 
