@@ -48,18 +48,18 @@ jobs:
           rustc --version
       - name: Build
         run: cargo build --all-targets
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - name: Test
-        run: cargo test --workspace
       - name: Check rustfmt
         run: cargo fmt --all --check
       - name: Check clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Check typos
         uses: crate-ci/typos@master
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - name: Test
+        run: cargo test --workspace
       - name: Build release binary
         run: cargo build --release
       - name: Upload binary artifact
