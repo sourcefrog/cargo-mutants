@@ -94,12 +94,12 @@ jobs:
         # Clippy checks can vary between versions in a way that makes it a bit
         # fiddly to satisfy them all, so only insist that they pass on stable.
         run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Build
+        run: cargo build --all-targets
       - uses: taiki-e/install-action@v2
         name: Install nextest using install-action
         with:
           tool: nextest
-      - name: Build
-        run: cargo build --all-targets
       - name: Test
         run: cargo test --workspace
       - run: cargo update
