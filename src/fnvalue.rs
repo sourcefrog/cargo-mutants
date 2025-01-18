@@ -202,9 +202,6 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                     .collect_vec()
             }
         },
-        Type::Tuple(TypeTuple { elems, .. }) if elems.is_empty() => {
-            vec![quote! { () }]
-        }
         Type::Tuple(TypeTuple { elems, .. }) => {
             // Generate the cartesian product of replacements of every type within the tuple.
             elems

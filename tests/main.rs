@@ -46,6 +46,18 @@ fn show_version() {
 }
 
 #[test]
+fn show_help() {
+    // Asserting on the entire help message would be a bit too annoying to maintain.
+    run()
+        .args(["mutants", "--help"])
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "Usage: cargo mutants [OPTIONS] [-- <CARGO_TEST_ARGS>...]",
+        ));
+}
+
+#[test]
 fn uses_cargo_env_var_to_run_cargo_so_invalid_value_fails() {
     let tmp_src_dir = copy_of_testdata("well_tested");
     let bogus_cargo = "NOTHING_NONEXISTENT_VOID";

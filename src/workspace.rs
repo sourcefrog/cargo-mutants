@@ -201,10 +201,6 @@ impl Workspace {
         // in that case we'll just fall back to everything, for lack of a better option.
         // TODO: Use the new cargo_metadata API that doesn't panic?
         match catch_unwind(|| metadata.workspace_default_packages()) {
-            Ok(default_packages) if default_packages.is_empty() => {
-                debug!("manifest has no explicit default packages");
-                PackageSelection::All
-            }
             Ok(default_packages) => {
                 let default_package_names: Vec<&str> = default_packages
                     .iter()

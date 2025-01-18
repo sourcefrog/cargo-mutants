@@ -6,6 +6,14 @@ pub fn binops() {
     a -= 2;
     a *= 3;
     a /= 2;
+
+    let mut b;
+    b = a < 0;
+    b = a <= 0;
+    b = a > 0;
+    b = a >= 0;
+    b = a == 0;
+    b = a != 0;
 }
 
 pub fn bin_assign() -> i32 {
@@ -15,5 +23,6 @@ pub fn bin_assign() -> i32 {
     a &= 0x0f;
     a >>= 4;
     a <<= 1;
+    a %= 1;
     a
 }

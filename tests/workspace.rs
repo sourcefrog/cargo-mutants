@@ -6,7 +6,7 @@ use std::fs::{self, create_dir, read_to_string, write};
 
 use insta::assert_snapshot;
 use itertools::Itertools;
-use predicates::prelude::predicate;
+use predicates::{prelude::predicate, str::PredicateStrExt};
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
@@ -293,6 +293,25 @@ fn baseline_test_respects_package_options() {
         read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
         ""
     );
+}
+
+#[test]
+fn in_workspace_only_default_members_are_mutated_if_present() {
+    let tmp = copy_of_testdata("workspace_default_members");
+    run()
+        .args(["mutants", "--no-shuffle", "--list", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success()
+        .stdout(
+            predicates::ord::eq(
+                "\
+            main/src/main.rs:1:18: replace + with -\n\
+            main/src/main.rs:1:18: replace + with *\n\
+            ",
+            )
+            .normalize(),
+        );
 }
 
 #[test]

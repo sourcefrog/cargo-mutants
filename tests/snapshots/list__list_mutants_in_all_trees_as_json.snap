@@ -2205,7 +2205,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2218,8 +2218,8 @@ snapshot_kind: text
     "replacement": "()",
     "span": {
       "end": {
-        "column": 12,
-        "line": 8
+        "column": 16,
+        "line": 16
       },
       "start": {
         "column": 5,
@@ -2235,7 +2235,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2265,7 +2265,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2295,7 +2295,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2325,7 +2325,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2355,7 +2355,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2385,7 +2385,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2415,7 +2415,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2445,7 +2445,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2475,7 +2475,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2505,7 +2505,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2535,7 +2535,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2565,7 +2565,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2595,7 +2595,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2625,7 +2625,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2655,7 +2655,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2685,7 +2685,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2715,7 +2715,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2745,7 +2745,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2775,7 +2775,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2805,7 +2805,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2835,7 +2835,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2865,7 +2865,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2895,7 +2895,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2925,7 +2925,7 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 9
+          "line": 17
         },
         "start": {
           "column": 1,
@@ -2950,16 +2950,256 @@ snapshot_kind: text
   {
     "file": "src/binops.rs",
     "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 12,
+        "line": 11
+      },
+      "start": {
+        "column": 11,
+        "line": 11
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 12,
+        "line": 11
+      },
+      "start": {
+        "column": 11,
+        "line": 11
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 12
+      },
+      "start": {
+        "column": 11,
+        "line": 12
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 12,
+        "line": 13
+      },
+      "start": {
+        "column": 11,
+        "line": 13
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 12,
+        "line": 13
+      },
+      "start": {
+        "column": 11,
+        "line": 13
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 14
+      },
+      "start": {
+        "column": 11,
+        "line": 14
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 15
+      },
+      "start": {
+        "column": 11,
+        "line": 15
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "binops",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 17
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 16
+      },
+      "start": {
+        "column": 11,
+        "line": 16
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
       "function_name": "bin_assign",
       "return_type": "-> i32",
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -2969,11 +3209,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 6,
-        "line": 18
+        "line": 27
       },
       "start": {
         "column": 5,
-        "line": 12
+        "line": 20
       }
     }
   },
@@ -2985,11 +3225,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -2999,11 +3239,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 6,
-        "line": 18
+        "line": 27
       },
       "start": {
         "column": 5,
-        "line": 12
+        "line": 20
       }
     }
   },
@@ -3015,11 +3255,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3029,11 +3269,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 6,
-        "line": 18
+        "line": 27
       },
       "start": {
         "column": 5,
-        "line": 12
+        "line": 20
       }
     }
   },
@@ -3045,11 +3285,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3059,11 +3299,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 9,
-        "line": 13
+        "line": 21
       },
       "start": {
         "column": 7,
-        "line": 13
+        "line": 21
       }
     }
   },
@@ -3075,11 +3315,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3089,11 +3329,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 9,
-        "line": 13
+        "line": 21
       },
       "start": {
         "column": 7,
-        "line": 13
+        "line": 21
       }
     }
   },
@@ -3105,11 +3345,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3119,11 +3359,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 9,
-        "line": 14
+        "line": 22
       },
       "start": {
         "column": 7,
-        "line": 14
+        "line": 22
       }
     }
   },
@@ -3135,11 +3375,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3149,11 +3389,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 9,
-        "line": 14
+        "line": 22
       },
       "start": {
         "column": 7,
-        "line": 14
+        "line": 22
       }
     }
   },
@@ -3165,11 +3405,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3179,11 +3419,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 9,
-        "line": 15
+        "line": 23
       },
       "start": {
         "column": 7,
-        "line": 15
+        "line": 23
       }
     }
   },
@@ -3195,11 +3435,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3209,11 +3449,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 9,
-        "line": 15
+        "line": 23
       },
       "start": {
         "column": 7,
-        "line": 15
+        "line": 23
       }
     }
   },
@@ -3225,11 +3465,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3239,11 +3479,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 10,
-        "line": 16
+        "line": 24
       },
       "start": {
         "column": 7,
-        "line": 16
+        "line": 24
       }
     }
   },
@@ -3255,11 +3495,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 19
+          "line": 28
         },
         "start": {
           "column": 1,
-          "line": 11
+          "line": 19
         }
       }
     },
@@ -3269,11 +3509,71 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 10,
-        "line": 17
+        "line": 25
       },
       "start": {
         "column": 7,
-        "line": 17
+        "line": 25
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "bin_assign",
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 28
+        },
+        "start": {
+          "column": 1,
+          "line": 19
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "/=",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 26
+      },
+      "start": {
+        "column": 7,
+        "line": 26
+      }
+    }
+  },
+  {
+    "file": "src/binops.rs",
+    "function": {
+      "function_name": "bin_assign",
+      "return_type": "-> i32",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 28
+        },
+        "start": {
+          "column": 1,
+          "line": 19
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-many-patterns",
+    "replacement": "+=",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 26
+      },
+      "start": {
+        "column": 7,
+        "line": 26
       }
     }
   }
@@ -9844,6 +10144,47 @@ snapshot_kind: text
       "start": {
         "column": 5,
         "line": 10
+      }
+    }
+  }
+]
+```
+
+## testdata/workspace_default_members
+
+```json
+[
+  {
+    "file": "main/src/main.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "package": "main",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 1
+      },
+      "start": {
+        "column": 18,
+        "line": 1
+      }
+    }
+  },
+  {
+    "file": "main/src/main.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "package": "main",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 1
+      },
+      "start": {
+        "column": 18,
+        "line": 1
       }
     }
   }
