@@ -209,17 +209,27 @@ src/binops.rs:7:7: replace *= with += in binops
 src/binops.rs:7:7: replace *= with /= in binops
 src/binops.rs:8:7: replace /= with %= in binops
 src/binops.rs:8:7: replace /= with *= in binops
-src/binops.rs:12:5: replace bin_assign -> i32 with 0
-src/binops.rs:12:5: replace bin_assign -> i32 with 1
-src/binops.rs:12:5: replace bin_assign -> i32 with -1
-src/binops.rs:13:7: replace |= with &= in bin_assign
-src/binops.rs:13:7: replace |= with ^= in bin_assign
-src/binops.rs:14:7: replace ^= with |= in bin_assign
-src/binops.rs:14:7: replace ^= with &= in bin_assign
-src/binops.rs:15:7: replace &= with |= in bin_assign
-src/binops.rs:15:7: replace &= with ^= in bin_assign
-src/binops.rs:16:7: replace >>= with <<= in bin_assign
-src/binops.rs:17:7: replace <<= with >>= in bin_assign
+src/binops.rs:11:11: replace < with == in binops
+src/binops.rs:11:11: replace < with > in binops
+src/binops.rs:12:11: replace <= with > in binops
+src/binops.rs:13:11: replace > with == in binops
+src/binops.rs:13:11: replace > with < in binops
+src/binops.rs:14:11: replace >= with < in binops
+src/binops.rs:15:11: replace == with != in binops
+src/binops.rs:16:11: replace != with == in binops
+src/binops.rs:20:5: replace bin_assign -> i32 with 0
+src/binops.rs:20:5: replace bin_assign -> i32 with 1
+src/binops.rs:20:5: replace bin_assign -> i32 with -1
+src/binops.rs:21:7: replace |= with &= in bin_assign
+src/binops.rs:21:7: replace |= with ^= in bin_assign
+src/binops.rs:22:7: replace ^= with |= in bin_assign
+src/binops.rs:22:7: replace ^= with &= in bin_assign
+src/binops.rs:23:7: replace &= with |= in bin_assign
+src/binops.rs:23:7: replace &= with ^= in bin_assign
+src/binops.rs:24:7: replace >>= with <<= in bin_assign
+src/binops.rs:25:7: replace <<= with >>= in bin_assign
+src/binops.rs:26:7: replace %= with /= in bin_assign
+src/binops.rs:26:7: replace %= with += in bin_assign
 ```
 
 ## testdata/missing_test
@@ -550,4 +560,11 @@ main/src/main.rs:14:11: replace *= with /= in factorial
 main2/src/main.rs:10:5: replace triple_3 -> i32 with 0
 main2/src/main.rs:10:5: replace triple_3 -> i32 with 1
 main2/src/main.rs:10:5: replace triple_3 -> i32 with -1
+```
+
+## testdata/workspace_default_members
+
+```
+main/src/main.rs:1:18: replace + with -
+main/src/main.rs:1:18: replace + with *
 ```
