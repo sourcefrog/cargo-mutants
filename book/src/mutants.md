@@ -96,3 +96,7 @@ generate unviable cases (e.g. `!1.0`, `-false`).
 
 Entire match arms are deleted in match expressions when a wildcard pattern is present in one of the arms.
 Match expressions without a wildcard pattern would be too prone to unviable mutations of this kind.
+
+## Match arm guards
+
+Match arm guard expressions are replaced with `true` and `false`.

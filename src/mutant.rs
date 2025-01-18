@@ -28,6 +28,8 @@ pub enum Genre {
     UnaryOperator,
     /// Delete match arm.
     MatchArm,
+    /// Replace the expression of a match arm guard with a fixed value.
+    MatchArmGuard,
 }
 
 /// A mutation applied to source code.
@@ -146,6 +148,10 @@ impl Mutant {
                     v.push(s(&function.return_type).magenta());
                 }
                 v.push(s(" with "));
+                v.push(s(self.replacement_text()).yellow());
+            }
+            Genre::MatchArmGuard => {
+                v.push(s("replace match guard with "));
                 v.push(s(self.replacement_text()).yellow());
             }
             Genre::MatchArm => {
