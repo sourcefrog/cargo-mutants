@@ -89,5 +89,10 @@ too prone to generate false positives, for example when unsigned integers are co
 ## Unary operators
 
 Unary operators are deleted in expressions like `-a` and `!a`.
-They are not currently replaced with other unary operators because they are too prone to 
+They are not currently replaced with other unary operators because they are too prone to
 generate unviable cases (e.g. `!1.0`, `-false`).
+
+## Match arms
+
+Entire match arms are deleted in match expressions when a wildcard pattern is present in one of the arms.
+Match expressions without a wildcard pattern would be too prone to unviable mutations of this kind.

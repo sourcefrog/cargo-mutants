@@ -26,6 +26,8 @@ pub enum Genre {
     /// Replace `==` with `!=` and so on.
     BinaryOperator,
     UnaryOperator,
+    /// Delete match arm.
+    MatchArm,
 }
 
 /// A mutation applied to source code.
@@ -131,33 +133,39 @@ impl Mutant {
             style(s.to_string())
         }
         let mut v: Vec<StyledObject<String>> = Vec::new();
-        if self.genre == Genre::FnValue {
-            v.push(s("replace "));
-            let function = self
-                .function
-                .as_ref()
-                .expect("FnValue mutant should have a function");
-            v.push(s(&function.function_name).bright().magenta());
-            if !function.return_type.is_empty() {
-                v.push(s(" "));
-                v.push(s(&function.return_type).magenta());
-            }
-            v.push(s(" with "));
-            v.push(s(self.replacement_text()).yellow());
-        } else {
-            if self.replacement.is_empty() {
-                v.push(s("delete "));
-            } else {
+        match self.genre {
+            Genre::FnValue => {
                 v.push(s("replace "));
-            }
-            v.push(s(self.original_text()).yellow());
-            if !self.replacement.is_empty() {
-                v.push(s(" with "));
-                v.push(s(&self.replacement).bright().yellow());
-            }
-            if let Some(function) = &self.function {
-                v.push(s(" in "));
+                let function = self
+                    .function
+                    .as_ref()
+                    .expect("FnValue mutant should have a function");
                 v.push(s(&function.function_name).bright().magenta());
+                if !function.return_type.is_empty() {
+                    v.push(s(" "));
+                    v.push(s(&function.return_type).magenta());
+                }
+                v.push(s(" with "));
+                v.push(s(self.replacement_text()).yellow());
+            }
+            Genre::MatchArm => {
+                v.push(s("delete match arm"));
+            }
+            _ => {
+                if self.replacement.is_empty() {
+                    v.push(s("delete "));
+                } else {
+                    v.push(s("replace "));
+                }
+                v.push(s(self.original_text()).yellow());
+                if !self.replacement.is_empty() {
+                    v.push(s(" with "));
+                    v.push(s(&self.replacement).bright().yellow());
+                }
+                if let Some(function) = &self.function {
+                    v.push(s(" in "));
+                    v.push(s(&function.function_name).bright().magenta());
+                }
             }
         }
         v
