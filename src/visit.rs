@@ -595,6 +595,53 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         };
         syn::visit::visit_expr_unary(self, i);
     }
+
+    fn visit_expr_match(&mut self, i: &'ast syn::ExprMatch) {
+        let _span = trace_span!("match", line = i.span().start().line).entered();
+
+        // While it's not currently possible to annotate expressions with custom attributes, this
+        // limitation could be lifted in the future.
+        if attrs_excluded(&i.attrs) {
+            trace!("match excluded by attrs");
+            return;
+        }
+
+        let has_catchall = i
+            .arms
+            .iter()
+            .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
+        if has_catchall {
+            i.arms
+                .iter()
+                // Don't mutate the wild arm, because that will likely be unviable, and also
+                // skip it if a guard is present, because the replacement of the guard with 'false'
+                // below is logically equivalent to removing the arm.
+                .filter(|arm| !matches!(arm.pat, syn::Pat::Wild(_)) && arm.guard.is_none())
+                .for_each(|arm| {
+                    self.collect_mutant(arm.span().into(), &quote! {}, Genre::MatchArm);
+                });
+        } else {
+            trace!("match has no `_` pattern");
+        }
+
+        i.arms
+            .iter()
+            .flat_map(|arm| &arm.guard)
+            .for_each(|(_if, guard_expr)| {
+                self.collect_mutant(
+                    guard_expr.span().into(),
+                    &quote! { true },
+                    Genre::MatchArmGuard,
+                );
+                self.collect_mutant(
+                    guard_expr.span().into(),
+                    &quote! { false },
+                    Genre::MatchArmGuard,
+                );
+            });
+
+        syn::visit::visit_expr_match(self, i);
+    }
 }
 
 // Get the span of the block excluding the braces, or None if it is empty.
@@ -1082,6 +1129,94 @@ mod test {
                 src/main.rs: replace <impl From<Apath> for String>::from -> String with "xyzzy".into()
                 src/main.rs: replace <impl From<&'a str> for Apath>::from -> Apath with Default::default()
             "#}
+        );
+    }
+
+    #[test]
+    fn mutate_match_arms_with_fallback() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    match x {
+                        X::A => {},
+                        X::B => {},
+                        _ => {},
+                    }
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+        assert_eq!(
+            mutants
+                .iter()
+                .filter(|m| m.genre == Genre::MatchArm)
+                .map(|m| m.name(true))
+                .collect_vec(),
+            [
+                "src/main.rs:3:9: delete match arm",
+                "src/main.rs:4:9: delete match arm",
+            ]
+        );
+    }
+
+    #[test]
+    fn skip_match_arms_without_fallback() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    match x {
+                        X::A => {},
+                        X::B => {},
+                    }
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+
+        let empty: &[&str] = &[];
+        assert_eq!(
+            mutants
+                .iter()
+                .filter(|m| m.genre == Genre::MatchArm)
+                .map(|m| m.name(true))
+                .collect_vec(),
+            empty
+        );
+    }
+
+    #[test]
+    fn mutate_match_guard() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {"
+                fn main() {
+                    match x {
+                        X::A if foo() => {},
+                        X::A => {},
+                        X::B => {},
+                        X::C if bar() => {},
+                    }
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+        assert_eq!(
+            mutants
+                .iter()
+                .filter(|m| m.genre == Genre::MatchArmGuard)
+                .map(|m| m.name(true))
+                .collect_vec(),
+            [
+                "src/main.rs:3:17: replace match guard with true",
+                "src/main.rs:3:17: replace match guard with false",
+                "src/main.rs:6:17: replace match guard with true",
+                "src/main.rs:6:17: replace match guard with false",
+            ]
         );
     }
 }

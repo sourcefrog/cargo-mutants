@@ -1,0 +1,6 @@
+# This workspace has default-members set, which influences which packages are mutated by default.
+
+[workspace]
+members = ["main", "excluded"]
+default-members = ["main"]
+resolver = "2"
