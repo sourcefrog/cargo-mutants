@@ -21,6 +21,9 @@ use crate::package::PackageSelection;
 use crate::process::{Exit, Process};
 use crate::Result;
 
+// Allowed nextest codes (see <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>)
+const NEXTEST_ALLOWED_CODES: &[i32] = &[4, 100, 101];
+
 /// Run cargo build, check, or test.
 #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
 pub fn run_cargo(
@@ -60,11 +63,12 @@ pub fn run_cargo(
     debug!(?process_status, elapsed = ?start.elapsed());
     if let Exit::Failure(code) = process_status {
         // 100 "one or more tests failed" from <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>;
+        // 4 means no tests were run and 101 that the build failed
         // I'm not addind a dependency to just get one integer.
-        if argv[1] == "nextest" && code != 100 {
+        if argv[1] == "nextest" && !NEXTEST_ALLOWED_CODES.contains(&code) {
             // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
             // error, but we can at least warn if it's unexpected.
-            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
+            warn!(%code, "nextest process exited with unexpected code (allowed: {NEXTEST_ALLOWED_CODES:?})");
         }
     }
     Ok(PhaseResult {
