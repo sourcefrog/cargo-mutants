@@ -9,6 +9,7 @@ use std::env;
 use std::iter::once;
 use std::time::{Duration, Instant};
 
+use nextest_metadata::NextestExitCode;
 use tracing::{debug, debug_span, warn};
 
 use crate::build_dir::BuildDir;
@@ -20,6 +21,13 @@ use crate::output::ScenarioOutput;
 use crate::package::PackageSelection;
 use crate::process::{Exit, Process};
 use crate::Result;
+
+// Allowed nextest codes (those will be considered a mutation caught / ignored without a warning)
+const NEXTEST_ALLOWED_CODES: &[i32] = &[
+    NextestExitCode::TEST_RUN_FAILED,
+    NextestExitCode::NO_TESTS_RUN,
+    NextestExitCode::BUILD_FAILED,
+];
 
 /// Run cargo build, check, or test.
 #[allow(clippy::too_many_arguments)] // I agree it's a lot but I'm not sure wrapping in a struct would be better.
@@ -59,12 +67,10 @@ pub fn run_cargo(
     check_interrupted()?;
     debug!(?process_status, elapsed = ?start.elapsed());
     if let Exit::Failure(code) = process_status {
-        // 100 "one or more tests failed" from <https://docs.rs/nextest-metadata/latest/nextest_metadata/enum.NextestExitCode.html>;
-        // I'm not addind a dependency to just get one integer.
-        if argv[1] == "nextest" && code != 100 {
+        if argv[1] == "nextest" && !NEXTEST_ALLOWED_CODES.contains(&code) {
             // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
             // error, but we can at least warn if it's unexpected.
-            warn!(%code, "nextest process exited with unexpected code (not TEST_RUN_FAILED)");
+            warn!(%code, "nextest process exited with unexpected code (allowed: {NEXTEST_ALLOWED_CODES:?})");
         }
     }
     Ok(PhaseResult {
