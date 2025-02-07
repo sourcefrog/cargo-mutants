@@ -24,7 +24,7 @@ pub const FOUND_PROBLEMS: i32 = 2;
 pub const TIMEOUT: i32 = 3;
 
 /// The tests are already failing in an unmutated tree.
-pub const CLEAN_TESTS_FAILED: i32 = 4;
+pub const BASELINE_FAILED: i32 = 4;
 
 /// An internal software error, from sysexit.
 pub const SOFTWARE: i32 = 70;

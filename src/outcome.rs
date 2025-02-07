@@ -99,7 +99,7 @@ impl LabOutcome {
             .iter()
             .any(|o| !o.scenario.is_mutant() && !o.success())
         {
-            exit_code::CLEAN_TESTS_FAILED
+            exit_code::BASELINE_FAILED
         } else if self.timeout > 0 {
             exit_code::TIMEOUT
         } else if self.missed > 0 {

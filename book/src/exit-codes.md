@@ -11,7 +11,7 @@ cargo-mutants returns an exit code that can be used by scripts or CI.
 * **3**: Some tests timed out: possibly the mutations caused an infinite loop,
   or the timeout is too low.
 
-* **4**: The tests are already failing or hanging before any mutations are
+* **4**: The baseline tests are already failing or hanging before any mutations are
   applied, so no mutations were tested.
 
 For more detailed machine-readable information, use the [`mutants.out` directory](mutants-out.md).
