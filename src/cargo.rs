@@ -24,8 +24,8 @@ use crate::Result;
 
 // Allowed nextest codes (those will be considered a mutation caught / ignored without a warning)
 const NEXTEST_ALLOWED_CODES: &[i32] = &[
-    NextestExitCode::TEST_RUN_FAILED,
     NextestExitCode::NO_TESTS_RUN,
+    NextestExitCode::TEST_RUN_FAILED,
     NextestExitCode::BUILD_FAILED,
 ];
 
