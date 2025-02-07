@@ -8,6 +8,8 @@
 
 - Improved: Warn if `--jobs` is set higher than 8, which is likely to be too high.
 
+- Improved: Don't warn about expected/harmless exit codes from Nextest.
+
 ## 25.0.1-pre3 2025-01-05
 
 - Fixed: Build arm64 binaries for macOS.
