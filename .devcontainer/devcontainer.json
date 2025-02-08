@@ -48,6 +48,9 @@
   "features": {
     "git": "os-provided",
     "github-cli": "latest",
-    "ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {}
+    "ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {},
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
   }
 }
