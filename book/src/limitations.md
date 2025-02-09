@@ -54,17 +54,3 @@ cargo-mutants contains two main categories of code, which are mostly independent
 The main precondition for supporting Bazel is a realistic test case: preferably an open source Rust tree built with Bazel, or at least a contributor with a Bazel-based Rust tree who is willing to help test and debug and to produce some test cases.
 
 (See <https://github.com/sourcefrog/cargo-mutants/issues/77> for more discussion.)
-
-## Caution on side effects
-
-cargo-mutants builds and runs code with machine-generated modifications. This is
-generally fine, but if the code under test  has side effects such as writing or
-deleting files, running it with mutations might conceivably have unexpected
-effects, such as deleting the wrong files, in the same way that a bug might.
-
-If you're concerned about this, run cargo-mutants in a container or virtual
-machine.
-
-cargo-mutants never modifies the original source tree, other than writing a
-`mutants.out` directory, and that can be sent elsewhere with the `--output`
-option. All mutations are applied and tested in a copy of the source tree.

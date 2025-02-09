@@ -1,6 +1,7 @@
 # Summary
 
 - [Welcome](welcome.md)
+  - [Cautions](cautions.md)
 - [Installation](installation.md)
 - [Getting started](getting-started.md)
 - [Using the results](using-results.md)

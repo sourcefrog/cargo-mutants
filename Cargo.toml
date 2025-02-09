@@ -21,9 +21,9 @@ eula = false
 
 [dependencies]
 anyhow = "1.0.86"
-camino = "1.1.6"
+camino = "1.1.9"
 cargo_metadata = "0.19"
-clap = { version = "4.4.1", features = [
+clap = { version = "4.5", features = [
     "deprecated",
     "derive",
     "env",
@@ -42,16 +42,17 @@ indoc = "2.0.0"
 itertools = "0.13"
 jobserver = "0.1"
 mutants = "0.0.3"
+nextest-metadata = "0.12.1"
 num_cpus = "1.16"
 patch = "0.7"
 path-slash = "0.2"
 quote = "1.0.35"
 regex = "1.10"
-serde_json = "1.0.118"
+serde_json = "1.0.128"
 similar = "2.1"
 strum = { version = "0.26", features = ["derive"] }
 tempfile = "3.8"
-test-log = { version = "0.2.16", features = [ "trace" ] }
+test-log = { version = "0.2.16", features = ["trace"] }
 time = "0.3"
 toml = "0.8"
 tracing = "0.1.40"
@@ -68,7 +69,7 @@ features = ["span-locations"]
 version = "1.0.74"
 
 [dependencies.serde]
-version = "1.0.194"
+version = "1.0.209"
 features = ["derive"]
 
 [dependencies.syn]

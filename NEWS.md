@@ -2,11 +2,15 @@
 
 ## Unreleased
 
+- New: Additional mutation patterns: delete `match` arms if there is a defaul arm, and replace `if` guards from match arms with `true` and `false`.
+
 - Changed: Show more type parameters in mutant names, like `impl From<&str> for Foo` rather than `impl From for Foo`.
 
 - Fixed: Support crates that use a non-default Cargo registry. Previously, `cargo metadata` failed with "registry index was not found."
 
 - Improved: Warn if `--jobs` is set higher than 8, which is likely to be too high.
+
+- Improved: Don't warn about expected/harmless exit codes from Nextest.
 
 ## 25.0.1-pre3 2025-01-05
 

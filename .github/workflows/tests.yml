@@ -5,6 +5,17 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - ".cargo/*.toml"
+      - ".github/workflows/tests.yml"
+      - "Cargo.*"
+      - "mutants_attrs/**"
+      - "src/**"
+      - "testdata/**"
+      - "tests/**"
+  pull_request:
     paths:
       - ".cargo/*.toml"
       - ".github/workflows/tests.yml"
