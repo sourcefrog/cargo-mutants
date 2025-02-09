@@ -1,8 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 25.0.1 2025-02-08
 
-- New: Additional mutation patterns: delete `match` arms if there is a defaul arm, and replace `if` guards from match arms with `true` and `false`.
+- New: Additional mutation patterns: delete `match` arms if there is a default arm, and replace `if` guards from match arms with `true` and `false`.
 
 - Changed: Show more type parameters in mutant names, like `impl From<&str> for Foo` rather than `impl From for Foo`.
 
