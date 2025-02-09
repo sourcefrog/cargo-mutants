@@ -46,7 +46,6 @@ pub fn test_mutants(
         warn!("No mutants found under the active filters");
         return Ok(LabOutcome::default());
     }
-    let output_mutex = Mutex::new(output_dir);
     let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;
     let jobserver = options
         .jobserver
@@ -59,7 +58,7 @@ pub fn test_mutants(
         .context("Start jobserver")?;
     let tests_for_mutant = TestsForMutant::new(options, workspace);
     let lab = Lab {
-        output_mutex,
+        output_dir,
         jobserver,
         tests_for_mutant,
         options,
@@ -75,17 +74,14 @@ pub fn test_mutants(
                     "cargo {phase} failed in an unmutated tree, so no mutants were tested",
                     phase = outcome.last_phase(),
                 );
-                return Ok(lab
-                    .output_mutex
-                    .into_inner()
-                    .expect("lock output_dir")
-                    .take_lab_outcome());
+                return Ok(lab.output_dir.take_lab_outcome());
             }
         }
         BaselineStrategy::Skip => Timeouts::without_baseline(options),
     };
     debug!(?timeouts);
 
+    trace!("start testing mutants");
     let build_dir_0 = Mutex::new(Some(baseline_build_dir));
     // Create n threads, each dedicated to one build directory. Each of them tries to take a
     // scenario to test off the queue, and then exits when there are no more left.
@@ -111,12 +107,8 @@ pub fn test_mutants(
         join_threads(threads)
     })?;
 
-    let output_dir = lab
-        .output_mutex
-        .into_inner()
-        .expect("final unlock mutants queue");
-    console.lab_finished(&output_dir.lab_outcome, start_time, options);
-    let lab_outcome = output_dir.take_lab_outcome();
+    let lab_outcome = lab.output_dir.take_lab_outcome();
+    console.lab_finished(&lab_outcome, start_time, options);
     if lab_outcome.total_mutants == 0 {
         // This should be unreachable as we also bail out before copying
         // the tree if no mutants are generated.
@@ -159,7 +151,7 @@ fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Resul
 
 /// Common context across all scenarios, threads, and build dirs.
 struct Lab<'a> {
-    output_mutex: Mutex<OutputDir>,
+    output_dir: OutputDir,
     jobserver: Option<jobserver::Client>,
     tests_for_mutant: TestsForMutant,
     options: &'a Options,
@@ -180,6 +172,7 @@ impl Lab<'_> {
             .sorted_by_key(|p| p.name.clone())
             .unique()
             .collect_vec();
+        trace!("start baseline");
         self.make_worker(build_dir).run_one_scenario(
             &Scenario::Baseline,
             &PackageSelection::Explicit(all_mutated_packages),
@@ -202,7 +195,7 @@ impl Lab<'_> {
     fn make_worker<'a>(&'a self, build_dir: &'a BuildDir) -> Worker<'a> {
         Worker {
             build_dir,
-            output_mutex: &self.output_mutex,
+            output_dir: &self.output_dir,
             jobserver: self.jobserver.as_ref(),
             tests_for_mutant: &self.tests_for_mutant,
             options: self.options,
@@ -217,7 +210,7 @@ impl Lab<'_> {
 /// appending output to the output directory.
 struct Worker<'a> {
     build_dir: &'a BuildDir,
-    output_mutex: &'a Mutex<OutputDir>,
+    output_dir: &'a OutputDir,
     jobserver: Option<&'a jobserver::Client>,
     tests_for_mutant: &'a TestsForMutant,
     options: &'a Options,
@@ -256,11 +249,7 @@ impl Worker<'_> {
         test_packages: &PackageSelection,
         timeouts: Timeouts,
     ) -> Result<ScenarioOutcome> {
-        let mut scenario_output = self
-            .output_mutex
-            .lock()
-            .expect("lock output_dir to start scenario")
-            .start_scenario(scenario)?;
+        let mut scenario_output = self.output_dir.start_scenario(scenario)?;
         let dir = self.build_dir.path();
         self.console
             .scenario_started(dir, scenario, scenario_output.open_log_read()?);
@@ -311,10 +300,7 @@ impl Worker<'_> {
         if let Some(mutant) = scenario.mutant() {
             mutant.revert(self.build_dir)?;
         }
-        self.output_mutex
-            .lock()
-            .expect("lock output dir to add outcome")
-            .add_scenario_outcome(&outcome)?;
+        self.output_dir.add_scenario_outcome(&outcome)?;
         debug!(outcome = ?outcome.summary());
         self.console
             .scenario_finished(dir, scenario, &outcome, self.options);

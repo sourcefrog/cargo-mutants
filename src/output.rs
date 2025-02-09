@@ -6,6 +6,7 @@ use std::collections::{hash_map::Entry, HashMap};
 use std::fs::{create_dir, read_to_string, remove_dir_all, rename, write, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -89,9 +90,14 @@ impl LockFile {
 #[allow(clippy::module_name_repetitions)]
 pub struct OutputDir {
     path: Utf8PathBuf,
-
-    #[allow(unused)] // Lifetime controls the file lock
+    #[allow(unused)] // just held for the lock lifetime
     lock_file: File,
+    inner: Mutex<Inner>,
+}
+
+/// Inner mutable state of the OutputDir, protected by a lock.
+#[derive(Debug)]
+struct Inner {
     /// A file holding a list of missed mutants as text, one per line.
     missed_list: File,
     /// A file holding a list of caught mutants as text, one per line.
@@ -162,23 +168,31 @@ impl OutputDir {
             .context("create timeout.txt")?;
         Ok(OutputDir {
             path: output_dir,
-            lab_outcome: LabOutcome::new(),
             lock_file,
-            missed_list,
-            caught_list,
-            timeout_list,
-            unviable_list,
-            used_log_names: HashMap::new(),
+            inner: Mutex::new(Inner {
+                lab_outcome: LabOutcome::new(),
+                missed_list,
+                caught_list,
+                timeout_list,
+                unviable_list,
+                used_log_names: HashMap::new(),
+            }),
         })
     }
 
     /// Allocate a sequence number and the output files for a scenario.
-    pub fn start_scenario(&mut self, scenario: &Scenario) -> Result<ScenarioOutput> {
+    pub fn start_scenario(&self, scenario: &Scenario) -> Result<ScenarioOutput> {
         let scenario_name = match scenario {
             Scenario::Baseline => "baseline".into(),
             Scenario::Mutant(mutant) => mutant.log_file_name_base(),
         };
-        let basename = match self.used_log_names.entry(scenario_name.clone()) {
+        let basename = match self
+            .inner
+            .lock()
+            .unwrap()
+            .used_log_names
+            .entry(scenario_name.clone())
+        {
             Entry::Occupied(mut e) => {
                 let index = e.get_mut();
                 *index += 1;
@@ -198,28 +212,31 @@ impl OutputDir {
         &self.path
     }
 
-    /// Update the state of the overall lab.
-    ///
-    /// Called multiple times as the lab runs.
-    fn write_lab_outcome(&self) -> Result<()> {
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(self.path.join("outcomes.json"))?),
-            &self.lab_outcome,
-        )
-        .context("write outcomes.json")
-    }
-
     /// Add the result of testing one scenario.
-    pub fn add_scenario_outcome(&mut self, scenario_outcome: &ScenarioOutcome) -> Result<()> {
-        self.lab_outcome.add(scenario_outcome.to_owned());
-        self.write_lab_outcome()?;
+    ///
+    /// This accumulates it in memory, writes to the listing files like `missed.txt`, and
+    /// updates the overall lab outcome in `outcomes.json`.
+    pub fn add_scenario_outcome(&self, scenario_outcome: &ScenarioOutcome) -> Result<()> {
+        let mut inner = self.inner.lock().unwrap();
+        inner.lab_outcome.add(scenario_outcome.to_owned());
+        {
+            File::create(self.path.join("outcomes.json"))
+                .and_then(|mut f| {
+                    f.write(
+                        serde_json::to_string_pretty(&inner.lab_outcome)
+                            .unwrap()
+                            .as_bytes(),
+                    )
+                })
+                .context("write outcomes.json")?;
+        }
         let scenario = &scenario_outcome.scenario;
         if let Scenario::Mutant(mutant) = scenario {
             let file = match scenario_outcome.summary() {
-                SummaryOutcome::MissedMutant => &mut self.missed_list,
-                SummaryOutcome::CaughtMutant => &mut self.caught_list,
-                SummaryOutcome::Timeout => &mut self.timeout_list,
-                SummaryOutcome::Unviable => &mut self.unviable_list,
+                SummaryOutcome::MissedMutant => &mut inner.missed_list,
+                SummaryOutcome::CaughtMutant => &mut inner.caught_list,
+                SummaryOutcome::Timeout => &mut inner.timeout_list,
+                SummaryOutcome::Unviable => &mut inner.unviable_list,
                 _ => return Ok(()),
             };
             writeln!(file, "{}", mutant.name(true)).context("write to list file")?;
@@ -245,7 +262,12 @@ impl OutputDir {
     }
 
     pub fn take_lab_outcome(self) -> LabOutcome {
-        self.lab_outcome
+        drop(
+            self.inner
+                .try_lock()
+                .expect("LabOutcome should not be locked"),
+        );
+        self.inner.into_inner().unwrap().lab_outcome
     }
 
     pub fn write_previously_caught(&self, caught: &[String]) -> Result<()> {
@@ -451,14 +473,14 @@ mod test {
         let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
-        let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path).unwrap();
         let scenario_output = output_dir.start_scenario(&Scenario::Baseline).unwrap();
         assert!(temp_dir_path.join("mutants.out/log/baseline.log").is_file());
         drop(output_dir); // release the lock.
         drop(scenario_output);
 
         // The second time we create it in the same directory, the old one is moved away.
-        let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.start_scenario(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
@@ -471,7 +493,7 @@ mod test {
         drop(output_dir);
 
         // The third time (and later), the .old directory is removed.
-        let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
+        let output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.start_scenario(&Scenario::Baseline).unwrap();
         assert!(temp_dir
             .path()
