@@ -5,85 +5,23 @@
 use std::collections::{hash_map::Entry, HashMap};
 use std::fs::{create_dir, read_to_string, remove_dir_all, rename, write, File, OpenOptions};
 use std::io::{BufWriter, Write};
-use std::path::Path;
 use std::sync::Mutex;
-use std::thread::sleep;
-use std::time::Duration;
 
 use camino::{Utf8Path, Utf8PathBuf};
-use fs2::FileExt;
-use path_slash::PathExt;
-use serde::Serialize;
-use time::format_description::well_known::Rfc3339;
-use time::OffsetDateTime;
-use tracing::{info, trace};
+use tracing::trace;
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
-use crate::{check_interrupted, Context, Mutant, Result, Scenario, ScenarioOutcome};
+use crate::{Context, Mutant, Result, Scenario, ScenarioOutcome};
+
+mod lock;
+pub use lock::LockFile;
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
-const LOCK_JSON: &str = "lock.json";
-const LOCK_POLL: Duration = Duration::from_millis(100);
+const LOCK_FILENAME: &str = "lock.json";
 static CAUGHT_TXT: &str = "caught.txt";
 static PREVIOUSLY_CAUGHT_TXT: &str = "previously_caught.txt";
 static UNVIABLE_TXT: &str = "unviable.txt";
-
-/// The contents of a `lock.json` written into the output directory and used as
-/// a lock file to ensure that two cargo-mutants invocations don't try to write
-/// to the same `mutants.out` simultneously.
-#[derive(Debug, Serialize)]
-struct LockFile {
-    cargo_mutants_version: String,
-    start_time: String,
-    hostname: String,
-    username: String,
-}
-
-impl LockFile {
-    fn new() -> LockFile {
-        let start_time = OffsetDateTime::now_utc()
-            .format(&Rfc3339)
-            .expect("format current time");
-        LockFile {
-            cargo_mutants_version: crate::VERSION.to_string(),
-            start_time,
-            hostname: whoami::fallible::hostname().unwrap_or_default(),
-            username: whoami::username(),
-        }
-    }
-
-    /// Block until acquiring a file lock on `lock.json` in the given `mutants.out`
-    /// directory.
-    ///
-    /// Return the `File` whose lifetime controls the file lock.
-    pub fn acquire_lock(output_dir: &Path) -> Result<File> {
-        let lock_path = output_dir.join(LOCK_JSON);
-        let mut lock_file = File::options()
-            .create(true)
-            .truncate(false)
-            .write(true)
-            .open(&lock_path)
-            .context("open or create lock.json in existing directory")?;
-        let mut first = true;
-        while let Err(err) = lock_file.try_lock_exclusive() {
-            if first {
-                info!(
-                    "Waiting for lock on {} ...: {err}",
-                    lock_path.to_slash_lossy()
-                );
-                first = false;
-            }
-            check_interrupted()?;
-            sleep(LOCK_POLL);
-        }
-        lock_file.set_len(0)?;
-        lock_file
-            .write_all(serde_json::to_string_pretty(&LockFile::new())?.as_bytes())
-            .context("write lock.json")?;
-        Ok(lock_file)
-    }
-}
 
 /// A `mutants.out` directory holding logs and other output information.
 #[derive(Debug)]
@@ -387,10 +325,11 @@ pub fn clean_filename(s: &str) -> String {
 
 #[cfg(test)]
 mod test {
-    use std::fs::write;
+    use std::{fs::write, path::Path};
 
     use indoc::indoc;
     use itertools::Itertools;
+    use path_slash::PathExt;
     use pretty_assertions::assert_eq;
     use tempfile::{tempdir, TempDir};
 
