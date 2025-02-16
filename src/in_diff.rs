@@ -185,8 +185,11 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
 
 /// Recreate a partial view of the new file from a Patch.
 ///
-/// This contains lines present as adedd or context. Typically not all context
-/// will be covered, so the output is a list of line numbers and their text.
+/// A patch can contain lines that are added, deleted, or unchanged context.
+///
+/// By extracting the added lines and context lines, we can recreate a partial
+/// view of the new file. From this we can check that the patch matches the
+/// expected changes.
 fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
     let mut r: Vec<(usize, &'d str)> = Vec::new();
     for hunk in &patch.hunks {
