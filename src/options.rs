@@ -322,7 +322,7 @@ impl Options {
             test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         if let Some(jobs) = options.jobs {
-            if jobs >= 8 {
+            if jobs > 8 {
                 warn!("--jobs={jobs} is probably too high and may overload your machine: each job runs a separate `cargo` process, and cargo may internally start many threads and subprocesses; values <= 8 are usually safe");
             }
         }
