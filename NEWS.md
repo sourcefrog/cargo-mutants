@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+  - New: Mutate `>` to `>=` and `<` to `<=`.
+
 ## 25.0.1 2025-02-08
 
 - New: Additional mutation patterns: delete `match` arms if there is a default arm, and replace `if` guards from match arms with `true` and `false`.
