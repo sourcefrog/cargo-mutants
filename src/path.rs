@@ -1,6 +1,8 @@
-// Copyright 2022 Martin Pool.
+// Copyright 2022-2025 Martin Pool.
 
 //! Utilities for file paths.
+
+use std::cmp::max;
 
 use camino::Utf8Path;
 
@@ -16,13 +18,13 @@ pub fn ascent(path: &Utf8Path) -> isize {
     let mut max_ascent: isize = 0;
     let mut ascent = 0;
     for component in path.components().map(|c| c.as_str()) {
-        if component == ".." {
-            ascent += 1;
-        } else if component != "." {
-            ascent -= 1;
-        }
-        if ascent > max_ascent {
-            max_ascent = ascent;
+        match component {
+            ".." => {
+                ascent += 1;
+                max_ascent = max(ascent, max_ascent);
+            }
+            "." => (),
+            _ => ascent -= 1,
         }
     }
     max_ascent
@@ -65,6 +67,7 @@ mod test {
     fn path_ascent() {
         assert_eq!(ascent(Utf8Path::new(".")), 0);
         assert_eq!(ascent(Utf8Path::new("..")), 1);
+        assert_eq!(ascent(Utf8Path::new("./..")), 1);
         assert_eq!(ascent(Utf8Path::new("sub/dir")), 0);
         assert_eq!(ascent(Utf8Path::new("sub/dir/../..")), 0);
         assert_eq!(ascent(Utf8Path::new("sub/../sub/./..")), 0);
