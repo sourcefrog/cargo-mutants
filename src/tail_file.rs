@@ -45,7 +45,7 @@ impl TailFile {
             if let Some(new_last) = String::from_utf8_lossy(&self.read_buf)
                 .lines()
                 .filter(|l| !l.trim().is_empty())
-                .last()
+                .next_back()
             {
                 new_last.clone_into(&mut self.last_line_seen);
             }

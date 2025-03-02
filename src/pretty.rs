@@ -43,7 +43,7 @@ where
                         Literal(l) => b.push_str(&l.to_string()),
                         Ident(i) => b.push_str(&i.to_string()),
                         _ => unreachable!(),
-                    };
+                    }
                     if let Some(next) = ts.peek() {
                         match next {
                             Ident(_) | Literal(_) => b.push(' '),

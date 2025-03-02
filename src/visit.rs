@@ -592,7 +592,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     "No mutants generated for this unary operator"
                 );
             }
-        };
+        }
         syn::visit::visit_expr_unary(self, i);
     }
 
