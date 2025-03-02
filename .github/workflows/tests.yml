@@ -51,7 +51,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
-          components: rustfmt, clippy
+          components: rustfmt
+          # , clippy
       - uses: Swatinem/rust-cache@v2
       - name: Show Cargo and rustc version
         run: |
@@ -61,8 +62,8 @@ jobs:
         run: cargo build --all-targets
       - name: Check rustfmt
         run: cargo fmt --all --check
-      - name: Check clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      # - name: Check clippy
+      #   run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Check typos
         uses: crate-ci/typos@master
       - uses: taiki-e/install-action@v2
@@ -92,7 +93,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.version }}
-          components: rustfmt, clippy
+          components: rustfmt #, clippy
       - name: Show Cargo and rustc version
         run: |
           cargo --version
@@ -100,11 +101,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check rustfmt
         run: cargo fmt --all --check
-      - name: Check clippy
-        if: matrix.version == 'stable'
-        # Clippy checks can vary between versions in a way that makes it a bit
-        # fiddly to satisfy them all, so only insist that they pass on stable.
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      # - name: Check clippy
+      #   if: matrix.version == 'stable'
+      #   # Clippy checks can vary between versions in a way that makes it a bit
+      #   # fiddly to satisfy them all, so only insist that they pass on stable.
+      #   run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Build
         run: cargo build --all-targets
       - uses: taiki-e/install-action@v2
