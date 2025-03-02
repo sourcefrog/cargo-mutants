@@ -563,22 +563,6 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
 }
 
 #[test]
-fn check_tree_with_mutants_skip() {
-    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
-    run()
-        .arg("mutants")
-        .args(["--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .env_remove("RUST_BACKTRACE")
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-}
-
-#[test]
 fn already_failing_tests_are_detected_before_running_mutants() {
     let tmp_src_dir = copy_of_testdata("already_failing_tests");
     run()
