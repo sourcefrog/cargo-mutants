@@ -540,8 +540,8 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Ne(_) => vec![quote! { == }],
             BinOp::And(_) => vec![quote! { || }],
             BinOp::Or(_) => vec![quote! { && }],
-            BinOp::Lt(_) => vec![quote! { == }, quote! {>}],
-            BinOp::Gt(_) => vec![quote! { == }, quote! {<}],
+            BinOp::Lt(_) => vec![quote! { == }, quote! {>}, quote! { <= }],
+            BinOp::Gt(_) => vec![quote! { == }, quote! {<}, quote! { >= }],
             BinOp::Le(_) => vec![quote! {>}],
             BinOp::Ge(_) => vec![quote! {<}],
             BinOp::Add(_) => vec![quote! {-}, quote! {*}],
@@ -1246,6 +1246,38 @@ mod test {
                 "src/main.rs:4:9: delete match arm",
                 "src/main.rs:3:17: replace match guard with true",
                 "src/main.rs:3:17: replace match guard with false",
+            ]
+        );
+    }
+
+    #[test]
+    fn mutate_comparisons() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {"
+                    fn main() {
+                        a > b;
+                        a < b;
+                        a == b;
+                    }
+                "},
+            &options,
+        )
+        .unwrap();
+        assert_eq!(
+            mutants
+                .iter()
+                .filter(|m| m.genre == Genre::BinaryOperator)
+                .map(|m| m.name(true))
+                .collect_vec(),
+            [
+                "src/main.rs:2:7: replace > with == in main",
+                "src/main.rs:2:7: replace > with < in main",
+                "src/main.rs:2:7: replace > with >= in main",
+                "src/main.rs:3:7: replace < with == in main",
+                "src/main.rs:3:7: replace < with > in main",
+                "src/main.rs:3:7: replace < with <= in main",
+                "src/main.rs:4:7: replace == with != in main",
             ]
         );
     }

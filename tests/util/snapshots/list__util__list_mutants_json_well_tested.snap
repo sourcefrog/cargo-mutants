@@ -1,6 +1,7 @@
 ---
 source: tests/util/mod.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
+snapshot_kind: text
 ---
 [
   {
@@ -1746,6 +1747,36 @@ expression: "String::from_utf8_lossy(&output.stdout)"
   {
     "file": "src/result.rs",
     "function": {
+      "function_name": "error_if_negative",
+      "return_type": "-> Result<(), ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 10
+      },
+      "start": {
+        "column": 10,
+        "line": 10
+      }
+    }
+  },
+  {
+    "file": "src/result.rs",
+    "function": {
       "function_name": "result_with_no_apparent_type_args",
       "return_type": "-> std::fmt::Result",
       "span": {
@@ -2422,6 +2453,36 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "genre": "BinaryOperator",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": ">",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 5
+      },
+      "start": {
+        "column": 20,
+        "line": 5
+      }
+    }
+  },
+  {
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": "<=",
     "span": {
       "end": {
         "column": 21,

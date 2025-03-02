@@ -21,8 +21,8 @@ mod test {
     #[test]
     fn test_pad() {
         assert_eq!(
-            super::pad(&mut ["hello".into(), "ok".into()]),
-            ["hello", "ok___"]
+            super::pad(&mut ["hello".into(), "ok".into(), "cat".into()]),
+            ["hello", "ok___", "cat"]
         );
     }
 

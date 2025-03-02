@@ -149,6 +149,7 @@ src/bin/factorial.rs:12:11: replace *= with /= in factorial
 src/lib.rs:15:5: replace controlled_loop with ()
 src/lib.rs:21:28: replace > with == in controlled_loop
 src/lib.rs:21:28: replace > with < in controlled_loop
+src/lib.rs:21:28: replace > with >= in controlled_loop
 src/lib.rs:21:53: replace * with + in controlled_loop
 src/lib.rs:21:53: replace * with / in controlled_loop
 ```
@@ -163,6 +164,7 @@ src/lib.rs:38:5: replace controlled_loop -> usize with 0
 src/lib.rs:38:5: replace controlled_loop -> usize with 1
 src/lib.rs:45:28: replace > with == in controlled_loop
 src/lib.rs:45:28: replace > with < in controlled_loop
+src/lib.rs:45:28: replace > with >= in controlled_loop
 ```
 
 ## testdata/insta
@@ -211,9 +213,11 @@ src/binops.rs:8:7: replace /= with %= in binops
 src/binops.rs:8:7: replace /= with *= in binops
 src/binops.rs:11:11: replace < with == in binops
 src/binops.rs:11:11: replace < with > in binops
+src/binops.rs:11:11: replace < with <= in binops
 src/binops.rs:12:11: replace <= with > in binops
 src/binops.rs:13:11: replace > with == in binops
 src/binops.rs:13:11: replace > with < in binops
+src/binops.rs:13:11: replace > with >= in binops
 src/binops.rs:14:11: replace >= with < in binops
 src/binops.rs:15:11: replace == with != in binops
 src/binops.rs:16:11: replace != with == in binops
@@ -349,6 +353,7 @@ src/lib.rs:4:5: replace double_factorial -> u32 with 0
 src/lib.rs:4:5: replace double_factorial -> u32 with 1
 src/lib.rs:4:10: replace < with == in double_factorial
 src/lib.rs:4:10: replace < with > in double_factorial
+src/lib.rs:4:10: replace < with <= in double_factorial
 src/lib.rs:7:7: replace * with + in double_factorial
 src/lib.rs:7:7: replace * with / in double_factorial
 ```
@@ -480,6 +485,7 @@ src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok("xy
 src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(())
 src/result.rs:10:10: replace < with == in error_if_negative
 src/result.rs:10:10: replace < with > in error_if_negative
+src/result.rs:10:10: replace < with <= in error_if_negative
 src/result.rs:18:5: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())
 src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::new()
 src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()])
@@ -503,6 +509,7 @@ src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow
 src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())])
 src/slices.rs:5:20: replace < with == in pad
 src/slices.rs:5:20: replace < with > in pad
+src/slices.rs:5:20: replace < with <= in pad
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])
 src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])

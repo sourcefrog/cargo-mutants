@@ -1,8 +1,9 @@
 ---
 source: tests/main.rs
 expression: stdout
+snapshot_kind: text
 ---
-Found 94 mutants to test
+Found 96 mutants to test
 ok       Unmutated baseline
 ok       src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(String::new())
 ok       src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into())
@@ -62,6 +63,7 @@ ok       src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> wi
 ok       src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(())
 ok       src/result.rs:10:10: replace < with == in error_if_negative
 ok       src/result.rs:10:10: replace < with > in error_if_negative
+ok       src/result.rs:10:10: replace < with <= in error_if_negative
 ok       src/result.rs:18:5: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())
 ok       src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::new()
 ok       src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()])
@@ -85,6 +87,7 @@ ok       src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak
 ok       src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned("xyzzy".to_owned())])
 ok       src/slices.rs:5:20: replace < with == in pad
 ok       src/slices.rs:5:20: replace < with > in pad
+ok       src/slices.rs:5:20: replace < with <= in pad
 ok       src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())
 ok       src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])
 ok       src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])
@@ -98,4 +101,4 @@ ok       src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize w
 ok       src/traits.rs:5:9: replace Something::is_three -> bool with true
 ok       src/traits.rs:5:9: replace Something::is_three -> bool with false
 ok       src/traits.rs:5:11: replace == with != in Something::is_three
-94 mutants tested: 94 succeeded
+96 mutants tested: 96 succeeded

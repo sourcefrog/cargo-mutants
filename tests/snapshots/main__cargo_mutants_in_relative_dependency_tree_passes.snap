@@ -1,8 +1,8 @@
 ---
 source: tests/main.rs
 expression: stdout
+snapshot_kind: text
 ---
-Found 6 mutants to test
+Found 7 mutants to test
 ok       Unmutated baseline
-6 mutants tested: 6 caught
-
+7 mutants tested: 7 caught

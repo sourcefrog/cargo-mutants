@@ -124,14 +124,15 @@ fn check_tree_with_mutants_skip() {
         .assert()
         .success()
         .stdout(indoc! { r"
-            Found 5 mutants to test
+            Found 6 mutants to test
             ok       Unmutated baseline
             ok       src/lib.rs:15:5: replace controlled_loop with ()
             ok       src/lib.rs:21:28: replace > with == in controlled_loop
             ok       src/lib.rs:21:28: replace > with < in controlled_loop
+            ok       src/lib.rs:21:28: replace > with >= in controlled_loop
             ok       src/lib.rs:21:53: replace * with + in controlled_loop
             ok       src/lib.rs:21:53: replace * with / in controlled_loop
-            5 mutants tested: 5 succeeded
+            6 mutants tested: 6 succeeded
             "})
         .stderr("");
     assert_eq!(
@@ -139,10 +140,10 @@ fn check_tree_with_mutants_skip() {
         serde_json::json!({
             "caught": 0,
             "missed": 0,
-            "success": 5,
+            "success": 6,
             "timeout": 0,
             "unviable": 0,
-            "total_mutants": 5,
+            "total_mutants": 6,
         })
     );
 }

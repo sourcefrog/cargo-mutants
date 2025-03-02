@@ -1,13 +1,14 @@
 ---
 source: tests/main.rs
 expression: stdout
+snapshot_kind: text
 ---
-Found 5 mutants to test
+Found 6 mutants to test
 ok       Unmutated baseline
 ok       src/lib.rs:15:5: replace controlled_loop with ()
 ok       src/lib.rs:21:28: replace > with == in controlled_loop
 ok       src/lib.rs:21:28: replace > with < in controlled_loop
+ok       src/lib.rs:21:28: replace > with >= in controlled_loop
 ok       src/lib.rs:21:53: replace * with + in controlled_loop
 ok       src/lib.rs:21:53: replace * with / in controlled_loop
-5 mutants tested: 5 succeeded
-
+6 mutants tested: 6 succeeded
