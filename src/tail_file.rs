@@ -37,18 +37,15 @@ impl TailFile {
     /// Non-UTF8 content is lost.
     pub fn last_line(&mut self) -> Result<&str> {
         self.read_buf.clear();
-        let n_read = self
-            .file
+        self.file
             .read_to_end(&mut self.read_buf)
             .context("Read tail of log file")?;
-        if n_read > 0 {
-            if let Some(new_last) = String::from_utf8_lossy(&self.read_buf)
-                .lines()
-                .filter(|l| !l.trim().is_empty())
-                .next_back()
-            {
-                new_last.clone_into(&mut self.last_line_seen);
-            }
+        if let Some(new_last) = String::from_utf8_lossy(&self.read_buf)
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .next_back()
+        {
+            new_last.clone_into(&mut self.last_line_seen);
         }
         Ok(self.last_line_seen.as_str())
     }
