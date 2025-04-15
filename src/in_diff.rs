@@ -8,9 +8,9 @@ use std::iter::once;
 
 use anyhow::{anyhow, bail};
 use camino::Utf8Path;
+use gitpatch::{Line, Patch};
 use indoc::formatdoc;
 use itertools::Itertools;
-use patch::{Line, Patch};
 use tracing::{info, trace, warn};
 
 use crate::mutant::Mutant;
