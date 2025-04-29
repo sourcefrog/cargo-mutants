@@ -223,6 +223,7 @@ dependencies = [
  "ctrlc",
  "fastrand",
  "fs2",
+ "gitpatch",
  "globset",
  "humantime",
  "ignore",
@@ -236,7 +237,6 @@ dependencies = [
  "nix 0.29.0",
  "num_cpus",
  "nutmeg",
- "patch",
  "path-slash",
  "predicates 3.0.0",
  "pretty_assertions",
@@ -586,6 +586,17 @@ name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
+
+[[package]]
+name = "gitpatch"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ce212119eb3801015ea7e8bfb78f029ca16805de0d808358c080ff55ecbe675"
+dependencies = [
+ "chrono",
+ "nom",
+ "nom_locate",
+]
 
 [[package]]
 name = "globset"
@@ -1056,17 +1067,6 @@ dependencies = [
  "redox_syscall 0.5.8",
  "smallvec",
  "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "patch"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c07fdcdd8b05bdcf2a25bc195b6c34cbd52762ada9dba88bf81e7686d14e7a"
-dependencies = [
- "chrono",
- "nom",
- "nom_locate",
 ]
 
 [[package]]
