@@ -168,6 +168,9 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
             elem,
             ..
         }) => match &**elem {
+            // Mutate non-mutable references to static strings, and references to slices to a
+            // leaked vec, and otherwise to simple references to values.
+            // TODO: Also mutate references to single values?
             // You can't currently match box patterns in Rust
             Type::Path(path) if path.path.is_ident("str") => {
                 vec![quote! { "" }, quote! { "xyzzy" }]
@@ -556,6 +559,15 @@ mod test {
     #[test]
     fn ref_replacement_recurses() {
         check_replacements(&parse_quote! { -> &bool }, &[], &["&true", "&false"]);
+    }
+
+    #[test]
+    fn ref_mut() {
+        check_replacements(
+            &parse_quote! { -> &mut bool },
+            &[],
+            &["Box::leak(Box::new(true))", "Box::leak(Box::new(false))"],
+        );
     }
 
     #[test]
