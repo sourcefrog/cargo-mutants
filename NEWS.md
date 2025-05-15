@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-  - New: Mutate `>` to `>=` and `<` to `<=`.
+- New: Mutate `>` to `>=` and `<` to `<=`.
+
+- Changed: Mutate `&T` to `Box::leak(Box::new(...))` so that mutants aren't unviable due to returning references to temporary values.
 
 ## 25.0.1 2025-02-08
 

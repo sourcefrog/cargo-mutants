@@ -28,7 +28,10 @@ More mutation genres and patterns will be added in future releases.
 | `bool`            | `true`, `false` |
 | `String`          | `String::new()`, `"xyzzy".into()` |
 | `&'_ str` .       | `""`, `"xyzzy"` |
-| `&mut ...`        | `Box::leak(Box::new(...))` |
+| `&T`              | `Box::leak(Box::new(...))` |
+| `&mut T`          | `Box::leak(Box::new(...))` |
+| `&[T]`            | `Vec::leak(...)` |
+| `&mut [T]`            | `Vec::leak(...)` |
 | `Result<T>`       | `Ok(...)` , [and an error if configured](error-values.md) |
 | `Option<T>`       | `Some(...)`, `None` |
 | `Box<T>`          | `Box::new(...)`                                            |

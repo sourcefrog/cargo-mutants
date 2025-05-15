@@ -97,7 +97,7 @@ impl Workspace {
             "project location {dir:?} is not absolute"
         );
         let manifest_path = dir.join("Cargo.toml");
-        debug!(?manifest_path, "Find root files");
+        debug!(?manifest_path, "Find workspace metadata");
         check_interrupted()?;
         let metadata = cargo_metadata::MetadataCommand::new()
             .no_deps()
