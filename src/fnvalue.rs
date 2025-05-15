@@ -182,7 +182,7 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                 .collect_vec(),
             _ => type_replacements(elem, error_exprs)
                 .map(|rep| {
-                    quote! { &#rep }
+                    quote! { Box::leak(Box::new(#rep)) }
                 })
                 .collect_vec(),
         },
@@ -557,8 +557,26 @@ mod test {
     }
 
     #[test]
+    fn ref_replacement_leaks_values() {
+        // To avoid returning references to temporary values, the mutation of references
+        // leaks values onto the heap.
+        check_replacements(
+            &parse_quote! { -> &'static String },
+            &[],
+            &[
+                "Box::leak(Box::new(String::new()))",
+                "Box::leak(Box::new(\"xyzzy\".into()))",
+            ],
+        );
+    }
+
+    #[test]
     fn ref_replacement_recurses() {
-        check_replacements(&parse_quote! { -> &bool }, &[], &["&true", "&false"]);
+        check_replacements(
+            &parse_quote! { -> &bool },
+            &[],
+            &["Box::leak(Box::new(true))", "Box::leak(Box::new(false))"],
+        );
     }
 
     #[test]
