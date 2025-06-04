@@ -45,6 +45,7 @@ pub fn copy_tree(
     console.start_copy(dest);
     let mut walk_builder = WalkBuilder::new(from_path);
     let copy_vcs = options.copy_vcs; // for lifetime
+    let from_path_owned = from_path.to_owned(); // for lifetime in closure
     walk_builder
         .git_ignore(options.gitignore)
         .git_exclude(options.gitignore)
@@ -54,8 +55,14 @@ pub fn copy_tree(
         .require_git(true) // stop at git root; only read gitignore files inside git trees
         .filter_entry(move |entry| {
             let name = entry.file_name().to_string_lossy();
+            let is_top_level_target = name == "target"
+                && entry
+                    .path()
+                    .parent()
+                    .map_or(false, |p| p == from_path_owned.as_path());
             name != "mutants.out"
                 && name != "mutants.out.old"
+                && !is_top_level_target
                 && (copy_vcs || !VCS_DIRS.contains(&name.as_ref()))
         });
     debug!(?walk_builder);
@@ -168,6 +175,29 @@ mod test {
         Ok(())
     }
 
+    /// With `gitignore` set to `false` (the default), patterns in that file have no effect.
+    #[test]
+    fn copy_without_gitignore_by_default() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+        create_dir(tmp.join(".git"))?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs(["mutants"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        // gitignore didn't exclude `foo` because gitignore is false by default
+        assert!(dest.join("foo").is_file());
+
+        Ok(())
+    }
+
     /// With `gitignore` set to `true`, in a tree with `.git`, `.gitignore` is respected.
     #[test]
     fn copy_with_gitignore_and_git_dir() -> Result<()> {
@@ -242,6 +272,7 @@ mod test {
             !dest.join("mutants.out").exists(),
             "mutants.out should not be copied"
         );
+        assert!(!dest.join("target").exists(), "target should not be copied");
         assert!(
             dest.join("Cargo.toml").is_file(),
             "Cargo.toml should be copied"
@@ -276,6 +307,84 @@ mod test {
         assert!(
             dest.join("Cargo.toml").is_file(),
             "Cargo.toml should be copied"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn dont_copy_target_dir_by_default() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        create_dir(tmp.join("target"))?;
+        write(tmp.join("target/foo"), "bar")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs(["mutants"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            !dest.join("target").exists(),
+            "target should not be copied by default"
+        );
+        assert!(
+            dest.join("Cargo.toml").is_file(),
+            "Cargo.toml should be copied"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn copy_non_top_level_target_files() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+
+        // Create top-level target directory (should be excluded)
+        create_dir(tmp.join("target"))?;
+        write(tmp.join("target/build_artifact"), "should not be copied")?;
+
+        // Create non-top-level target file and directory (should be copied)
+        let testdata = tmp.join("testdata");
+        create_dir(&testdata)?;
+        write(testdata.join("target"), "should be copied")?;
+
+        let subdir = tmp.join("subdir");
+        create_dir(&subdir)?;
+        create_dir(subdir.join("target"))?;
+        write(subdir.join("target/file"), "should be copied")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs(["mutants"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+
+        // Top-level target should be excluded
+        assert!(
+            !dest.join("target").exists(),
+            "top-level target directory should not be copied"
+        );
+
+        // Non-top-level target files/dirs should be included
+        assert!(
+            dest.join("testdata/target").is_file(),
+            "testdata/target file should be copied"
+        );
+        assert!(
+            dest.join("subdir/target").is_dir(),
+            "subdir/target directory should be copied"
+        );
+        assert!(
+            dest.join("subdir/target/file").is_file(),
+            "subdir/target/file should be copied"
         );
 
         Ok(())

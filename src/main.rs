@@ -201,7 +201,7 @@ pub struct Args {
     file: Vec<String>,
 
     /// Don't copy files matching gitignore patterns.
-    #[arg(long, action = ArgAction::Set, default_value = "true", help_heading = "Copying", group = "copy_opts")]
+    #[arg(long, action = ArgAction::Set, default_value = "false", help_heading = "Copying", group = "copy_opts")]
     gitignore: bool,
 
     /// Test mutations in the source tree, rather than in a copy.

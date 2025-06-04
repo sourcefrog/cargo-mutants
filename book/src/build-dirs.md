@@ -26,15 +26,15 @@ If your tree's build or tests require the VCS directory then it can be copied wi
 
 ## `.gitignore`
 
-From 23.11.2, by default, cargo-mutants will not copy files that are excluded by gitignore patterns, to make copying faster in large trees.
+From 25.0.2, by default, cargo-mutants will copy all files except those explicitly excluded (such as `target/`, `mutants.out`, and VCS directories). Previously, gitignore patterns were respected by default.
 
 gitignore filtering is only used within trees containing a `.git` directory.
 
 The filter, based on the [`ignore` crate](https://docs.rs/ignore/), also respects global git ignore configuration in the home directory, as well as `.gitignore` files within the tree.
 
-This behavior can be turned off with `--gitignore=false`, causing ignored files to be copied.
+gitignore filtering can be enabled with `--gitignore=true`, causing files matching gitignore patterns to be excluded from copying.
 
-Rust projects typically configure gitignore to exclude the `target/` directory.
+The `target/` directory is excluded by default, regardless of gitignore settings, to avoid copying large build artifacts that are typically not needed for mutation testing.
 
 ## `mutants.out`
 

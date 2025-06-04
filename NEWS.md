@@ -6,6 +6,8 @@
 
 - Changed: Mutate `&T` to `Box::leak(Box::new(...))` so that mutants aren't unviable due to returning references to temporary values.
 
+- **Breaking**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`. This reduces the chance that the build will fail in a copied directory due to missing files, at the risk of potentially copying more files than are strictly necessary.
+
 ## 25.0.1 2025-02-08
 
 - New: Additional mutation patterns: delete `match` arms if there is a default arm, and replace `if` guards from match arms with `true` and `false`.
