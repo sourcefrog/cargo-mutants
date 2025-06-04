@@ -31,6 +31,8 @@ pub struct Config {
     pub cap_lints: bool,
     /// Copy `.git` and other VCS directories to the build directory.
     pub copy_vcs: Option<bool>,
+    /// Copy the /target directory to build directories.
+    pub copy_target: Option<bool>,
     /// Generate these error values from functions returning Result.
     pub error_values: Vec<String>,
     /// Generate mutants from source files matching these globs.

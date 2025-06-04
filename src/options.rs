@@ -48,6 +48,9 @@ pub struct Options {
     /// Don't copy files matching gitignore patterns to build directories.
     pub gitignore: bool,
 
+    /// Copy the /target directory to build directories.
+    pub copy_target: bool,
+
     /// Don't copy at all; run tests in the source directory.
     pub in_place: bool,
 
@@ -232,7 +235,7 @@ impl Options {
     /// Build options by merging command-line args and config file.
     pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
         if args.no_copy_target {
-            warn!("--no-copy-target is deprecated and has no effect; target/ is never copied");
+            warn!("--no-copy-target is deprecated; use --copy-target=false instead");
         }
 
         let minimum_test_timeout = Duration::from_secs_f64(
@@ -301,6 +304,8 @@ impl Options {
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             features: args.features.clone(),
             gitignore: args.gitignore,
+            copy_target: (!args.no_copy_target)
+                && args.copy_target.or(config.copy_target).unwrap_or(false),
             in_place: args.in_place,
             jobs: args.jobs,
             jobserver: args.jobserver,
@@ -617,6 +622,89 @@ mod test {
         );
         assert!(!options.features.no_default_features);
         assert!(options.features.all_features);
+    }
+
+    #[test]
+    fn copy_target_default_false() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.copy_target);
+    }
+
+    #[test]
+    fn copy_target_from_command_line() {
+        let args = Args::parse_from(["mutants", "--copy-target=true"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.copy_target);
+    }
+
+    #[test]
+    fn copy_target_from_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(indoc! { r#"
+            copy_target = true
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.copy_target);
+    }
+
+    #[test]
+    fn copy_target_config_only() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(indoc! { r#"
+            copy_target = true
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // Config copy_target = true should be used when no command line option given
+        assert!(options.copy_target);
+    }
+
+    #[test]
+    fn copy_target_command_line_overrides_config() {
+        let args = Args::parse_from(["mutants", "--copy-target=false"]);
+        let config = Config::from_str(indoc! { r#"
+            copy_target = true
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // Command line --copy-target=false should override config copy_target = true
+        assert!(!options.copy_target);
+    }
+
+    #[test]
+    fn no_copy_target_deprecated_option_still_works() {
+        let args = Args::parse_from(["mutants", "--no-copy-target"]);
+        let config = Config::from_str(indoc! { r#"
+            copy_target = true
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // --no-copy-target should override config copy_target = true and set copy_target to false
+        assert!(!options.copy_target);
+    }
+
+    #[test]
+    fn no_copy_target_sets_copy_target_false() {
+        let args = Args::parse_from(["mutants", "--no-copy-target"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        // --no-copy-target should set copy_target to false
+        assert!(!options.copy_target);
+    }
+
+    #[test]
+    fn copy_target_command_line_true_overrides_config() {
+        let args = Args::parse_from(["mutants", "--copy-target=true"]);
+        let config = Config::from_str(indoc! { r#"
+            copy_target = false
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.copy_target);
     }
 
     rusty_fork_test! {

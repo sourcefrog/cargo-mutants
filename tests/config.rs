@@ -155,6 +155,11 @@ fn exclude_file_argument_overrides_config() {
         " }));
 }
 
+// Note: copy_target config option parsing and command line override behavior
+// is tested in unit tests in src/options.rs, not here, because these integration
+// tests cannot easily verify that the target directory was actually copied or not
+// (the temporary build directories are cleaned up after cargo-mutants finishes).
+
 #[test]
 fn list_with_config_file_regexps() {
     let testdata = copy_of_testdata("well_tested");

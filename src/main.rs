@@ -204,6 +204,10 @@ pub struct Args {
     #[arg(long, action = ArgAction::Set, default_value = "false", help_heading = "Copying", group = "copy_opts")]
     gitignore: bool,
 
+    /// Copy the /target directory to build directories.
+    #[arg(long, help_heading = "Copying", group = "copy_opts")]
+    copy_target: Option<bool>,
+
     /// Test mutations in the source tree, rather than in a copy.
     #[arg(
         long,
@@ -271,7 +275,7 @@ pub struct Args {
     no_config: bool,
 
     /// Don't copy the /target directory, and don't build the source tree first.
-    #[arg(long, help_heading = "Copying", group = "copy_opts")]
+    #[arg(long, help_heading = "Copying", group = "copy_opts", hide = true)]
     no_copy_target: bool,
 
     /// Don't print times or tree sizes, to make output deterministic.

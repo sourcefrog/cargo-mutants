@@ -46,6 +46,7 @@ pub fn copy_tree(
     let mut walk_builder = WalkBuilder::new(from_path);
     let copy_vcs = options.copy_vcs; // for lifetime
     let from_path_owned = from_path.to_owned(); // for lifetime in closure
+    let copy_target = options.copy_target;
     walk_builder
         .git_ignore(options.gitignore)
         .git_exclude(options.gitignore)
@@ -62,7 +63,7 @@ pub fn copy_tree(
                     .is_some_and(|p| p == from_path_owned.as_path());
             name != "mutants.out"
                 && name != "mutants.out.old"
-                && !is_top_level_target
+                && (copy_target || !is_top_level_target)
                 && (copy_vcs || !VCS_DIRS.contains(&name.as_ref()))
         });
     debug!(?walk_builder);
@@ -316,7 +317,7 @@ mod test {
     }
 
     #[test]
-    fn dont_copy_target_dir_by_default() -> Result<()> {
+    fn dont_copy_target_dir_by_default_when_copy_target_false() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
         let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
         create_dir(tmp.join("target"))?;
@@ -333,6 +334,37 @@ mod test {
         assert!(
             !dest.join("target").exists(),
             "target should not be copied by default"
+        );
+        assert!(
+            dest.join("Cargo.toml").is_file(),
+            "Cargo.toml should be copied"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn copy_target_dir_when_requested() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        create_dir(tmp.join("target"))?;
+        write(tmp.join("target/foo"), "bar")?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+
+        let options = Options::from_arg_strs(["mutants", "--copy-target=true"]);
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            dest.join("target").exists(),
+            "target should be copied when --copy-target=true"
+        );
+        assert!(
+            dest.join("target/foo").is_file(),
+            "target/foo should be copied when --copy-target=true"
         );
         assert!(
             dest.join("Cargo.toml").is_file(),

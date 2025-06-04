@@ -6,7 +6,9 @@
 
 - Changed: Mutate `&T` to `Box::leak(Box::new(...))` so that mutants aren't unviable due to returning references to temporary values.
 
-- **Breaking**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`. This reduces the chance that the build will fail in a copied directory due to missing files, at the risk of potentially copying more files than are strictly necessary.
+- New: `--copy-target` option allows copying the `/target` directory to build directories. By default, the target directory is excluded to avoid copying large build artifacts, but `--copy-target=true` can be used if tests depend on existing build artifacts.
+
+- **Breaking**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
 
 ## 25.0.1 2025-02-08
 

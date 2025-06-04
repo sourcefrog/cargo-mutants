@@ -34,7 +34,9 @@ The filter, based on the [`ignore` crate](https://docs.rs/ignore/), also respect
 
 gitignore filtering can be enabled with `--gitignore=true`, causing files matching gitignore patterns to be excluded from copying.
 
-The `target/` directory is excluded by default, regardless of gitignore settings, to avoid copying large build artifacts that are typically not needed for mutation testing.
+The `target/` directory is excluded by default, regardless of gitignore settings, to avoid copying large build artifacts that are typically not needed for mutation testing. This can be overridden with `--copy-target=true` if your tests depend on existing build artifacts, or by setting `copy_target = true` in `.cargo/mutants.toml`.
+
+Note that if you set `--gitignore=true` and `--copy-target=true` and your `target/` is excluded by gitignore files (which is common) then it will not be copied.
 
 ## `mutants.out`
 
