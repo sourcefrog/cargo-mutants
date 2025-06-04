@@ -48,6 +48,7 @@ patch = "0.7"
 path-slash = "0.2"
 quote = "1.0.35"
 regex = "1.10"
+schemars = "0.9"
 serde_json = "1.0.128"
 similar = "2.1"
 strum = { version = "0.26", features = ["derive"] }

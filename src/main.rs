@@ -5,7 +5,11 @@
 //! See <https://mutants.rs> for the manual and more information.
 
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions, clippy::needless_raw_string_hashes)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::needless_raw_string_hashes,
+    clippy::too_many_lines
+)]
 
 mod build_dir;
 mod cargo;
@@ -101,6 +105,12 @@ pub enum BaselineStrategy {
 
     /// Don't run tests in an unmutated tree: assume that they pass.
     Skip,
+}
+
+#[derive(Debug, ValueEnum, Clone, Copy, Eq, PartialEq)]
+pub enum SchemaType {
+    /// Emit JSON schema for the configuration file format.
+    Config,
 }
 
 /// Find inadequately-tested code that can be removed without any tests failing.
@@ -393,6 +403,10 @@ pub struct Args {
     )]
     colors: Colors,
 
+    /// Emit a JSON schema for the specified format and exit.
+    #[arg(long, value_enum, help_heading = "Output")]
+    emit_schema: Option<SchemaType>,
+
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
     json: bool,
@@ -453,6 +467,8 @@ fn main() -> Result<()> {
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
         return Ok(());
+    } else if let Some(schema_type) = args.emit_schema {
+        return emit_schema(schema_type);
     }
 
     let console = Console::new();
@@ -534,6 +550,17 @@ fn main() -> Result<()> {
         exit(lab_outcome.exit_code());
     }
     Ok(())
+}
+
+fn emit_schema(schema_type: SchemaType) -> Result<()> {
+    match schema_type {
+        SchemaType::Config => {
+            let schema = schemars::schema_for!(config::Config);
+            // schema.schema.metadata().id = Some("https://json.schemastore.org/cargo-mutants-config.json".to_string());
+            println!("{}", serde_json::to_string_pretty(&schema)?);
+            Ok(())
+        }
+    }
 }
 
 #[cfg(test)]

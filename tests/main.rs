@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Tests for cargo-mutants CLI layer.
 
@@ -55,6 +55,50 @@ fn show_help() {
         .stdout(predicates::str::contains(
             "Usage: cargo mutants [OPTIONS] [-- <CARGO_TEST_ARGS>...]",
         ));
+}
+
+#[test]
+fn emit_config_schema() {
+    let output = run()
+        .args(["mutants", "--emit-schema=config"])
+        .assert()
+        .success()
+        .get_output()
+        .clone();
+
+    let stdout = String::from_utf8(output.stdout).expect("stdout should be valid UTF-8");
+
+    // Parse as JSON to ensure it's valid
+    let schema: serde_json::Value =
+        serde_json::from_str(&stdout).expect("output should be valid JSON schema");
+
+    // Verify it's a JSON schema with expected structure
+    assert_eq!(
+        schema["$schema"],
+        "https://json-schema.org/draft/2020-12/schema",
+    );
+    assert_eq!(
+        schema["$id"],
+        "https://json.schemastore.org/cargo-mutants-config.json"
+    );
+    assert_eq!(schema["title"], "cargo-mutants configuration");
+    assert_eq!(schema["type"], "object");
+
+    // Verify some key properties exist
+    let properties = schema["properties"]
+        .as_object()
+        .expect("schema should have properties object");
+
+    assert!(properties.contains_key("output"));
+    assert!(properties.contains_key("test_tool"));
+    assert!(properties.contains_key("timeout_multiplier"));
+    assert!(properties.contains_key("skip_calls"));
+
+    // Verify the TestTool enum is properly defined
+    let definitions = schema["$defs"]
+        .as_object()
+        .expect("schema should have definitions");
+    assert!(definitions.contains_key("TestTool"));
 }
 
 #[test]

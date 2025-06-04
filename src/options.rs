@@ -8,16 +8,16 @@
 //! 2. Config options (read from `.cargo/mutants.toml`)
 //! 3. Built-in defaults
 
-#![warn(clippy::pedantic)]
-
 use std::env;
 #[cfg(test)]
 use std::ffi::OsString;
 use std::time::Duration;
 
+use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use globset::GlobSet;
 use regex::RegexSet;
+use schemars::JsonSchema;
 use serde::Deserialize;
 use strum::{Display, EnumString};
 use syn::Expr;
@@ -26,7 +26,7 @@ use tracing::warn;
 use crate::config::Config;
 use crate::glob::build_glob_set;
 use crate::mutant::Mutant;
-use crate::{Args, BaselineStrategy, Context, Phase, Result, ValueEnum};
+use crate::{Args, BaselineStrategy, Phase, Result, ValueEnum};
 
 /// Options for mutation testing, based on both command-line arguments and the
 /// config file.
@@ -178,7 +178,9 @@ pub enum TestPackages {
 }
 
 /// Choice of tool to use to run tests.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, EnumString, Display, Deserialize)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, EnumString, Display, Deserialize, JsonSchema,
+)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum TestTool {
@@ -319,7 +321,10 @@ impl Options {
             minimum_test_timeout,
             no_default_features: args.no_default_features
                 || config.no_default_features.unwrap_or(false),
-            output_in_dir: args.output.clone().or(config.output.clone()),
+            output_in_dir: args
+                .output
+                .clone()
+                .or(config.output.as_ref().map(Utf8PathBuf::from)),
             print_caught: args.caught,
             print_unviable: args.unviable,
             profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),

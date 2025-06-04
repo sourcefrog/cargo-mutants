@@ -12,6 +12,10 @@
 
 - **Breaking**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
 
+- New: Produce a json schema for the config file with `--emit-schema=config` to support
+  schema-guided editing. The schema has been proposed to SchemaStore so many editors should in
+  future support it automatically.
+
 ## 25.0.1 2025-02-08
 
 - New: Additional mutation patterns: delete `match` arms if there is a default arm, and replace `if` guards from match arms with `true` and `false`.

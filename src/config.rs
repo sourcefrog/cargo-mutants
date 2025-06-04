@@ -14,18 +14,23 @@ use std::path::Path;
 use std::str::FromStr;
 
 use anyhow::Context;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
+use schemars::JsonSchema;
 use serde::Deserialize;
 
 use crate::options::TestTool;
 use crate::Result;
 
-/// Configuration read from a config file.
+// NOTE: Docstrings on this struct and its members turn into descriptions in the JSON schema,
+// so keep them focused on the externally-visible behavior.
+
+/// cargo-mutants configuration, read by default from `.cargo/mutants.toml`.
 ///
-/// This is similar to [Options], and eventually merged into it, but separate because it
-/// can be deserialized.
-#[derive(Debug, Default, Clone, Deserialize)]
+/// See <https://mutants.rs/>.
+#[derive(Debug, Default, Clone, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
+#[schemars(extend("$id" = "https://json.schemastore.org/cargo-mutants-config.json"))]
+#[schemars(title = "cargo-mutants configuration")]
 pub struct Config {
     /// Pass extra args to every cargo invocation.
     pub additional_cargo_args: Vec<String>,
@@ -58,7 +63,7 @@ pub struct Config {
     /// Do not activate the `default` feature.
     pub no_default_features: Option<bool>,
     /// Output directory.
-    pub output: Option<Utf8PathBuf>,
+    pub output: Option<String>,
     /// Cargo profile.
     pub profile: Option<String>,
     /// Skip calls to functions or methods with these names.
