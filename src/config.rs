@@ -73,8 +73,9 @@ pub struct Config {
 
 impl Config {
     pub fn read_file(path: &Path) -> Result<Config> {
-        let toml = read_to_string(path).with_context(|| format!("read config {path:?}"))?;
-        Config::from_str(&toml).with_context(|| format!("parse toml from {path:?}"))
+        let toml =
+            read_to_string(path).with_context(|| format!("read config {}", path.display()))?;
+        Config::from_str(&toml).with_context(|| format!("parse toml from {}", path.display()))
     }
 
     /// Read the config from a tree's `.cargo/mutants.toml`, and return a default (empty)

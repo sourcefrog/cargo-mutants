@@ -570,9 +570,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 Vec::new()
             }
         };
-        replacements
-            .into_iter()
-            .for_each(|rep| self.collect_mutant(i.op.span().into(), &rep, Genre::BinaryOperator));
+        for rep in replacements {
+            self.collect_mutant(i.op.span().into(), &rep, Genre::BinaryOperator);
+        }
         syn::visit::visit_expr_binary(self, i);
     }
 

@@ -106,7 +106,7 @@ pub enum BaselineStrategy {
 /// Find inadequately-tested code that can be removed without any tests failing.
 ///
 /// See <https://mutants.rs/> for more information.
-#[allow(clippy::struct_excessive_bools)]
+#[allow(clippy::struct_excessive_bools, clippy::struct_field_names)]
 #[derive(Parser, PartialEq, Debug)]
 #[command(
     author,

@@ -33,7 +33,7 @@ fn shard_divides_all_mutants() {
             String::from_utf8(
                 run()
                     .args(common_args)
-                    .args(["--shard", &format!("{}/{}", k, n_shards)])
+                    .args(["--shard", &format!("{k}/{n_shards}")])
                     .assert()
                     .success()
                     .get_output()

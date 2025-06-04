@@ -59,7 +59,7 @@ pub fn copy_tree(
                 && entry
                     .path()
                     .parent()
-                    .map_or(false, |p| p == from_path_owned.as_path());
+                    .is_some_and(|p| p == from_path_owned.as_path());
             name != "mutants.out"
                 && name != "mutants.out.old"
                 && !is_top_level_target
@@ -78,9 +78,12 @@ pub fn copy_tree(
             .join(relative_path)
             .try_into()
             .context("Convert path to UTF-8")?;
-        let ft = entry
-            .file_type()
-            .with_context(|| format!("Expected file to have a file type: {:?}", entry.path()))?;
+        let ft = entry.file_type().with_context(|| {
+            format!(
+                "Expected file to have a file type: {}",
+                entry.path().display()
+            )
+        })?;
         if ft.is_file() {
             let bytes_copied = std::fs::copy(entry.path(), &dest_path).with_context(|| {
                 format!(

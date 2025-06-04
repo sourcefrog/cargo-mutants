@@ -46,7 +46,7 @@ impl From<ExitStatus> for Exit {
                 Exit::Failure(code)
             }
         } else if let Some(signal) = status.signal() {
-            return Exit::Signalled(signal);
+            Exit::Signalled(signal)
         } else {
             Exit::Other
         }
