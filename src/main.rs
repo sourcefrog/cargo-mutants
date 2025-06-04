@@ -112,37 +112,26 @@ pub enum BaselineStrategy {
     author,
     about,
     after_help = SPONSOR_MESSAGE,
+    styles(clap_styles())
 )]
 pub struct Args {
-    /// Show cargo output for all invocations (very verbose).
-    #[arg(long, help_heading = "Output")]
-    all_logs: bool,
+    // Note: Please keep args grouped within the source by their "help_heading", with the headings
+    // in alphabetical order, and args in order within their heading, so they can be easily
+    // navigated and so that related args occur near each other in the source.
 
-    /// Baseline strategy: check that tests pass in an unmutated tree before testing mutants.
-    #[arg(long, value_enum, default_value_t = BaselineStrategy::Run, help_heading = "Execution")]
-    baseline: BaselineStrategy,
-
+    // Build ==========
     /// Turn off all rustc lints, so that denied warnings won't make mutants unviable.
     #[arg(long, action = ArgAction::Set, help_heading = "Build")]
     cap_lints: Option<bool>,
 
-    /// Print mutants that were caught by tests.
-    #[arg(long, short = 'v', help_heading = "Output")]
-    caught: bool,
+    /// Build with this cargo profile.
+    #[arg(long, help_heading = "Build")]
+    profile: Option<String>,
 
-    /// Cargo check generated mutants, but don't run tests.
-    #[arg(long, help_heading = "Execution")]
-    check: bool,
-
-    /// Draw colors in output.
-    #[arg(
-        long,
-        value_enum,
-        help_heading = "Output",
-        default_value_t,
-        env = "CARGO_TERM_COLOR"
-    )]
-    colors: Colors,
+    // Copying ==========
+    /// Copy the /target directory to build directories.
+    #[arg(long, help_heading = "Copying", group = "copy_opts")]
+    copy_target: Option<bool>,
 
     /// Copy `.git` and other VCS directories to the build directory.
     ///
@@ -153,27 +142,147 @@ pub struct Args {
     #[arg(long, help_heading = "Copying", visible_alias = "copy_git")]
     copy_vcs: Option<bool>,
 
+    /// Don't copy files matching gitignore patterns.
+    #[arg(long, action = ArgAction::Set, default_value = "false", help_heading = "Copying", group = "copy_opts")]
+    gitignore: bool,
+
+    /// Test mutations in the source tree, rather than in a copy.
+    #[arg(
+        long,
+        help_heading = "Copying",
+        conflicts_with = "jobs",
+        conflicts_with = "copy_opts"
+    )]
+    in_place: bool,
+
+    /// Don't copy the /target directory, and don't build the source tree first.
+    #[arg(long, help_heading = "Copying", group = "copy_opts", hide = true)]
+    no_copy_target: bool,
+
+    // Debug ==========
+    /// Don't delete the scratch directories, for debugging.
+    #[arg(long, help_heading = "Debug")]
+    leak_dirs: bool,
+
+    /// Log level for stdout (trace, debug, info, warn, error).
+    #[arg(
+        long,
+        short = 'L',
+        default_value = "info",
+        env = "CARGO_MUTANTS_TRACE_LEVEL",
+        help_heading = "Debug"
+    )]
+    level: tracing::Level,
+
+    // Execution ==========
+    /// Baseline strategy: check that tests pass in an unmutated tree before testing mutants.
+    #[arg(long, value_enum, default_value_t = BaselineStrategy::Run, help_heading = "Execution")]
+    baseline: BaselineStrategy,
+
+    /// Build timeout multiplier (relative to base build time).
+    #[arg(long, help_heading = "Execution", conflicts_with = "build_timeout")]
+    build_timeout_multiplier: Option<f64>,
+
+    /// Maximum run time for cargo build command, in seconds.
+    #[arg(long, help_heading = "Execution")]
+    build_timeout: Option<f64>,
+
+    /// Additional args for all cargo invocations.
+    #[arg(
+        long,
+        short = 'C',
+        allow_hyphen_values = true,
+        help_heading = "Execution"
+    )]
+    cargo_arg: Vec<String>,
+
+    /// Pass remaining arguments to cargo test after all options and after `--`.
+    #[arg(last = true, help_heading = "Execution")]
+    cargo_test_args: Vec<String>,
+
+    /// Cargo check generated mutants, but don't run tests.
+    #[arg(long, help_heading = "Execution")]
+    check: bool,
+
+    /// Run this many cargo build/test jobs in parallel.
+    #[arg(
+        long,
+        short = 'j',
+        env = "CARGO_MUTANTS_JOBS",
+        help_heading = "Execution"
+    )]
+    jobs: Option<usize>,
+
+    /// Use a GNU Jobserver to cap concurrency between child processes.
+    #[arg(long, action = ArgAction::Set, help_heading = "Execution", default_value_t = true)]
+    jobserver: bool,
+
+    /// Allow this many jobserver tasks in parallel, across all child processes.
+    ///
+    /// By default, NCPUS.
+    #[arg(long, help_heading = "Execution")]
+    jobserver_tasks: Option<usize>,
+
+    /// Just list possible mutants, don't run them.
+    #[arg(long, help_heading = "Execution")]
+    list: bool,
+
+    /// List source files, don't run anything.
+    #[arg(long, help_heading = "Execution")]
+    list_files: bool,
+
+    /// Minimum timeout for tests, in seconds, as a lower bound on the auto-set time.
+    #[arg(
+        long,
+        env = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT",
+        help_heading = "Execution"
+    )]
+    minimum_test_timeout: Option<f64>,
+
+    /// Run mutants in the fixed order they occur in the source tree.
+    #[arg(long, help_heading = "Execution")]
+    no_shuffle: bool,
+
+    /// Run only one shard of all generated mutants: specify as e.g. 1/4.
+    #[arg(long, help_heading = "Execution")]
+    shard: Option<Shard>,
+
+    /// Run mutants in random order.
+    #[arg(long, help_heading = "Execution")]
+    shuffle: bool,
+
+    /// Tool used to run test suites: cargo or nextest.
+    #[arg(long, help_heading = "Execution")]
+    test_tool: Option<TestTool>,
+
+    /// Maximum run time for all cargo commands, in seconds.
+    #[arg(long, short = 't', help_heading = "Execution")]
+    timeout: Option<f64>,
+
+    /// Test timeout multiplier (relative to base test time).
+    #[arg(long, help_heading = "Execution", conflicts_with = "timeout")]
+    timeout_multiplier: Option<f64>,
+
+    // Features ============================================================
+    /// Space or comma separated list of features to activate.
+    // (The features are not split or parsed, just passed through to Cargo.)
+    #[arg(long, help_heading = "Features")]
+    pub features: Vec<String>,
+
+    /// Do not activate the `default` feature.
+    #[arg(long, help_heading = "Features")]
+    pub no_default_features: bool,
+
+    /// Activate all features.
+    // (This does not conflict because this only turns on features in the top level package,
+    // and you might use --features to turn on features in dependencies.)
+    #[arg(long, help_heading = "Features")]
+    pub all_features: bool,
+
+    // Filters ============================================================
     /// Show the mutation diffs.
     #[arg(long, help_heading = "Filters")]
     diff: bool,
-
-    /// Rust crate directory to examine.
-    #[arg(
-        long,
-        short = 'd',
-        conflicts_with = "manifest_path",
-        help_heading = "Input"
-    )]
-    dir: Option<Utf8PathBuf>,
-
-    /// Generate autocompletions for the given shell.
-    #[arg(long)]
-    completions: Option<Shell>,
-
-    /// Return this error values from functions returning Result:
-    /// for example, `::anyhow::anyhow!("mutated")`.
-    #[arg(long, help_heading = "Generate")]
-    error: Vec<String>,
 
     /// Regex for mutations to examine, matched against the names shown by `--list`.
     #[arg(
@@ -200,132 +309,17 @@ pub struct Args {
     #[arg(long, short = 'f', help_heading = "Filters")]
     file: Vec<String>,
 
-    /// Don't copy files matching gitignore patterns.
-    #[arg(long, action = ArgAction::Set, default_value = "false", help_heading = "Copying", group = "copy_opts")]
-    gitignore: bool,
-
-    /// Copy the /target directory to build directories.
-    #[arg(long, help_heading = "Copying", group = "copy_opts")]
-    copy_target: Option<bool>,
-
-    /// Test mutations in the source tree, rather than in a copy.
-    #[arg(
-        long,
-        help_heading = "Copying",
-        conflicts_with = "jobs",
-        conflicts_with = "copy_opts"
-    )]
-    in_place: bool,
+    /// Include only mutants in code touched by this diff.
+    #[arg(long, short = 'D', help_heading = "Filters")]
+    in_diff: Option<Utf8PathBuf>,
 
     /// Skip mutants that were caught in previous runs.
     #[arg(long, help_heading = "Filters")]
     iterate: bool,
 
-    /// Run this many cargo build/test jobs in parallel.
-    #[arg(
-        long,
-        short = 'j',
-        env = "CARGO_MUTANTS_JOBS",
-        help_heading = "Execution"
-    )]
-    jobs: Option<usize>,
-
-    /// Use a GNU Jobserver to cap concurrency between child processes.
-    #[arg(long, action = ArgAction::Set, help_heading = "Execution", default_value_t = true)]
-    jobserver: bool,
-
-    /// Allow this many jobserver tasks in parallel, across all child processes.
-    ///
-    /// By default, NCPUS.
-    #[arg(long, help_heading = "Execution")]
-    jobserver_tasks: Option<usize>,
-
-    /// Output json (only for --list).
-    #[arg(long, help_heading = "Output")]
-    json: bool,
-
-    /// Don't delete the scratch directories, for debugging.
-    #[arg(long, help_heading = "Debug")]
-    leak_dirs: bool,
-
-    /// Log level for stdout (trace, debug, info, warn, error).
-    #[arg(
-        long,
-        short = 'L',
-        default_value = "info",
-        env = "CARGO_MUTANTS_TRACE_LEVEL",
-        help_heading = "Debug"
-    )]
-    level: tracing::Level,
-
-    /// Just list possible mutants, don't run them.
-    #[arg(long, help_heading = "Execution")]
-    list: bool,
-
-    /// List source files, don't run anything.
-    #[arg(long, help_heading = "Execution")]
-    list_files: bool,
-
-    /// Path to Cargo.toml for the package to mutate.
-    #[arg(long, help_heading = "Input")]
-    manifest_path: Option<Utf8PathBuf>,
-
-    /// Don't read .cargo/mutants.toml.
-    #[arg(long, help_heading = "Input")]
-    no_config: bool,
-
-    /// Don't copy the /target directory, and don't build the source tree first.
-    #[arg(long, help_heading = "Copying", group = "copy_opts", hide = true)]
-    no_copy_target: bool,
-
-    /// Don't print times or tree sizes, to make output deterministic.
-    #[arg(long, help_heading = "Output")]
-    no_times: bool,
-
-    /// Include line & column numbers in the mutation list.
-    #[arg(long, action = ArgAction::Set, default_value = "true", help_heading = "Output")]
-    line_col: bool,
-
-    /// Create mutants.out within this directory.
-    #[arg(
-        long,
-        short = 'o',
-        env = "CARGO_MUTANTS_OUTPUT",
-        help_heading = "Output"
-    )]
-    output: Option<Utf8PathBuf>,
-
-    /// Include only mutants in code touched by this diff.
-    #[arg(long, short = 'D', help_heading = "Filters")]
-    in_diff: Option<Utf8PathBuf>,
-
-    /// Minimum timeout for tests, in seconds, as a lower bound on the auto-set time.
-    #[arg(
-        long,
-        env = "CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT",
-        help_heading = "Execution"
-    )]
-    minimum_test_timeout: Option<f64>,
-
     /// Only test mutants from these packages.
     #[arg(id = "package", long, short = 'p', help_heading = "Filters")]
     mutate_packages: Vec<String>,
-
-    /// Run mutants in random order.
-    #[arg(long, help_heading = "Execution")]
-    shuffle: bool,
-
-    /// Run mutants in the fixed order they occur in the source tree.
-    #[arg(long, help_heading = "Execution")]
-    no_shuffle: bool,
-
-    /// Build with this cargo profile.
-    #[arg(long, help_heading = "Build")]
-    profile: Option<String>,
-
-    /// Run only one shard of all generated mutants: specify as e.g. 1/4.
-    #[arg(long, help_heading = "Execution")]
-    shard: Option<Shard>,
 
     /// Skip calls to functions and methods named in this list.
     ///
@@ -341,16 +335,93 @@ pub struct Args {
     /// Use built-in defaults for `skip_calls`, in addition to any explicit values.
     ///
     /// The default is `with_capacity`.
-    #[arg(long)]
+    #[arg(long, help_heading = "Filters")]
     skip_calls_defaults: Option<bool>,
 
+    /// Generate mutations in every package in the workspace.
+    #[arg(long, help_heading = "Filters")]
+    workspace: bool,
+
+    // Generate ============================================================
+    /// Return this error values from functions returning Result: for example, `::anyhow::anyhow!("mutated")`.
+    #[arg(long, help_heading = "Generate")]
+    error: Vec<String>,
+
+    // Input ============================================================
+    /// Rust crate directory to examine.
+    #[arg(
+        long,
+        short = 'd',
+        conflicts_with = "manifest_path",
+        help_heading = "Input"
+    )]
+    dir: Option<Utf8PathBuf>,
+
+    /// Path to Cargo.toml for the package to mutate.
+    #[arg(long, help_heading = "Input")]
+    manifest_path: Option<Utf8PathBuf>,
+
+    /// Don't read .cargo/mutants.toml.
+    #[arg(long, help_heading = "Input")]
+    no_config: bool,
+
+    // Meta ============================================================
+    /// Generate autocompletions for the given shell.
+    #[arg(long, help_heading = "Meta")]
+    completions: Option<Shell>,
+
+    /// Show version and quit.
+    #[arg(long, action = clap::ArgAction::SetTrue, help_heading = "Meta")]
+    version: bool,
+
+    // Output ============================================================
+    /// Show cargo output for all invocations (very verbose).
+    #[arg(long, help_heading = "Output")]
+    all_logs: bool,
+
+    /// Print mutants that were caught by tests.
+    #[arg(long, short = 'v', help_heading = "Output")]
+    caught: bool,
+
+    /// Draw colors in output.
+    #[arg(
+        long,
+        value_enum,
+        help_heading = "Output",
+        default_value_t,
+        env = "CARGO_TERM_COLOR"
+    )]
+    colors: Colors,
+
+    /// Output json (only for --list).
+    #[arg(long, help_heading = "Output")]
+    json: bool,
+
+    /// Include line & column numbers in the mutation list.
+    #[arg(long, action = ArgAction::Set, default_value = "true", help_heading = "Output")]
+    line_col: bool,
+
+    /// Don't print times or tree sizes, to make output deterministic.
+    #[arg(long, help_heading = "Output")]
+    no_times: bool,
+
+    /// Create mutants.out within this directory.
+    #[arg(
+        long,
+        short = 'o',
+        env = "CARGO_MUTANTS_OUTPUT",
+        help_heading = "Output"
+    )]
+    output: Option<Utf8PathBuf>,
+
+    /// Print mutations that failed to check or build.
+    #[arg(long, short = 'V', help_heading = "Output")]
+    unviable: bool,
+
+    // Tests ============================================================
     /// Run tests from these packages for all mutants.
     #[arg(long, help_heading = "Tests")]
     test_package: Vec<String>,
-
-    /// Tool used to run test suites: cargo or nextest.
-    #[arg(long, help_heading = "Execution")]
-    test_tool: Option<TestTool>,
 
     /// Run all tests in the workspace.
     ///
@@ -359,69 +430,6 @@ pub struct Args {
     /// Overrides `--test_package`.
     #[arg(long, help_heading = "Tests")]
     test_workspace: Option<bool>,
-
-    /// Maximum run time for all cargo commands, in seconds.
-    #[arg(long, short = 't', help_heading = "Execution")]
-    timeout: Option<f64>,
-
-    /// Test timeout multiplier (relative to base test time).
-    #[arg(long, help_heading = "Execution", conflicts_with = "timeout")]
-    timeout_multiplier: Option<f64>,
-
-    /// Maximum run time for cargo build command, in seconds.
-    #[arg(long, help_heading = "Execution")]
-    build_timeout: Option<f64>,
-
-    /// Build timeout multiplier (relative to base build time).
-    #[arg(long, help_heading = "Execution", conflicts_with = "build_timeout")]
-    build_timeout_multiplier: Option<f64>,
-
-    /// Print mutations that failed to check or build.
-    #[arg(long, short = 'V', help_heading = "Output")]
-    unviable: bool,
-
-    /// Show version and quit.
-    #[arg(long, action = clap::ArgAction::SetTrue)]
-    version: bool,
-
-    /// Generate mutations in every package in the workspace.
-    #[arg(long, help_heading = "Filters")]
-    workspace: bool,
-
-    /// Additional args for all cargo invocations.
-    #[arg(
-        long,
-        short = 'C',
-        allow_hyphen_values = true,
-        help_heading = "Execution"
-    )]
-    cargo_arg: Vec<String>,
-
-    /// Pass remaining arguments to cargo test after all options and after `--`.
-    #[arg(last = true, help_heading = "Execution")]
-    cargo_test_args: Vec<String>,
-
-    #[command(flatten)]
-    features: Features,
-}
-
-#[derive(clap::Args, PartialEq, Eq, Debug, Default, Clone)]
-pub struct Features {
-    //---  features
-    /// Space or comma separated list of features to activate.
-    // (The features are not split or parsed, just passed through to Cargo.)
-    #[arg(long, help_heading = "Feature Selection")]
-    pub features: Vec<String>,
-
-    /// Do not activate the `default` feature.
-    #[arg(long, help_heading = "Feature Selection")]
-    pub no_default_features: bool,
-
-    /// Activate all features.
-    // (This does not conflict because this only turns on features in the top level package,
-    // and you might use --features to turn on features in dependencies.)
-    #[arg(long, help_heading = "Feature Selection")]
-    pub all_features: bool,
 }
 
 fn main() -> Result<()> {

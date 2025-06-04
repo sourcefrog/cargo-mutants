@@ -124,7 +124,10 @@ pub struct Options {
     pub additional_cargo_test_args: Vec<String>,
 
     /// Selection of features for cargo.
-    pub features: super::Features,
+    pub features: Vec<String>,
+
+    pub no_default_features: bool,
+    pub all_features: bool,
 
     /// Files to examine.
     pub examine_globset: Option<GlobSet>,
@@ -233,6 +236,7 @@ impl Colors {
 
 impl Options {
     /// Build options by merging command-line args and config file.
+    #[allow(clippy::too_many_lines)] // long but pretty linear
     pub(crate) fn new(args: &Args, config: &Config) -> Result<Options> {
         if args.no_copy_target {
             warn!("--no-copy-target is deprecated; use --copy-target=false instead");
@@ -284,6 +288,7 @@ impl Options {
                 &args.cargo_test_args,
                 &config.additional_cargo_test_args,
             ),
+            all_features: args.all_features,
             baseline: args.baseline,
             build_timeout: args.build_timeout.map(Duration::from_secs_f64),
             build_timeout_multiplier: args
@@ -312,6 +317,7 @@ impl Options {
             jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
+            no_default_features: args.no_default_features,
             output_in_dir: args.output.clone().or(config.output.clone()),
             print_caught: args.caught,
             print_unviable: args.unviable,
@@ -543,20 +549,14 @@ mod test {
     #[test]
     fn features_arg() {
         let args = Args::try_parse_from(["mutants", "--features", "nice,shiny features"]).unwrap();
-        assert_eq!(
-            args.features.features.iter().as_ref(),
-            ["nice,shiny features"]
-        );
-        assert!(!args.features.no_default_features);
-        assert!(!args.features.all_features);
+        assert_eq!(args.features.iter().as_ref(), ["nice,shiny features"]);
+        assert!(!args.no_default_features);
+        assert!(!args.all_features);
 
         let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(
-            options.features.features.iter().as_ref(),
-            ["nice,shiny features"]
-        );
-        assert!(!options.features.no_default_features);
-        assert!(!options.features.all_features);
+        assert_eq!(options.features.iter().as_ref(), ["nice,shiny features"]);
+        assert!(!options.no_default_features);
+        assert!(!options.all_features);
     }
 
     #[test]
@@ -570,12 +570,9 @@ mod test {
         .unwrap();
 
         let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(
-            options.features.features.iter().as_ref(),
-            ["nice,shiny features"]
-        );
-        assert!(options.features.no_default_features);
-        assert!(!options.features.all_features);
+        assert_eq!(options.features.iter().as_ref(), ["nice,shiny features"]);
+        assert!(options.no_default_features);
+        assert!(!options.all_features);
     }
 
     #[test]
@@ -616,12 +613,9 @@ mod test {
         .unwrap();
 
         let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(
-            options.features.features.iter().as_ref(),
-            ["nice,shiny features"]
-        );
-        assert!(!options.features.no_default_features);
-        assert!(options.features.all_features);
+        assert_eq!(options.features.iter().as_ref(), ["nice,shiny features"]);
+        assert!(!options.no_default_features);
+        assert!(options.all_features);
     }
 
     #[test]

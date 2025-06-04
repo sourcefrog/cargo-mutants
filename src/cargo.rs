@@ -147,15 +147,14 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
             );
         }
     }
-    let features = &options.features;
-    if features.no_default_features {
+    if options.no_default_features {
         cargo_args.push("--no-default-features".to_owned());
     }
-    if features.all_features {
+    if options.all_features {
         cargo_args.push("--all-features".to_owned());
     }
     // N.B. it can make sense to have --all-features and also explicit features from non-default packages.
-    cargo_args.extend(features.features.iter().map(|f| format!("--features={f}")));
+    cargo_args.extend(options.features.iter().map(|f| format!("--features={f}")));
     cargo_args.extend(options.additional_cargo_args.iter().cloned());
     if phase == Phase::Test {
         cargo_args.extend(options.additional_cargo_test_args.iter().cloned());
