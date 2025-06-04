@@ -66,7 +66,7 @@ impl BuildDir {
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
         let temp_dir = if options.leak_dirs {
-            let _ = temp_dir.into_path();
+            let _ = temp_dir.keep();
             info!(?path, "Build directory will be leaked for inspection");
             None
         } else {
