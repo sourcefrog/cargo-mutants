@@ -288,7 +288,7 @@ impl Options {
                 &args.cargo_test_args,
                 &config.additional_cargo_test_args,
             ),
-            all_features: args.all_features,
+            all_features: args.all_features || config.all_features.unwrap_or(false),
             baseline: args.baseline,
             build_timeout: args.build_timeout.map(Duration::from_secs_f64),
             build_timeout_multiplier: args
@@ -307,7 +307,7 @@ impl Options {
                 .context("Failed to compile exclude_re regex")?,
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
-            features: args.features.clone(),
+            features: join_slices(&args.features, &config.features),
             gitignore: args.gitignore,
             copy_target: (!args.no_copy_target)
                 && args.copy_target.or(config.copy_target).unwrap_or(false),
@@ -317,7 +317,8 @@ impl Options {
             jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
             minimum_test_timeout,
-            no_default_features: args.no_default_features,
+            no_default_features: args.no_default_features
+                || config.no_default_features.unwrap_or(false),
             output_in_dir: args.output.clone().or(config.output.clone()),
             print_caught: args.caught,
             print_unviable: args.unviable,
@@ -637,10 +638,7 @@ mod test {
     #[test]
     fn copy_target_from_config() {
         let args = Args::parse_from(["mutants"]);
-        let config = Config::from_str(indoc! { r#"
-            copy_target = true
-        "#})
-        .unwrap();
+        let config = Config::from_str("copy_target = true ").unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.copy_target);
     }
@@ -648,10 +646,7 @@ mod test {
     #[test]
     fn copy_target_config_only() {
         let args = Args::parse_from(["mutants"]);
-        let config = Config::from_str(indoc! { r#"
-            copy_target = true
-        "#})
-        .unwrap();
+        let config = Config::from_str("copy_target = true ").unwrap();
         let options = Options::new(&args, &config).unwrap();
         // Config copy_target = true should be used when no command line option given
         assert!(options.copy_target);
@@ -660,22 +655,74 @@ mod test {
     #[test]
     fn copy_target_command_line_overrides_config() {
         let args = Args::parse_from(["mutants", "--copy-target=false"]);
-        let config = Config::from_str(indoc! { r#"
-            copy_target = true
-        "#})
-        .unwrap();
+        let config = Config::from_str("copy_target = true ").unwrap();
         let options = Options::new(&args, &config).unwrap();
         // Command line --copy-target=false should override config copy_target = true
         assert!(!options.copy_target);
     }
 
     #[test]
-    fn no_copy_target_deprecated_option_still_works() {
-        let args = Args::parse_from(["mutants", "--no-copy-target"]);
+    fn features_from_config() {
+        let args = Args::parse_from(["mutants"]);
         let config = Config::from_str(indoc! { r#"
-            copy_target = true
+            features = ["config-feature1", "config-feature2"]
         "#})
         .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.features, vec!["config-feature1", "config-feature2"]);
+        assert!(!options.no_default_features);
+        assert!(!options.all_features);
+    }
+
+    #[test]
+    fn features_command_line_and_config_combined() {
+        let args = Args::parse_from(["mutants", "--features", "cli-feature"]);
+        let config = Config::from_str(indoc! { r#"
+            features = ["config-feature"]
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.features, vec!["cli-feature", "config-feature"]);
+    }
+
+    #[test]
+    fn all_features_from_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("all_features = true ").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.all_features);
+    }
+
+    #[test]
+    fn all_features_command_line_overrides_config() {
+        let args = Args::parse_from(["mutants", "--all-features"]);
+        let config = Config::from_str("all_features = false ").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // Command line --all-features should result in true regardless of config
+        assert!(options.all_features);
+    }
+
+    #[test]
+    fn no_default_features_from_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("no_default_features = true ").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.no_default_features);
+    }
+
+    #[test]
+    fn no_default_features_command_line_overrides_config() {
+        let args = Args::parse_from(["mutants", "--no-default-features"]);
+        let config = Config::from_str("no_default_features = false").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        // Command line --no-default-features should result in true regardless of config
+        assert!(options.no_default_features);
+    }
+
+    #[test]
+    fn no_copy_target_deprecated_option_still_works() {
+        let args = Args::parse_from(["mutants", "--no-copy-target"]);
+        let config = Config::from_str("copy_target = true").unwrap();
         let options = Options::new(&args, &config).unwrap();
         // --no-copy-target should override config copy_target = true and set copy_target to false
         assert!(!options.copy_target);
@@ -693,10 +740,7 @@ mod test {
     #[test]
     fn copy_target_command_line_true_overrides_config() {
         let args = Args::parse_from(["mutants", "--copy-target=true"]);
-        let config = Config::from_str(indoc! { r#"
-            copy_target = false
-        "#})
-        .unwrap();
+        let config = Config::from_str("copy_target = false ").unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.copy_target);
     }

@@ -27,6 +27,14 @@ use crate::Result;
 #[derive(Debug, Default, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Pass extra args to every cargo invocation.
+    pub additional_cargo_args: Vec<String>,
+    /// Pass extra args to cargo test.
+    pub additional_cargo_test_args: Vec<String>,
+    /// Activate all features.
+    pub all_features: Option<bool>,
+    /// Build timeout multiplier, relative to the baseline 'cargo build'.
+    pub build_timeout_multiplier: Option<f64>,
     /// Pass `--cap-lints` to rustc.
     pub cap_lints: bool,
     /// Copy `.git` and other VCS directories to the build directory.
@@ -37,18 +45,18 @@ pub struct Config {
     pub error_values: Vec<String>,
     /// Generate mutants from source files matching these globs.
     pub examine_globs: Vec<String>,
+    /// Examine only mutants matching these regexps.
+    pub examine_re: Vec<String>,
     /// Exclude mutants from source files matching these globs.
     pub exclude_globs: Vec<String>,
     /// Exclude mutants from source files matches these regexps.
     pub exclude_re: Vec<String>,
-    /// Examine only mutants matching these regexps.
-    pub examine_re: Vec<String>,
-    /// Pass extra args to every cargo invocation.
-    pub additional_cargo_args: Vec<String>,
-    /// Pass extra args to cargo test.
-    pub additional_cargo_test_args: Vec<String>,
+    /// Space or comma separated list of features to activate.
+    pub features: Vec<String>,
     /// Minimum test timeout, in seconds, as a floor on the autoset value.
     pub minimum_test_timeout: Option<f64>,
+    /// Do not activate the `default` feature.
+    pub no_default_features: Option<bool>,
     /// Output directory.
     pub output: Option<Utf8PathBuf>,
     /// Cargo profile.
@@ -63,14 +71,12 @@ pub struct Config {
     pub test_package: Vec<String>,
     /// Choice of test tool: cargo or nextest.
     pub test_tool: Option<TestTool>,
-    /// Timeout multiplier, relative to the baseline 'cargo test'.
-    pub timeout_multiplier: Option<f64>,
-    /// Build timeout multiplier, relative to the baseline 'cargo build'.
-    pub build_timeout_multiplier: Option<f64>,
     /// Run tests from all packages in the workspace, not just the mutated package.
     ///
     /// Overrides `test_package`.
     pub test_workspace: Option<bool>,
+    /// Timeout multiplier, relative to the baseline 'cargo test'.
+    pub timeout_multiplier: Option<f64>,
 }
 
 impl Config {

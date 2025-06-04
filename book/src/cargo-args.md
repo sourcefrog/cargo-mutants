@@ -17,6 +17,16 @@ For example, this can be useful if you have tests that are only enabled with a f
 cargo mutants -- --features=fail/failpoints
 ```
 
+These feature flags can also be configured in `.cargo/mutants.toml`:
+
+```toml
+features = ["fail/failpoints", "other-feature"]
+all_features = true
+no_default_features = true
+```
+
+When both command line and config options are specified, the command line flags take precedence for boolean options (`all_features` and `no_default_features`), while features from both sources are combined.
+
 ## Arguments to all `cargo` commands
 
 To pass more arguments to every Cargo invocation, use `--cargo-arg`, or the `additional_cargo_args` configuration key.

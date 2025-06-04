@@ -8,6 +8,8 @@
 
 - New: `--copy-target` option allows copying the `/target` directory to build directories. By default, the target directory is excluded to avoid copying large build artifacts, but `--copy-target=true` can be used if tests depend on existing build artifacts.
 
+- New: Feature-related options can now be configured in `.cargo/mutants.toml`: `features`, `all_features`, and `no_default_features`. Command line arguments take precedence over config file settings for boolean options, while features from both sources are combined.
+
 - **Breaking**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
 
 ## 25.0.1 2025-02-08

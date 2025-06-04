@@ -270,6 +270,38 @@ fn additional_cargo_test_args() {
 }
 
 #[test]
+fn features_config_option() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        features = ["needed"]
+        "#,
+    );
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn all_features_config_option() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        all_features = true
+        "#,
+    );
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
 /// Set the `--output` directory via `output` config directive.
 fn output_option_use_config() {
     let output_tmpdir = TempDir::new().unwrap();
