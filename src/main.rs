@@ -372,8 +372,12 @@ pub struct Args {
     manifest_path: Option<Utf8PathBuf>,
 
     /// Don't read .cargo/mutants.toml.
-    #[arg(long, help_heading = "Input")]
+    #[arg(long, help_heading = "Input", conflicts_with = "config")]
     no_config: bool,
+
+    /// Read configuration from this file instead of .cargo/mutants.toml.
+    #[arg(long, help_heading = "Input", value_name = "FILE", conflicts_with = "no_config")]
+    config: Option<Utf8PathBuf>,
 
     // Meta ============================================================
     /// Generate autocompletions for the given shell.
@@ -489,6 +493,8 @@ fn main() -> Result<()> {
     let workspace = Workspace::open(start_dir)?;
     let config = if args.no_config {
         config::Config::default()
+    } else if let Some(config_path) = &args.config {
+        config::Config::read_file(config_path.as_ref())?
     } else {
         config::Config::read_tree_config(workspace.root())?
     };

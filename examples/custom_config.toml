@@ -1,0 +1,83 @@
+# Example custom configuration file for cargo-mutants
+# This file demonstrates how to use the --config option with a custom configuration file.
+#
+# Usage: cargo mutants --config example_custom_config.toml
+#
+# This allows you to have different configuration files for different scenarios,
+# such as CI/CD pipelines, development, or specific testing requirements.
+
+# Generate these error values from functions returning Result
+error_values = [
+    "anyhow::anyhow!(\"custom mutant error\")",
+    "std::io::Error::new(std::io::ErrorKind::Other, \"mutant\")"
+]
+
+# Pass extra arguments to every cargo invocation
+additional_cargo_args = ["--verbose"]
+
+# Pass extra arguments to cargo test
+additional_cargo_test_args = ["--nocapture", "--test-threads=1"]
+
+# Activate all features during testing
+all_features = true
+
+# Build timeout multiplier (relative to baseline build time)
+build_timeout_multiplier = 3.0
+
+# Test timeout multiplier (relative to baseline test time)
+timeout_multiplier = 2.0
+
+# Minimum test timeout in seconds
+minimum_test_timeout = 60.0
+
+# Copy VCS directories (.git, etc.) to build directories
+copy_vcs = true
+
+# Examine only files matching these glob patterns
+examine_globs = [
+    "src/**/*.rs",
+    "examples/**/*.rs"
+]
+
+# Exclude files matching these glob patterns
+exclude_globs = [
+    "src/test_*.rs",
+    "src/**/test.rs",
+    "tests/**/*.rs"
+]
+
+# Skip calls to these functions/methods
+skip_calls = [
+    "println!",
+    "eprintln!",
+    "debug!",
+    "info!",
+    "warn!",
+    "error!",
+    "trace!",
+    "panic!",
+    "unreachable!",
+    "todo!",
+    "unimplemented!"
+]
+
+# Use built-in defaults for skip_calls (includes "with_capacity")
+skip_calls_defaults = true
+
+# Choose test tool: "cargo" or "nextest"
+test_tool = "cargo"
+
+# Run tests from these specific packages for all mutants
+test_package = ["my-core-package", "my-utils"]
+
+# Alternatively, run tests from all packages in the workspace
+# test_workspace = true
+
+# Output directory for results
+output = "custom_mutants_output"
+
+# Cargo profile to use for builds
+profile = "dev"
+
+# Pass `--cap-lints` to rustc to avoid warnings causing build failures
+cap_lints = true

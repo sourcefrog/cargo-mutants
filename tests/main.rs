@@ -1049,3 +1049,166 @@ fn completions_option_generates_something() {
             .stdout(predicate::str::is_empty().not());
     }
 }
+
+#[test]
+fn config_option_reads_custom_file() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+
+    // Create a custom config file with specific error values
+    let custom_config_path = tmp_src_dir.path().join("custom_config.toml");
+    fs::write(
+        &custom_config_path,
+        r#"error_values = ["anyhow::anyhow!(\"custom test error\")", "std::io::Error::new(std::io::ErrorKind::Other, \"custom\")"]
+additional_cargo_args = ["--verbose"]
+timeout_multiplier = 2.5
+"#,
+    )
+    .unwrap();
+
+    // Test that --config reads the custom file
+    let output = run()
+        .args(["mutants", "--config"])
+        .arg(&custom_config_path)
+        .args(["--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let output_str = String::from_utf8_lossy(&output);
+
+    // Should contain the custom error value from our config file
+    assert!(
+        output_str.contains("custom test error"),
+        "Output should contain custom error value from config file"
+    );
+}
+
+#[test]
+fn config_option_mutual_exclusion_with_no_config() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    let custom_config_path = tmp_src_dir.path().join("test_config.toml");
+    fs::write(&custom_config_path, "timeout_multiplier = 2.0").unwrap();
+
+    // Test that --config and --no-config are mutually exclusive
+    run()
+        .args(["mutants", "--config"])
+        .arg(&custom_config_path)
+        .args(["--no-config", "--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .failure()
+        .stderr(contains("cannot be used with"));
+}
+
+#[test]
+fn config_option_nonexistent_file() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+
+    // Test error handling for non-existent config file
+    run()
+        .args(["mutants", "--config", "/nonexistent/config.toml"])
+        .args(["--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .failure()
+        .stderr(
+            contains("read config /nonexistent/config.toml")
+                .and(contains("No such file or directory"))
+        );
+}
+
+#[test]
+fn config_option_vs_default_behavior() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+
+    // Create default .cargo/mutants.toml config
+    create_dir(tmp_src_dir.path().join(".cargo")).unwrap();
+    fs::write(
+        tmp_src_dir.path().join(".cargo/mutants.toml"),
+        r#"error_values = ["anyhow::anyhow!(\"default error\")"]"#,
+    )
+    .unwrap();
+
+    // Create custom config file
+    let custom_config_path = tmp_src_dir.path().join("custom.toml");
+    fs::write(
+        &custom_config_path,
+        r#"error_values = ["anyhow::anyhow!(\"custom error\")"]"#,
+    )
+    .unwrap();
+
+    // Test default behavior (should use .cargo/mutants.toml)
+    let default_output = run()
+        .args(["mutants", "--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let default_str = String::from_utf8_lossy(&default_output);
+    assert!(
+        default_str.contains("default error"),
+        "Default behavior should use .cargo/mutants.toml"
+    );
+
+    // Test custom config file (should use custom.toml)
+    let custom_output = run()
+        .args(["mutants", "--config"])
+        .arg(&custom_config_path)
+        .args(["--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let custom_str = String::from_utf8_lossy(&custom_output);
+    assert!(
+        custom_str.contains("custom error"),
+        "Custom config should override default config"
+    );
+    assert!(
+        !custom_str.contains("default error"),
+        "Custom config should not contain default error values"
+    );
+
+    // Test --no-config (should use neither)
+    let no_config_output = run()
+        .args(["mutants", "--no-config", "--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let no_config_str = String::from_utf8_lossy(&no_config_output);
+    assert!(
+        !no_config_str.contains("default error"),
+        "--no-config should not use default config"
+    );
+    assert!(
+        !no_config_str.contains("custom error"),
+        "--no-config should not use custom config"
+    );
+}
+
+#[test]
+fn example_config_file_can_be_loaded() {
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    
+    // Test that the example config file in examples/ directory can be loaded successfully
+    run()
+        .args(["mutants", "--config", "examples/custom_config.toml"])
+        .args(["--list", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(contains("custom mutant error"));
+}
