@@ -84,7 +84,7 @@ fn binary_diff_is_not_an_error_and_matches_nothing() {
         .assert()
         .success()
         .stdout("")
-        .stderr(predicate::str::contains("diff file is empty"));
+        .stderr("");
 }
 
 #[test]
