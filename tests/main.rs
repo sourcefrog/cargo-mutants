@@ -1116,7 +1116,7 @@ fn config_option_nonexistent_file() {
         .failure()
         .stderr(
             contains("read config /nonexistent/config.toml")
-                .and(contains("No such file or directory"))
+                .and(contains("No such file or directory")),
         );
 }
 
@@ -1202,7 +1202,7 @@ fn config_option_vs_default_behavior() {
 #[test]
 fn example_config_file_can_be_loaded() {
     let tmp_src_dir = copy_of_testdata("well_tested");
-    
+
     // Test that the example config file in examples/ directory can be loaded successfully
     run()
         .args(["mutants", "--config", "examples/custom_config.toml"])

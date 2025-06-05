@@ -376,7 +376,12 @@ pub struct Args {
     no_config: bool,
 
     /// Read configuration from this file instead of .cargo/mutants.toml.
-    #[arg(long, help_heading = "Input", value_name = "FILE", conflicts_with = "no_config")]
+    #[arg(
+        long,
+        help_heading = "Input",
+        value_name = "FILE",
+        conflicts_with = "no_config"
+    )]
     config: Option<Utf8PathBuf>,
 
     // Meta ============================================================
