@@ -24,13 +24,13 @@ use crate::Result;
 // NOTE: Docstrings on this struct and its members turn into descriptions in the JSON schema,
 // so keep them focused on the externally-visible behavior.
 
-/// cargo-mutants configuration, read by default from `.cargo/mutants.toml`.
-///
-/// See <https://mutants.rs/>.
 #[derive(Debug, Default, Clone, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
 #[schemars(extend("$id" = "https://json.schemastore.org/cargo-mutants-config.json"))]
 #[schemars(title = "cargo-mutants configuration")]
+#[schemars(
+    description = "cargo-mutants configuration, read by default from `.cargo/mutants.toml`. See <https://mutants.rs/>."
+)]
 pub struct Config {
     /// Pass extra args to every cargo invocation.
     pub additional_cargo_args: Vec<String>,
@@ -40,6 +40,7 @@ pub struct Config {
     pub all_features: Option<bool>,
     /// Build timeout multiplier, relative to the baseline 'cargo build'.
     pub build_timeout_multiplier: Option<f64>,
+
     /// Pass `--cap-lints` to rustc.
     pub cap_lints: bool,
     /// Copy `.git` and other VCS directories to the build directory.
