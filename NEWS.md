@@ -16,6 +16,8 @@
   schema-guided editing. The schema has been proposed to SchemaStore so many editors should in
   future support it automatically.
 
+- New: The config file path can be specified with the `--config` option, overriding the default of `.cargo/mutants.toml`. (The pre-existing `--no-config` option turns it off.)
+
 ## 25.0.1 2025-02-08
 
 - New: Additional mutation patterns: delete `match` arms if there is a default arm, and replace `if` guards from match arms with `true` and `false`.
