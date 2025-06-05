@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! `cargo-mutants`: Find test gaps by inserting bugs.
 //!
@@ -137,6 +137,20 @@ pub struct Args {
     /// Build with this cargo profile.
     #[arg(long, help_heading = "Build")]
     profile: Option<String>,
+
+    // Config ============================================================
+    /// Read configuration from this file instead of .cargo/mutants.toml.
+    #[arg(
+        long,
+        help_heading = "Config",
+        value_name = "FILE",
+        conflicts_with = "no_config"
+    )]
+    config: Option<Utf8PathBuf>,
+
+    /// Don't read .cargo/mutants.toml.
+    #[arg(long, help_heading = "Config", conflicts_with = "config")]
+    no_config: bool,
 
     // Copying ==========
     /// Copy the /target directory to build directories.
@@ -370,19 +384,6 @@ pub struct Args {
     /// Path to Cargo.toml for the package to mutate.
     #[arg(long, help_heading = "Input")]
     manifest_path: Option<Utf8PathBuf>,
-
-    /// Don't read .cargo/mutants.toml.
-    #[arg(long, help_heading = "Input", conflicts_with = "config")]
-    no_config: bool,
-
-    /// Read configuration from this file instead of .cargo/mutants.toml.
-    #[arg(
-        long,
-        help_heading = "Input",
-        value_name = "FILE",
-        conflicts_with = "no_config"
-    )]
-    config: Option<Utf8PathBuf>,
 
     // Meta ============================================================
     /// Generate autocompletions for the given shell.
