@@ -8,6 +8,8 @@ allow developers to run `cargo mutants` with no other options.
 
 `--no-config` can be used to disable reading the configuration file.
 
+For a full list of keys, see <https://github.com/sourcefrog/cargo-mutants/blob/main/src/config.rs>.
+
 ## Merging config and command-line options
 
 When options are specified in both the config file and the command line, the command line options take precedence.
