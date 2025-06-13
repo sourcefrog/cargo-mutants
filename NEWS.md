@@ -1,20 +1,18 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 25.1.0 2025-06-05
+
+- **Changed**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
 
 - New: Mutate `>` to `>=` and `<` to `<=`.
 
-- Changed: Mutate `&T` to `Box::leak(Box::new(...))` so that mutants aren't unviable due to returning references to temporary values.
+- Changed: Mutate `&T` to `Box::leak(Box::new(...))`, instead of a reference to a value, so that mutants aren't unviable due to returning references to temporary values.
 
 - New: `--copy-target` option allows copying the `/target` directory to build directories. By default, the target directory is excluded to avoid copying large build artifacts, but `--copy-target=true` can be used if tests depend on existing build artifacts.
 
 - New: Feature-related options can now be configured in `.cargo/mutants.toml`: `features`, `all_features`, and `no_default_features`. Command line arguments take precedence over config file settings for boolean options, while features from both sources are combined.
 
-- **Breaking**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
-
-- New: Produce a json schema for the config file with `--emit-schema=config` to support
-  schema-guided editing. The schema has been proposed to SchemaStore so many editors should in
-  future support it automatically.
+- New: Produce a json schema for the config file with `--emit-schema=config` to support schema-guided editing. The schema has been proposed to SchemaStore so many editors should in future support it automatically.
 
 - New: The config file path can be specified with the `--config` option, overriding the default of `.cargo/mutants.toml`. (The pre-existing `--no-config` option turns it off.)
 
