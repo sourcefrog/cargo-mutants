@@ -568,7 +568,6 @@ fn emit_schema(schema_type: SchemaType) -> Result<()> {
     match schema_type {
         SchemaType::Config => {
             let schema = schemars::schema_for!(config::Config);
-            // schema.schema.metadata().id = Some("https://json.schemastore.org/cargo-mutants-config.json".to_string());
             println!("{}", serde_json::to_string_pretty(&schema)?);
             Ok(())
         }

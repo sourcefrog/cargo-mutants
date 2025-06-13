@@ -29,6 +29,8 @@ to values from the command line.
 A [JSON Schema](https://json-schema.org/) describes the fields in the config file and can be used
 by many text editors to provide autocompletion and validation.
 
+A recent version of the schema is available at <https://json.schemastore.org/cargo-mutants-config.json>.
+
 To generate the schema, run:
 
 ```bash
