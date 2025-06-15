@@ -1115,8 +1115,10 @@ fn config_option_nonexistent_file() {
         .assert()
         .failure()
         .stderr(
-            contains("read config /nonexistent/config.toml")
-                .and(contains("No such file or directory")),
+            contains("read config /nonexistent/config.toml").and(
+                contains("No such file or directory")
+                    .or(contains("The system cannot find the path specified")),
+            ),
         );
 }
 
