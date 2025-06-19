@@ -4,7 +4,8 @@
 
 use std::collections::HashSet;
 use std::env;
-use std::fs::{self, create_dir, read_dir, read_to_string, write};
+use std::fs::{self, create_dir, read_dir, read_to_string, write, File};
+use std::io::Write;
 use std::path::Path;
 
 use indoc::indoc;
@@ -14,7 +15,8 @@ use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
-use tempfile::TempDir;
+use regex::Regex;
+use tempfile::{tempdir, TempDir};
 
 mod util;
 use util::{copy_of_testdata, copy_testdata_to, run, OUTER_TIMEOUT};
@@ -1522,4 +1524,465 @@ fn interrupt_caught_and_kills_children() {
     assert!(!stderr.contains("panic"));
     // And we don't want duplicate messages about workers failing.
     assert!(!stderr.contains("Worker thread failed"));
+}
+
+#[test]
+fn env_var_controls_trace() {
+    let tmp = copy_of_testdata("never_type");
+    run()
+        .env("CARGO_MUTANTS_TRACE_LEVEL", "trace")
+        .args(["mutants", "--list"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        // This is a debug!() message; it should only be seen if the trace var
+        // was wired correctly to stderr.
+        .stderr(predicate::str::contains(
+            "No mutants generated for this return type",
+        ));
+}
+
+#[test]
+fn shard_divides_all_mutants() {
+    // For speed, this only lists the mutants, trusting that the mutants
+    // that are listed are the ones that are run.
+    let tmp = copy_of_testdata("well_tested");
+    let common_args = ["mutants", "--list", "-d", tmp.path().to_str().unwrap()];
+    let full_list = String::from_utf8(
+        run()
+            .args(common_args)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone(),
+    )
+    .unwrap()
+    .lines()
+    .map(ToOwned::to_owned)
+    .collect_vec();
+
+    let n_shards = 5;
+    let rr_shard_lists = (0..n_shards)
+        .map(|k| {
+            String::from_utf8(
+                run()
+                    .args(common_args)
+                    .args([
+                        "--shard",
+                        &format!("{k}/{n_shards}"),
+                        "--sharding=round-robin",
+                    ])
+                    .assert()
+                    .success()
+                    .get_output()
+                    .stdout
+                    .clone(),
+            )
+            .unwrap()
+            .lines()
+            .map(ToOwned::to_owned)
+            .collect_vec()
+        })
+        .collect_vec();
+
+    // If you combine all the mutants selected for each shard, you get the
+    // full list, with nothing lost or duplicated, disregarding order.
+    //
+    // If we had a bug where we shuffled before sharding, then the shards would
+    // see inconsistent lists and this test would fail in at least some attempts.
+    assert_eq!(
+        rr_shard_lists.iter().flatten().sorted().collect_vec(),
+        full_list.iter().sorted().collect_vec()
+    );
+
+    // The shards should also be approximately the same size.
+    let shard_lens = rr_shard_lists.iter().map(|l| l.len()).collect_vec();
+    assert!(shard_lens.iter().max().unwrap() - shard_lens.iter().min().unwrap() <= 1);
+
+    // And the shards are disjoint
+    for i in 0..n_shards {
+        for j in 0..n_shards {
+            if i != j {
+                assert!(
+                    rr_shard_lists[i]
+                        .iter()
+                        .all(|m| !rr_shard_lists[j].contains(m)),
+                    "shard {} contains {}",
+                    j,
+                    rr_shard_lists[j]
+                        .iter()
+                        .filter(|m| rr_shard_lists[j].contains(m))
+                        .join(", ")
+                );
+            }
+        }
+    }
+
+    // If you reassemble the round-robin shards in order, you get the original order back.
+    //
+    // To do so: cycle around the list of shards, taking one from each shard in order, until
+    // we get to the end of any list.
+    let mut reassembled = Vec::new();
+    let mut rr_iters = rr_shard_lists
+        .clone()
+        .into_iter()
+        .map(|l| l.into_iter())
+        .collect_vec();
+    let mut i = 0;
+    let mut limit = 0;
+    for name in rr_iters[i].by_ref() {
+        reassembled.push(name);
+        i = (i + 1) % n_shards;
+        limit += 1;
+        assert!(limit < full_list.len() * 2, "too many iterations");
+    }
+
+    // Check with slice sharding, the new default
+    let slice_shard_lists = (0..n_shards)
+        .map(|k| {
+            String::from_utf8(
+                run()
+                    .args(common_args)
+                    .args([&format!("--shard={k}/{n_shards}")]) //  "--sharding=slice"
+                    .assert()
+                    .success()
+                    .get_output()
+                    .stdout
+                    .clone(),
+            )
+            .unwrap()
+            .lines()
+            .map(ToOwned::to_owned)
+            .collect_vec()
+        })
+        .collect_vec();
+
+    // These can just be concatenated
+    let slice_reassembled = slice_shard_lists.into_iter().flatten().collect_vec();
+    assert_eq!(slice_reassembled, full_list);
+}
+
+/// Test that `--jobs` seems to launch multiple threads.
+///
+/// It's a bit hard to assess that multiple jobs really ran in parallel,
+/// but we can at least check that the option is accepted, and see that the
+/// debug log looks like it's using multiple threads.
+#[test]
+fn jobs_option_accepted_and_causes_multiple_threads() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j2")
+        .arg("--minimum-test-timeout=120") // to avoid flakes on slow CI
+        .assert()
+        .success();
+    let debug_log =
+        read_to_string(testdata.path().join("mutants.out/debug.log")).expect("read debug log");
+    println!("debug log:\n{debug_log}");
+    // This might be brittle, as the ThreadId debug form is not specified, and
+    // also _possibly_ everything will complete on one thread before the next
+    // gets going, though that seems unlikely.
+    let re = Regex::new(r#"start thread thread_id=ThreadId\(\d+\)"#).expect("compile regex");
+    let matches = re
+        .find_iter(&debug_log)
+        .map(|m| m.as_str())
+        .unique()
+        .collect::<Vec<_>>();
+    println!("threadid matches: {matches:?}");
+    assert!(
+        matches.len() > 1,
+        "expected more than {} thread ids in debug log",
+        matches.len()
+    );
+}
+
+#[test]
+fn warn_about_too_many_jobs() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j40")
+        .arg("--shard=0/1000")
+        .assert()
+        .stderr(predicates::str::contains(
+            "WARN --jobs=40 is probably too high",
+        ))
+        .success();
+}
+
+#[test]
+#[allow(clippy::too_many_lines)] // long but pretty straightforward
+fn iterate_retries_missed_mutants() {
+    let temp = tempdir().unwrap();
+
+    write(
+        temp.path().join("Cargo.toml"),
+        indoc! { r#"
+            [package]
+            name = "cargo_mutants_iterate"
+            edition = "2021"
+            version = "0.0.0"
+            publish = false
+        "# },
+    )
+    .unwrap();
+    create_dir(temp.path().join("src")).unwrap();
+    create_dir(temp.path().join("tests")).unwrap();
+
+    // First, write some untested code, and expect that the mutant is missed.
+    write(
+        temp.path().join("src/lib.rs"),
+        indoc! { r#"
+            pub fn is_two(a: usize) -> bool { a == 2 }
+        "#},
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(temp.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty())
+        .stdout(indoc! { r#"
+            src/lib.rs:1:35: replace is_two -> bool with true
+            src/lib.rs:1:35: replace is_two -> bool with false
+            src/lib.rs:1:37: replace == with != in is_two
+        "# });
+
+    run()
+        .arg("mutants")
+        .arg("--no-shuffle")
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(2); // missed mutants
+
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        indoc! { r#"
+            src/lib.rs:1:35: replace is_two -> bool with true
+            src/lib.rs:1:35: replace is_two -> bool with false
+            src/lib.rs:1:37: replace == with != in is_two
+        "# }
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+        ""
+    );
+    assert!(!temp
+        .path()
+        .join("mutants.out/previously_caught.txt")
+        .is_file());
+
+    // Now add a test that should catch this.
+    write(
+        temp.path().join("tests/main.rs"),
+        indoc! { r#"
+        use cargo_mutants_iterate::*;
+
+        #[test]
+        fn some_test() {
+            assert!(is_two(2));
+            assert!(!is_two(4));
+        }
+    "#},
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .arg("--no-shuffle")
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(0); // caught it
+
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+        indoc! { r#"
+            src/lib.rs:1:35: replace is_two -> bool with true
+            src/lib.rs:1:35: replace is_two -> bool with false
+            src/lib.rs:1:37: replace == with != in is_two
+        "# }
+    );
+
+    // Now that everything's caught, run tests again and there should be nothing to test,
+    // on both the first and second run with --iterate
+    for _ in 0..2 {
+        run()
+            .arg("mutants")
+            .args(["--list", "--iterate"])
+            .arg("-d")
+            .arg(temp.path())
+            .assert()
+            .success()
+            .stdout("");
+        run()
+            .arg("mutants")
+            .args(["--no-shuffle", "--iterate", "--in-place"])
+            .arg("-d")
+            .arg(temp.path())
+            .assert()
+            .success()
+            .stderr(predicate::str::contains(
+                "No mutants found under the active filters",
+            ))
+            .stdout(predicate::str::contains("Found 0 mutants to test"));
+        assert_eq!(
+            read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+            ""
+        );
+        assert_eq!(
+            read_to_string(temp.path().join("mutants.out/previously_caught.txt"))
+                .unwrap()
+                .lines()
+                .count(),
+            3
+        );
+    }
+
+    // Add some more code and it should be seen as untested.
+    let mut src = File::options()
+        .append(true)
+        .open(temp.path().join("src/lib.rs"))
+        .unwrap();
+    src.write_all("pub fn not_two(a: usize) -> bool { !is_two(a) }\n".as_bytes())
+        .unwrap();
+    drop(src);
+
+    // We should see only the new function as untested
+    let added_mutants = indoc! { r#"
+        src/lib.rs:2:36: replace not_two -> bool with true
+        src/lib.rs:2:36: replace not_two -> bool with false
+        src/lib.rs:2:36: delete ! in not_two
+    "# };
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout(added_mutants);
+
+    // These are missed by a new incremental run
+    run()
+        .arg("mutants")
+        .args(["--no-shuffle", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(2);
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        added_mutants
+    );
+
+    // Add a new test that catches some but not all mutants
+    File::options()
+        .append(true)
+        .open(temp.path().join("tests/main.rs"))
+        .unwrap()
+        .write_all("#[test] fn three_is_not_two() { assert!(not_two(3)); }\n".as_bytes())
+        .unwrap();
+    run()
+        .arg("mutants")
+        .args(["--no-shuffle", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(2);
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        "src/lib.rs:2:36: replace not_two -> bool with true\n"
+    );
+
+    // There should only be one more mutant to test
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout("src/lib.rs:2:36: replace not_two -> bool with true\n");
+
+    // Add another test
+    File::options()
+        .append(true)
+        .open(temp.path().join("tests/main.rs"))
+        .unwrap()
+        .write_all("#[test] fn two_is_not_not_two() { assert!(!not_two(2)); }\n".as_bytes())
+        .unwrap();
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout("src/lib.rs:2:36: replace not_two -> bool with true\n");
+    run()
+        .arg("mutants")
+        .args(["--no-shuffle", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success();
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+        "src/lib.rs:2:36: replace not_two -> bool with true\n"
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/previously_caught.txt"))
+            .unwrap()
+            .lines()
+            .count(),
+        5
+    );
+
+    // nothing more is missed
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout("");
+}
+
+/// `INSTA_UPDATE=always` in the environment will cause Insta to update
+/// the snaphots, so the tests will pass, so mutants will not be caught.
+/// This test checks that cargo-mutants sets the environment variable
+/// so that mutants are caught properly.
+#[test]
+fn insta_test_failures_are_detected() {
+    for insta_update in ["auto", "always"] {
+        println!("INSTA_UPDATE={insta_update}");
+        let tmp_src_dir = copy_of_testdata("insta");
+        run()
+            .arg("mutants")
+            .args(["--no-times", "--no-shuffle", "--caught", "-Ltrace"])
+            .env("INSTA_UPDATE", insta_update)
+            .current_dir(tmp_src_dir.path())
+            .assert()
+            .success();
+    }
 }
