@@ -1,5 +1,0 @@
----
-source: tests/insta.rs
-expression: say_hello(name)
----
-Hello, Robin!

@@ -5,10 +5,11 @@
 use std::collections::HashSet;
 use std::env;
 use std::fs::{self, create_dir, create_dir_all, read_dir, read_to_string, rename, write, File};
-use std::io::Write;
+use std::io::Write as IoWrite;
 use std::path::Path;
 
 use indoc::indoc;
+use insta::assert_snapshot;
 use itertools::Itertools;
 use jiff::Timestamp;
 use predicate::str::{contains, is_match};
@@ -16,13 +17,15 @@ use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
 use regex::Regex;
+use serde_json::json;
 use similar::TextDiff;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
 mod util;
-use util::{copy_of_testdata, copy_testdata_to, run, OUTER_TIMEOUT};
-
-use crate::util::outcome_json_counts;
+use util::{
+    assert_bytes_eq_json, copy_of_testdata, copy_testdata_to, outcome_json_counts, run,
+    CommandInstaExt, OUTER_TIMEOUT,
+};
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -2636,4 +2639,710 @@ fn unviable_mutation_of_struct_with_no_default() {
             "total_mutants": 1,
         })
     );
+}
+
+#[test]
+fn open_by_manifest_path() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .args(["mutants", "--list", "--line-col=false", "--manifest-path"])
+        .arg(tmp.path().join("Cargo.toml"))
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "src/bin/factorial.rs: replace main with ()",
+        ));
+}
+
+#[test]
+fn list_warns_about_unmatched_packages() {
+    run()
+        .args([
+            "mutants",
+            "--list",
+            "-d",
+            "testdata/workspace",
+            "-p",
+            "notapackage",
+        ])
+        .assert()
+        .stderr(predicates::str::contains(
+            "Package \"notapackage\" not found in source tree",
+        ))
+        .code(0);
+}
+
+#[test]
+fn list_files_json_workspace() {
+    // Demonstrates that we get package names in the json listing.
+    let tmp = copy_of_testdata("workspace");
+    let cmd = run()
+        .args(["mutants", "--list-files", "--json"])
+        .current_dir(tmp.path())
+        .assert()
+        .success();
+    assert_bytes_eq_json(
+        &cmd.get_output().stdout,
+        json! {
+        [
+          {
+            "package": "cargo_mutants_testdata_workspace_utils",
+            "path": "utils/src/lib.rs"
+          },
+          {
+            "package": "main",
+            "path": "main/src/main.rs"
+          },
+          {
+            "package": "main2",
+            "path": "main2/src/main.rs"
+          }
+        ]
+        },
+    );
+}
+
+#[test]
+fn list_files_as_json_in_workspace_subdir() {
+    let tmp = copy_of_testdata("workspace");
+    let cmd = run()
+        .args(["mutants", "--list-files", "--json", "--workspace"])
+        .current_dir(tmp.path().join("main2"))
+        .assert()
+        .success();
+    assert_bytes_eq_json(
+        &cmd.get_output().stdout,
+        json! {
+            [
+              {
+                "package": "cargo_mutants_testdata_workspace_utils",
+                "path": "utils/src/lib.rs"
+              },
+              {
+                "package": "main",
+                "path": "main/src/main.rs"
+              },
+              {
+                "package": "main2",
+                "path": "main2/src/main.rs"
+              }
+            ]
+        },
+    );
+}
+
+#[test]
+fn workspace_tree_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("workspace");
+    run()
+        .args(["mutants", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+    // The outcomes.json has some summary data
+    let json_str =
+        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    println!("outcomes.json:\n{json_str}");
+    let json: serde_json::Value = json_str.parse().unwrap();
+    let total = json["total_mutants"].as_u64().unwrap();
+    assert!(total > 8);
+    assert_eq!(json["caught"].as_u64().unwrap(), total);
+    assert_eq!(json["missed"].as_u64().unwrap(), 0);
+    assert_eq!(json["timeout"].as_u64().unwrap(), 0);
+    let outcomes = json["outcomes"].as_array().unwrap();
+
+    {
+        let baseline = outcomes[0].as_object().unwrap();
+        assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
+        assert_eq!(baseline["summary"], "Success");
+        let baseline_phases = baseline["phase_results"].as_array().unwrap();
+        assert_eq!(baseline_phases.len(), 2);
+        assert_eq!(baseline_phases[0]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[0]["argv"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .skip(1)
+                .collect_vec(),
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ]
+        );
+        assert_eq!(baseline_phases[1]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[1]["argv"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .skip(1)
+                .collect_vec(),
+            [
+                "test",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ],
+        );
+    }
+
+    assert!(outcomes.len() > 9);
+    for outcome in &outcomes[1..] {
+        let mutant = &outcome["scenario"]["Mutant"];
+        let package_name = mutant["package"].as_str().unwrap();
+        assert!(!package_name.is_empty());
+        assert_eq!(outcome["summary"], "CaughtMutant");
+        let mutant_phases = outcome["phase_results"].as_array().unwrap();
+        assert_eq!(mutant_phases.len(), 2);
+        assert_eq!(mutant_phases[0]["process_status"], "Success");
+        assert_eq!(
+            mutant_phases[0]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--no-run"]
+        );
+        assert_eq!(mutant_phases[1]["process_status"], json!({"Failure": 101}));
+        assert_eq!(
+            mutant_phases[1]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--verbose"],
+        );
+    }
+    {
+        let baseline = json["outcomes"][0].as_object().unwrap();
+        assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
+        assert_eq!(baseline["summary"], "Success");
+        let baseline_phases = baseline["phase_results"].as_array().unwrap();
+        assert_eq!(baseline_phases.len(), 2);
+        assert_eq!(baseline_phases[0]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[0]["argv"].as_array().unwrap()[1..]
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect_vec(),
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ],
+        );
+        assert_eq!(baseline_phases[1]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[1]["argv"].as_array().unwrap()[1..]
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect_vec(),
+            [
+                "test",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ],
+        );
+    }
+}
+
+#[test]
+/// Baseline tests in a workspace only test the packages that will later
+/// be mutated.
+/// See <https://github.com/sourcefrog/cargo-mutants/issues/151>
+fn in_workspace_only_relevant_packages_included_in_baseline_tests_by_file_filter() {
+    let tmp = copy_of_testdata("package_fails");
+    run()
+        .args(["mutants", "-f", "passing/src/lib.rs", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+    assert_snapshot!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        @r###"
+    passing/src/lib.rs:2:5: replace triple -> usize with 0
+    passing/src/lib.rs:2:5: replace triple -> usize with 1
+    passing/src/lib.rs:2:7: replace * with + in triple
+    passing/src/lib.rs:2:7: replace * with / in triple
+    "###);
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
+        ""
+    );
+}
+
+/// Even the baseline test only tests the explicitly selected packages,
+/// so it doesn't fail if some packages don't build.
+#[test]
+fn baseline_test_respects_package_options() {
+    let tmp = copy_of_testdata("package_fails");
+    run()
+        .args([
+            "mutants",
+            "--package",
+            "cargo-mutants-testdata-package-fails-passing",
+            "--no-shuffle",
+            "-d",
+        ])
+        .arg(tmp.path())
+        .assert()
+        .success();
+    assert_snapshot!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        @r###"
+    passing/src/lib.rs:2:5: replace triple -> usize with 0
+    passing/src/lib.rs:2:5: replace triple -> usize with 1
+    passing/src/lib.rs:2:7: replace * with + in triple
+    passing/src/lib.rs:2:7: replace * with / in triple
+    "###
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
+        ""
+    );
+}
+
+#[test]
+fn in_workspace_only_default_members_are_mutated_if_present() {
+    let tmp = copy_of_testdata("workspace_default_members");
+    run()
+        .args(["mutants", "--no-shuffle", "--list", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success()
+        .stdout(
+            predicates::ord::eq(
+                "\
+            main/src/main.rs:1:18: replace + with -\n\
+            main/src/main.rs:1:18: replace + with *\n\
+            ",
+            )
+            .normalize(),
+        );
+}
+
+#[test]
+fn cross_package_tests() {
+    // This workspace has two packages, one of which contains the tests.
+    // Mutating the one with no tests will find test gaps, but
+    // either testing the whole workspace, or naming the test package,
+    // will show that it's actually all well tested.
+    //
+    // <https://github.com/sourcefrog/cargo-mutants/issues/394>
+
+    let tmp = copy_of_testdata("cross_package_tests");
+    let path = tmp.path();
+
+    // Testing only this one package will find gaps.
+    run()
+        .args(["mutants", "-v", "--shard=0/4"])
+        .arg("--no-times")
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 mutant tested: 1 missed"))
+        .code(2); // missed mutants
+
+    // Just asking to *mutate* the whole workspace will not cause us
+    // to run the tests in "tests" against mutants in "lib".
+    run()
+        .args(["mutants", "--workspace", "--shard=0/4"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 missed"))
+        .code(2); // missed mutants
+
+    // Similarly, starting in the workspace dir is not enough.
+    run()
+        .args(["mutants", "-v", "--shard=0/4"])
+        .arg("-d")
+        .arg(path)
+        .assert()
+        .stdout(predicate::str::contains("1 missed"))
+        .code(2); // missed mutants
+
+    // Testing the whole workspace does catch everything.
+    run()
+        .args(["mutants", "--test-workspace=true", "--shard=0/4"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+
+    // And naming the test package also catches everything.
+    run()
+        .args([
+            "mutants",
+            "--test-package=cargo-mutants-testdata-cross-package-tests-tests",
+            "--shard=0/4",
+        ])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+
+    // Using the wrong package name gives a warning
+    run()
+        .args(["mutants", "--test-package=tests"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .stderr(predicate::str::contains(
+            "WARN Package \"tests\" not found in source tree\n",
+        ))
+        .success();
+
+    // You can configure the test package in the workspace
+    let cargo_dir = path.join(".cargo");
+    create_dir(&cargo_dir).unwrap();
+    let mutants_toml_path = cargo_dir.join("mutants.toml");
+    write(&mutants_toml_path, b"test_workspace = true").unwrap();
+    // Now the mutants are caught
+    run()
+        .args(["mutants"])
+        .arg("--shard=0/4")
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+
+    // It would also work to name the test package
+    write(
+        &mutants_toml_path,
+        br#"test_package = ["cargo-mutants-testdata-cross-package-tests-tests"]"#,
+    )
+    .unwrap();
+    run()
+        .args(["mutants"])
+        .arg("--shard=0/4")
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+}
+
+#[test]
+fn list_diff_json_contains_diffs() {
+    let tmp = copy_of_testdata("factorial");
+    let cmd = run()
+        .args(["mutants", "--list", "--json", "--diff", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success(); // needed for lifetime
+    let out = cmd.get_output();
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+    println!("{}", String::from_utf8_lossy(&out.stdout));
+    let out_json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
+    let mutants_json = out_json.as_array().expect("json output is array");
+    assert_eq!(mutants_json.len(), 5);
+    assert!(mutants_json.iter().all(|e| e.as_object().unwrap()["diff"]
+        .as_str()
+        .unwrap()
+        .contains("--- src/bin/factorial.rs")));
+}
+
+#[test]
+fn list_mutants_in_factorial() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(&tmp)
+        .assert_insta("list_mutants_in_factorial");
+}
+
+#[test]
+fn list_mutants_in_factorial_json() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_in_factorial_json");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_mutants_skip() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_mutants_skip");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_mutants_skip_json() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_mutants_skip_json");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_test_skip() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_test_skip");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_test_skip_json() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_test_skip_json");
+}
+
+#[test]
+fn list_mutants_with_dir_option() {
+    let temp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--dir")
+        .arg(temp.path())
+        .assert_insta("list_mutants_with_dir_option");
+}
+
+#[test]
+fn list_mutants_with_diffs_in_factorial() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--diff")
+        .current_dir(&tmp)
+        .assert_insta("list_mutants_with_diffs_in_factorial");
+}
+
+#[test]
+fn list_mutants_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested");
+}
+
+#[test]
+fn list_mutants_well_tested_examine_name_filter() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "nested_function.rs"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_examine_name_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_exclude_name_filter() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "simple_fns.rs"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_exclude_name_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_exclude_folder_filter() {
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "module"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_exclude_folder_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--file",
+            "src/module/utils/**/*.rs",
+            "--exclude",
+            "nested_function.rs",
+        ])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_examine_and_exclude_name_filter_combined");
+}
+
+#[test]
+fn list_mutants_regex_filters() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list", "--re", "divisible"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert_insta("list_mutants_regex_filters");
+}
+
+#[test]
+fn list_mutants_regex_anchored_matches_full_line() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--re",
+            r"^src/simple_fns.rs:\d+:\d+: replace returns_unit with \(\)$",
+        ])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        .success()
+        .stdout("src/simple_fns.rs:8:5: replace returns_unit with ()\n");
+}
+
+#[test]
+fn list_mutants_regex_filters_json() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--re",
+            "divisible",
+            "--exclude-re",
+            "false",
+            "--json",
+        ])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert_insta("list_mutants_regex_filters_json");
+}
+
+#[test]
+fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "module_methods.rs", "--file", "utils", "--exclude", "**/sub_utils/**", "--exclude", "nested_function.rs"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
+}
+
+#[test]
+fn list_mutants_json_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_json_well_tested");
+}
+
+#[test]
+fn list_files_text_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list-files")
+        .current_dir(tmp.path())
+        .assert_insta("list_files_text_well_tested");
+}
+
+#[test]
+fn list_files_respects_file_filters() {
+    // Files matching excludes *are* visited to find references to other modules,
+    // but they're not included in --list-files.
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list-files", "--exclude", "lib.rs"])
+        .current_dir(tmp.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("methods.rs"))
+        .stdout(predicate::str::contains("lib.rs").not());
+}
+
+#[test]
+fn list_files_json_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list-files")
+        .arg("--json")
+        .current_dir(tmp.path())
+        .assert_insta("list_files_json_well_tested");
+}
+
+#[test]
+fn no_mutants_in_tree_everything_skipped() {
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    run()
+        .args(["mutants", "--list"])
+        .arg("--dir")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .stderr(predicate::str::is_empty()) // not an error or warning
+        .stdout(predicate::str::is_empty())
+        .success();
+}
+
+#[test]
+fn list_mutants_with_alternate_registry() {
+    // For https://github.com/sourcefrog/cargo-mutants/issues/428
+
+    // This tree has a non-default registry that ends up just pointing back to crates.io, but under another name.
+    //
+    // Without running cargo metadata properly this will fail.
+    //
+    // The tree doesn't actually generate any mutants.
+    //
+    // To reproduce the failure it's important that we *don't* run from the tree's directory.
+    let tmp = copy_of_testdata("alternate_registry");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--dir")
+        .arg(tmp.path())
+        .assert()
+        .stdout("")
+        .success();
 }

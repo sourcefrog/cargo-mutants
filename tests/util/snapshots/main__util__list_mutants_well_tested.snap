@@ -1,7 +1,6 @@
 ---
 source: tests/util/mod.rs
 expression: "String::from_utf8_lossy(&output.stdout)"
-snapshot_kind: text
 ---
 src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(String::new())
 src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new("xyzzy".into())
