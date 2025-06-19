@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 use std::env;
-use std::fs::{self, create_dir, read_dir, read_to_string, write, File};
+use std::fs::{self, create_dir, create_dir_all, read_dir, read_to_string, rename, write, File};
 use std::io::Write;
 use std::path::Path;
 
@@ -16,10 +16,13 @@ use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
 use regex::Regex;
-use tempfile::{tempdir, TempDir};
+use similar::TextDiff;
+use tempfile::{tempdir, NamedTempFile, TempDir};
 
 mod util;
 use util::{copy_of_testdata, copy_testdata_to, run, OUTER_TIMEOUT};
+
+use crate::util::outcome_json_counts;
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -366,34 +369,6 @@ fn well_tested_tree_check_only_shuffled() {
 }
 
 #[test]
-fn unviable_mutation_of_struct_with_no_default() {
-    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
-    run()
-        .args([
-            "mutants",
-            "--line-col=false",
-            "--no-times",
-            "--no-shuffle",
-            "-v",
-            "-V",
-        ])
-        .arg("-d")
-        .arg(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(
-            predicate::str::is_match(
-                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
-            )
-            .unwrap(),
-        );
-    check_text_list_output(
-        tmp_src_dir.path(),
-        "unviable_mutation_of_struct_with_no_default",
-    );
-}
-
-#[test]
 fn integration_test_source_is_not_mutated() {
     let tmp_src_dir = copy_of_testdata("integration_tests");
     run()
@@ -622,22 +597,6 @@ fn output_option_use_env() {
     ] {
         assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
     }
-}
-
-#[test]
-fn check_succeeds_in_tree_that_builds_but_fails_tests() {
-    // --check doesn't actually run the tests so won't discover that they fail.
-    let tmp_src_dir = copy_of_testdata("already_failing_tests");
-    run()
-        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .env_remove("RUST_BACKTRACE")
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
 }
 
 #[test]
@@ -1985,4 +1944,696 @@ fn insta_test_failures_are_detected() {
             .assert()
             .success();
     }
+}
+
+#[test]
+fn diff_trees_well_tested() {
+    for name in &["diff0", "diff1"] {
+        let tmp = copy_of_testdata(name);
+        run()
+            .args(["mutants", "-d"])
+            .arg(tmp.path())
+            .assert()
+            .success();
+    }
+}
+
+#[test]
+fn list_mutants_changed_in_diff1() {
+    let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+    let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
+    let diff = TextDiff::from_lines(&src0, &src1)
+        .unified_diff()
+        .context_radius(2)
+        .header("a/src/lib.rs", "b/src/lib.rs")
+        .to_string();
+    println!("{diff}");
+
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .success();
+
+    // Between these trees we just added one function; the existing unchanged
+    // function does not need to be tested.
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        indoc! { "\
+            src/lib.rs:6:5: replace two -> String with String::new()
+            src/lib.rs:6:5: replace two -> String with \"xyzzy\".into()
+        "}
+    );
+
+    let mutants_json: serde_json::Value =
+        serde_json::from_str(&read_to_string(tmp.path().join("mutants.out/mutants.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        mutants_json
+            .as_array()
+            .expect("mutants.json contains an array")
+            .len(),
+        2
+    );
+}
+
+#[test]
+fn binary_diff_is_not_an_error_and_matches_nothing() {
+    // From https://github.com/sourcefrog/cargo-mutants/issues/391
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(b"Binary files a/test-renderers/expected/renderers/fog-None-wgpu.png and b/test-renderers/expected/renderers/fog-None-wgpu.png differ\n").unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
+}
+
+#[test]
+fn empty_diff_is_not_an_error_and_matches_nothing() {
+    let diff_file = NamedTempFile::new().unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
+}
+
+// <https://github.com/sourcefrog/cargo-mutants/issues/547>
+#[test]
+fn diff_containing_non_utf8_is_not_an_error() {
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file
+        .write_all(
+            b"--- b   2025-10-05 09:13:10.260014347 -0700
++++ b.8859-1    2025-10-05 09:13:46.056014914 -0700
+@@ -1 +1 @@
+-\xc3\x9f
++\xdf
+",
+        )
+        .unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(" INFO Diff changes no Rust source files\n");
+}
+
+/// If the text in the diff doesn't look like the tree then error out.
+#[test]
+fn mismatched_diff_causes_error() {
+    let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+    let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
+    let diff = TextDiff::from_lines(&src0, &src1)
+        .unified_diff()
+        .context_radius(2)
+        .header("a/src/lib.rs", "b/src/lib.rs")
+        .to_string();
+    let diff = diff.replace("fn", "FUNCTION");
+    println!("{diff}");
+
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "Diff content doesn't match source file: src/lib.rs",
+        ));
+}
+
+/// If the diff contains multiple deletions (with a new filename of /dev/null),
+/// don't fail.
+///
+/// <https://github.com/sourcefrog/cargo-mutants/issues/219>
+#[test]
+fn diff_with_multiple_deletions_is_ok() {
+    let diff = indoc! {r#"
+        diff --git a/src/monitor/collect.rs b/src/monitor/collect.rs
+        deleted file mode 100644
+        index d842cf9..0000000
+        --- a/src/monitor/collect.rs
+        +++ /dev/null
+        @@ -1,1 +0,0 @@
+        -// Some stuff
+        diff --git a/src/monitor/another.rs b/src/monitor/another.rs
+        deleted file mode 100644
+        index d842cf9..0000000
+        --- a/src/monitor/collect.rs
+        +++ /dev/null
+        @@ -1,1 +0,0 @@
+        -// More stuff
+    "#};
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .stderr(predicates::str::contains(
+            "INFO Diff changes no Rust source files",
+        ))
+        .success();
+}
+
+#[test]
+fn in_place_check_leaves_no_changes() -> anyhow::Result<()> {
+    fn check_file(tmp: &Path, new_name: &str, old_name: &str) -> anyhow::Result<()> {
+        let orig_path = Path::new("testdata/small_well_tested");
+        println!("comparing {new_name} and {old_name}");
+        assert_eq!(
+            read_to_string(tmp.join(new_name))?.replace("\r\n", "\n"),
+            read_to_string(orig_path.join(old_name))?.replace("\r\n", "\n"),
+            "{old_name} should be the same as {new_name}"
+        );
+        Ok(())
+    }
+
+    let tmp = copy_of_testdata("small_well_tested");
+    let tmp_path = tmp.path();
+    let output_tmp = TempDir::with_prefix("in_place_check_leaves_no_changes").unwrap();
+    let cmd = run()
+        .args(["mutants", "--in-place", "--check", "-d"])
+        .arg(tmp.path())
+        .arg("-o")
+        .arg(output_tmp.path())
+        .assert()
+        .success();
+    println!(
+        "stdout:\n{}",
+        String::from_utf8_lossy(&cmd.get_output().stdout)
+    );
+    println!(
+        "stderr:\n{}",
+        String::from_utf8_lossy(&cmd.get_output().stderr)
+    );
+    check_file(tmp_path, "Cargo.toml", "Cargo_test.toml")?;
+    check_file(tmp_path, "src/lib.rs", "src/lib.rs")?;
+    Ok(())
+}
+
+#[test]
+fn error_value_catches_untested_ok_case() {
+    // By default this tree should fail because it's configured to
+    // generate an error value, and the tests forgot to check that
+    // the code under test does return Ok.
+    let tmp = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args(["-v", "-V", "--no-times", "--no-shuffle"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        .code(2)
+        .stderr("");
+}
+
+#[test]
+fn no_config_option_disables_config_file_so_error_value_is_not_generated() {
+    // In this case, the config file is not loaded. Error values are not
+    // generated by default (because we don't know what a good value for
+    // this tree would be), so no mutants are caught.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args(["-v", "-V", "--no-times", "--no-shuffle", "--no-config"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr("")
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
+fn list_mutants_with_error_value_from_command_line_list() {
+    // This is not a good error mutant for this tree, which uses
+    // anyhow, but it's a good test of the command line option.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=::eyre::eyre!(\"mutant\")",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr("")
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
+fn warn_if_error_value_starts_with_err() {
+    // Users might misunderstand what should be passed to --error,
+    // so give a warning.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=Err(anyhow!(\"mutant\"))",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            "error_value option gives the value of the error, and probably should not start with Err(: got Err(anyhow!(\"mutant\"))"
+        ));
+}
+
+#[test]
+fn warn_unresolved_module() {
+    let tmp_src_dir = copy_of_testdata("dangling_mod");
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--no-config", "--list"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            r#"referent of mod not found definition_site="src/main.rs:3:1" mod_name=nonexistent"#,
+        ));
+}
+#[test]
+fn warn_module_outside_of_tree() {
+    // manually copy tree, so that external path still resolves correctly for `cargo`
+    //
+    // [TEMP]/dangling_mod/*
+    // [TEMP]/nested_mod/src/paths_in_main/a/foo.rs
+    //
+    let tree_name = "dangling_mod";
+    let tmp_src_dir_parent = TempDir::with_prefix("warn_module_outside_of_tree").unwrap();
+    let tmp_src_dir = tmp_src_dir_parent.path().join("dangling_mod");
+    cp_r::CopyOptions::new()
+        .filter(|path, _stat| {
+            Ok(["target", "mutants.out", "mutants.out.old"]
+                .iter()
+                .all(|p| !path.starts_with(p)))
+        })
+        .copy_tree(
+            std::path::Path::new("testdata").join(tree_name),
+            &tmp_src_dir,
+        )
+        .unwrap();
+    rename(
+        tmp_src_dir.join("Cargo_test.toml"),
+        tmp_src_dir.join("Cargo.toml"),
+    )
+    .unwrap();
+
+    let external_file_path = tmp_src_dir_parent
+        .path()
+        .join("nested_mod/src/paths_in_main/a");
+    create_dir_all(&external_file_path).unwrap();
+    std::fs::copy(
+        std::path::Path::new("testdata/nested_mod/src/paths_in_main/a/foo.rs"),
+        external_file_path.join("foo.rs"),
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--no-config", "--list"])
+        .arg("-d")
+        .arg(tmp_src_dir)
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            r#"skipping source outside of tree: "src/../../nested_mod/src/paths_in_main/a/foo.rs""#,
+        ));
+}
+
+#[test]
+fn fail_when_error_value_does_not_parse() {
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=shouldn't work",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(indoc! { "
+            Error: Failed to parse error value \"shouldn\'t work\"
+
+            Caused by:
+                unexpected token
+        "}))
+        .stdout(predicate::str::is_empty());
+}
+
+fn has_color_listing() -> impl Predicate<str> {
+    predicates::str::contains("with \x1b[33m0\x1b[0m")
+}
+
+fn has_ansi_escape() -> impl Predicate<str> {
+    predicates::str::contains("\x1b[")
+}
+
+fn has_color_debug() -> impl Predicate<str> {
+    predicates::str::contains("\x1b[34mDEBUG\x1b[0m")
+}
+
+/// The test fixtures force off colors, even if something else tries to turn it on.
+#[test]
+fn no_color_in_test_subprocesses_by_default() {
+    run()
+        .args(["mutants", "-d", "testdata/small_well_tested", "--list"])
+        .assert()
+        .success()
+        .stdout(has_ansi_escape().not())
+        .stderr(has_ansi_escape().not());
+}
+
+/// Colors can be turned on with `--color` and they show up in the listing and
+/// in trace output.
+#[test]
+fn colors_always_shows_in_stdout_and_trace() {
+    run()
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "--colors=always",
+            "-Ltrace",
+        ])
+        .assert()
+        .success()
+        .stdout(has_color_listing())
+        .stderr(has_color_debug());
+}
+
+#[test]
+fn cargo_term_color_env_shows_colors() {
+    run()
+        .env("CARGO_TERM_COLOR", "always")
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "-Ltrace",
+        ])
+        .assert()
+        .success()
+        .stdout(has_color_listing())
+        .stderr(has_color_debug());
+}
+
+#[test]
+fn invalid_cargo_term_color_rejected_with_message() {
+    run()
+        .env("CARGO_TERM_COLOR", "invalid")
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "-Ltrace",
+        ])
+        .assert()
+        .stderr(predicate::str::contains(
+            // The message does not currently name the variable due to <https://github.com/clap-rs/clap/issues/5202>.
+            "invalid value 'invalid'",
+        ))
+        .code(1);
+}
+
+/// Colors can be turned on with `CLICOLOR_FORCE`.
+#[test]
+fn clicolor_force_shows_in_stdout_and_trace() {
+    run()
+        .env("CLICOLOR_FORCE", "1")
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "--colors=never",
+            "-Ltrace",
+        ])
+        .assert()
+        .success()
+        .stdout(has_color_listing())
+        .stderr(has_color_debug());
+}
+
+#[test]
+fn small_well_tested_tree_check_only() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--check", "--no-shuffle", "--no-times"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(indoc! {r"
+            Found 4 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:5:5: replace factorial -> u32 with 0
+            ok       src/lib.rs:5:5: replace factorial -> u32 with 1
+            ok       src/lib.rs:7:11: replace *= with += in factorial
+            ok       src/lib.rs:7:11: replace *= with /= in factorial
+            4 mutants tested: 4 succeeded
+        "})
+        .stderr("");
+    let outcomes = outcome_json_counts(&tmp_src_dir);
+    assert_eq!(
+        outcomes,
+        serde_json::json!({
+            "success": 4, // They did all build
+            "caught": 0, // They weren't actually tested
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 4,
+        })
+    );
+}
+
+#[test]
+fn small_well_tested_tree_check_only_shuffled() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--check", "--no-times", "--shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("4 mutants tested: 4 succeeded"));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 4, // They did all build
+            "caught": 0, // They weren't actually tested
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 4,
+        })
+    );
+}
+
+#[test]
+fn warning_when_no_mutants_found() {
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    run()
+        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .stderr(predicate::str::contains(
+            "No mutants found under the active filters",
+        ))
+        .stdout(predicate::str::contains("Found 0 mutants to test"))
+        .success(); // It's arguable, but better if CI doesn't fail in this case.
+                    // There is no outcomes.json? Arguably a bug.
+}
+
+#[test]
+fn check_succeeds_in_tree_that_builds_but_fails_tests() {
+    // --check doesn't actually run the tests so won't discover that they fail.
+    let tmp_src_dir = copy_of_testdata("already_failing_tests");
+    run()
+        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout, @r###"
+            Found 4 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:2:5: replace factorial -> u32 with 0
+            ok       src/lib.rs:2:5: replace factorial -> u32 with 1
+            ok       src/lib.rs:4:11: replace *= with += in factorial
+            ok       src/lib.rs:4:11: replace *= with /= in factorial
+            4 mutants tested: 4 succeeded
+            "###);
+            true
+        }));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 4,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 4,
+        })
+    );
+}
+
+#[test]
+fn check_tree_with_mutants_skip() {
+    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(indoc! { r"
+            Found 6 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:15:5: replace controlled_loop with ()
+            ok       src/lib.rs:21:28: replace > with == in controlled_loop
+            ok       src/lib.rs:21:28: replace > with < in controlled_loop
+            ok       src/lib.rs:21:28: replace > with >= in controlled_loop
+            ok       src/lib.rs:21:53: replace * with + in controlled_loop
+            ok       src/lib.rs:21:53: replace * with / in controlled_loop
+            6 mutants tested: 6 succeeded
+            "})
+        .stderr("");
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 6,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 6,
+        })
+    );
+}
+
+#[test]
+fn check_tree_where_build_fails() {
+    let tmp_src_dir = copy_of_testdata("typecheck_fails");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .code(4) // clean tests failed
+        .stdout(predicate::str::contains("FAILED   Unmutated baseline"));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 0,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 0,
+        })
+    );
+}
+
+#[test]
+fn unviable_mutation_of_struct_with_no_default() {
+    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
+    run()
+        .args([
+            "mutants",
+            "--line-col=false",
+            "--check",
+            "--no-times",
+            "--no-shuffle",
+            "-v",
+            "-V",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::is_match(
+                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
+            )
+            .unwrap(),
+        );
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 0,
+            "caught": 0,
+            "unviable": 1,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 1,
+        })
+    );
 }
