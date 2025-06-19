@@ -1,7 +1,6 @@
 ---
-source: tests/list.rs
+source: tests/main.rs
 expression: buf
-snapshot_kind: text
 ---
 ## testdata/already_failing_doctests
 
