@@ -6,6 +6,7 @@
 [![crates.io](https://img.shields.io/crates/v/cargo-mutants.svg)](https://crates.io/crates/cargo-mutants)
 [![libs.rs](https://img.shields.io/badge/libs.rs-cargo--mutants-blue)](https://lib.rs/crates/cargo-mutants)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%E2%9D%A4-%23db61a2.svg?&logo=github&logoColor=white&labelColor=181717&style=flat-square)](https://github.com/sponsors/sourcefrog)
+[![Donate](https://img.shields.io/badge/Stripe-Donate-blue)](https://donate.stripe.com/fZu6oH6ry9I6epVfF7dfG00)
 
 cargo-mutants helps you improve your
 program's quality by finding places where bugs could be inserted without
