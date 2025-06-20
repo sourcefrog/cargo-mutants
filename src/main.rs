@@ -167,8 +167,8 @@ pub struct Args {
     copy_vcs: Option<bool>,
 
     /// Don't copy files matching gitignore patterns.
-    #[arg(long, action = ArgAction::Set, default_value = "false", help_heading = "Copying", group = "copy_opts")]
-    gitignore: bool,
+    #[arg(long, help_heading = "Copying", group = "copy_opts")]
+    gitignore: Option<bool>,
 
     /// Test mutations in the source tree, rather than in a copy.
     #[arg(

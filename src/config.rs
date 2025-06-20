@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Martin Pool.
+// Copyright 2022-2025 Martin Pool.
 
 //! `.cargo/mutants.toml` configuration file.
 //!
@@ -6,7 +6,7 @@
 //! and after finding the source tree, because these together
 //! determine its location.
 //!
-//! The config file is then merged in to the [Options].
+//! The config file is then merged in to the [`Options`].
 
 use std::default::Default;
 use std::fs::read_to_string;
@@ -57,6 +57,10 @@ pub struct Config {
     pub exclude_globs: Vec<String>,
     /// Exclude mutants from source files matches these regexps.
     pub exclude_re: Vec<String>,
+
+    /// When copying the tree, exclude patterns in `.gitignore`.
+    pub gitignore: Option<bool>,
+
     /// Space or comma separated list of features to activate.
     pub features: Vec<String>,
     /// Minimum test timeout, in seconds, as a floor on the autoset value.

@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Global in-process options for experimenting on mutants.
 //!
@@ -310,7 +310,9 @@ impl Options {
             examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
             exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
             features: join_slices(&args.features, &config.features),
-            gitignore: args.gitignore,
+            gitignore: args
+                .gitignore
+                .unwrap_or(config.gitignore.unwrap_or_default()),
             copy_target: (!args.no_copy_target)
                 && args.copy_target.or(config.copy_target).unwrap_or(false),
             in_place: args.in_place,
@@ -370,6 +372,25 @@ impl Options {
         use clap::Parser;
         let args = Args::try_parse_from(args).expect("Failed to parse args");
         Options::from_args(&args).expect("Build options from args")
+    }
+
+    /// Parse options from command-line arguments and a config file.
+    ///
+    /// # Panics
+    ///
+    /// If the arguments are invalid.
+    #[cfg(test)]
+    pub fn from_arg_strs_and_config<I: IntoIterator<Item = S>, S: Into<OsString> + Clone>(
+        args: I,
+        config: &str,
+    ) -> Options {
+        use crate::Args;
+        use clap::Parser;
+        use std::str::FromStr;
+
+        let args = Args::try_parse_from(args).expect("Failed to parse args");
+        let config = Config::from_str(config).expect("Failed to parse config");
+        Options::new(&args, &config).expect("Build options from args")
     }
 
     /// Which phases to run for each mutant.
@@ -655,6 +676,54 @@ mod test {
         let options = Options::new(&args, &config).unwrap();
         // Config copy_target = true should be used when no command line option given
         assert!(options.copy_target);
+    }
+
+    #[test]
+    fn gitignore_off_by_default() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.gitignore, "Default gitignore should be off");
+    }
+
+    #[test]
+    fn gitignore_true_on_command_line() {
+        let args = Args::parse_from(["mutants", "--gitignore=true"]);
+        let config = Config::from_str("").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.gitignore, "gitignore should be on");
+    }
+
+    #[test]
+    fn gitignore_false_on_command_line() {
+        let args = Args::parse_from(["mutants", "--gitignore=false"]);
+        let config = Config::from_str("").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.gitignore, "gitignore should be off");
+    }
+
+    #[test]
+    fn gitignore_true_in_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("gitignore = true ").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.gitignore, "gitignore should be on");
+    }
+
+    #[test]
+    fn gitignore_false_in_config() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("gitignore = false ").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.gitignore, "gitignore should be off");
+    }
+
+    #[test]
+    fn gitignore_command_line_overrides_config() {
+        let args = Args::parse_from(["mutants", "--gitignore=false"]);
+        let config = Config::from_str("gitignore = true ").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.gitignore, "gitignore should be off");
     }
 
     #[test]

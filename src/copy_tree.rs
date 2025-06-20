@@ -227,6 +227,30 @@ mod test {
         Ok(())
     }
 
+    #[test]
+    fn copy_with_gitignore_true_in_config_and_git_dir_excludes_ignored_files() -> Result<()> {
+        let tmp_dir = TempDir::new().unwrap();
+        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        write(tmp.join(".gitignore"), "foo\n")?;
+        create_dir(tmp.join(".git"))?;
+
+        write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
+        let src = tmp.join("src");
+        create_dir(&src)?;
+        write(src.join("main.rs"), "fn main() {}")?;
+        write(tmp.join("foo"), "bar")?;
+
+        let options = Options::from_arg_strs_and_config(["mutants"], "gitignore=true");
+        let dest_tmpdir = copy_tree(&tmp, "a", &options, &Console::new())?;
+        let dest = dest_tmpdir.path();
+        assert!(
+            !dest.join("foo").is_file(),
+            "foo should have been excluded by gitignore"
+        );
+
+        Ok(())
+    }
+
     /// With `gitignore` set to `false`, patterns in that file have no effect.
     #[test]
     fn copy_without_gitignore() -> Result<()> {

@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: `gitignore` config key in `.cargo/mutants.toml` to control whether `.gitignore` patterns are respected when copying source trees, corresponding to `--gitignore`.
+
 ## 25.1.0 2025-06-05
 
 - **Changed**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
