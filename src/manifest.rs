@@ -76,7 +76,7 @@ fn fix_manifest_toml(
 ///
 /// For example:
 ///
-/// ```yaml
+/// ```toml
 /// mutants = { version = "1.0", path = "../mutants" }
 /// ```
 ///
