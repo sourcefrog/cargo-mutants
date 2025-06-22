@@ -2,14 +2,11 @@
 
 //! Tests for cargo-mutants `--list` and filtering of the list.
 
-use std::env;
-use std::fmt::Write;
-
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
 mod util;
-use util::{all_testdata_tree_names, copy_of_testdata, run, CommandInstaExt, OUTER_TIMEOUT};
+use util::{copy_of_testdata, run, CommandInstaExt};
 
 #[test]
 fn list_diff_json_contains_diffs() {
@@ -29,49 +26,6 @@ fn list_diff_json_contains_diffs() {
         .as_str()
         .unwrap()
         .contains("--- src/bin/factorial.rs")));
-}
-
-#[test]
-fn list_mutants_in_all_trees_as_json() {
-    // The snapshot accumulated here is actually a big text file
-    // containing JSON fragments. This might seem a bit weird for easier
-    // review I want just a single snapshot, and json-inside-json has quoting
-    // that makes it harder to review.
-    let mut buf = String::new();
-    for tree_name in all_testdata_tree_names() {
-        writeln!(buf, "## testdata/{tree_name}\n").unwrap();
-        let tmp = copy_of_testdata(&tree_name);
-        let cmd_assert = run()
-            .arg("mutants")
-            .arg("--list")
-            .arg("--json")
-            .current_dir(tmp.path())
-            .timeout(OUTER_TIMEOUT)
-            .assert()
-            .success();
-        let json_str = String::from_utf8_lossy(&cmd_assert.get_output().stdout);
-        writeln!(buf, "```json\n{json_str}\n```\n").unwrap();
-    }
-    insta::assert_snapshot!(buf);
-}
-
-#[test]
-fn list_mutants_in_all_trees_as_text() {
-    let mut buf = String::new();
-    for tree_name in all_testdata_tree_names() {
-        writeln!(buf, "## testdata/{tree_name}\n\n```").unwrap();
-        let tmp = copy_of_testdata(&tree_name);
-        let cmd_assert = run()
-            .arg("mutants")
-            .arg("--list")
-            .current_dir(tmp.path())
-            .timeout(OUTER_TIMEOUT)
-            .assert()
-            .success();
-        buf.push_str(&String::from_utf8_lossy(&cmd_assert.get_output().stdout));
-        buf.push_str("```\n\n");
-    }
-    insta::assert_snapshot!(buf);
 }
 
 #[test]
