@@ -1155,8 +1155,8 @@ mod test {
                 .map(|m| m.name(true))
                 .collect_vec(),
             [
-                "src/main.rs:3:9: delete match arm",
-                "src/main.rs:4:9: delete match arm",
+                "src/main.rs:3:9: delete match arm in main",
+                "src/main.rs:4:9: delete match arm in main",
             ]
         );
     }
@@ -1212,10 +1212,10 @@ mod test {
                 .map(|m| m.name(true))
                 .collect_vec(),
             [
-                "src/main.rs:3:17: replace match guard with true",
-                "src/main.rs:3:17: replace match guard with false",
-                "src/main.rs:6:17: replace match guard with true",
-                "src/main.rs:6:17: replace match guard with false",
+                "src/main.rs:3:17: replace match guard with true in main",
+                "src/main.rs:3:17: replace match guard with false in main",
+                "src/main.rs:6:17: replace match guard with true in main",
+                "src/main.rs:6:17: replace match guard with false in main",
             ]
         );
     }
@@ -1243,9 +1243,9 @@ mod test {
                 .map(|m| m.name(true))
                 .collect_vec(),
             [
-                "src/main.rs:4:9: delete match arm",
-                "src/main.rs:3:17: replace match guard with true",
-                "src/main.rs:3:17: replace match guard with false",
+                "src/main.rs:4:9: delete match arm in main",
+                "src/main.rs:3:17: replace match guard with true in main",
+                "src/main.rs:3:17: replace match guard with false in main",
             ]
         );
     }

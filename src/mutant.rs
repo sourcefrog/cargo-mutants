@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021 - 2025 Martin Pool
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
@@ -168,10 +168,12 @@ impl Mutant {
                     v.push(s(" with "));
                     v.push(s(&self.replacement).bright().yellow());
                 }
-                if let Some(function) = &self.function {
-                    v.push(s(" in "));
-                    v.push(s(&function.function_name).bright().magenta());
-                }
+            }
+        }
+        if !matches!(self.genre, Genre::FnValue) {
+            if let Some(func) = &self.function {
+                v.push(s(" in "));
+                v.push(s(&func.function_name).bright().magenta());
             }
         }
         v
