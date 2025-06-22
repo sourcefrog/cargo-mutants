@@ -169,6 +169,31 @@ pub fn mutate_source_str(code: &str, options: &Options) -> Result<Vec<Mutant>> {
     Ok(mutants)
 }
 
+/// For testing: mutate some code, without needing an enclosing function.
+///
+/// Return the string representations of the mutants.
+#[cfg(test)]
+pub fn mutate_exprs(code: &str, options: &Options) -> Vec<String> {
+    let full_code = format!("fn test_harness() {{\n{code}\n}}\n");
+    let source_file = SourceFile::for_tests(
+        Utf8Path::new("src/main.rs"),
+        &full_code,
+        "cargo-mutants-testdata-internal",
+        true,
+    );
+    let error_exprs = options
+        .parsed_error_exprs()
+        .expect("failed to parse error exprs");
+    match walk_file(&source_file, &error_exprs, options) {
+        Ok((mutants, _)) => mutants
+            .iter()
+            .filter(|m| !m.name(false).ends_with("replace test_harness with ()"))
+            .map(|m| m.name(false))
+            .collect(),
+        Err(err) => panic!("failed to mutate {code:?}: {err}"),
+    }
+}
+
 /// Reference to an external module from a source file.
 ///
 /// This is approximately a list of namespace components like `["foo", "bar"]` for
@@ -1279,6 +1304,19 @@ mod test {
                 "src/main.rs:3:7: replace < with <= in main",
                 "src/main.rs:4:7: replace == with != in main",
             ]
+        );
+    }
+
+    #[test]
+    fn mutate_binops() {
+        let options = Options::default();
+        assert_eq!(
+            mutate_exprs(" a >> 2; ", &options),
+            ["src/main.rs: replace >> with << in test_harness",]
+        );
+        assert_eq!(
+            mutate_exprs("a << 2; ", &options),
+            ["src/main.rs: replace << with >> in test_harness",]
         );
     }
 }
