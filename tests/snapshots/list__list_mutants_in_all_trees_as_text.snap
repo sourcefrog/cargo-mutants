@@ -1,7 +1,6 @@
 ---
 source: tests/list.rs
 expression: buf
-snapshot_kind: text
 ---
 ## testdata/already_failing_doctests
 
@@ -154,17 +153,22 @@ src/lib.rs:21:53: replace * with + in controlled_loop
 src/lib.rs:21:53: replace * with / in controlled_loop
 ```
 
+## testdata/hang_const
+
+```
+src/lib.rs:2:5: replace should_stop_const -> bool with false
+```
+
 ## testdata/hang_when_mutated
 
 ```
-src/lib.rs:12:5: replace should_stop_const -> bool with false
-src/lib.rs:25:5: replace should_stop -> bool with true
-src/lib.rs:25:5: replace should_stop -> bool with false
-src/lib.rs:38:5: replace controlled_loop -> usize with 0
-src/lib.rs:38:5: replace controlled_loop -> usize with 1
-src/lib.rs:45:28: replace > with == in controlled_loop
-src/lib.rs:45:28: replace > with < in controlled_loop
-src/lib.rs:45:28: replace > with >= in controlled_loop
+src/lib.rs:15:5: replace should_stop -> bool with true
+src/lib.rs:15:5: replace should_stop -> bool with false
+src/lib.rs:28:5: replace controlled_loop -> usize with 0
+src/lib.rs:28:5: replace controlled_loop -> usize with 1
+src/lib.rs:35:28: replace > with == in controlled_loop
+src/lib.rs:35:28: replace > with < in controlled_loop
+src/lib.rs:35:28: replace > with >= in controlled_loop
 ```
 
 ## testdata/insta
@@ -575,3 +579,5 @@ main2/src/main.rs:10:5: replace triple_3 -> i32 with -1
 main/src/main.rs:1:18: replace + with -
 main/src/main.rs:1:18: replace + with *
 ```
+
+

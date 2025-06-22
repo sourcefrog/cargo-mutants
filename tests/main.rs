@@ -735,6 +735,55 @@ fn timeout_when_unmutated_tree_test_hangs() {
         ));
 }
 
+/// Mutation of a const fn (evaluated at compile time) doesn't hang because
+/// the compiler's built in check on evaluation time catches it.
+#[test]
+fn hang_const_fn_is_unviable() {
+    let tmp_src_dir = copy_of_testdata("hang_const");
+    let out = run()
+        .arg("mutants")
+        // no explicit timeouts
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .code(0);
+    println!(
+        "output:\n{}",
+        String::from_utf8_lossy(&out.get_output().stdout)
+    );
+    let unviable_txt = read_to_string(tmp_src_dir.path().join("mutants.out/unviable.txt"))
+        .expect("read unviable.txt");
+    let caught_txt =
+        read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt")).expect("read caught.txt");
+    let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
+        .expect("read timeout.txt");
+    assert_eq!(
+        unviable_txt,
+        "src/lib.rs:2:5: replace should_stop_const -> bool with false\n"
+    );
+    assert_eq!(timeout_txt, "");
+    assert_eq!(caught_txt, "");
+    let outcomes_json: serde_json::Value =
+        read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json"))
+            .expect("read outcomes.json")
+            .parse()
+            .expect("parse outcomes.json");
+    let outcomes = outcomes_json["outcomes"].as_array().unwrap();
+    assert_eq!(outcomes.len(), 2, "should have one baseline and one mutant");
+    assert_eq!(
+        outcomes[1]["scenario"]["Mutant"]["function"]["function_name"],
+        "should_stop_const"
+    );
+    assert_eq!(outcomes[1]["summary"], "Unviable");
+    assert_eq!(outcomes_json["timeout"], 0);
+
+    // The problem should be detected by the build phase without running tests.
+    let phases_for_const_fn = outcomes[1]["phase_results"].as_array().unwrap();
+    assert_eq!(phases_for_const_fn.len(), 1);
+    assert_eq!(phases_for_const_fn[0]["phase"], "Build");
+}
+
 /// A tree that hangs when some functions are mutated does not hang cargo-mutants
 /// overall, because we impose a timeout. The timeout can be specified on the
 /// command line, with decimal seconds.
@@ -754,10 +803,6 @@ fn timeout_when_unmutated_tree_test_hangs() {
 /// * `should_stop` could change to always return `false`, in which case
 ///   the loop will never stop, but the test should eventually be killed
 ///   by a timeout.
-///
-/// * `should_stop_const` could change to always return `false`, in which
-///   case the loop in the block for the const `VAL` will never stop, but
-///   the build should eventually be killed by a timeout.
 #[test]
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
@@ -775,19 +820,16 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
         String::from_utf8_lossy(&out.get_output().stdout)
     );
     let unviable_txt = read_to_string(tmp_src_dir.path().join("mutants.out/unviable.txt"))
-        .expect("read timeout.txt");
-    let caught_txt = read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt"))
-        .expect("read timeout.txt");
+        .expect("read unviable.txt");
+    let caught_txt =
+        read_to_string(tmp_src_dir.path().join("mutants.out/caught.txt")).expect("read caught.txt");
     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
         .expect("read timeout.txt");
     assert!(
         timeout_txt.contains("replace should_stop -> bool with false"),
         "expected text not found in:\n{timeout_txt}"
     );
-    assert!(
-        unviable_txt.contains("replace should_stop_const -> bool with false"),
-        "expected text not found in:\n{unviable_txt}"
-    );
+    assert_eq!(unviable_txt, "", "expected text not found in unviable.txt");
     assert!(
         caught_txt.contains("replace should_stop -> bool with true"),
         "expected text not found in:\n{caught_txt}"
@@ -802,25 +844,14 @@ fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
             .parse()
             .expect("parse outcomes.json");
     assert_eq!(outcomes_json["timeout"], 1);
-
-    let phases_for_const_fn = outcomes_json["outcomes"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter(|outcome| {
-            outcome["scenario"]["Mutant"]["function"]["function_name"] == "should_stop_const"
-        })
-        .flat_map(|outcome| outcome["phase_results"].as_array())
-        .next()
-        .expect("Failed to find phase_results for 'should_stop_const' fn");
-
-    assert_eq!(phases_for_const_fn.len(), 1);
-    assert_eq!(phases_for_const_fn[0]["phase"], "Build");
 }
 
+/// If you set `--cap-lints` to `true`, then the compiler's quasi-lint on excessive
+/// runtime from a const fn won't protect it from a hang. However, the explicit
+/// build timeout will still catch it.
 #[test]
 fn hang_avoided_by_build_timeout_with_cap_lints() {
-    let tmp_src_dir = copy_of_testdata("hang_when_mutated");
+    let tmp_src_dir = copy_of_testdata("hang_const");
     let out = run()
         .arg("mutants")
         .args(["--build-timeout=10", "--regex=const", "--cap-lints=true"])
@@ -835,9 +866,9 @@ fn hang_avoided_by_build_timeout_with_cap_lints() {
     out.code(3); // exit_code::TIMEOUT
     let timeout_txt = read_to_string(tmp_src_dir.path().join("mutants.out/timeout.txt"))
         .expect("read timeout.txt");
-    assert!(
-        timeout_txt.contains("replace should_stop_const -> bool with false"),
-        "expected text not found in:\n{timeout_txt}"
+    assert_eq!(
+        timeout_txt, "src/lib.rs:2:5: replace should_stop_const -> bool with false\n",
+        "expected text not found in timeout.txt"
     );
 }
 

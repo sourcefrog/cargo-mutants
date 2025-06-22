@@ -1,7 +1,6 @@
 ---
 source: tests/list.rs
 expression: buf
-snapshot_kind: text
 ---
 ## testdata/already_failing_doctests
 
@@ -1812,7 +1811,7 @@ snapshot_kind: text
 ]
 ```
 
-## testdata/hang_when_mutated
+## testdata/hang_const
 
 ```json
 [
@@ -1824,7 +1823,74 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 13
+          "line": 3
+        },
+        "start": {
+          "column": 1,
+          "line": 1
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-hang-const",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 2
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
+  }
+]
+```
+
+## testdata/hang_when_mutated
+
+```json
+[
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "should_stop",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 20
+        },
+        "start": {
+          "column": 1,
+          "line": 11
+        }
+      }
+    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-hang-when-mutated",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 19
+      },
+      "start": {
+        "column": 5,
+        "line": 15
+      }
+    }
+  },
+  {
+    "file": "src/lib.rs",
+    "function": {
+      "function_name": "should_stop",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 20
         },
         "start": {
           "column": 1,
@@ -1837,72 +1903,12 @@ snapshot_kind: text
     "replacement": "false",
     "span": {
       "end": {
-        "column": 9,
-        "line": 12
-      },
-      "start": {
-        "column": 5,
-        "line": 12
-      }
-    }
-  },
-  {
-    "file": "src/lib.rs",
-    "function": {
-      "function_name": "should_stop",
-      "return_type": "-> bool",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 30
-        },
-        "start": {
-          "column": 1,
-          "line": 23
-        }
-      }
-    },
-    "genre": "FnValue",
-    "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "true",
-    "span": {
-      "end": {
         "column": 10,
-        "line": 29
+        "line": 19
       },
       "start": {
         "column": 5,
-        "line": 25
-      }
-    }
-  },
-  {
-    "file": "src/lib.rs",
-    "function": {
-      "function_name": "should_stop",
-      "return_type": "-> bool",
-      "span": {
-        "end": {
-          "column": 2,
-          "line": 30
-        },
-        "start": {
-          "column": 1,
-          "line": 23
-        }
-      }
-    },
-    "genre": "FnValue",
-    "package": "cargo-mutants-testdata-hang-when-mutated",
-    "replacement": "false",
-    "span": {
-      "end": {
-        "column": 10,
-        "line": 29
-      },
-      "start": {
-        "column": 5,
-        "line": 25
+        "line": 15
       }
     }
   },
@@ -1914,11 +1920,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 50
+          "line": 40
         },
         "start": {
           "column": 1,
-          "line": 32
+          "line": 22
         }
       }
     },
@@ -1928,11 +1934,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 20,
-        "line": 49
+        "line": 39
       },
       "start": {
         "column": 5,
-        "line": 38
+        "line": 28
       }
     }
   },
@@ -1944,11 +1950,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 50
+          "line": 40
         },
         "start": {
           "column": 1,
-          "line": 32
+          "line": 22
         }
       }
     },
@@ -1958,11 +1964,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 20,
-        "line": 49
+        "line": 39
       },
       "start": {
         "column": 5,
-        "line": 38
+        "line": 28
       }
     }
   },
@@ -1974,11 +1980,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 50
+          "line": 40
         },
         "start": {
           "column": 1,
-          "line": 32
+          "line": 22
         }
       }
     },
@@ -1988,11 +1994,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 29,
-        "line": 45
+        "line": 35
       },
       "start": {
         "column": 28,
-        "line": 45
+        "line": 35
       }
     }
   },
@@ -2004,11 +2010,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 50
+          "line": 40
         },
         "start": {
           "column": 1,
-          "line": 32
+          "line": 22
         }
       }
     },
@@ -2018,11 +2024,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 29,
-        "line": 45
+        "line": 35
       },
       "start": {
         "column": 28,
-        "line": 45
+        "line": 35
       }
     }
   },
@@ -2034,11 +2040,11 @@ snapshot_kind: text
       "span": {
         "end": {
           "column": 2,
-          "line": 50
+          "line": 40
         },
         "start": {
           "column": 1,
-          "line": 32
+          "line": 22
         }
       }
     },
@@ -2048,11 +2054,11 @@ snapshot_kind: text
     "span": {
       "end": {
         "column": 29,
-        "line": 45
+        "line": 35
       },
       "start": {
         "column": 28,
-        "line": 45
+        "line": 35
       }
     }
   }
@@ -10400,3 +10406,5 @@ snapshot_kind: text
   }
 ]
 ```
+
+

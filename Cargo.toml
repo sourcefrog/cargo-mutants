@@ -94,6 +94,7 @@ walkdir = "2.5"
 [workspace]
 members = ["mutants_attrs"]
 resolver = "2"
+exclude = ["testdata/hang_const"]
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
