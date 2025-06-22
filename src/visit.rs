@@ -173,8 +173,9 @@ pub fn mutate_source_str(code: &str, options: &Options) -> Result<Vec<Mutant>> {
 ///
 /// Return the string representations of the mutants.
 #[cfg(test)]
-pub fn mutate_exprs(code: &str, options: &Options) -> Vec<String> {
+pub fn mutate_expr(code: &str) -> Vec<String> {
     let full_code = format!("fn test_harness() {{\n{code}\n}}\n");
+    let options = Options::default();
     let source_file = SourceFile::for_tests(
         Utf8Path::new("src/main.rs"),
         &full_code,
@@ -184,11 +185,18 @@ pub fn mutate_exprs(code: &str, options: &Options) -> Vec<String> {
     let error_exprs = options
         .parsed_error_exprs()
         .expect("failed to parse error exprs");
-    match walk_file(&source_file, &error_exprs, options) {
+    match walk_file(&source_file, &error_exprs, &options) {
         Ok((mutants, _)) => mutants
             .iter()
             .filter(|m| !m.name(false).ends_with("replace test_harness with ()"))
             .map(|m| m.name(false))
+            .map(|n| {
+                n.strip_prefix("src/main.rs: ")
+                    .expect("expected to stripe file name")
+                    .strip_suffix(" in test_harness")
+                    .expect("expected function name at end of mutant name")
+                    .to_owned()
+            })
             .collect(),
         Err(err) => panic!("failed to mutate {code:?}: {err}"),
     }
@@ -991,6 +999,15 @@ mod test {
     }
 
     #[test]
+    fn find_path_attribute_matches_the_right_attribute() {
+        let mismatched = run_find_path_attribute(&quote! {
+            #[not_the_path = "something"]
+            mod mismatched;
+        });
+        assert_eq!(mismatched, Ok(None));
+    }
+
+    #[test]
     fn reject_module_path_absolute() {
         // dots are valid
         let dots = run_find_path_attribute(&quote! {
@@ -1046,6 +1063,22 @@ mod test {
             mutants.iter().map(|m| m.name(false)).collect_vec(),
             ["src/main.rs: replace always_true -> bool with false"]
         );
+    }
+
+    #[test]
+    fn skip_unsafe_fn() {
+        // Possibly we should actually mutate unsafe fns, but not unsafe blocks?
+        // <https://github.com/sourcefrog/cargo-mutants/issues/405>
+        let mutants = mutate_source_str(
+            indoc! {"
+                unsafe fn foo() -> usize {
+                    2 + 3
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
     }
 
     /// Skip mutating arguments to a particular named function.
@@ -1288,46 +1321,91 @@ mod test {
 
     #[test]
     fn mutate_comparisons() {
-        let options = Options::default();
-        let mutants = mutate_source_str(
-            indoc! {"
-                    fn main() {
-                        a > b;
-                        a < b;
-                        a == b;
-                    }
-                "},
-            &options,
-        )
-        .unwrap();
         assert_eq!(
-            mutants
-                .iter()
-                .filter(|m| m.genre == Genre::BinaryOperator)
-                .map(|m| m.name(true))
-                .collect_vec(),
-            [
-                "src/main.rs:2:7: replace > with == in main",
-                "src/main.rs:2:7: replace > with < in main",
-                "src/main.rs:2:7: replace > with >= in main",
-                "src/main.rs:3:7: replace < with == in main",
-                "src/main.rs:3:7: replace < with > in main",
-                "src/main.rs:3:7: replace < with <= in main",
-                "src/main.rs:4:7: replace == with != in main",
-            ]
+            mutate_expr("a > b"),
+            &["replace > with ==", "replace > with <", "replace > with >="]
         );
+        assert_eq!(
+            mutate_expr("a < b "),
+            &["replace < with ==", "replace < with >", "replace < with <="]
+        );
+        assert_eq!(mutate_expr("a == b"), &["replace == with !="]);
+        assert_eq!(mutate_expr("a != b"), &["replace != with =="]);
+        assert_eq!(mutate_expr("a >= b"), &["replace >= with <"]);
+        assert_eq!(mutate_expr("a <= b"), &["replace <= with >"]);
     }
 
     #[test]
     fn mutate_binops() {
-        let options = Options::default();
+        assert_eq!(mutate_expr(" a >> 2; "), &["replace >> with <<"]);
+        assert_eq!(mutate_expr("a << 2; "), &["replace << with >>"]);
+        assert_eq!(mutate_expr("a && b"), &["replace && with ||"]);
+        assert_eq!(mutate_expr("a || b"), &["replace || with &&"]);
         assert_eq!(
-            mutate_exprs(" a >> 2; ", &options),
-            ["src/main.rs: replace >> with << in test_harness",]
+            mutate_expr("a + b"),
+            &["replace + with -", "replace + with *"]
         );
         assert_eq!(
-            mutate_exprs("a << 2; ", &options),
-            ["src/main.rs: replace << with >> in test_harness",]
+            mutate_expr("a - b"),
+            &["replace - with +", "replace - with /"]
         );
+        assert_eq!(
+            mutate_expr("a * b"),
+            &["replace * with +", "replace * with /"]
+        );
+        assert_eq!(
+            mutate_expr("a / b"),
+            &["replace / with %", "replace / with *"]
+        );
+        assert_eq!(
+            mutate_expr("a & b"),
+            &["replace & with |", "replace & with ^"]
+        );
+        assert_eq!(
+            mutate_expr("a | b"),
+            &["replace | with &", "replace | with ^"]
+        );
+        assert_eq!(
+            mutate_expr("a ^ b"),
+            &["replace ^ with |", "replace ^ with &"]
+        );
+    }
+
+    #[test]
+    fn mutate_assign_ops() {
+        assert_eq!(
+            mutate_expr("a += b"),
+            &["replace += with -=", "replace += with *="]
+        );
+        assert_eq!(
+            mutate_expr("a -= b"),
+            &["replace -= with +=", "replace -= with /="]
+        );
+        assert_eq!(
+            mutate_expr("a *= b"),
+            &["replace *= with +=", "replace *= with /="]
+        );
+        assert_eq!(
+            mutate_expr("a /= b"),
+            &["replace /= with %=", "replace /= with *="]
+        );
+        assert_eq!(
+            mutate_expr("a &= b"),
+            &["replace &= with |=", "replace &= with ^="]
+        );
+        assert_eq!(
+            mutate_expr("a |= b"),
+            &["replace |= with &=", "replace |= with ^="]
+        );
+        assert_eq!(
+            mutate_expr("a ^= b"),
+            &["replace ^= with |=", "replace ^= with &="]
+        );
+        assert_eq!(
+            mutate_expr("a %= b"),
+            &["replace %= with /=", "replace %= with +="]
+        );
+        assert_eq!(mutate_expr("a >>= b"), &["replace >>= with <<="]);
+        assert_eq!(mutate_expr("a <<= b"), &["replace <<= with >>="]);
     }
 }
