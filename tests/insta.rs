@@ -6,7 +6,7 @@ mod util;
 use util::{copy_of_testdata, run};
 
 /// `INSTA_UPDATE=always` in the environment will cause Insta to update
-/// the snaphots, so the tests will pass, so mutants will not be caught.
+/// the snapshots, so the tests will pass, so mutants will not be caught.
 /// This test checks that cargo-mutants sets the environment variable
 /// so that mutants are caught properly.
 #[test]
