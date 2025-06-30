@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 25.2.0 2025-06-30
 
 - New: `gitignore` config key in `.cargo/mutants.toml` to control whether `.gitignore` patterns are respected when copying source trees, corresponding to `--gitignore`.
 
