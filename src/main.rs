@@ -413,9 +413,6 @@ pub struct Args {
     )]
     colors: Colors,
 
-    /// Emit a JSON schema for the specified format and exit.
-    #[arg(long, value_enum, help_heading = "Output")]
-    emit_schema: Option<SchemaType>,
 
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
@@ -454,6 +451,11 @@ pub struct Args {
     /// Overrides `--test_package`.
     #[arg(long, help_heading = "Tests")]
     test_workspace: Option<bool>,
+
+    // Misc ============================================================
+    /// Emit a JSON schema for the specified format and exit.
+    #[arg(long, value_enum, help_heading = "Misc")]
+    emit_schema: Option<SchemaType>,
 }
 
 fn main() -> Result<()> {
