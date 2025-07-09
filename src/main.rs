@@ -304,10 +304,6 @@ pub struct Args {
     pub all_features: bool,
 
     // Filters ============================================================
-    /// Show the mutation diffs.
-    #[arg(long, help_heading = "Filters")]
-    diff: bool,
-
     /// Regex for mutations to examine, matched against the names shown by `--list`.
     #[arg(
         long = "re",
@@ -413,6 +409,9 @@ pub struct Args {
     )]
     colors: Colors,
 
+    /// Show the mutation diffs.
+    #[arg(long, long = "diff", help_heading = "Output")]
+    emit_diffs: bool,
 
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]

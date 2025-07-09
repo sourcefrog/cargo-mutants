@@ -301,7 +301,7 @@ impl Options {
             colors: args.colors,
             copy_vcs: args.copy_vcs.or(config.copy_vcs).unwrap_or(false),
             emit_json: args.json,
-            emit_diffs: args.diff,
+            emit_diffs: args.emit_diffs,
             error_values: join_slices(&args.error, &config.error_values),
             examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
                 .context("Failed to compile examine_re regex")?,
