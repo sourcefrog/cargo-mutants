@@ -1,12 +1,14 @@
 # cargo-mutants changelog
 
+## 25.2.1 2025-07-10
+
+- Fixed: Updated to `syn` 2.0.104, which understands new Rust syntax including impl trait precise capturing.
+
 ## 25.2.0 2025-06-30
 
 - New: `gitignore` config key in `.cargo/mutants.toml` to control whether `.gitignore` patterns are respected when copying source trees, corresponding to `--gitignore`.
 
 - Changed: The mutant name for mutations of `match` statements and guard expressions now includes the enclosing function name, for example `replace match guard with true in find_path_attribute`.
-
-- Fixed: Updated to `syn` 2.0.104, which understands new Rust syntax including impl trait precise capturing.
 
 ## 25.1.0 2025-06-05
 
