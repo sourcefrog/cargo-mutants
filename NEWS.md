@@ -6,6 +6,8 @@
 
 - Changed: The mutant name for mutations of `match` statements and guard expressions now includes the enclosing function name, for example `replace match guard with true in find_path_attribute`.
 
+- Fixed: Updated to `syn` 2.0.104, which understands new Rust syntax including impl trait precise capturing.
+
 ## 25.1.0 2025-06-05
 
 - **Changed**: The `--gitignore` option now defaults to `false`, meaning `.gitignore` patterns are no longer respected when copying source trees by default. The `/target` directory is still excluded by default through explicit filtering. To restore the previous behavior, use `--gitignore=true`.
