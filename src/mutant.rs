@@ -2,6 +2,7 @@
 
 //! Mutations to source files, and inference of interesting mutations to apply.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::sync::Arc;
 
@@ -50,6 +51,12 @@ pub struct Mutant {
     /// This may be long, for example when a whole function body is replaced. This is used primarily to
     /// show the line/col location of the mutation.
     pub span: Span,
+
+    /// A shorter version of the text being replaced.
+    ///
+    /// For example, when a match arm is replaced, this gives only the match pattern, not the
+    /// body of the arm.
+    pub short_replaced: Option<String>,
 
     /// The replacement text.
     pub replacement: String,
@@ -155,12 +162,20 @@ impl Mutant {
             }
             Genre::MatchArmGuard => {
                 v.push(s("replace match guard "));
-                v.push(s(self.original_text()).yellow());
+                v.push(s(squash_lines(self.original_text().as_ref())).yellow());
                 v.push(s(" with "));
                 v.push(s(self.replacement_text()).yellow());
             }
             Genre::MatchArm => {
-                v.push(s("delete match arm"));
+                v.push(s("delete match arm "));
+                v.push(
+                    s(squash_lines(
+                        self.short_replaced
+                            .as_ref()
+                            .expect("short_replaced should be set on MatchArm"),
+                    ))
+                    .yellow(),
+                );
             }
             _ => {
                 if self.replacement.is_empty() {
@@ -244,6 +259,7 @@ impl fmt::Debug for Mutant {
             .field("replacement", &self.replacement)
             .field("genre", &self.genre)
             .field("span", &self.span)
+            .field("short_replaced", &self.short_replaced)
             .field("package_name", &self.source_file.package.name)
             .finish()
     }
@@ -266,6 +282,34 @@ impl Serialize for Mutant {
     }
 }
 
+/// Combine multiple lines to one, removing indentation following a newline.
+///
+/// Newlines are replaced by a space, only if there is not already a trailing space.
+pub fn squash_lines(s: &str) -> Cow<'_, str> {
+    if s.contains('\n') {
+        let mut r = String::new();
+        let mut in_indent = false;
+        for c in s.chars() {
+            match c {
+                ' ' | '\t' | '\n' if in_indent => (),
+                '\n' => {
+                    if !r.ends_with(' ') {
+                        r.push(' ');
+                    }
+                    in_indent = true;
+                }
+                c => {
+                    in_indent = false;
+                    r.push(c);
+                }
+            }
+        }
+        Cow::Owned(r)
+    } else {
+        Cow::Borrowed(s)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use indoc::indoc;
@@ -275,6 +319,13 @@ mod test {
     use crate::test_util::copy_of_testdata;
     use crate::visit::mutate_source_str;
     use crate::*;
+
+    #[test]
+    fn squash_lines() {
+        use super::squash_lines;
+        assert_eq!(squash_lines("squash_lines a b c"), "squash_lines a b c");
+        assert_eq!(squash_lines("a\n    b c \n\nd  \n  e"), "a b c d  e");
+    }
 
     #[test]
     fn discover_factorial_mutants() {
@@ -300,6 +351,7 @@ mod test {
                     replacement: "()",
                     genre: FnValue,
                     span: Span(2, 5, 4, 6),
+                    short_replaced: None,
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }
@@ -322,6 +374,7 @@ mod test {
                     replacement: "0",
                     genre: FnValue,
                     span: Span(8, 5, 12, 6),
+                    short_replaced: None,
                     package_name: "cargo-mutants-testdata-factorial",
                 }"#
             }

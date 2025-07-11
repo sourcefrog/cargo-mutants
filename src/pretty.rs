@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2025 Martin Pool
 
 //! Convert a token stream back to (reasonably) pretty Rust code in a string.
 
@@ -30,13 +30,17 @@ where
             match tt {
                 Punct(p) => {
                     let pc = p.as_char();
+                    if pc == '|' && !b.is_empty() && !b.ends_with(' ') && !b.ends_with('|') {
+                        // Generally have spaces around '|' in match arms (or bitwise expressions)
+                        b.push(' ');
+                    }
                     b.push(pc);
                     if ts.peek().is_some() && (b.ends_with("->") || pc == ',' || pc == ';') {
                         b.push(' ');
                     }
                 }
                 Ident(_) | Literal(_) => {
-                    if b.ends_with('=') || b.ends_with("=>") {
+                    if b.ends_with('=') || b.ends_with("=>") || b.ends_with('|') {
                         b.push(' ');
                     }
                     match tt {
@@ -111,6 +115,21 @@ mod test {
             quote! { impl Iterator < Item = String > }.to_pretty_string(),
             "impl Iterator<Item = String>"
         );
+    }
+
+    #[test]
+    fn pretty_match_guard() {
+        assert_eq!(
+            quote! { "warning"
+            | "error" }
+            .to_pretty_string(),
+            r#""warning" | "error""#,
+        );
+    }
+
+    #[test]
+    fn preserve_boolean_or() {
+        assert_eq!(quote! { fair || foul }.to_pretty_string(), "fair || foul");
     }
 
     #[test]

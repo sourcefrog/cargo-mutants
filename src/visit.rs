@@ -313,6 +313,7 @@ impl DiscoveryVisitor<'_> {
             source_file: self.source_file.clone(),
             function: self.fn_stack.last().cloned(),
             span,
+            short_replaced: None,
             replacement: replacement.to_pretty_string(),
             genre,
         });
@@ -636,15 +637,25 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             .iter()
             .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
         if has_catchall {
-            i.arms
-                .iter()
-                // Don't mutate the wild arm, because that will likely be unviable, and also
-                // skip it if a guard is present, because the replacement of the guard with 'false'
-                // below is logically equivalent to removing the arm.
-                .filter(|arm| !matches!(arm.pat, syn::Pat::Wild(_)) && arm.guard.is_none())
-                .for_each(|arm| {
-                    self.collect_mutant(arm.span().into(), &quote! {}, Genre::MatchArm);
-                });
+            for arm in &i.arms {
+                if matches!(arm.pat, syn::Pat::Wild(_)) || arm.guard.is_some() {
+                    // Don't delete the `_ => whatever` arm, because that will very likely fail to compile.
+                    //
+                    // Also, don't delete arms with guard expressions, because the replacement of
+                    // the guard with 'false' below is logically equivalent to removing the arm.
+                    continue;
+                }
+                let short_replaced = Some(arm.pat.to_pretty_string());
+                let mutant = Mutant {
+                    source_file: self.source_file.clone(),
+                    function: self.fn_stack.last().cloned(),
+                    span: arm.span().into(),
+                    short_replaced,
+                    replacement: String::new(),
+                    genre: Genre::MatchArm,
+                };
+                self.mutants.push(mutant);
+            }
         } else {
             trace!("match has no `_` pattern");
         }
@@ -1180,8 +1191,8 @@ mod test {
                 .map(|m| m.name(true))
                 .collect_vec(),
             [
-                "src/main.rs:3:9: delete match arm in main",
-                "src/main.rs:4:9: delete match arm in main",
+                "src/main.rs:3:9: delete match arm X::A in main",
+                "src/main.rs:4:9: delete match arm X::B in main",
             ]
         );
     }
@@ -1268,7 +1279,7 @@ mod test {
                 .map(|m| m.name(true))
                 .collect_vec(),
             [
-                "src/main.rs:4:9: delete match arm in main",
+                "src/main.rs:4:9: delete match arm X::A in main",
                 "src/main.rs:3:17: replace match guard foo() with true in main",
                 "src/main.rs:3:17: replace match guard foo() with false in main",
             ]

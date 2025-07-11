@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Changed: The mutant name of "replace match guard" mutations now includes the original match guard, for example `replace match guard path.path.is_ident("str") with true in type_replacements`.
+- Changed: The mutant name of "replace match guard" mutations now includes the original match guard, for example `replace match guard path.path.is_ident("str") with true in type_replacements`. Similarly, the "delete match arm" mutation includes the pattern of the arm, for example `delete match arm BinOp::BitOr(_) in ...`.
 
 ## 25.2.1 2025-07-10
 
