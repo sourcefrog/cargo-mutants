@@ -43,9 +43,12 @@ pub struct Mutant {
     /// There may be none for mutants in e.g. top-level const expressions.
     pub function: Option<Arc<Function>>,
 
-    /// The mutated textual region.
+    /// The location of the mutated textual region in the original source file.
     ///
     /// This is deleted and replaced with the replacement text.
+    ///
+    /// This may be long, for example when a whole function body is replaced. This is used primarily to
+    /// show the line/col location of the mutation.
     pub span: Span,
 
     /// The replacement text.
@@ -151,7 +154,9 @@ impl Mutant {
                 v.push(s(self.replacement_text()).yellow());
             }
             Genre::MatchArmGuard => {
-                v.push(s("replace match guard with "));
+                v.push(s("replace match guard "));
+                v.push(s(self.original_text()).yellow());
+                v.push(s(" with "));
                 v.push(s(self.replacement_text()).yellow());
             }
             Genre::MatchArm => {

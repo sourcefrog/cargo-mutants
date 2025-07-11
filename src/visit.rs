@@ -1237,10 +1237,10 @@ mod test {
                 .map(|m| m.name(true))
                 .collect_vec(),
             [
-                "src/main.rs:3:17: replace match guard with true in main",
-                "src/main.rs:3:17: replace match guard with false in main",
-                "src/main.rs:6:17: replace match guard with true in main",
-                "src/main.rs:6:17: replace match guard with false in main",
+                "src/main.rs:3:17: replace match guard foo() with true in main",
+                "src/main.rs:3:17: replace match guard foo() with false in main",
+                "src/main.rs:6:17: replace match guard bar() with true in main",
+                "src/main.rs:6:17: replace match guard bar() with false in main",
             ]
         );
     }
@@ -1269,8 +1269,8 @@ mod test {
                 .collect_vec(),
             [
                 "src/main.rs:4:9: delete match arm in main",
-                "src/main.rs:3:17: replace match guard with true in main",
-                "src/main.rs:3:17: replace match guard with false in main",
+                "src/main.rs:3:17: replace match guard foo() with true in main",
+                "src/main.rs:3:17: replace match guard foo() with false in main",
             ]
         );
     }

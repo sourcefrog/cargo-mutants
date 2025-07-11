@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Changed: The mutant name of "replace match guard" mutations now includes the original match guard, for example `replace match guard path.path.is_ident("str") with true in type_replacements`.
+
 ## 25.2.1 2025-07-10
 
 - Fixed: Updated to `syn` 2.0.104, which understands new Rust syntax including impl trait precise capturing.
