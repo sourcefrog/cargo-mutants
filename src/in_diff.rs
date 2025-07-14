@@ -18,7 +18,7 @@ use crate::source::SourceFile;
 use crate::Result;
 
 /// Return only mutants to functions whose source was touched by this diff.
-pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>> {
+pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<(Vec<Mutant>, Option<String>)> {
     // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
     // the moment; this could be removed if it's fixed in that crate.
     let fixed_diff = diff_text
@@ -30,18 +30,22 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
     // Flatten the error to a string because otherwise it references the diff, and can't be returned.
     if fixed_diff.trim().is_empty() {
         info!("diff file is empty; no mutants will match");
-        return Ok(Vec::new());
+        return Ok((Vec::new(), None));
     }
 
     let patches =
         Patch::from_multiple(&fixed_diff).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
     check_diff_new_text_matches(&patches, &mutants)?;
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
+    let mut has_source_files = true;
     for patch in &patches {
         let path = strip_patch_path(&patch.new.path);
         if path == "/dev/null" {
             // The file was deleted; we can't possibly match anything in it.
             continue;
+        }
+        if !matches!(path.extension(), Some("rs")) {
+            has_source_files = false;
         }
         if lines_changed_by_path
             .insert(path, affected_lines(patch))
@@ -75,7 +79,10 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
             }
         }
     }
-    Ok(matched)
+    if !has_source_files {
+        return Ok((matched, Some(format!("Diff contains no source files - only documentation or configuration files were changed"))));
+    }
+    Ok((matched, None))
 }
 
 /// Error if the new text from the diffs doesn't match the source files.
@@ -255,8 +262,9 @@ index eb42779..a0091b7 100644
  use serde::Serialize;
  use similar::TextDiff;
 ";
-        let filtered: Vec<Mutant> = diff_filter(Vec::new(), diff).expect("diff filtered");
-        assert_eq!(filtered.len(), 0);
+        let filtered: (Vec<Mutant>, Option<String>) =
+            diff_filter(Vec::new(), diff).expect("diff filtered");
+        assert_eq!(filtered.0.len(), 0);
     }
 
     fn make_diff(old: &str, new: &str) -> String {

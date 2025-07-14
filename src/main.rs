@@ -501,8 +501,9 @@ fn main() -> Result<()> {
         return Ok(());
     }
     let mut mutants = discovered.mutants;
+    let mut error_msg = None;
     if let Some(in_diff) = &args.in_diff {
-        mutants = diff_filter(
+        (mutants, error_msg) = diff_filter(
             mutants,
             &read_to_string(in_diff).context("Failed to read filter diff")?,
         )?;
@@ -518,7 +519,9 @@ fn main() -> Result<()> {
             output_dir.write_previously_caught(&previously_caught)?;
         }
         console.set_debug_log(output_dir.open_debug_log()?);
-        let lab_outcome = test_mutants(mutants, &workspace, output_dir, &options, &console)?;
+        let lab_outcome = test_mutants(
+            mutants, error_msg, &workspace, output_dir, &options, &console,
+        )?;
         exit(lab_outcome.exit_code());
     }
     Ok(())
