@@ -267,6 +267,24 @@ index eb42779..a0091b7 100644
         assert_eq!(filtered.0.len(), 0);
     }
 
+    #[test]
+    fn read_diff_with_no_sourcecode() {
+        let diff = "\
+diff --git a/book/src/baseline.md b/book/src/baseline.md
+index cc3ce8c..8fe9aa0 100644
+--- a/book/src/baseline.md
++++ b/book/src/baseline.md
+@@ -1,6 +1,6 @@
+    # Baseline tests
+-Normally, cargo-mutants builds
++Normally cargo-mutants builds
+";
+        let filtered: (Vec<Mutant>, Option<String>) =
+            diff_filter(Vec::new(), diff).expect("diff filtered");
+        assert_eq!(filtered.1.unwrap(), "Diff contains no source files - only documentation or configuration files were changed");
+        assert_eq!(filtered.0.len(), 0);
+    }
+
     fn make_diff(old: &str, new: &str) -> String {
         TextDiff::from_lines(old, new)
             .unified_diff()
