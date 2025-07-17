@@ -119,7 +119,9 @@ jobs:
       - name: Install unlocked
         run: cargo install --path .
       - run: cargo update
+        if: matrix.version == 'nightly'
       - name: Test after cargo update
+        if: matrix.version == 'nightly'
         run: cargo test --workspace
       - name: Downgrade to minimal versions
         if: matrix.version == 'nightly'
