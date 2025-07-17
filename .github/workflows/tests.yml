@@ -119,16 +119,46 @@ jobs:
       - name: Install unlocked
         if: contains(fromJSON('["nightly", "beta", "stable"]'), matrix.version) # unlocked dependencies might change MSRV
         run: cargo install --path .
+
+  update-dependencies:
+    needs: [test]
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
       - run: cargo update
-        if: matrix.version == 'nightly'
       - name: Test after cargo update
-        if: matrix.version == 'nightly'
         run: cargo test --workspace
+
+  minimal-versions:
+    needs: [test]
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
       - name: Downgrade to minimal versions
-        if: matrix.version == 'nightly'
         run: cargo +nightly -Zdirect-minimal-versions update
       - name: Test on minimal versions
-        if: matrix.version == 'nightly'
         run: cargo test
 
   tests-from-tarball:
@@ -139,10 +169,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
         with:
           save-if: false
+      - uses: dtolnay/rust-toolchain@nightly
       - run: cargo package --no-verify
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
