@@ -114,6 +114,10 @@ jobs:
           tool: nextest
       - name: Test
         run: cargo test --workspace
+      - name: Install locked
+        run: cargo install --path . --locked
+      - name: Install unlocked
+        run: cargo install --path .
       - run: cargo update
       - name: Test after cargo update
         run: cargo test --workspace
@@ -123,10 +127,6 @@ jobs:
       - name: Test on minimal versions
         if: matrix.version == 'nightly'
         run: cargo test
-      - name: Install locked
-        run: cargo install --path . --locked
-      - name: Install unlocked
-        run: cargo install --path .
 
   tests-from-tarball:
     needs: [quick-test]
