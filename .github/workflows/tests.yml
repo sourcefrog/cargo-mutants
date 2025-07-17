@@ -169,7 +169,7 @@ jobs:
   branch-mutants:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref != 'refs/heads/main'
-    needs: [quick-test]
+    needs: [test]
     strategy:
       matrix:
         test_tool: [cargo, nextest]
@@ -213,7 +213,7 @@ jobs:
   pr-mutants:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    needs: [quick-test]
+    needs: [test]
     strategy:
       matrix:
         test_tool: [cargo, nextest]
@@ -257,7 +257,7 @@ jobs:
 
   cargo-mutants:
     runs-on: ubuntu-latest
-    needs: [quick-test]
+    needs: [test]
     strategy:
       fail-fast: false # We want to get all the mutant failures
       matrix:
