@@ -117,7 +117,7 @@ jobs:
       - name: Install locked
         run: cargo install --path . --locked
       - name: Install unlocked
-        if: contains(["nightly", "beta", "stable"], matrix.version) # unlocked dependencies might change MSRV
+        if: contains(fromJSON('["nightly", "beta", "stable"]'), matrix.version) # unlocked dependencies might change MSRV
         run: cargo install --path .
       - run: cargo update
         if: matrix.version == 'nightly'
