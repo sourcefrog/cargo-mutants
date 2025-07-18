@@ -2,16 +2,8 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.238.1/containers/rust
 {
   "name": "Rust",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "args": {
-      // Use the VARIANT arg to pick a Debian OS version: buster, bullseye
-      // Use bullseye when on local on arm64/Apple Silicon.
-      "VARIANT": "bullseye"
-    }
-  },
+  "image": "mcr.microsoft.com/devcontainers/rust:1-1",
   "runArgs": ["--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"],
-
   // Configure tool-specific properties.
   "customizations": {
     // Configure properties specific to VS Code.
@@ -22,8 +14,7 @@
         // VS Code don't watch files under ./target
         "files.watcherExclude": {
           "**/target/**": true
-        },
-        "rust-analyzer.checkOnSave.command": "clippy"
+        }
       },
 
       // Add the IDs of extensions you want installed when the container is created.
@@ -31,8 +22,7 @@
         "vadimcn.vscode-lldb",
         "mutantdino.resourcemonitor",
         "rust-lang.rust-analyzer",
-        "tamasfe.even-better-toml",
-        "serayuzgur.crates"
+        "tamasfe.even-better-toml"
       ]
     }
   },
@@ -48,6 +38,6 @@
   "features": {
     "git": "os-provided",
     "github-cli": "latest",
-    "ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {}
+    "ghcr.io/meaningful-ooo/devcontainer-features/fish:2": {}
   }
 }
