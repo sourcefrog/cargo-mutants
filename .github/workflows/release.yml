@@ -33,6 +33,7 @@ jobs:
   create-release:
     needs: test
     runs-on: ubuntu-latest
+    environment: release
     steps:
       - uses: actions/checkout@v4
       - uses: taiki-e/create-gh-release-action@v1
@@ -43,6 +44,7 @@ jobs:
           # should not release from other branches
   upload-assets:
     needs: [test, create-release]
+    environment: release
     strategy:
       matrix:
         include:
@@ -68,12 +70,12 @@ jobs:
     needs: [test, create-release]
 
     permissions:
-      id-token: write     # Required for OIDC token exchange
+      id-token: write # Required for OIDC token exchange
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: rust-lang/crates-io-auth-action@v1
-      id: auth
-    - run: cargo publish
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      - uses: actions/checkout@v4
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
