@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 25.2.2-pre0 2025-07-18
 
 - Changed: The mutant name of "replace match guard" mutations now includes the original match guard, for example `replace match guard path.path.is_ident("str") with true in type_replacements`. Similarly, the "delete match arm" mutation includes the pattern of the arm, for example `delete match arm BinOp::BitOr(_) in ...`.
 
