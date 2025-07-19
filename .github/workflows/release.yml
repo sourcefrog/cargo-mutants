@@ -68,10 +68,8 @@ jobs:
   publish-crate:
     runs-on: ubuntu-latest
     needs: [test, create-release]
-
     permissions:
       id-token: write # Required for OIDC token exchange
-
     steps:
       - uses: actions/checkout@v4
       - uses: rust-lang/crates-io-auth-action@v1
