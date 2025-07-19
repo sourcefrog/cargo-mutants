@@ -17,13 +17,21 @@ on:
   #   types:
   #     - created
   push:
-    branches:
-      - 532-trusted-publishing-to-crates-io
     tags:
       - v[0-9]+.*
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
+      - run: cargo test --all-features
   create-release:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +42,7 @@ jobs:
           # TODO: maybe also `branch: main` as in general we
           # should not release from other branches
   upload-assets:
-    needs: create-release
+    needs: [test, create-release]
     strategy:
       matrix:
         include:
@@ -57,7 +65,7 @@ jobs:
           target: ${{ matrix.target }}
   publish-crate:
     runs-on: ubuntu-latest
-    needs: upload-assets
+    needs: [test, create-release]
 
     permissions:
       id-token: write     # Required for OIDC token exchange
