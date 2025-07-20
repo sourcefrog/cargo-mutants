@@ -4,8 +4,15 @@ on:
     branches:
       - codebuild
 jobs:
-  hello-world:
+  mutants-on-aws-runners:
     runs-on:
       - codebuild-mutants-runners-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - run: echo "Hello World"
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - run: cargo install cargo-nextest
+      - run: cargo run --release mutants -j4 -vV
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mutants.out
+          path: mutants.out
