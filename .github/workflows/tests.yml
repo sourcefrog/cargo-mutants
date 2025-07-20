@@ -286,7 +286,8 @@ jobs:
           path: mutants.out
 
   cargo-mutants:
-    runs-on: ubuntu-latest
+    runs-on:
+      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
     needs: [test]
     strategy:
       fail-fast: false # We want to get all the mutant failures
@@ -305,13 +306,7 @@ jobs:
         name: Install nextest using install-action
         with:
           tool: nextest
-      - name: Download cargo-mutants binary
-        uses: actions/download-artifact@v4
-        with:
-          name: cargo-mutants-linux
-      - name: Install cargo-mutants binary
-        run: |
-          install cargo-mutants ~/.cargo/bin/
+      - run: cargo install --path .
       - name: Mutants
         # Skip baselines because this job only runs after the baseline has been separately run.
         run: >
