@@ -35,6 +35,8 @@ cargo install --locked cargo-mutants
 
 You can also install using [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) or from binaries attached to GitHub releases.
 
+[Docker images are also available](https://github.com/sourcefrog/cargo-mutants/pkgs/container/mutants).
+
 ## Quick start
 
 From within a Rust source directory, just run

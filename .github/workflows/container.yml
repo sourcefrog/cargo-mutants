@@ -1,4 +1,6 @@
 # Create a container image with the Rust toolchain and the cargo-mutants binary.
+#
+# TODO: Maybe cross build to Arm using `cross` instead of running everything under emulation.
 name: Build and Push Container Image
 
 on:
