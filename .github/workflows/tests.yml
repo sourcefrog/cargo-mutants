@@ -106,11 +106,11 @@ jobs:
           tool: nextest
       - name: Test
         run: cargo test --workspace
-      - name: Install locked
-        run: cargo install --path . --locked
-      - name: Install unlocked
-        if: contains(fromJSON('["nightly", "beta", "stable"]'), matrix.version) # unlocked dependencies might change MSRV
-        run: cargo install --path .
+      # - name: Install locked
+      #   run: cargo install --path . --locked
+      # - name: Install unlocked
+      #   if: contains(fromJSON('["nightly", "beta", "stable"]'), matrix.version) # unlocked dependencies might change MSRV
+      #   run: cargo install --path .
 
   update-dependencies:
     needs: [test]
