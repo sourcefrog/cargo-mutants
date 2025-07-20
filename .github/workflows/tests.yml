@@ -197,7 +197,8 @@ jobs:
           cargo test
 
   branch-mutants:
-    runs-on: ubuntu-latest
+    runs-on:
+      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
     if: github.event_name == 'push' && github.ref != 'refs/heads/main'
     needs: [test]
     strategy:
@@ -241,7 +242,8 @@ jobs:
           path: mutants.out
 
   pr-mutants:
-    runs-on: ubuntu-latest
+    runs-on:
+      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
     if: github.event_name == 'pull_request'
     needs: [test]
     strategy:
