@@ -1,4 +1,4 @@
-name: Codebuild Hello
+name: Mutants on AWS Runners
 on:
   push:
     branches:
@@ -14,9 +14,10 @@ jobs:
         with:
           toolchain: beta
       - uses: Swatinem/rust-cache@v2
-      - run: cargo rustc --version
-      - run: rustup toolchain list
-      - run: cargo install cargo-nextest
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
+        with:
+          tool: nextest
       - run: cargo run --release mutants -j4 -vV
       - uses: actions/upload-artifact@v4
         with:
