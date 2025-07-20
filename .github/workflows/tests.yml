@@ -272,3 +272,28 @@ jobs:
         with:
           name: mutants-${{matrix.test_tool}}-shard${{matrix.shard}}.out
           path: mutants.out
+
+  merge-mutants-output:
+    runs-on: ubuntu-latest
+    needs: [cargo-mutants]
+    if: always()
+    steps:
+      - name: Download all mutants artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: mutants-cargo-shard*.out
+          path: mutants-shards
+          merge-multiple: false
+      - name: Merge artifacts into subdirectories
+        run: |
+          mkdir -p merged-mutants-output
+          for shard in mutants-shards/mutants-cargo-shard*.out; do
+            shard_name=$(basename "$shard")
+            mkdir -p "merged-mutants-output/$shard_name"
+            cp -r "$shard"/* "merged-mutants-output/$shard_name/"
+          done
+      - name: Upload merged mutants artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-mutants-output
+          path: merged-mutants-output/
