@@ -259,6 +259,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: cargo-mutants-linux-arm
+      - name: Install cargo-mutants binary
+        run: install cargo-mutants ~/.cargo/bin/
       - name: Mutants
         # Skip baselines because this job only runs after the baseline has been separately run.
         run: >
