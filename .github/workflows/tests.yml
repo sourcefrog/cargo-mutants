@@ -37,12 +37,8 @@ env:
   CARGO_MUTANTS_MINIMUM_TEST_TIMEOUT: 60
 
 jobs:
-  # Before anything else, run a quick test on just stable: this is significantly
-  # faster than Windows or macOS and should catch most issues, and lets us get
-  # started on the longer-running mutants and other tests.
-  #
-  # Also, build a Linux binary that we can use for the later mutants runs.
-  quick-test:
+  # Quick sanity check before anything else.
+  quick-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,37 +48,33 @@ jobs:
         with:
           toolchain: beta
           components: rustfmt
-          # , clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Show Cargo and rustc version
-        run: |
-          cargo --version
-          rustc --version
-      - name: Build
-        run: cargo build --all-targets
+      - run: cargo check --all-targets --all-features
       - name: Check rustfmt
         run: cargo fmt --all --check
       # - name: Check clippy
       #   run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Check typos
         uses: crate-ci/typos@master
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
+
+  binary-for-mutants:
+    runs-on:
+      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
-          tool: nextest
-      - name: Test
-        run: cargo test --workspace
-      - name: Build release binary
-        run: cargo build --release
+          toolchain: beta
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cargo-mutants-linux
+          name: cargo-mutants-linux-arm
           path: |
             target/release/cargo-mutants
 
   test:
-    needs: [quick-test]
+    needs: [quick-check]
     strategy:
       matrix:
         os: [macOS-latest, ubuntu-latest, windows-latest]
@@ -162,7 +154,7 @@ jobs:
         run: cargo test
 
   tests-from-tarball:
-    needs: [quick-test]
+    needs: [quick-check]
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -196,101 +188,56 @@ jobs:
           cd target/package/cargo-mutants-*[0-9]
           cargo test
 
-  branch-mutants:
-    runs-on:
-      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
-    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
-    needs: [test]
-    strategy:
-      matrix:
-        test_tool: [cargo, nextest]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Relative diff
-        run: |
-          git branch -av
-          git diff origin/main.. | tee git.diff
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: beta
-      - uses: Swatinem/rust-cache@v2
-        with:
-          save-if: false
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - name: Download cargo-mutants binary
-        uses: actions/download-artifact@v4
-        with:
-          name: cargo-mutants-linux
-      - name: Install cargo-mutants binary
-        run: |
-          install cargo-mutants ~/.cargo/bin/
-      - name: Mutants in-diff
-        run: >
-          cargo mutants --no-shuffle -vV --in-diff=git.diff --in-place
-          --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
-          --exclude=windows.rs --exclude=console.rs
-      - name: Archive mutants.out
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mutants-incremental-${{ matrix.test_tool}}.out
-          path: mutants.out
-
-  pr-mutants:
-    runs-on:
-      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
-    if: github.event_name == 'pull_request'
-    needs: [test]
-    strategy:
-      matrix:
-        test_tool: [cargo, nextest]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Relative diff
-        run: |
-          git branch -av
-          git diff origin/${{ github.base_ref }}.. | tee git.diff
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: beta
-      - uses: Swatinem/rust-cache@v2
-        with:
-          save-if: false
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - name: Download cargo-mutants binary
-        uses: actions/download-artifact@v4
-        with:
-          name: cargo-mutants-linux
-      - name: Install cargo-mutants binary
-        run: |
-          install cargo-mutants ~/.cargo/bin/
-      - name: Mutants in-diff
-        # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
-        run: >
-          cargo mutants --no-shuffle -vV --in-diff git.diff
-          --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
-          --exclude=windows.rs --exclude=console.rs
-      - name: Archive mutants.out
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: mutants-incremental-${{ matrix.test_tool}}.out
-          path: mutants.out
+  # pr-mutants:
+  #   runs-on:
+  #     - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
+  #   if: github.event_name == 'pull_request'
+  #   needs: [test, binary-for-mutants]
+  #   strategy:
+  #     matrix:
+  #       test_tool: [cargo, nextest]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Relative diff
+  #       run: |
+  #         git branch -av
+  #         git diff origin/${{ github.base_ref }}.. | tee git.diff
+  #     - uses: dtolnay/rust-toolchain@master
+  #       with:
+  #         toolchain: beta
+  #     - uses: Swatinem/rust-cache@v2
+  #       with:
+  #         save-if: false
+  #     - uses: taiki-e/install-action@v2
+  #       name: Install nextest using install-action
+  #       with:
+  #         tool: nextest
+  #     - name: Download cargo-mutants binary
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: cargo-mutants-linux-arm
+  #     - name: Install cargo-mutants binary
+  #       run: |
+  #         install cargo-mutants ~/.cargo/bin/
+  #     - name: Mutants in-diff
+  #       # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
+  #       run: >
+  #         cargo mutants --no-shuffle -vV --in-diff git.diff
+  #         --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
+  #         --exclude=windows.rs --exclude=console.rs
+  #     - name: Archive mutants.out
+  #       uses: actions/upload-artifact@v4
+  #       if: always()
+  #       with:
+  #         name: mutants-incremental-${{ matrix.test_tool}}.out
+  #         path: mutants.out
 
   cargo-mutants:
     runs-on:
       - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
-    needs: [test]
+    needs: [test, binary-for-mutants]
     strategy:
       fail-fast: false # We want to get all the mutant failures
       matrix:
