@@ -39,7 +39,7 @@ jobs:
           context: .
           push: true
           # platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }} ghcr.io/${{ github.repository_owner }}/mutants:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
         env:
           SOURCE_DATE_EPOCH: 0
