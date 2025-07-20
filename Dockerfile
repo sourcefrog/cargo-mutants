@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM rust:latest AS build
+RUN apt update
+RUN apt install -y s3cmd
 RUN --mount=type=bind,source=.,target=/src,rw cargo install --locked --path=/src --target-dir=/build
 
 FROM rust:latest AS final
