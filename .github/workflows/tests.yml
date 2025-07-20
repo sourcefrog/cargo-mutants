@@ -266,7 +266,9 @@ jobs:
         run: >
           cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/12
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=500
-          --build-timeout=500 --in-place --exclude=windows.rs
+          -j2
+          --build-timeout=500
+          --exclude=windows.rs
           --exclude=console.rs
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
