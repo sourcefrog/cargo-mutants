@@ -6,7 +6,7 @@ on:
 jobs:
   mutants-on-aws-runners:
     runs-on:
-      - codebuild-mutants-runners-${{ github.run_id }}-${{ github.run_attempt }}
+      - codebuild-mutants-runners-arm-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -18,7 +18,7 @@ jobs:
         name: Install nextest using install-action
         with:
           tool: nextest
-      - run: cargo run --release mutants -j4 -vV
+      - run: cargo run --release mutants -j2 -vV --shard 0/10 --no-shuffle
       - uses: actions/upload-artifact@v4
         with:
           name: mutants.out
