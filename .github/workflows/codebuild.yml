@@ -1,0 +1,11 @@
+name: Codebuild Hello
+on:
+  push:
+    branches:
+      - codebuild
+jobs:
+  hello-world:
+    runs-on:
+      - codebuild-mutants-runners-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - run: echo "Hello World"
