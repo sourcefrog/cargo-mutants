@@ -35,7 +35,7 @@ cargo install --locked cargo-mutants
 
 You can also install using [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) or from binaries attached to GitHub releases.
 
-[Docker images are also available](https://github.com/sourcefrog/cargo-mutants/pkgs/container/mutants).
+[Docker images are also available](https://github.com/sourcefrog/cargo-mutants/pkgs/container/cargo-mutants), from `ghcr.io/sourcefrog/cargo-mutants`.
 
 ## Quick start
 
