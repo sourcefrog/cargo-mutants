@@ -255,7 +255,10 @@ jobs:
         name: Install nextest using install-action
         with:
           tool: nextest
-      - run: cargo install --path .
+      - name: Download cargo-mutants binary
+        uses: actions/download-artifact@v4
+        with:
+          name: cargo-mutants-linux-arm
       - name: Mutants
         # Skip baselines because this job only runs after the baseline has been separately run.
         run: >
