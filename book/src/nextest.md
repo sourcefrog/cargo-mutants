@@ -12,6 +12,8 @@ For example, to select a [nextest profile](https://nexte.st/docs/configuration/?
 
     cargo mutants --cargo-arg=--profile=mutants
 
+By default, nextest will fail fast, which is highly preferable when testing mutants. If your nextest configuration turns fail-fast off, it's recommended that you turn it back using a profile or argument.
+
 ## How nextest works
 
 In the context of cargo-mutants the most important difference between cargo-test and nextest is that nextest runs each test in a separate process, and it can run tests from multiple test targets in parallel. (Nextest also has some nice UI improvements and other features, but they're not relevant here.)
