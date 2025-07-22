@@ -12,9 +12,7 @@ This means that nextest can stop faster if a single test fails, whereas cargo te
 
 This is beneficial for cargo-mutants, because it only needs to know whether at least one test caught the mutation, and so exiting as soon as there's a failure is better.
 
-However, running each test individually also means there is more per-test startup cost, and so on some trees nextest may be slower.
-
-In general, nextest will do relatively poorly on trees that have tests that are individually very fast, or on trees that establish shared or cached state across tests.
+However, [nextest currently allows straggling tests to run to completion](https://github.com/nextest-rs/nextest/discussions/2482), even when one test has already failed. In a tree with fast unit tests and slow integration tests this can mean that nextest is actually slower than the default test runner.
 
 ## When to use nextest
 
