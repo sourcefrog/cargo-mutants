@@ -4,6 +4,14 @@
 
 You can use nextest to run your tests with cargo-mutants, instead of `cargo test`, by either passing the `--test-tool=nextest` option, or setting `test_tool = "nextest"` in `.cargo/mutants.toml`.
 
+## Controlling nextest
+
+You can pass additional arguments to nextest through the same [options and configuration keys as for Cargo](cargo-args.md).
+
+For example, to select a [nextest profile](https://nexte.st/docs/configuration/?h=profile#profiles) (which is separate from a Cargo build profile):
+
+    cargo mutants --cargo-arg=--profile=mutants
+
 ## How nextest works
 
 In the context of cargo-mutants the most important difference between cargo-test and nextest is that nextest runs each test in a separate process, and it can run tests from multiple test targets in parallel. (Nextest also has some nice UI improvements and other features, but they're not relevant here.)
