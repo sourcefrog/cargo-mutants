@@ -190,10 +190,10 @@ jobs:
   branch-mutants:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref != 'refs/heads/main'
-    needs: [test, binary]
+    needs: [quick-check, binary]
     strategy:
       matrix:
-        test_tool: [cargo, nextest]
+        test_tool: [cargo] # nextest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -237,7 +237,7 @@ jobs:
     needs: [quick-check, binary]
     strategy:
       matrix:
-        test_tool: [cargo, nextest]
+        test_tool: [cargo] # nextest
     steps:
       - uses: actions/checkout@v4
         with:
