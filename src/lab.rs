@@ -30,6 +30,7 @@ use crate::{
 /// mutations applied.
 pub fn test_mutants(
     mut mutants: Vec<Mutant>,
+    error_msg: Option<String>,
     workspace: &Workspace,
     output_dir: OutputDir,
     options: &Options,
@@ -43,7 +44,11 @@ pub fn test_mutants(
     output_dir.write_mutants_list(&mutants)?;
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
-        warn!("No mutants found under the active filters");
+        if error_msg.is_some() {
+            warn!("{}", error_msg.unwrap());
+        } else {
+            warn!("No mutants found under the active filters");
+        }
         return Ok(LabOutcome::default());
     }
     let output_mutex = Mutex::new(output_dir);
