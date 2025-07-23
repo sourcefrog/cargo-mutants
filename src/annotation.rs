@@ -52,12 +52,16 @@ impl ResolvedAnnotation {
         match self {
             ResolvedAnnotation::None => String::new(),
             ResolvedAnnotation::GitHub => {
+                // https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-a-warning-message
                 format!(
-                    "::warn file={path},line={line},col={col}::missed mutant: {message}\n",
-                    path = mutant.source_file.tree_relative_slashes(),
+                    "::warning file={file},line={line},col={col},endLine={endline},endCol={endcol},title={title}::missed mutant: {message}\n",
+                    file = mutant.source_file.tree_relative_slashes(),
                     line = mutant.span.start.line,
                     col = mutant.span.start.column,
+                    endline = mutant.span.end.line,
+                    endcol = mutant.span.end.column,
                     message = mutant.describe_change(),
+                    title = "Missed mutant",
                 )
             }
         }
