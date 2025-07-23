@@ -11,6 +11,7 @@
     clippy::too_many_lines
 )]
 
+mod annotation;
 mod build_dir;
 mod cargo;
 mod config;
@@ -394,6 +395,10 @@ pub struct Args {
     /// Show cargo output for all invocations (very verbose).
     #[arg(long, help_heading = "Output")]
     all_logs: bool,
+
+    /// Emit annotations for code review tools.
+    #[arg(long, help_heading = "Output", default_value = "auto")]
+    annotations: annotation::AutoAnnotation,
 
     /// Print mutants that were caught by tests.
     #[arg(long, short = 'v', help_heading = "Output")]

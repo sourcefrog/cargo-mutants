@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: cargo-mutants can emit GitHub Actions structured annotations for missed mutants, which appear as warnings outside of the log text. This behavior is on by default when the `GITHUB_ACTION` environment variable is set, can be forced on with `--annotations=github` and forced off with `--annotations=none`.
+
 ## 25.2.2 2025-07-18
 
 - Changed: The mutant name of "replace match guard" mutations now includes the original match guard, for example `replace match guard path.path.is_ident("str") with true in type_replacements`. Similarly, the "delete match arm" mutation includes the pattern of the arm, for example `delete match arm BinOp::BitOr(_) in ...`.

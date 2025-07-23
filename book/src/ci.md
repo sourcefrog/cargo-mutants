@@ -28,3 +28,9 @@ The recommended way to install cargo-mutants is using [install-action](https://g
 
 The workflow used by cargo-mutants on itself can be seen at
 <https://github.com/sourcefrog/cargo-mutants/blob/main/.github/workflows/tests.yml>, but this is different from what you will typically want to use, because it runs cargo-mutants from HEAD.
+
+## Annotations
+
+cargo-mutants will emit GitHub Actions structured annotations when it detects that it's running within an action. (Specifically, when `$GITHUB_ACTION` is set.)
+
+This behavior can be forced on with the `--annotations=github` option, or off with `--annotations=none`.

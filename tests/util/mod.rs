@@ -40,6 +40,9 @@ pub fn run() -> assert_cmd::Command {
     //
     // Even more generally than that example, we want the tests to be as hermetic
     // as reasonably possible.
+    //
+    // Also strip GITHUB_ACTION to avoid automatically emitting github annotations,
+    // so that tests are more hermetic and reproducible between local and CI.
     env::vars()
         .map(|(k, _v)| k)
         .filter(|k| {
@@ -47,6 +50,7 @@ pub fn run() -> assert_cmd::Command {
                 || k == "CLICOLOR_FORCE"
                 || k == "NOCOLOR"
                 || k == "CARGO_TERM_COLOR"
+                || k == "GITHUB_ACTION"
         })
         .for_each(|k| {
             cmd.env_remove(k);
