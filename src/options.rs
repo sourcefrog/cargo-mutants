@@ -23,6 +23,7 @@ use strum::{Display, EnumString};
 use syn::Expr;
 use tracing::warn;
 
+use crate::annotation::ResolvedAnnotation;
 use crate::config::Config;
 use crate::glob::build_glob_set;
 use crate::mutant::Mutant;
@@ -33,6 +34,9 @@ use crate::{Args, BaselineStrategy, Phase, Result, ValueEnum};
 #[derive(Default, Debug, Clone)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Options {
+    /// Emit annotations?
+    pub annotations: ResolvedAnnotation,
+
     /// Run tests in an unmutated tree?
     pub baseline: BaselineStrategy,
 
@@ -291,6 +295,7 @@ impl Options {
                 &config.additional_cargo_test_args,
             ),
             all_features: args.all_features || config.all_features.unwrap_or(false),
+            annotations: args.annotations.resolve(),
             baseline: args.baseline,
             build_timeout: args.build_timeout.map(Duration::from_secs_f64),
             build_timeout_multiplier: args

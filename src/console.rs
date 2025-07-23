@@ -117,6 +117,14 @@ impl Console {
         }
         s.push('\n');
         self.message(&s);
+        if let Some(mutant) = scenario.mutant() {
+            if outcome.mutant_missed() {
+                let annotation = options.annotations.format(mutant);
+                if !annotation.is_empty() {
+                    self.message(&annotation);
+                }
+            }
+        }
     }
 
     pub fn start_copy(&self, dir: &Utf8Path) {
