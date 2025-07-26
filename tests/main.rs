@@ -13,10 +13,13 @@ use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
+use regex::Regex;
 use tempfile::TempDir;
 
 mod util;
 use util::{copy_of_testdata, copy_testdata_to, run, OUTER_TIMEOUT};
+#[path = "main/colors.rs"]
+mod colors;
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -1244,4 +1247,288 @@ fn example_config_file_can_be_loaded() {
         .assert()
         .success()
         .stdout(contains("custom mutant error"));
+}
+
+/// It's a bit hard to assess that multiple jobs really ran in parallel,
+/// but we can at least check that the option is accepted, and see that the
+/// debug log looks like it's using multiple threads.
+#[test]
+fn jobs_option_accepted_and_causes_multiple_threads() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j2")
+        .arg("--minimum-test-timeout=120") // to avoid flakes on slow CI
+        .assert()
+        .success();
+    let debug_log =
+        read_to_string(testdata.path().join("mutants.out/debug.log")).expect("read debug log");
+    println!("debug log:\n{debug_log}");
+    // This might be brittle, as the ThreadId debug form is not specified, and
+    // also _possibly_ everything will complete on one thread before the next
+    // gets going, though that seems unlikely.
+    let re = Regex::new(r#"start thread thread_id=ThreadId\(\d+\)"#).expect("compile regex");
+    let matches = re
+        .find_iter(&debug_log)
+        .map(|m| m.as_str())
+        .unique()
+        .collect::<Vec<_>>();
+    println!("threadid matches: {matches:?}");
+    assert!(
+        matches.len() > 1,
+        "expected more than {} thread ids in debug log",
+        matches.len()
+    );
+}
+
+#[test]
+fn warn_about_too_many_jobs() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j40")
+        .arg("--shard=0/1000")
+        .assert()
+        .stderr(predicates::str::contains(
+            "WARN --jobs=40 is probably too high",
+        ))
+        .success();
+}
+
+#[test]
+fn in_place_check_leaves_no_changes() {
+    let tmp = copy_of_testdata("small_well_tested");
+    let tmp_path = tmp.path();
+    let output_tmp = TempDir::with_prefix("in_place_check_leaves_no_changes").unwrap();
+    let cmd = run()
+        .args(["mutants", "--in-place", "--check", "-d"])
+        .arg(tmp.path())
+        .arg("-o")
+        .arg(output_tmp.path())
+        .assert()
+        .success();
+    println!(
+        "stdout:\n{}",
+        String::from_utf8_lossy(&cmd.get_output().stdout)
+    );
+    println!(
+        "stderr:\n{}",
+        String::from_utf8_lossy(&cmd.get_output().stderr)
+    );
+    assert_files_equal(tmp_path, "Cargo.toml", "Cargo_test.toml");
+    assert_files_equal(tmp_path, "src/lib.rs", "src/lib.rs");
+}
+
+fn assert_files_equal(tmp: &Path, new_name: &str, old_name: &str) {
+    let orig_path = Path::new("testdata/small_well_tested");
+    println!("comparing {new_name} and {old_name}");
+    assert_eq!(
+        read_to_string(tmp.join(new_name))
+            .unwrap()
+            .replace("\r\n", "\n"),
+        read_to_string(orig_path.join(old_name))
+            .unwrap()
+            .replace("\r\n", "\n"),
+        "{old_name} should be the same as {new_name}"
+    );
+}
+
+#[test]
+fn env_var_controls_trace() {
+    let tmp = copy_of_testdata("never_type");
+    run()
+        .env("CARGO_MUTANTS_TRACE_LEVEL", "trace")
+        .args(["mutants", "--list"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        // This is a debug!() message; it should only be seen if the trace var
+        // was wired correctly to stderr.
+        .stderr(predicate::str::contains(
+            "No mutants generated for this return type",
+        ));
+}
+
+#[test]
+fn shard_divides_all_mutants() {
+    // For speed, this only lists the mutants, trusting that the mutants
+    // that are listed are the ones that are run.
+    let tmp = copy_of_testdata("well_tested");
+    let common_args = ["mutants", "--list", "-d", tmp.path().to_str().unwrap()];
+    let full_list = String::from_utf8(
+        run()
+            .args(common_args)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone(),
+    )
+    .unwrap()
+    .lines()
+    .map(ToOwned::to_owned)
+    .collect_vec();
+
+    let n_shards = 5;
+    let shard_lists = (0..n_shards)
+        .map(|k| {
+            String::from_utf8(
+                run()
+                    .args(common_args)
+                    .args(["--shard", &format!("{k}/{n_shards}")])
+                    .assert()
+                    .success()
+                    .get_output()
+                    .stdout
+                    .clone(),
+            )
+            .unwrap()
+            .lines()
+            .map(ToOwned::to_owned)
+            .collect_vec()
+        })
+        .collect_vec();
+
+    // If you combine all the mutants selected for each shard, you get the
+    // full list, with nothing lost or duplicated, disregarding order.
+    //
+    // If we had a bug where we shuffled before sharding, then the shards would
+    // see inconsistent lists and this test would fail in at least some attempts.
+    assert_eq!(
+        shard_lists.iter().flatten().sorted().collect_vec(),
+        full_list.iter().sorted().collect_vec()
+    );
+
+    // The shards should also be approximately the same size.
+    let shard_lens = shard_lists.iter().map(|l| l.len()).collect_vec();
+    assert!(shard_lens.iter().max().unwrap() - shard_lens.iter().min().unwrap() <= 1);
+
+    // And the shards are disjoint
+    for i in 0..n_shards {
+        for j in 0..n_shards {
+            if i != j {
+                assert!(
+                    shard_lists[i].iter().all(|m| !shard_lists[j].contains(m)),
+                    "shard {} contains {}",
+                    j,
+                    shard_lists[j]
+                        .iter()
+                        .filter(|m| shard_lists[i].contains(m))
+                        .join(", ")
+                );
+            }
+        }
+    }
+}
+
+/// Only on Windows, backslash can be used as a path separator in filters.
+#[test]
+#[cfg(windows)]
+fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
+    // This could be written more simply as `--exclude module` but we want to
+    // test that backslash is accepted.
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "**\\module\\**\\*.rs"])
+        .current_dir(tmp.path())
+        .assert()
+        .stdout(
+            predicates::str::contains(r"src/module")
+                .not()
+                .and(predicates::str::contains(r"src/methods.rs")),
+        );
+}
+
+/// If the test hangs and the user (in this case the test suite) interrupts it, then
+/// the `cargo test` child should be killed.
+///
+/// This is a bit hard to directly observe: the property that we really most care
+/// about is that _all_ grandchild processes are also killed and nothing is left
+/// behind. (On Unix, this is accomplished by use of a pgroup.) However that's a bit
+/// hard to mechanically check without reading and interpreting the process tree, which
+/// seems likely to be a bit annoying to do portably and without flakes.
+/// (But maybe we still should?)
+///
+/// An easier thing to test is that the cargo-mutants process _thinks_ it has killed
+/// the children, and we can observe this in the debug log.
+///
+/// In this test cargo-mutants has a very long timeout, but the test driver has a
+/// short timeout, so it should kill cargo-mutants.
+// TODO: An equivalent test on Windows?
+#[test]
+#[cfg(unix)]
+fn interrupt_caught_and_kills_children() {
+    // Test a tree that has enough tests that we'll probably kill it before it completes.
+
+    use std::process::{Command, Stdio};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    use nix::libc::pid_t;
+    use nix::sys::signal::{kill, SIGTERM};
+    use nix::unistd::Pid;
+
+    use crate::util::MAIN_BINARY;
+
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
+    // which doesn't give it a chance to clean up. And, `std::process::Command` only
+    // has an abrupt kill.
+
+    // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
+    // and we want to check that the process does not panic.
+
+    // Skip baseline because firstly it should already pass but more importantly
+    // #333 exhibited only during non-baseline scenarios.
+    let args = [
+        MAIN_BINARY.to_str().unwrap(),
+        "mutants",
+        "--timeout=300",
+        "--baseline=skip",
+        "--level=trace",
+    ];
+
+    println!("Running: {args:?}");
+    let mut child = Command::new(args[0])
+        .args(&args[1..])
+        .current_dir(&tmp_src_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .env_remove("RUST_BACKTRACE")
+        .spawn()
+        .expect("spawn child");
+
+    sleep(Duration::from_secs(2)); // Let it get started
+    assert!(
+        child.try_wait().expect("try to wait for child").is_none(),
+        "child exited early"
+    );
+
+    println!("Sending SIGTERM to cargo-mutants...");
+    kill(Pid::from_raw(child.id() as pid_t), SIGTERM).expect("send SIGTERM");
+
+    println!("Wait for cargo-mutants to exit...");
+    let output = child
+        .wait_with_output()
+        .expect("wait for child after SIGTERM");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    println!("stdout:\n{stdout}");
+    println!("stderr:\n{stderr}");
+
+    assert!(stderr.contains("interrupted"));
+    // We used to look here for some other trace messages about how it's interrupted, but
+    // that seems to be racy: sometimes the parent sees the child interrupted before it
+    // emits these messages? Anyhow, it's not essential.
+
+    // This shouldn't cause a panic though (#333)
+    assert!(!stderr.contains("panic"));
+    // And we don't want duplicate messages about workers failing.
+    assert!(!stderr.contains("Worker thread failed"));
 }

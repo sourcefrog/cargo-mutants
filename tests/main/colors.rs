@@ -7,8 +7,7 @@
 
 use predicates::prelude::*;
 
-mod util;
-use util::run;
+use super::util::run;
 
 fn has_color_listing() -> impl Predicate<str> {
     predicates::str::contains("with \x1b[33m0\x1b[0m")
