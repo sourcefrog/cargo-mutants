@@ -293,9 +293,8 @@ jobs:
         with:
           save-if: false
       - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
         with:
-          tool: nextest
+          tool: nextest, wild-linker
       - name: Download cargo-mutants binary
         uses: actions/download-artifact@v4
         with:
@@ -310,6 +309,7 @@ jobs:
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=500
           --build-timeout=500 --in-place --exclude=windows.rs
           --exclude=console.rs
+          --config=linker='"clang"' --config=rustflags='["-C", "link-arg=--ld-path=wild"]'
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
