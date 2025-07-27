@@ -155,6 +155,9 @@ pub fn outcome_json(tmp_src_dir: &TempDir) -> serde_json::Value {
 pub fn outcome_json_counts(tmp_src_dir: &TempDir) -> serde_json::Value {
     let mut outcomes = outcome_json(tmp_src_dir);
     // We don't want to compare the detailed outcomes
-    outcomes.as_object_mut().unwrap().remove("outcomes");
+    let outcomes_object = outcomes.as_object_mut().unwrap();
+    outcomes_object.remove("outcomes").unwrap();
+    outcomes_object.remove("end_time").unwrap();
+    outcomes_object.remove("start_time").unwrap();
     outcomes
 }

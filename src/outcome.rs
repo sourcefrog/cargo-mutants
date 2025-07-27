@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use anyhow::Context;
 use camino::Utf8PathBuf;
 use humantime::format_duration;
+use jiff::Timestamp;
 use output::ScenarioOutput;
 use serde::ser::SerializeStruct;
 use serde::Serialize;
@@ -54,7 +55,7 @@ impl fmt::Display for Phase {
 }
 
 /// The outcome from a whole lab run containing multiple mutants.
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Serialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct LabOutcome {
     /// All the scenario outcomes, including baseline builds.
@@ -65,11 +66,23 @@ pub struct LabOutcome {
     pub timeout: usize,
     pub unviable: usize,
     pub success: usize,
+    pub start_time: Timestamp,
+    pub end_time: Option<Timestamp>,
 }
 
 impl LabOutcome {
-    pub fn new() -> LabOutcome {
-        LabOutcome::default()
+    pub fn new(start_time: Timestamp) -> LabOutcome {
+        LabOutcome {
+            outcomes: Vec::new(),
+            total_mutants: 0,
+            missed: 0,
+            caught: 0,
+            timeout: 0,
+            unviable: 0,
+            success: 0,
+            start_time,
+            end_time: None,
+        }
     }
 
     /// Record the event of one test.

@@ -6,6 +6,8 @@
 
 - Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
 
+- New: `start_time` and `end_time` fields in `outcomes.json`.
+
 ## 25.3.1 2025-08-10
 
 - Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.

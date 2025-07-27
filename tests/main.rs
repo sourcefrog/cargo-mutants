@@ -9,6 +9,7 @@ use std::path::Path;
 
 use indoc::indoc;
 use itertools::Itertools;
+use jiff::Timestamp;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
@@ -182,6 +183,7 @@ fn copy_testdata_doesnt_include_build_artifacts() {
 
 #[test]
 fn small_well_tested_tree_is_clean() {
+    let test_start = Timestamp::now();
     let tmp_src_dir = copy_of_testdata("small_well_tested");
     run()
         .arg("mutants")
@@ -224,6 +226,21 @@ fn small_well_tested_tree_is_clean() {
 
     assert!(log_content.contains("---- test::test_factorial stdout ----"));
     assert!(log_content.contains("factorial(6) = 0"));
+
+    let outcomes_json =
+        read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
+
+    let start_time = &outcomes["start_time"];
+    dbg!(&start_time);
+    let start_time: Timestamp = start_time.as_str().unwrap().parse().unwrap();
+    assert!(start_time >= test_start);
+
+    let end_time = &outcomes["end_time"];
+    dbg!(&end_time);
+    let end_time: Timestamp = end_time.as_str().unwrap().parse().unwrap();
+    assert!(end_time >= start_time);
+    assert!(end_time <= Timestamp::now());
 }
 
 #[test]

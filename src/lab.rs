@@ -12,6 +12,7 @@ use std::time::Instant;
 use std::{thread, vec};
 
 use itertools::Itertools;
+use jiff::Timestamp;
 use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::{
@@ -44,7 +45,7 @@ pub fn test_mutants(
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
         warn!("No mutants found under the active filters");
-        return Ok(LabOutcome::default());
+        return Ok(LabOutcome::new(Timestamp::now()));
     }
     let output_mutex = Mutex::new(output_dir);
     let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;
@@ -75,11 +76,11 @@ pub fn test_mutants(
                     "cargo {phase} failed in an unmutated tree, so no mutants were tested",
                     phase = outcome.last_phase(),
                 );
-                return Ok(lab
+                return lab
                     .output_mutex
                     .into_inner()
                     .expect("lock output_dir")
-                    .take_lab_outcome());
+                    .finish();
             }
         }
         BaselineStrategy::Skip => Timeouts::without_baseline(options),
@@ -116,7 +117,7 @@ pub fn test_mutants(
         .into_inner()
         .expect("final unlock mutants queue");
     console.lab_finished(&output_dir.lab_outcome, start_time, options);
-    let lab_outcome = output_dir.take_lab_outcome();
+    let lab_outcome = output_dir.finish()?;
     if lab_outcome.total_mutants == 0 {
         // This should be unreachable as we also bail out before copying
         // the tree if no mutants are generated.

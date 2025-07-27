@@ -158,7 +158,7 @@ impl OutputDir {
             .context("create timeout.txt")?;
         Ok(OutputDir {
             path: output_dir,
-            lab_outcome: LabOutcome::new(),
+            lab_outcome: LabOutcome::new(Timestamp::now()),
             lock_file,
             missed_list,
             caught_list,
@@ -194,9 +194,9 @@ impl OutputDir {
         &self.path
     }
 
-    /// Update the state of the overall lab.
+    /// Write `outcomes.json` from the current in-memory state.
     ///
-    /// Called multiple times as the lab runs.
+    /// Called multiple times as the lab runs, and once at the end.
     fn write_lab_outcome(&self) -> Result<()> {
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(self.path.join("outcomes.json"))?),
@@ -240,8 +240,13 @@ impl OutputDir {
         .context("write mutants.json")
     }
 
-    pub fn take_lab_outcome(self) -> LabOutcome {
-        self.lab_outcome
+    /// Mark the lab as finished and return the outcome.
+    pub fn finish(mut self) -> Result<LabOutcome> {
+        // Maybe it's weird to hold it in the directory object? Should we have a
+        // higher level "accumulator" object?
+        self.lab_outcome.end_time = Some(Timestamp::now());
+        self.write_lab_outcome()?;
+        Ok(self.lab_outcome)
     }
 
     pub fn write_previously_caught(&self, caught: &[String]) -> Result<()> {
