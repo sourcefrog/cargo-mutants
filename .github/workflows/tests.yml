@@ -295,6 +295,13 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest, wild-linker
+      - name: Configure Wild
+        run: |
+          mkdir -p ~/.cargo && cat <<EOF >~/.cargo/config.toml
+          [target.x86_64-unknown-linux-gnu]
+          linker = "clang"
+          rustflags = ["-C", "link-arg=--ld-path=wild"]
+          EOF
       - name: Download cargo-mutants binary
         uses: actions/download-artifact@v4
         with:
@@ -309,7 +316,6 @@ jobs:
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=500
           --build-timeout=500 --in-place --exclude=windows.rs
           --exclude=console.rs
-          --config=linker='"clang"' --config=rustflags='["-C", "link-arg=--ld-path=wild"]'
       - name: Archive mutants.out
         uses: actions/upload-artifact@v4
         if: always()
