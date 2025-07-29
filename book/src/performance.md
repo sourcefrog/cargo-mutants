@@ -55,11 +55,15 @@ sudo chmod 1777 /ram
 env TMPDIR=/ram cargo mutants
 ```
 
-## Using the Mold linker
+## Using faster linkers
+
+Because cargo-mutants does many incremental builds, link time is important, especially if the test suite is relatively fast.
+
+Using a non-default linker can give a significant performance improvement. The exact amount will depend on the project.
 
 Using the [Mold linker](https://github.com/rui314/mold) on Unix can give a 20% performance improvement, depending on the tree.
-Because cargo-mutants does many
-incremental builds, link time is important, especially if the test suite is relatively fast.
+
+On Linux, the [Wild linker](https://github.com/davidlattimore/wild) can give a significant performance improvement, potentially even better than Mold. On one tree, using Wild cut the time to run cargo-mutants by more than half.
 
 Because of limitations in the way cargo-mutants runs Cargo, the standard way of configuring Mold for Rust in `~/.cargo/config.toml` won't work.
 
