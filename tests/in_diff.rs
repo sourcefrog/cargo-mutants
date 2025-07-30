@@ -84,7 +84,7 @@ fn binary_diff_is_not_an_error_and_matches_nothing() {
         .assert()
         .success()
         .stdout("")
-        .stderr(predicate::str::contains("diff file is empty"));
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
 }
 
 #[test]
@@ -100,7 +100,7 @@ fn empty_diff_is_not_an_error_and_matches_nothing() {
         .assert()
         .success()
         .stdout("")
-        .stderr(predicate::str::contains("diff file is empty"));
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
 }
 
 /// If the text in the diff doesn't look like the tree then error out.
@@ -129,7 +129,7 @@ fn mismatched_diff_causes_error() {
         .assert()
         .failure()
         .stderr(predicates::str::contains(
-            "Diff content doesn't match source file: src/lib.rs",
+            "ERROR Diff content doesn't match source file: src/lib.rs",
         ));
 }
 
@@ -167,7 +167,7 @@ fn diff_with_multiple_deletions_is_ok() {
         .arg(diff_file.path())
         .assert()
         .stderr(predicates::str::contains(
-            "No mutants found under the active filters",
+            "INFO Diff changes no Rust source files",
         ))
         .success();
 }

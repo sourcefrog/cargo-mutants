@@ -46,7 +46,6 @@ mod visit;
 mod workspace;
 
 use std::env;
-use std::fs::read_to_string;
 use std::io;
 use std::process::exit;
 
@@ -59,11 +58,11 @@ use clap_complete::{generate, Shell};
 use color_print::cstr;
 use console::enable_console_colors;
 use output::{load_previously_caught, OutputDir};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 use crate::build_dir::BuildDir;
 use crate::console::Console;
-use crate::in_diff::diff_filter;
+use crate::in_diff::diff_filter_file;
 use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants};
@@ -463,6 +462,9 @@ pub struct Args {
 }
 
 fn main() -> Result<()> {
+    // TODO: Perhaps return an ExitCode and avoid having calls to exit(). And as
+    // part of that, perhaps we should have an error type that implements Termination,
+    // to report its exit code.
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
@@ -547,11 +549,18 @@ fn main() -> Result<()> {
         return Ok(());
     }
     let mut mutants = discovered.mutants;
-    if let Some(in_diff) = &args.in_diff {
-        mutants = diff_filter(
-            mutants,
-            &read_to_string(in_diff).context("Failed to read filter diff")?,
-        )?;
+    if let Some(diff_path) = &args.in_diff {
+        mutants = match diff_filter_file(mutants, diff_path) {
+            Ok(mutants) => mutants,
+            Err(err) => {
+                if err.exit_code() == 0 {
+                    info!("{err}");
+                } else {
+                    error!("{err}");
+                }
+                exit(err.exit_code());
+            }
+        };
     }
     if let Some(shard) = &args.shard {
         mutants = shard.select(mutants);

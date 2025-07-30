@@ -1,53 +1,112 @@
-// Copyright 2023 Martin Pool
+// Copyright 2023 - 2025 Martin Pool
 
 //! Filter mutants to those intersecting a diff on the file tree,
 //! for example from uncommitted or unmerged changes.
 
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::fs::read_to_string;
 use std::iter::once;
 
-use anyhow::{anyhow, bail};
+use anyhow::bail;
 use camino::Utf8Path;
 use indoc::formatdoc;
 use itertools::Itertools;
 use patch::{Line, Patch};
-use tracing::{info, trace, warn};
+use tracing::{error, trace, warn};
 
 use crate::mutant::Mutant;
 use crate::source::SourceFile;
-use crate::Result;
+use crate::{exit_code, Result};
 
-/// Return only mutants to functions whose source was touched by this diff.
-pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>> {
+/// The result of filtering mutants based on a diff.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum DiffFilterError {
+    /// The diff is empty.
+    EmptyDiff,
+    /// The diff new text doesn't match the source tree.
+    MismatchedDiff(String),
+    /// The diff is not empty but doesn't intersect any mutants.
+    NoMutants,
+    /// The diff is not empty but changes no Rust source files.
+    NoSourceFiles,
+    /// The diff can't be parsed.
+    InvalidDiff(String),
+}
+
+impl DiffFilterError {
+    /// Return the overall exit code for the error.
+    ///
+    /// Some errors such as an empty diff or one that changes no Rust source files
+    /// still mean we can't process any mutants, but it's not necessarily a problem.
+    pub fn exit_code(&self) -> i32 {
+        match self {
+            DiffFilterError::EmptyDiff
+            | DiffFilterError::NoSourceFiles
+            | DiffFilterError::NoMutants => exit_code::SUCCESS,
+            DiffFilterError::MismatchedDiff(_) => exit_code::FILTER_DIFF_MISMATCH,
+            DiffFilterError::InvalidDiff(_) => exit_code::FILTER_DIFF_INVALID,
+        }
+    }
+}
+
+impl Display for DiffFilterError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DiffFilterError::EmptyDiff => write!(f, "Diff file is empty"),
+            DiffFilterError::NoSourceFiles => write!(f, "Diff changes no Rust source files"),
+            DiffFilterError::NoMutants => write!(f, "No mutants to filter"),
+            DiffFilterError::MismatchedDiff(msg) => write!(f, "{msg}"),
+            DiffFilterError::InvalidDiff(msg) => write!(f, "Failed to parse diff: {msg}"),
+        }
+    }
+}
+
+pub fn diff_filter_file(
+    mutants: Vec<Mutant>,
+    diff_path: &Utf8Path,
+) -> Result<Vec<Mutant>, DiffFilterError> {
+    let diff_text = match read_to_string(diff_path) {
+        Ok(text) => text,
+        Err(err) => {
+            error!("Failed to read diff file: {err}");
+            return Err(DiffFilterError::InvalidDiff(err.to_string()));
+        }
+    };
+    diff_filter(mutants, &diff_text)
+}
+
+/// Filter a list of mutants to those intersecting a diff on the file tree.
+pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>, DiffFilterError> {
     // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
-    // the moment; this could be removed if it's fixed in that crate.
+    // the moment; this could be removed when there's a new release of `patch` including
+    // <https://github.com/uniphil/patch-rs/pull/32>.
     let fixed_diff = diff_text
         .lines()
         .filter(|line| !(line.starts_with("Binary files ")))
         .chain(once(""))
         .join("\n");
-
-    // Flatten the error to a string because otherwise it references the diff, and can't be returned.
     if fixed_diff.trim().is_empty() {
-        info!("diff file is empty; no mutants will match");
-        return Ok(Vec::new());
+        return Err(DiffFilterError::EmptyDiff);
     }
 
-    let patches =
-        Patch::from_multiple(&fixed_diff).map_err(|err| anyhow!("Failed to parse diff: {err}"))?;
-    check_diff_new_text_matches(&patches, &mutants)?;
+    let patches = match Patch::from_multiple(&fixed_diff) {
+        Ok(patches) => patches,
+        Err(err) => return Err(DiffFilterError::InvalidDiff(err.to_string())), // squash to a string to simplify lifetimes
+    };
+    if let Err(err) = check_diff_new_text_matches(&patches, &mutants) {
+        return Err(DiffFilterError::MismatchedDiff(err.to_string()));
+    }
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
+    let mut changed_rs_file = false;
     for patch in &patches {
         let path = strip_patch_path(&patch.new.path);
-        if path == "/dev/null" {
-            // The file was deleted; we can't possibly match anything in it.
-            continue;
-        }
-        if lines_changed_by_path
-            .insert(path, affected_lines(patch))
-            .is_some()
-        {
-            bail!("Patch input contains repeated filename: {path:?}");
+        if path != "/dev/null" && path.extension() == Some("rs") {
+            changed_rs_file = true;
+            lines_changed_by_path
+                .entry(path)
+                .or_default()
+                .extend(affected_lines(patch));
         }
     }
     let mut matched: Vec<Mutant> = Vec::with_capacity(mutants.len());
@@ -75,9 +134,23 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>>
             }
         }
     }
-    Ok(matched)
+    if matched.is_empty() {
+        if changed_rs_file {
+            trace!("diff matched no mutants");
+            Err(DiffFilterError::NoMutants)
+        } else {
+            Err(DiffFilterError::NoSourceFiles)
+        }
+    } else {
+        Ok(matched)
+    }
 }
 
+/// Check that the "new" side of the text matches the source in this tree.
+///
+/// This is a convenience function to make sure the user supplied a valid diff: if not,
+/// the regions in the diff will be meaningless.
+///
 /// Error if the new text from the diffs doesn't match the source files.
 fn check_diff_new_text_matches(patches: &[Patch], mutants: &[Mutant]) -> Result<()> {
     let mut source_by_name: HashMap<&Utf8Path, &SourceFile> = HashMap::new();
@@ -255,8 +328,26 @@ index eb42779..a0091b7 100644
  use serde::Serialize;
  use similar::TextDiff;
 ";
-        let filtered: Vec<Mutant> = diff_filter(Vec::new(), diff).expect("diff filtered");
-        assert_eq!(filtered.len(), 0);
+        let err = diff_filter(Vec::new(), diff);
+        assert_eq!(err, Err(DiffFilterError::NoMutants));
+        assert_eq!(err.unwrap_err().exit_code(), 0);
+    }
+
+    #[test]
+    fn read_diff_with_no_sourcecode() {
+        let diff = "\
+diff --git a/book/src/baseline.md b/book/src/baseline.md
+index cc3ce8c..8fe9aa0 100644
+--- a/book/src/baseline.md
++++ b/book/src/baseline.md
+@@ -1,6 +1,6 @@
+    # Baseline tests
+-Normally, cargo-mutants builds
++Normally cargo-mutants builds
+";
+        let err = diff_filter(Vec::new(), diff);
+        assert_eq!(err, Err(DiffFilterError::NoSourceFiles));
+        assert_eq!(err.unwrap_err().exit_code(), 0);
     }
 
     fn make_diff(old: &str, new: &str) -> String {

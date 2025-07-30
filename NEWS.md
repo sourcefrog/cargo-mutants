@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: A specific clearer error if a valid non-empty diff changes no Rust source files, and so matches no mutants. Thanks to @brunoerg.
+
 - New: cargo-mutants can emit GitHub Actions structured annotations for missed mutants, which appear as warnings outside of the log text. This behavior is on by default when the `GITHUB_ACTION` environment variable is set, can be forced on with `--annotations=github` and forced off with `--annotations=none`.
 
 ## 25.2.2 2025-07-18

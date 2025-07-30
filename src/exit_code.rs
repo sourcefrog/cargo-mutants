@@ -1,4 +1,4 @@
-// Copyright 2021 Martin Pool
+// Copyright 2021 - 2025 Martin Pool
 
 //! Exit codes from cargo-mutants.
 //!
@@ -25,6 +25,12 @@ pub const TIMEOUT: i32 = 3;
 
 /// The tests are already failing in an unmutated tree.
 pub const BASELINE_FAILED: i32 = 4;
+
+/// The filter diff new text does not match the source tree content.
+pub const FILTER_DIFF_MISMATCH: i32 = 5;
+
+/// The filter diff could not be parsed.
+pub const FILTER_DIFF_INVALID: i32 = 6;
 
 /// An internal software error, from sysexit.
 pub const SOFTWARE: i32 = 70;
