@@ -38,7 +38,7 @@ The `target/` directory is excluded by default, regardless of gitignore settings
 
 Note that if you set `--gitignore=true` and `--copy-target=true` and your `target/` is excluded by gitignore files (which is common) then it will not be copied.
 
-Prior to cargo-mutants 25.0.2, `gitignore` was on by default.
+The default for gitignore filtering is off. Prior to cargo-mutants 25.0.2, `gitignore` was on by default.
 
 ## `mutants.out`
 
