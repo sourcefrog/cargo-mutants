@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: sourcefrog/cargo-mutants:latest  # ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/sourcefrog/cargo-mutants:latest  # ${{ steps.meta.outputs.tags }}
           labels: latest # ${{ steps.meta.outputs.labels }}
 
       - name: Generate artifact attestation
