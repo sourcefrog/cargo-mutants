@@ -62,10 +62,15 @@ If you use cargo-mutants or just like the idea you can help it get better:
 
 ## Project status
 
-As of January 2025 this is an actively-maintained spare time project. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) about every one or two months.
+As of August 2025 this is an actively-maintained spare time project. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) about every one or two months.
 
-It's very usable at it is and there's room for lots more future improvement,
-especially in adding new types of mutation.
+It's very usable at it is and there's room for lots more future improvement, especially in adding new types of mutation.
+
+If you try it out on your project, [I'd love to hear back in a github discussion](https://github.com/sourcefrog/cargo-mutants/discussions/categories/general) whether it worked well or what could be better:
+
+* Did it work on your tree? Did you need to set any options or do any debugging to get it working?
+* Did it find meaningful gaps in testing? Where there too many false positives?
+* What do you think would make it better or easier?
 
 This software is provided as-is with no warranty of any kind.
 
