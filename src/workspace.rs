@@ -247,7 +247,7 @@ fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
     }
     let stdout =
         String::from_utf8(output.stdout).context("cargo locate-project output is not UTF-8")?;
-    debug!("output: {}", stdout.trim());
+    debug!("cargo locate-project output: {}", stdout.trim());
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
     let cargo_toml_path: Utf8PathBuf = val["root"]
         .as_str()
