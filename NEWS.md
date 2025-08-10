@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 25.3.0 2025-08-10
 
 - New: A specific clearer error if a valid non-empty diff changes no Rust source files, and so matches no mutants. Thanks to @brunoerg.
 
