@@ -20,7 +20,7 @@ use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::{Attribute, BinOp, Block, Expr, ExprPath, File, ItemFn, ReturnType, Signature, UnOp};
-use tracing::{debug, debug_span, error, info, trace, trace_span, warn};
+use tracing::{debug_span, error, info, trace, trace_span, warn};
 
 use crate::console::WalkProgress;
 use crate::fnvalue::return_type_replacements;
@@ -137,7 +137,7 @@ fn walk_file(
     options: &Options,
 ) -> Result<(Vec<Mutant>, Vec<ExternalModRef>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
-    debug!("visit source file");
+    trace!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(source_file.code())
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
@@ -324,7 +324,7 @@ impl DiscoveryVisitor<'_> {
             let body_span = function_body_span(block).expect("Empty function body");
             let repls = return_type_replacements(&sig.output, self.error_exprs);
             if repls.is_empty() {
-                debug!(
+                trace!(
                     function_name = function.function_name,
                     return_type = function.return_type,
                     "No mutants generated for this return type"
@@ -343,7 +343,7 @@ impl DiscoveryVisitor<'_> {
                     let new_block = quote!( { #rep } ).to_token_stream().to_pretty_string();
                     // dbg!(&orig_block, &new_block);
                     if orig_block == new_block {
-                        debug!("Replacement is the same as the function body; skipping");
+                        trace!("Replacement is the same as the function body; skipping");
                     } else {
                         self.collect_mutant(body_span, &rep, Genre::FnValue);
                     }
@@ -375,7 +375,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
         if let Expr::Path(ExprPath { path, .. }) = &*i.func {
-            debug!(path = path.to_pretty_string(), "visit call");
+            trace!(path = path.to_pretty_string(), "visit call");
             if let Some(hit) = self
                 .options
                 .skip_calls
@@ -810,7 +810,7 @@ fn attr_is_cfg_test(attr: &Attribute) -> bool {
         }
         Ok(())
     }) {
-        debug!(
+        trace!(
             ?err,
             attr = attr.to_pretty_string(),
             "Attribute is in an unrecognized form so skipped",
@@ -857,7 +857,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
         }
         Ok(())
     }) {
-        debug!(
+        trace!(
             ?attr,
             ?err,
             "Attribute is not a path with attributes; skipping"
