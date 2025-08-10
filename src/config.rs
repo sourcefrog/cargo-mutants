@@ -17,6 +17,7 @@ use anyhow::Context;
 use camino::Utf8Path;
 use schemars::JsonSchema;
 use serde::Deserialize;
+use tracing::debug;
 
 use crate::options::TestTool;
 use crate::Result;
@@ -91,6 +92,7 @@ pub struct Config {
 
 impl Config {
     pub fn read_file(path: &Path) -> Result<Config> {
+        debug!(?path, "Read config");
         let toml =
             read_to_string(path).with_context(|| format!("read config {}", path.display()))?;
         Config::from_str(&toml).with_context(|| format!("parse toml from {}", path.display()))
@@ -101,8 +103,10 @@ impl Config {
     pub fn read_tree_config(workspace_dir: &Utf8Path) -> Result<Config> {
         let path = workspace_dir.join(".cargo").join("mutants.toml");
         if path.exists() {
+            debug!(?path, "Found config in source tree");
             Config::read_file(path.as_ref())
         } else {
+            debug!("No config found in workspace");
             Ok(Config::default())
         }
     }
