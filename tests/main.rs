@@ -618,7 +618,7 @@ fn already_failing_tests_are_detected_before_running_mutants() {
         .stdout(
             predicate::str::contains("running 1 test\ntest test_factorial ... FAILED")
                 .normalize()
-                .and(predicate::str::contains("thread 'test_factorial' panicked"))
+                .and(predicate::str::contains("assertion `left == right` failed"))
                 .and(predicate::str::contains("72")) // the failing value should be in the output
                 .and(predicate::str::contains("lib.rs:11:5"))
                 .and(

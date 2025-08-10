@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## 25.3.1 2025-08-10
+
+- Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.
+
 ## 25.3.0 2025-08-10
 
 - New: A specific clearer error if a valid non-empty diff changes no Rust source files, and so matches no mutants. Thanks to @brunoerg.
