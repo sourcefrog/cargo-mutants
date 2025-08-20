@@ -3,6 +3,7 @@ FROM rust:latest AS build
 RUN apt update
 RUN apt install -y s3cmd tar zstd awscli clang build-essential
 RUN cargo install --locked cargo-nextest
+RUN adduser --disabled-password --gecos "mutants-remote" mutants
 RUN --mount=type=bind,source=.,target=/src,rw cargo install --locked --path=/src --target-dir=/build
 
 # FROM rust:latest AS final
