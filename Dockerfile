@@ -1,16 +1,19 @@
 # syntax=docker/dockerfile:1
-FROM rust:latest AS build
-RUN apt update
-RUN apt install -y s3cmd tar zstd awscli clang build-essential
-RUN adduser --disabled-password --gecos "mutants" mutants
+FROM rust:latest AS base
+RUN apt update && apt dist-upgrade -y && apt install -y s3cmd tar zstd awscli clang build-essential
+RUN adduser --uid 1000 --disabled-password --gecos "mutants" mutants
 
-USER mutants
+FROM base AS build
 WORKDIR /home/mutants
+USER mutants
+COPY --chown=mutants:mutants . mutants-src
+RUN --mount=type=cache,target=mutants-src/target,uid=1000 \
+    --mount=type=cache,target=/home/mutants/.cargo,uid=1000 \
+    cargo install -v --locked --path=mutants-src --root=buildroot
+RUN pwd && ls -la . buildroot
+RUN --mount=type=cache,target=/home/mutants/.cargo,uid=1000 \
+    cargo install --locked cargo-nextest --root=buildroot
 
-RUN cargo install --locked cargo-nextest
-RUN --mount=type=bind,source=.,target=/src,rw cargo install --locked --path=/src
-
-# TODO: Copy everything to a final image that doesn't need the build artifacts?
-
-# FROM rust:latest AS final
-# COPY --from=build /build/release/cargo-mutants /usr/local/bin/
+FROM base AS final
+USER mutants
+COPY --from=build /home/mutants/buildroot/bin/* /usr/local/bin/
