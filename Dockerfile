@@ -12,7 +12,7 @@ RUN --mount=type=cache,target=mutants-src/target,uid=1000 \
     cargo install -v --locked --path=mutants-src --root=buildroot
 RUN pwd && ls -la . buildroot
 RUN --mount=type=cache,target=/home/mutants/.cargo,uid=1000 \
-    cargo install --locked cargo-nextest --root=buildroot
+    cargo install --locked --root=buildroot cargo-nextest wild-linker
 
 FROM base AS final
 USER mutants
