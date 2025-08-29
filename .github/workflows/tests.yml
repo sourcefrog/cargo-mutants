@@ -131,26 +131,29 @@ jobs:
       - name: Test after cargo update
         run: cargo test --workspace
 
-  minimal-versions:
-    needs: [test]
-    strategy:
-      matrix:
-        os: [macOS-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
-      - uses: taiki-e/install-action@v2
-        name: Install nextest using install-action
-        with:
-          tool: nextest
-      - name: Downgrade to minimal versions
-        run: cargo +nightly -Zdirect-minimal-versions update
-      - name: Test on minimal versions
-        run: cargo test
+  # Testing direct-minimal-versions seems to have unclear value for a binary
+  # crate?
+  #
+  # minimal-versions:
+  #   needs: [test]
+  #   strategy:
+  #     matrix:
+  #       os: [macos-latest, ubuntu-latest, windows-latest]
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: swatinem/rust-cache@v2
+  #     - uses: dtolnay/rust-toolchain@master
+  #       with:
+  #         toolchain: nightly
+  #     - uses: taiki-e/install-action@v2
+  #       name: install nextest using install-action
+  #       with:
+  #         tool: nextest
+  #     - name: downgrade to minimal versions
+  #       run: cargo +nightly -zdirect-minimal-versions update
+  #     - name: test on minimal versions
+  #       run: cargo test
 
   tests-from-tarball:
     needs: [quick-check]
