@@ -551,7 +551,7 @@ impl nutmeg::Model for ScenarioModel {
         }
         parts.push(self.name.to_string());
         parts.push("...".to_string());
-        parts.push(style_secs(self.phase_start.elapsed()).to_string());
+        parts.push(style_secs(self.phase_start.elapsed()));
         // let mut prs = self
         //     .previous_phase_durations
         //     .iter()
