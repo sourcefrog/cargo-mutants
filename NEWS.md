@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.
+
 ## 25.3.1 2025-08-10
 
 - Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.
