@@ -70,7 +70,3 @@ Using a non-default linker can give a significant performance improvement. The e
 Using the [Mold linker](https://github.com/rui314/mold) on Unix can give a 20% performance improvement, depending on the tree.
 
 On Linux, the [Wild linker](https://github.com/davidlattimore/wild) can give a significant performance improvement, potentially even better than Mold. On one tree, using Wild cut the time to run cargo-mutants by more than half.
-
-Because of limitations in the way cargo-mutants runs Cargo, the standard way of configuring Mold for Rust in `~/.cargo/config.toml` won't work.
-
-Instead, set the `RUSTFLAGS` environment variable to `-Clink-arg=-fuse-ld=mold`.
