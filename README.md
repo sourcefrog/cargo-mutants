@@ -21,6 +21,8 @@ The goal of cargo-mutants is to be _easy_ to run on any Rust source tree, and
 to tell you something _interesting_ about areas where bugs might be lurking or
 the tests might be insufficient.
 
+**For more background, see the [slides](https://docs.google.com/presentation/d/1YDwHz6ysRRNYRDtv80EMRAs4FQu2KKQ-IbGu2jrqswY/edit?pli=1&slide=id.g2876539b71f_0_0) and [video](https://www.youtube.com/watch?v=PjDHe-PkOy8&pp=ygUNY2FyZ28tbXV0YW50cw%3D%3D) from my Rustconf 2024 talk.**
+
 **The main documentation is the user guide at <https://mutants.rs/>.**
 
 ## Prerequisites
