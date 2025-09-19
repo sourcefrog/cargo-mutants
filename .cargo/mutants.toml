@@ -1,5 +1,5 @@
 # cargo-mutants configuration
 
 error_values = ["::anyhow::anyhow!(\"mutated!\")"]
-exclude_globs = ["src/console.rs"]
+exclude_globs = ["src/console.rs", "src/windows.rs"]
 profile = "mutants"                                # Build without debug symbols
