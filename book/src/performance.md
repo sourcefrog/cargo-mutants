@@ -46,14 +46,20 @@ cargo-mutants now shows the breakdown of build versus test time which may help y
 
 ## Ramdisks
 
-cargo-mutants causes the Rust toolchain (and, often, the program under test) to read and write _many_ temporary files. Setting the temporary directory onto a ramdisk can improve performance significantly. This is particularly important with parallel builds, which might otherwise hit disk bandwidth limits. For example on Linux:
+cargo-mutants causes the Rust toolchain (and, often, the program under test) to read and write _many_ temporary files. Setting the temporary directory onto a ramdisk can improve performance significantly. This is particularly important with parallel builds, which might otherwise hit disk bandwidth limits.
+
+See your OS's documentation for how to configure a ramdisk.
+
+To temporarily configure a ramdisk on Linux as an experiment:
 
 ```shell
 sudo mkdir /ram
-sudo mount -t tmpfs /ram /ram  # or put this in fstab, or just change /tmp
+sudo mount -t tmpfs /ram /ram
 sudo chmod 1777 /ram
 env TMPDIR=/ram cargo mutants
 ```
+
+Some Rust build directories can be multiple gigabytes in size, and if you use `cargo mutants -j` there will be several directories of that size. Be careful that the ramdisk does not use so much memory that it causes the system to swap.
 
 ## Using faster linkers
 
