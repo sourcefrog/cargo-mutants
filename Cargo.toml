@@ -40,7 +40,7 @@ humantime = "2.1.0"
 ignore = "0.4.23"
 indoc = "2.0.0"
 itertools = "0.13"
-jiff = { version = "0.1", default-features = false, features = ["std", "alloc"] }
+jiff = { version = "0.1", default-features = false, features = ["std", "alloc", "serde"] }
 jobserver = "0.1"
 mutants = "0.0.3"
 nextest-metadata = "0.12.1"

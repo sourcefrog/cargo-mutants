@@ -33,17 +33,16 @@ static UNVIABLE_TXT: &str = "unviable.txt";
 #[derive(Debug, Serialize)]
 struct LockFile {
     cargo_mutants_version: String,
-    start_time: String,
+    start_time: Timestamp,
     hostname: String,
     username: String,
 }
 
 impl LockFile {
     fn new() -> LockFile {
-        let start_time = Timestamp::now().to_string();
         LockFile {
             cargo_mutants_version: crate::VERSION.to_string(),
-            start_time,
+            start_time: Timestamp::now(),
             hostname: whoami::fallible::hostname().unwrap_or_default(),
             username: whoami::username(),
         }
