@@ -40,6 +40,7 @@ humantime = "2.1.0"
 ignore = "0.4.23"
 indoc = "2.0.0"
 itertools = "0.13"
+jiff = { version = "0.1", default-features = false, features = ["std", "alloc"] }
 jobserver = "0.1"
 mutants = "0.0.3"
 nextest-metadata = "0.12.1"
@@ -54,7 +55,6 @@ similar = "2.1"
 strum = { version = "0.26", features = ["derive"] }
 tempfile = "3.20"
 test-log = { version = "0.2.16", features = ["trace"] }
-time = "0.3"
 toml = "0.8"
 tracing = "0.1.41"
 tracing-appender = "0.2"
