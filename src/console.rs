@@ -452,16 +452,12 @@ impl nutmeg::Model for LabModel {
             if self.mutants_done > 2 {
                 let done = self.mutants_done as f64;
                 let remain = self.n_mutants as f64 - done;
-                let mut remaining_secs =
+                let remaining_secs =
                     self.mutants_start_time.unwrap().elapsed().as_secs_f64() * remain / done;
-                if remaining_secs > 300.0 {
-                    // Round up to minutes
-                    remaining_secs = ((remaining_secs + 30.0) / 60.0).ceil() * 60.0;
-                }
                 write!(
                     s,
                     ", about {} remaining",
-                    style_duration(Duration::from_secs_f64(remaining_secs.ceil()))
+                    style_duration(Duration::from_secs_f64(remaining_secs))
                 )
                 .unwrap();
             }
