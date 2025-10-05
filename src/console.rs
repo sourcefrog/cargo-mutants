@@ -609,7 +609,8 @@ impl nutmeg::Model for CopyModel {
 
 fn nutmeg_options() -> nutmeg::Options {
     nutmeg::Options::default()
-        .print_holdoff(Duration::from_millis(50))
+        .update_interval(Duration::from_millis(250))
+        .print_holdoff(Duration::from_millis(100))
         .destination(Destination::Stderr)
 }
 
