@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use camino::Utf8PathBuf;
-use humantime::format_duration;
 use jiff::Timestamp;
 use output::ScenarioOutput;
 use serde::ser::SerializeStruct;
@@ -16,7 +15,7 @@ use serde::Serialize;
 use serde::Serializer;
 use tracing::warn;
 
-use crate::console::plural;
+use crate::console::{format_duration, plural};
 use crate::process::Exit;
 use crate::{exit_code, output, Options, Result, Scenario};
 
@@ -127,10 +126,7 @@ impl LabOutcome {
         let mut s = Vec::new();
         s.push(format!("{} tested", plural(self.total_mutants, "mutant")));
         if options.show_times {
-            s.push(format!(
-                " in {}",
-                format_duration(Duration::from_secs(start_time.elapsed().as_secs()))
-            ));
+            s.push(format!(" in {}", format_duration(start_time.elapsed())));
         }
         s.push(": ".into());
         let mut by_outcome: Vec<String> = Vec::new();

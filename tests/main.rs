@@ -724,7 +724,7 @@ fn minimum_test_timeout_from_env() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .success()
-        .stderr(predicate::str::contains("Auto-set test timeout to 20m 34s"));
+        .stderr(predicate::str::contains("Auto-set test timeout to 1234s"));
 }
 
 /// In this tree, as the name suggests, tests will hang in a clean tree.

@@ -11,7 +11,6 @@ use std::time::{Duration, Instant};
 
 use camino::{Utf8Path, Utf8PathBuf};
 use console::{style, StyledObject};
-use humantime::format_duration;
 use nutmeg::Destination;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
@@ -635,9 +634,21 @@ fn style_secs(duration: Duration) -> String {
 fn style_duration(duration: Duration) -> String {
     // We don't want silly precision.
     let duration = Duration::from_secs(duration.as_secs());
-    style(format_duration(duration).to_string())
-        .cyan()
-        .to_string()
+    style(format_duration(duration)).cyan().to_string()
+}
+
+/// Format a duration in a human-friendly way with only one component of precision.
+pub fn format_duration(duration: Duration) -> String {
+    let secs = duration.as_secs();
+    if secs < 90 {
+        format!("{secs}s")
+    } else if secs < 90 * 60 {
+        format!("{}m", (secs + 30) / 60)
+    } else if secs < 36 * 3600 {
+        format!("{}h", (secs + 1800) / 3600)
+    } else {
+        format!("{}d", (secs + 43200) / 86400)
+    }
 }
 
 fn format_mb(bytes: u64) -> String {
@@ -660,5 +671,29 @@ pub fn plural(n: usize, noun: &str) -> String {
         format!("{n} {noun}")
     } else {
         format!("{n} {noun}s")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn format_duration_test() {
+        assert_eq!(format_duration(Duration::from_secs(0)), "0s");
+        assert_eq!(format_duration(Duration::from_secs(1)), "1s");
+        assert_eq!(format_duration(Duration::from_secs(10)), "10s");
+        assert_eq!(format_duration(Duration::from_secs(89)), "89s");
+        assert_eq!(format_duration(Duration::from_secs(90)), "2m");
+        assert_eq!(format_duration(Duration::from_secs(119)), "2m");
+        assert_eq!(format_duration(Duration::from_secs(120)), "2m");
+        assert_eq!(format_duration(Duration::from_secs(3599)), "60m");
+        assert_eq!(format_duration(Duration::from_secs(3600)), "60m");
+        assert_eq!(format_duration(Duration::from_secs(7199)), "2h");
+        assert_eq!(format_duration(Duration::from_secs(86399)), "24h");
+        assert_eq!(format_duration(Duration::from_secs(86400)), "24h");
+        assert_eq!(format_duration(Duration::from_secs(35 * 3600)), "35h");
+        assert_eq!(format_duration(Duration::from_secs(2 * 86400)), "2d");
+        assert_eq!(format_duration(Duration::from_secs(180 * 86400)), "180d");
     }
 }

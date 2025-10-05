@@ -63,10 +63,7 @@ fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Durat
             ),
         );
         if options.show_times {
-            info!(
-                "Auto-set test timeout to {}",
-                humantime::format_duration(timeout)
-            );
+            info!("Auto-set test timeout to {}s", timeout.as_secs());
         }
         timeout
     } else if options.check_only {
@@ -85,10 +82,7 @@ fn build_timeout(baseline_duration: Option<Duration>, options: &Options) -> Opti
         if let Some(multiplier) = options.build_timeout_multiplier {
             let timeout = Duration::from_secs_f64(baseline.as_secs_f64() * multiplier);
             if options.show_times {
-                info!(
-                    "Auto-set build timeout to {}",
-                    humantime::format_duration(timeout)
-                );
+                info!("Auto-set build timeout to {}s", timeout.as_secs());
             }
             Some(timeout)
         } else {
