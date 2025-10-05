@@ -29,6 +29,7 @@
   - [Error values](error-values.md)
   - [Macros](macros.md)
 - [Improving performance](performance.md)
+  - [Fail-fast](fail-fast.md)
   - [Parallelism](parallelism.md)
   - [Jobserver](jobserver.md)
   - [Sharding](shards.md)
