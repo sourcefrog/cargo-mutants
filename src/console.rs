@@ -622,9 +622,7 @@ pub fn style_outcome(outcome: &ScenarioOutcome) -> StyledObject<&'static str> {
 }
 
 fn style_secs(duration: Duration) -> String {
-    style(format!("{:.1}s", duration.as_secs_f32()))
-        .cyan()
-        .to_string()
+    style(format!("{}s", duration.as_secs())).cyan().to_string()
 }
 
 fn style_duration(duration: Duration) -> String {
