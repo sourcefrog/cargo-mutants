@@ -452,16 +452,22 @@ fn factorial_mutants_with_all_logs() {
         .arg(tmp_src_dir.path())
         .assert()
         .code(2)
-        .stderr(predicate::str::contains("WARN").or(predicate::str::contains("ERR")).not())
-        .stdout(is_match(
-    r"ok *Unmutated baseline in \d+\.\ds"
-        ).unwrap())
-        .stdout(is_match(
-    r"MISSED *src/bin/factorial\.rs:\d+:\d+: replace main with \(\) in \d+\.\ds"
-        ).unwrap())
-        .stdout(is_match(
-    r"caught *src/bin/factorial\.rs:\d+:\d+: replace factorial -> u32 with 0 in \d+\.\ds"
-        ).unwrap());
+        .stderr(
+            predicate::str::contains("WARN")
+                .or(predicate::str::contains("ERR"))
+                .not(),
+        )
+        .stdout(is_match(r"ok *Unmutated baseline in \d+s").unwrap())
+        .stdout(
+            is_match(r"MISSED *src/bin/factorial\.rs:\d+:\d+: replace main with \(\) in \d+s")
+                .unwrap(),
+        )
+        .stdout(
+            is_match(
+                r"caught *src/bin/factorial\.rs:\d+:\d+: replace factorial -> u32 with 0 in \d+s",
+            )
+            .unwrap(),
+        );
 }
 
 #[test]
@@ -699,7 +705,7 @@ fn source_tree_typecheck_fails() {
         .env_remove("RUST_BACKTRACE")
         .assert()
         .failure() // TODO: This should be a distinct error code
-        .stdout(is_match(r"FAILED *Unmutated baseline in \d+\.\ds").unwrap())
+        .stdout(is_match(r"FAILED *Unmutated baseline in \d+s").unwrap())
         .stdout(
             contains(r#""1" + 2 // Doesn't work in Rust: just as well!"#)
                 .name("The problem source line"),
@@ -746,7 +752,7 @@ fn timeout_when_unmutated_tree_test_hangs() {
         .timeout(OUTER_TIMEOUT)
         .assert()
         .code(4) // exit_code::CLEAN_TESTS_FAILED
-        .stdout(is_match(r"TIMEOUT *Unmutated baseline in \d+\.\ds").unwrap())
+        .stdout(is_match(r"TIMEOUT *Unmutated baseline in \d+s").unwrap())
         .stderr(contains(
             "cargo test failed in an unmutated tree, so no mutants were tested",
         ));
