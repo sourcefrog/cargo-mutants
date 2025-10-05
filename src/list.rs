@@ -22,7 +22,7 @@ pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
         let mut list: Vec<serde_json::Value> = Vec::new();
         for mutant in mutants {
             let mut obj = serde_json::to_value(mutant).expect("Serialize mutant");
-            if options.emit_diffs {
+            if options.emit_diffs() {
                 obj.as_object_mut().unwrap().insert(
                     "diff".to_owned(),
                     json!(mutant.diff(&mutant.mutated_code())),
@@ -43,7 +43,7 @@ pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
                 out.push_str(&mutant.name(options.show_line_col));
             }
             out.push('\n');
-            if options.emit_diffs {
+            if options.emit_diffs() {
                 out.push_str(&mutant.diff(&mutant.mutated_code()));
                 out.push('\n');
             }
