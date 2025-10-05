@@ -103,6 +103,32 @@ fn empty_diff_is_not_an_error_and_matches_nothing() {
         .stderr(predicate::str::contains("INFO Diff file is empty"));
 }
 
+// <https://github.com/sourcefrog/cargo-mutants/issues/547>
+#[test]
+fn diff_containing_non_utf8_is_not_an_error() {
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file
+        .write_all(
+            b"--- b   2025-10-05 09:13:10.260014347 -0700
++++ b.8859-1    2025-10-05 09:13:46.056014914 -0700
+@@ -1 +1 @@
+-\xc3\x9f
++\xdf
+",
+        )
+        .unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(" INFO Diff changes no Rust source files\n");
+}
 /// If the text in the diff doesn't look like the tree then error out.
 #[test]
 fn mismatched_diff_causes_error() {

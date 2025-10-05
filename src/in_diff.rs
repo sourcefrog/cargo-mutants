@@ -5,7 +5,8 @@
 
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::fs::read_to_string;
+use std::fs::File;
+use std::io::Read;
 use std::iter::once;
 
 use anyhow::bail;
@@ -32,6 +33,8 @@ pub enum DiffFilterError {
     NoSourceFiles,
     /// The diff can't be parsed.
     InvalidDiff(String),
+    /// Can't open or read the diff file.
+    File(String),
 }
 
 impl DiffFilterError {
@@ -45,7 +48,9 @@ impl DiffFilterError {
             | DiffFilterError::NoSourceFiles
             | DiffFilterError::NoMutants => exit_code::SUCCESS,
             DiffFilterError::MismatchedDiff(_) => exit_code::FILTER_DIFF_MISMATCH,
-            DiffFilterError::InvalidDiff(_) => exit_code::FILTER_DIFF_INVALID,
+            DiffFilterError::File(_) | DiffFilterError::InvalidDiff(_) => {
+                exit_code::FILTER_DIFF_INVALID
+            }
         }
     }
 }
@@ -58,6 +63,7 @@ impl Display for DiffFilterError {
             DiffFilterError::NoMutants => write!(f, "No mutants to filter"),
             DiffFilterError::MismatchedDiff(msg) => write!(f, "{msg}"),
             DiffFilterError::InvalidDiff(msg) => write!(f, "Failed to parse diff: {msg}"),
+            DiffFilterError::File(msg) => write!(f, "Failed to read diff file: {msg}"),
         }
     }
 }
@@ -66,13 +72,18 @@ pub fn diff_filter_file(
     mutants: Vec<Mutant>,
     diff_path: &Utf8Path,
 ) -> Result<Vec<Mutant>, DiffFilterError> {
-    let diff_text = match read_to_string(diff_path) {
-        Ok(text) => text,
-        Err(err) => {
-            error!("Failed to read diff file: {err}");
-            return Err(DiffFilterError::InvalidDiff(err.to_string()));
-        }
-    };
+    let mut diff_file = File::open(diff_path).map_err(|err| {
+        error!("Failed to open diff file: {err}");
+        DiffFilterError::File(err.to_string())
+    })?;
+    let mut diff_bytes = Vec::new();
+    diff_file.read_to_end(&mut diff_bytes).map_err(|err| {
+        error!("Failed to read diff file: {err}");
+        DiffFilterError::File(err.to_string())
+    })?;
+    // The diff might contain non-UT8 in files that aren't part of Rust source files.
+    // Rust must be UTF-8 so we can ignore any decoding errors.
+    let diff_text = String::from_utf8_lossy(&diff_bytes);
     diff_filter(mutants, &diff_text)
 }
 
