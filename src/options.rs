@@ -28,6 +28,7 @@ use crate::annotation::ResolvedAnnotation;
 use crate::config::Config;
 use crate::glob::build_glob_set;
 use crate::mutant::Mutant;
+use crate::shard::Sharding;
 use crate::{Args, BaselineStrategy, Phase, Result, ValueEnum};
 
 /// Options for mutation testing, based on both command-line arguments and the config file.
@@ -180,6 +181,10 @@ pub struct Common {
     /// Tool used to run test suites: cargo or nextest.
     #[arg(long, help_heading = "Execution")]
     pub test_tool: Option<TestTool>,
+
+    /// Sharding method to use when running with --shards.
+    #[arg(long, help_heading = "Execution", requires = "shard")]
+    pub sharding: Option<Sharding>,
 }
 
 impl Common {
@@ -190,6 +195,7 @@ impl Common {
         Common {
             emit_diffs: self.emit_diffs.or(other.emit_diffs),
             test_tool: self.test_tool.or(other.test_tool),
+            sharding: self.sharding.or(other.sharding),
         }
     }
 }
@@ -472,6 +478,10 @@ impl Options {
 
     pub fn test_tool(&self) -> TestTool {
         self.common.test_tool.unwrap_or_default()
+    }
+
+    pub fn sharding(&self) -> Sharding {
+        self.common.sharding.unwrap_or_default()
     }
 }
 

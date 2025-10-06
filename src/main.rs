@@ -560,7 +560,7 @@ fn main() -> Result<()> {
         };
     }
     if let Some(shard) = &args.shard {
-        mutants = shard.select(mutants);
+        mutants = options.sharding().shard(*shard, mutants);
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
