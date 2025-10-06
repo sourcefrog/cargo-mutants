@@ -50,7 +50,7 @@ fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> anyhow:
                     );
                 } else {
                     // Log other errors
-                    warn!("Reflink failed: {}, falling back to regular copy", e);
+                    debug!("Reflink failed: {}, falling back to regular copy", e);
                 }
             }
         }
