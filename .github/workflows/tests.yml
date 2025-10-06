@@ -5,8 +5,8 @@ permissions:
 
 on:
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
     paths:
       - ".cargo/*.toml"
       - ".github/workflows/tests.yml"
