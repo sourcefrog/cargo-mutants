@@ -220,6 +220,10 @@ pub struct Args {
     )]
     cargo_arg: Vec<String>,
 
+    /// Additional args for cargo test.
+    #[arg(long, allow_hyphen_values = true, help_heading = "Execution")]
+    cargo_test_arg: Vec<String>,
+
     /// Pass remaining arguments to cargo test after all options and after `--`.
     #[arg(last = true, help_heading = "Execution")]
     cargo_test_args: Vec<String>,

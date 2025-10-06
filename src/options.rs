@@ -290,10 +290,13 @@ impl Options {
 
         let options = Options {
             additional_cargo_args: join_slices(&args.cargo_arg, &config.additional_cargo_args),
-            additional_cargo_test_args: join_slices(
-                &args.cargo_test_args,
-                &config.additional_cargo_test_args,
-            ),
+            additional_cargo_test_args: args
+                .cargo_test_arg
+                .iter()
+                .chain(&args.cargo_test_args)
+                .chain(&config.additional_cargo_test_args)
+                .cloned()
+                .collect(),
             all_features: args.all_features || config.all_features.unwrap_or(false),
             annotations: args.annotations.resolve(),
             baseline: args.baseline,
@@ -1096,5 +1099,78 @@ mod test {
         let config = Config::from_str("").unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.copy_vcs);
+    }
+
+    #[test]
+    fn cargo_test_arg_from_command_line() {
+        let args = Args::parse_from(["mutants", "--cargo-test-arg=--lib"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.additional_cargo_test_args, vec!["--lib"]);
+    }
+
+    #[test]
+    fn cargo_test_arg_multiple_from_command_line() {
+        let args = Args::parse_from([
+            "mutants",
+            "--cargo-test-arg=--lib",
+            "--cargo-test-arg=--no-fail-fast",
+        ]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.additional_cargo_test_args,
+            vec!["--lib", "--no-fail-fast"]
+        );
+    }
+
+    #[test]
+    fn cargo_test_args_after_double_dash() {
+        let args = Args::parse_from(["mutants", "--", "--lib", "--no-fail-fast"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.additional_cargo_test_args,
+            vec!["--lib", "--no-fail-fast"]
+        );
+    }
+
+    #[test]
+    fn cargo_test_arg_and_cargo_test_args_combined() {
+        let args = Args::parse_from(["mutants", "--cargo-test-arg=--lib", "--", "--no-fail-fast"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.additional_cargo_test_args,
+            vec!["--lib", "--no-fail-fast"]
+        );
+    }
+
+    #[test]
+    fn cargo_test_arg_and_config_combined() {
+        let args = Args::parse_from(["mutants", "--cargo-test-arg=--lib"]);
+        let config = Config::from_str(indoc! { r#"
+            additional_cargo_test_args = ["--no-fail-fast"]
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.additional_cargo_test_args,
+            vec!["--lib", "--no-fail-fast"]
+        );
+    }
+
+    #[test]
+    fn cargo_test_arg_cargo_test_args_and_config_combined() {
+        let args = Args::parse_from(["mutants", "--cargo-test-arg=--all-targets", "--", "--lib"]);
+        let config = Config::from_str(indoc! { r#"
+            additional_cargo_test_args = ["--no-fail-fast"]
+        "#})
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.additional_cargo_test_args,
+            vec!["--all-targets", "--lib", "--no-fail-fast"]
+        );
     }
 }
