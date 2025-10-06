@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: When using `--list --json`, diffs are now always included in the JSON output without needing the `--diff` flag. This makes the JSON output more useful for programmatic consumers.
+
 - Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.
 
 - Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
