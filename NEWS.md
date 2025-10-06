@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: Tree copying now attempts to use reflinks (copy-on-write) for faster copying on supported filesystems (Btrfs, XFS, APFS), with automatic fallback to regular copying.
+
 - Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.
 
 - Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
