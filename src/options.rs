@@ -28,6 +28,7 @@ use crate::annotation::ResolvedAnnotation;
 use crate::config::Config;
 use crate::glob::build_glob_set;
 use crate::mutant::Mutant;
+use crate::shard::Sharding;
 use crate::{Args, BaselineStrategy, Phase, Result, ValueEnum};
 
 /// Options for mutation testing, based on both command-line arguments and the config file.
@@ -180,16 +181,22 @@ pub struct Common {
     /// Tool used to run test suites: cargo or nextest.
     #[arg(long, help_heading = "Execution")]
     pub test_tool: Option<TestTool>,
+
+    /// Sharding method to use when running with --shards.
+    #[arg(long, help_heading = "Execution", requires = "shard")]
+    pub sharding: Option<Sharding>,
 }
 
 impl Common {
     /// Merge two `MoreOptions`, taking values from self first.
     ///
     /// Scalar values are taken from self if present, otherwise from other.
+    #[allow(clippy::trivially_copy_pass_by_ref)] // will be bigger later
     pub fn merge(&self, other: &Common) -> Common {
         Common {
             emit_diffs: self.emit_diffs.or(other.emit_diffs),
             test_tool: self.test_tool.or(other.test_tool),
+            sharding: self.sharding.or(other.sharding),
         }
     }
 }
@@ -473,6 +480,10 @@ impl Options {
     pub fn test_tool(&self) -> TestTool {
         self.common.test_tool.unwrap_or_default()
     }
+
+    pub fn sharding(&self) -> Sharding {
+        self.common.sharding.unwrap_or_default()
+    }
 }
 
 /// If the first slices is non-empty, return that, otherwise the second.
@@ -506,6 +517,8 @@ mod test {
         assert!(options.common.test_tool.is_none());
         assert_eq!(options.test_tool(), TestTool::Cargo);
         assert!(!options.cap_lints);
+        assert!(options.common.sharding.is_none());
+        assert_eq!(options.sharding(), Sharding::Slice);
     }
 
     #[test]
@@ -1131,5 +1144,38 @@ mod test {
         let config = Config::from_str("").unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.copy_vcs);
+    }
+
+    #[test]
+    fn sharding() {
+        let args = Args::try_parse_from(["mutants", "--sharding=slice", "--shard=0/10"]).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::Slice);
+
+        let args = Args::parse_from(["mutants", "--sharding=round-robin", "--shard=0/10"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::RoundRobin);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(r#"sharding = "slice""#).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::Slice);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(r#"sharding = "round-robin""#).unwrap();
+        dbg!(&config);
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::RoundRobin);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.sharding(),
+            Sharding::Slice,
+            "Default sharding should be slice"
+        );
     }
 }

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- New: `--sharding` option to control how mutants are distributed across multiple machines, with choices of `slice` or `round-robin`.
+
+- Changed: The default sharding strategy is now `slice`; previously it was `round-robin`. Sliced sharding gives each worker better locality of reference due to testing changes to related packages, but may make the runtime more uneven between workers if some packages are slower to test than others.
+
 - Changed: Tree copying now attempts to use reflinks (copy-on-write) for faster copying on supported filesystems (Btrfs, XFS, APFS), with automatic fallback to regular copying.
 
 - Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.

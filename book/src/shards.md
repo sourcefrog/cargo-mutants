@@ -33,6 +33,14 @@ Note that the number of shards is set to match the `/8` in the `--shard` argumen
 
 [Sharding works with `--baseline=skip`](baseline.md), to avoid the cost of running the baseline on every shard. But, if you do this, then you must ensure that the tests suite is passing in the baseline, for example by checking it in a previous CI step.
 
+## Sharding algorithm
+
+The `--sharding` command line and config option controls the algorithm by which mutants are distributed across shards.
+
+* `slice` (the default): The first `n / k` mutants are assigned to shard 0, and so on. Because each shard successively builds related versions of the code, incremental builds may be faster, particularly in trees with many packages.
+
+* `round-robin`: Mutant `i` is assigned to shard `i % n`. This distributes the mutants evenly across shards and is likely to cause shards to finish at similar times.
+
 ## Performance of sharding
 
 Each mutant does some constant upfront work:
