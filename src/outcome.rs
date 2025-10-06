@@ -67,10 +67,11 @@ pub struct LabOutcome {
     pub success: usize,
     pub start_time: Timestamp,
     pub end_time: Option<Timestamp>,
+    pub cargo_mutants_version: String,
 }
 
 impl LabOutcome {
-    pub fn new(start_time: Timestamp) -> LabOutcome {
+    pub fn new(start_time: Timestamp, cargo_mutants_version: String) -> LabOutcome {
         LabOutcome {
             outcomes: Vec::new(),
             total_mutants: 0,
@@ -81,6 +82,7 @@ impl LabOutcome {
             success: 0,
             start_time,
             end_time: None,
+            cargo_mutants_version,
         }
     }
 
