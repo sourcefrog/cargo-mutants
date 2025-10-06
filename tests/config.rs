@@ -270,6 +270,47 @@ fn additional_cargo_test_args() {
 }
 
 #[test]
+fn cargo_test_arg_option() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    run()
+        .args(["mutants", "--cargo-test-arg=--all-features", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn cargo_test_arg_multiple_options() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    run()
+        .args([
+            "mutants",
+            "--cargo-test-arg=--all-features",
+            "--cargo-test-arg=--no-fail-fast",
+            "-d",
+        ])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn cargo_test_arg_and_additional_cargo_test_args_combined() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        additional_cargo_test_args = ["--no-fail-fast"]
+        "#,
+    );
+    run()
+        .args(["mutants", "--cargo-test-arg=--all-features", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
 fn features_config_option() {
     let testdata = copy_of_testdata("fails_without_feature");
     write_config_file(
