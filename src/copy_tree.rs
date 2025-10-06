@@ -2,10 +2,11 @@
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
 use ignore::WalkBuilder;
-use path_slash::PathExt;
 use tempfile::TempDir;
 use tracing::{debug, warn};
 
@@ -24,6 +25,35 @@ use windows::copy_symlink;
 
 static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".jj", ".pijul"];
 
+/// Copy a file, attempting to use reflink if supported.
+/// Returns the number of bytes copied.
+fn copy_file(src: &std::path::Path, dest: &std::path::Path, reflink_supported: &AtomicBool) -> anyhow::Result<u64> {
+    // Try reflink first if we haven't determined it's not supported
+    if reflink_supported.load(Ordering::Relaxed) {
+        match reflink::reflink(src, dest) {
+            Ok(()) => {
+                // Reflink succeeded, get file size for progress tracking
+                let metadata = std::fs::metadata(dest)
+                    .with_context(|| format!("Failed to get metadata for {dest:?}"))?;
+                return Ok(metadata.len());
+            }
+            Err(e) => {
+                // Check if this is a "not supported" error
+                if e.kind() == std::io::ErrorKind::Unsupported {
+                    // Mark reflink as not supported so we don't try again
+                    reflink_supported.store(false, Ordering::Relaxed);
+                    debug!("Reflinks not supported on this filesystem, falling back to regular copy");
+                }
+                // For other errors, also fall back to regular copy
+            }
+        }
+    }
+    
+    // Fall back to regular copy
+    std::fs::copy(src, dest)
+        .with_context(|| format!("Failed to copy {:?} to {dest:?}", src))
+}
+
 /// Copy a source tree, with some exclusions, to a new temporary directory.
 pub fn copy_tree(
     from_path: &Utf8Path,
@@ -33,6 +63,7 @@ pub fn copy_tree(
 ) -> Result<TempDir> {
     let mut total_bytes = 0;
     let mut total_files = 0;
+    let reflink_supported = AtomicBool::new(true);
     let temp_dir = tempfile::Builder::new()
         .prefix(name_base)
         .suffix(".tmp")
@@ -86,12 +117,7 @@ pub fn copy_tree(
             )
         })?;
         if ft.is_file() {
-            let bytes_copied = std::fs::copy(entry.path(), &dest_path).with_context(|| {
-                format!(
-                    "Failed to copy {:?} to {dest_path:?}",
-                    entry.path().to_slash_lossy(),
-                )
-            })?;
+            let bytes_copied = copy_file(entry.path(), dest_path.as_std_path(), &reflink_supported)?;
             total_bytes += bytes_copied;
             total_files += 1;
             console.copy_progress(dest, total_bytes);
@@ -112,7 +138,8 @@ pub fn copy_tree(
         }
     }
     console.finish_copy(dest);
-    debug!(?total_bytes, ?total_files, temp_dir = ?temp_dir.path(), "Copied source tree");
+    let reflink_used = reflink_supported.load(Ordering::Relaxed);
+    debug!(?total_bytes, ?total_files, ?reflink_used, temp_dir = ?temp_dir.path(), "Copied source tree");
     Ok(temp_dir)
 }
 
