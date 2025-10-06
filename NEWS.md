@@ -8,6 +8,8 @@
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
+- New: Delete individual fields from struct literals that have a base (default) expression like `..Default::default()` or `..base_value`. This checks that tests verify each field is set correctly and not just relying on default values.
+
 ## 25.3.1 2025-08-10
 
 - Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.

@@ -103,3 +103,25 @@ Match expressions without a wildcard pattern would be too prone to unviable muta
 ## Match arm guards
 
 Match arm guard expressions are replaced with `true` and `false`.
+
+## Struct literal fields
+
+Individual fields are deleted from struct literals that have a base (default) expression,
+such as `..Default::default()` or `..base_value`.
+
+For example, in this code:
+
+```rust
+let cat = Cat {
+    name: "Felix",
+    coat: Coat::Tuxedo,
+    ..Default::default()
+};
+```
+
+cargo-mutants will generate two mutants: one deleting the `name` field and one deleting
+the `coat` field. This checks that tests verify that each field is set correctly and not
+just relying on the default values.
+
+Struct literals without a base expression are not mutated in this way, because deleting
+a required field would make the code fail to compile.

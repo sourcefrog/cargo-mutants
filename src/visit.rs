@@ -686,6 +686,56 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
         syn::visit::visit_expr_match(self, i);
     }
+
+    fn visit_expr_struct(&mut self, i: &'ast syn::ExprStruct) {
+        let _span = trace_span!("struct", line = i.span().start().line).entered();
+        trace!("visit struct expression");
+
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+
+        // Check if this struct has a base (default) expression like `..Default::default()`
+        if let Some(_rest) = &i.rest {
+            // Get the struct type name
+            let struct_type = i.path.to_pretty_string();
+
+            // Generate a mutant for each field by deleting it
+            // We need to include the trailing comma in the span
+            for pair in i.fields.pairs() {
+                let field = pair.value();
+                if let syn::Member::Named(field_name) = &field.member {
+                    let field_name_str = field_name.to_string();
+                    // Store both field name and struct type, separated by "::"
+                    let short_replaced = Some(format!("{}::{}", field_name_str, struct_type));
+                    // Span includes the field and its trailing comma (if present)
+                    let span = if let Some(comma) = pair.punct() {
+                        // Include the comma in the span
+                        let field_span = field.span();
+                        let comma_span = comma.span();
+                        Span {
+                            start: field_span.start().into(),
+                            end: comma_span.end().into(),
+                        }
+                    } else {
+                        // No comma, just the field
+                        field.span().into()
+                    };
+                    let mutant = Mutant {
+                        source_file: self.source_file.clone(),
+                        function: self.fn_stack.last().cloned(),
+                        span,
+                        short_replaced,
+                        replacement: String::new(),
+                        genre: Genre::StructField,
+                    };
+                    self.mutants.push(mutant);
+                }
+            }
+        }
+
+        syn::visit::visit_expr_struct(self, i);
+    }
 }
 
 // Get the span of the block excluding the braces, or None if it is empty.
@@ -1407,5 +1457,99 @@ mod test {
         );
         assert_eq!(mutate_expr("a >>= b"), &["replace >>= with <<="]);
         assert_eq!(mutate_expr("a <<= b"), &["replace <<= with >>="]);
+    }
+
+    #[test]
+    fn delete_struct_field_with_default() {
+        let mutants = mutate_expr(
+            r#"
+            let cat = Cat {
+                name: "Felix", 
+                coat: Coat::Tuxedo,
+                ..Default::default()
+            };
+            "#,
+        );
+        // Should generate mutants to delete each field
+        assert_eq!(
+            mutants,
+            &[
+                "delete field name from struct Cat expression",
+                "delete field coat from struct Cat expression"
+            ]
+        );
+    }
+
+    #[test]
+    fn skip_struct_without_default() {
+        let mutants = mutate_expr(
+            r#"
+            let cat = Cat {
+                name: "Felix", 
+                coat: Coat::Tuxedo,
+            };
+            "#,
+        );
+        // Should not generate any field deletion mutants without a default
+        assert!(mutants.is_empty());
+    }
+
+    #[test]
+    fn delete_struct_field_with_custom_default() {
+        let mutants = mutate_expr(
+            r#"
+            let config = Config {
+                timeout: 30,
+                retries: 5,
+                ..base_config
+            };
+            "#,
+        );
+        // Should work with any base expression, not just Default::default()
+        assert_eq!(
+            mutants,
+            &[
+                "delete field timeout from struct Config expression",
+                "delete field retries from struct Config expression"
+            ]
+        );
+    }
+
+    #[test]
+    fn delete_struct_field_single_field_with_default() {
+        let mutants = mutate_expr(
+            r#"
+            let point = Point {
+                x: 10,
+                ..Default::default()
+            };
+            "#,
+        );
+        // Should work with a single field too
+        assert_eq!(mutants, &["delete field x from struct Point expression"]);
+    }
+
+    #[test]
+    fn delete_struct_field_complex_values() {
+        let mutants = mutate_expr(
+            r#"
+            let settings = Settings {
+                enabled: get_enabled(),
+                count: compute_count() + 10,
+                ..Settings::default()
+            };
+            "#,
+        );
+        // Should work regardless of the complexity of the field values
+        // The visitor also generates mutants for expressions within field values
+        assert_eq!(
+            mutants,
+            &[
+                "delete field enabled from struct Settings expression",
+                "delete field count from struct Settings expression",
+                "replace + with -",
+                "replace + with *"
+            ]
+        );
     }
 }
