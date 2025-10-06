@@ -37,6 +37,7 @@ fn small_well_tested_tree_check_only() {
             "missed": 0,
             "timeout": 0,
             "total_mutants": 4,
+            "cargo_mutants_version": "25.3.1",
         })
     );
 }
@@ -59,6 +60,7 @@ fn small_well_tested_tree_check_only_shuffled() {
             "missed": 0,
             "timeout": 0,
             "total_mutants": 4,
+            "cargo_mutants_version": "25.3.1",
         })
     );
 }
@@ -109,6 +111,7 @@ fn check_succeeds_in_tree_that_builds_but_fails_tests() {
             "timeout": 0,
             "unviable": 0,
             "total_mutants": 4,
+            "cargo_mutants_version": "25.3.1",
         })
     );
 }
@@ -144,6 +147,7 @@ fn check_tree_with_mutants_skip() {
             "timeout": 0,
             "unviable": 0,
             "total_mutants": 6,
+            "cargo_mutants_version": "25.3.1",
         })
     );
 }
@@ -168,6 +172,7 @@ fn check_tree_where_build_fails() {
             "timeout": 0,
             "unviable": 0,
             "total_mutants": 0,
+            "cargo_mutants_version": "25.3.1",
         })
     );
 }
@@ -204,6 +209,7 @@ fn unviable_mutation_of_struct_with_no_default() {
             "missed": 0,
             "timeout": 0,
             "total_mutants": 1,
+            "cargo_mutants_version": "25.3.1",
         })
     );
 }

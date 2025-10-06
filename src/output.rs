@@ -158,7 +158,7 @@ impl OutputDir {
             .context("create timeout.txt")?;
         Ok(OutputDir {
             path: output_dir,
-            lab_outcome: LabOutcome::new(Timestamp::now(), crate::VERSION.to_string()),
+            lab_outcome: LabOutcome::new(Timestamp::now()),
             lock_file,
             missed_list,
             caught_list,

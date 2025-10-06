@@ -45,10 +45,7 @@ pub fn test_mutants(
     console.discovered_mutants(&mutants);
     if mutants.is_empty() {
         warn!("No mutants found under the active filters");
-        return Ok(LabOutcome::new(
-            Timestamp::now(),
-            crate::VERSION.to_string(),
-        ));
+        return Ok(LabOutcome::new(Timestamp::now()));
     }
     let output_mutex = Mutex::new(output_dir);
     let baseline_build_dir = BuildDir::for_baseline(workspace, options, console)?;

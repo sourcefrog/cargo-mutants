@@ -159,6 +159,5 @@ pub fn outcome_json_counts(tmp_src_dir: &TempDir) -> serde_json::Value {
     outcomes_object.remove("outcomes").unwrap();
     outcomes_object.remove("end_time").unwrap();
     outcomes_object.remove("start_time").unwrap();
-    outcomes_object.remove("cargo_mutants_version").unwrap();
     outcomes
 }

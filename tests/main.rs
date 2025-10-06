@@ -241,6 +241,15 @@ fn small_well_tested_tree_is_clean() {
     let end_time: Timestamp = end_time.as_str().unwrap().parse().unwrap();
     assert!(end_time >= start_time);
     assert!(end_time <= Timestamp::now());
+
+    // Verify cargo_mutants_version field exists
+    let version = outcomes["cargo_mutants_version"]
+        .as_str()
+        .expect("cargo_mutants_version should be present and be a string");
+    assert!(
+        version.contains('.'),
+        "cargo_mutants_version should look like a version"
+    );
 }
 
 #[test]
@@ -1267,39 +1276,4 @@ fn example_config_file_can_be_loaded() {
         .assert()
         .success()
         .stdout(contains("custom mutant error"));
-}
-
-#[test]
-fn outcomes_json_includes_cargo_mutants_version() {
-    let tmp_src_dir = copy_of_testdata("small_well_tested");
-    run()
-        .arg("mutants")
-        .arg("-d")
-        .arg(tmp_src_dir.path())
-        .assert()
-        .success();
-
-    // Read outcomes.json
-    let outcomes_json = read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json"))
-        .expect("read outcomes.json");
-    let json: serde_json::Value =
-        serde_json::from_str(&outcomes_json).expect("parse outcomes.json");
-
-    // Verify cargo_mutants_version field exists
-    assert!(
-        json.get("cargo_mutants_version").is_some(),
-        "cargo_mutants_version field should be present in outcomes.json"
-    );
-
-    // Verify it's a string
-    let version = json["cargo_mutants_version"]
-        .as_str()
-        .expect("cargo_mutants_version should be a string");
-
-    // Verify it looks like a version (contains digits and dots)
-    assert!(
-        version.contains('.'),
-        "cargo_mutants_version should contain dots: {}",
-        version
-    );
 }
