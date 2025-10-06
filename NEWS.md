@@ -8,6 +8,8 @@
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
+- New: `cargo_mutants_version` field in `outcomes.json`.
+
 ## 25.3.1 2025-08-10
 
 - Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.
