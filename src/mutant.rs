@@ -31,6 +31,8 @@ pub enum Genre {
     MatchArm,
     /// Replace the expression of a match arm guard with a fixed value.
     MatchArmGuard,
+    /// Delete a field from a struct literal that has a base (default) expression.
+    StructField,
 }
 
 /// A mutation applied to source code.
@@ -176,6 +178,17 @@ impl Mutant {
                     ))
                     .yellow(),
                 );
+            }
+            Genre::StructField => {
+                v.push(s("delete field "));
+                v.push(
+                    s(self
+                        .short_replaced
+                        .as_ref()
+                        .expect("short_replaced should be set on StructField"))
+                    .yellow(),
+                );
+                v.push(s(" from struct expression"));
             }
             _ => {
                 if self.replacement.is_empty() {
