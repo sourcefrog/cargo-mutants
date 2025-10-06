@@ -793,7 +793,7 @@ fn fn_sig_excluded(sig: &syn::Signature) -> bool {
 
 /// True if any of the attrs indicate that we should skip this node and everything inside it.
 ///
-/// This checks for `#[cfg(test)]`, `#[test]`, and `#[mutants::skip]`.
+/// This checks for `#[cfg(test)]`, attributes whose path ends with `test` (like `#[test]` or `#[tokio::test]`), and `#[mutants::skip]`.
 fn attrs_excluded(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
@@ -828,9 +828,11 @@ fn attr_is_cfg_test(attr: &Attribute) -> bool {
     contains_test
 }
 
-/// True if the attribute is `#[test]`.
+/// True if the attribute path ends with `test`.
+///
+/// This matches `#[test]`, `#[tokio::test]`, `#[sqlx::test]`, etc.
 fn attr_is_test(attr: &Attribute) -> bool {
-    attr.path().is_ident("test")
+    path_ends_with(attr.path(), "test")
 }
 
 fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
@@ -1073,6 +1075,66 @@ mod test {
             indoc! {"
                 unsafe fn foo() -> usize {
                     2 + 3
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[test]
+                fn test_function() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_tokio_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[tokio::test]
+                async fn tokio_test() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_sqlx_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[sqlx::test]
+                async fn sqlx_test() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_arbitrary_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[my_framework::test]
+                fn custom_test() {
+                    println!(\"test\");
                 }
             "},
             &Options::default(),

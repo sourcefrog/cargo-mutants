@@ -8,6 +8,8 @@
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
+- Changed: Functions with attributes whose path ends with `test` are now skipped, not just those with the plain `#[test]` attribute. This means functions with `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes are automatically excluded from mutation testing.
+
 ## 25.3.1 2025-08-10
 
 - Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.
