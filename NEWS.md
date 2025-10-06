@@ -8,6 +8,8 @@
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
+- Changed: The bitwise assignment operators `&=` and `|=` are no longer mutated to `^=`. In code that accumulates bits into a bitmap starting from zero (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result, making such mutations uninformative.
+
 ## 25.3.1 2025-08-10
 
 - Fixed: cargo-mutants' own tests were failing on nightly due to a change in the format of messages emitted by tests.
