@@ -2,6 +2,9 @@
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
+use std::fs;
+use std::io::ErrorKind;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Context;
@@ -27,30 +30,34 @@ static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".jj", ".p
 
 /// Copy a file, attempting to use reflink if supported.
 /// Returns the number of bytes copied.
-fn copy_file(src: &std::path::Path, dest: &std::path::Path, reflink_supported: &AtomicBool) -> anyhow::Result<u64> {
+fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> anyhow::Result<u64> {
     // Try reflink first if we haven't determined it's not supported
     if reflink_supported.load(Ordering::Relaxed) {
         match reflink::reflink(src, dest) {
             Ok(()) => {
                 // Reflink succeeded, get file size for progress tracking
-                let metadata = std::fs::metadata(dest)
+                let metadata = fs::metadata(dest)
                     .with_context(|| format!("Failed to get metadata for {}", dest.display()))?;
                 return Ok(metadata.len());
             }
             Err(e) => {
                 // Check if this is a "not supported" error
-                if e.kind() == std::io::ErrorKind::Unsupported {
+                if e.kind() == ErrorKind::Unsupported {
                     // Mark reflink as not supported so we don't try again
                     reflink_supported.store(false, Ordering::Relaxed);
-                    debug!("Reflinks not supported on this filesystem, falling back to regular copy");
+                    debug!(
+                        "Reflinks not supported on this filesystem, falling back to regular copy"
+                    );
+                } else {
+                    // Log other errors
+                    warn!("Reflink failed: {}, falling back to regular copy", e);
                 }
-                // For other errors, also fall back to regular copy
             }
         }
     }
-    
+
     // Fall back to regular copy
-    std::fs::copy(src, dest)
+    fs::copy(src, dest)
         .with_context(|| format!("Failed to copy {} to {}", src.display(), dest.display()))
 }
 
@@ -117,7 +124,8 @@ pub fn copy_tree(
             )
         })?;
         if ft.is_file() {
-            let bytes_copied = copy_file(entry.path(), dest_path.as_std_path(), &reflink_supported)?;
+            let bytes_copied =
+                copy_file(entry.path(), dest_path.as_std_path(), &reflink_supported)?;
             total_bytes += bytes_copied;
             total_files += 1;
             console.copy_progress(dest, total_bytes);
