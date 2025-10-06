@@ -6,6 +6,8 @@ Each job tests a subset of mutants, selected by a shard. Shards are described as
 
 There is no runtime coordination between shards: they each independently discover the available mutants and then select a subset based on the `--shard` option.
 
+When `--list` and `--shard` are used together, only the mutants in the selected shard are listed.
+
 If any shard fails then that would indicate that some mutants were missed, or there was some other problem.
 
 ## Consistency across shards
