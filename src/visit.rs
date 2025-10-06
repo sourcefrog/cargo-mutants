@@ -1143,6 +1143,36 @@ mod test {
         assert_eq!(mutants, []);
     }
 
+    #[test]
+    fn do_not_skip_functions_with_non_test_attributes() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[derive(Debug)]
+                pub fn testing_something() -> i32 {
+                    42
+                }
+                
+                #[some_crate::test]
+                fn some_test() {
+                    println!(\"test\");
+                }
+                
+                #[some_attr]
+                pub fn regular_function() -> i32 {
+                    100
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        // Should have mutants for testing_something and regular_function, but not for some_test
+        let mutant_names = mutants.iter().map(|m| m.name(false)).collect_vec();
+        assert_eq!(mutant_names.len(), 6); // 3 mutants each for the two non-test functions
+        assert!(mutant_names.iter().any(|n| n.contains("testing_something")));
+        assert!(mutant_names.iter().any(|n| n.contains("regular_function")));
+        assert!(!mutant_names.iter().any(|n| n.contains("some_test")));
+    }
+
     /// Skip mutating arguments to a particular named function.
     #[test]
     fn skip_named_fn() {
