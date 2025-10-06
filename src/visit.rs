@@ -698,14 +698,29 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // Check if this struct has a base (default) expression like `..Default::default()`
         if let Some(_rest) = &i.rest {
             // Generate a mutant for each field by deleting it
-            for field in &i.fields {
+            // We need to include the trailing comma in the span
+            for pair in i.fields.pairs() {
+                let field = pair.value();
                 if let syn::Member::Named(field_name) = &field.member {
                     let field_name_str = field_name.to_string();
                     let short_replaced = Some(field_name_str);
+                    // Span includes the field and its trailing comma (if present)
+                    let span = if let Some(comma) = pair.punct() {
+                        // Include the comma in the span
+                        let field_span = field.span();
+                        let comma_span = comma.span();
+                        Span {
+                            start: field_span.start().into(),
+                            end: comma_span.end().into(),
+                        }
+                    } else {
+                        // No comma, just the field
+                        field.span().into()
+                    };
                     let mutant = Mutant {
                         source_file: self.source_file.clone(),
                         function: self.fn_stack.last().cloned(),
-                        span: field.span().into(),
+                        span,
                         short_replaced,
                         replacement: String::new(),
                         genre: Genre::StructField,
