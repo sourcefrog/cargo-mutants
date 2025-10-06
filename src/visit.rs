@@ -697,13 +697,17 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
         // Check if this struct has a base (default) expression like `..Default::default()`
         if let Some(_rest) = &i.rest {
+            // Get the struct type name
+            let struct_type = i.path.to_pretty_string();
+
             // Generate a mutant for each field by deleting it
             // We need to include the trailing comma in the span
             for pair in i.fields.pairs() {
                 let field = pair.value();
                 if let syn::Member::Named(field_name) = &field.member {
                     let field_name_str = field_name.to_string();
-                    let short_replaced = Some(field_name_str);
+                    // Store both field name and struct type, separated by "::"
+                    let short_replaced = Some(format!("{}::{}", field_name_str, struct_type));
                     // Span includes the field and its trailing comma (if present)
                     let span = if let Some(comma) = pair.punct() {
                         // Include the comma in the span
@@ -1470,8 +1474,8 @@ mod test {
         assert_eq!(
             mutants,
             &[
-                "delete field name from struct expression",
-                "delete field coat from struct expression"
+                "delete field name from struct Cat expression",
+                "delete field coat from struct Cat expression"
             ]
         );
     }
@@ -1505,8 +1509,8 @@ mod test {
         assert_eq!(
             mutants,
             &[
-                "delete field timeout from struct expression",
-                "delete field retries from struct expression"
+                "delete field timeout from struct Config expression",
+                "delete field retries from struct Config expression"
             ]
         );
     }
@@ -1522,7 +1526,7 @@ mod test {
             "#,
         );
         // Should work with a single field too
-        assert_eq!(mutants, &["delete field x from struct expression"]);
+        assert_eq!(mutants, &["delete field x from struct Point expression"]);
     }
 
     #[test]
@@ -1541,8 +1545,8 @@ mod test {
         assert_eq!(
             mutants,
             &[
-                "delete field enabled from struct expression",
-                "delete field count from struct expression",
+                "delete field enabled from struct Settings expression",
+                "delete field count from struct Settings expression",
                 "replace + with -",
                 "replace + with *"
             ]

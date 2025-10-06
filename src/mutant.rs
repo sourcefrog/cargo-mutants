@@ -180,15 +180,23 @@ impl Mutant {
                 );
             }
             Genre::StructField => {
-                v.push(s("delete field "));
-                v.push(
-                    s(self
-                        .short_replaced
-                        .as_ref()
-                        .expect("short_replaced should be set on StructField"))
-                    .yellow(),
-                );
-                v.push(s(" from struct expression"));
+                let field_and_type = self
+                    .short_replaced
+                    .as_ref()
+                    .expect("short_replaced should be set on StructField");
+                // Parse "field_name::StructType" format
+                if let Some((field_name, struct_type)) = field_and_type.split_once("::") {
+                    v.push(s("delete field "));
+                    v.push(s(field_name).yellow());
+                    v.push(s(" from struct "));
+                    v.push(s(struct_type).yellow());
+                    v.push(s(" expression"));
+                } else {
+                    // Fallback for older format (shouldn't happen)
+                    v.push(s("delete field "));
+                    v.push(s(field_and_type).yellow());
+                    v.push(s(" from struct expression"));
+                }
             }
             _ => {
                 if self.replacement.is_empty() {
