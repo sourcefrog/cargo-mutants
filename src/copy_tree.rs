@@ -34,7 +34,7 @@ fn copy_file(src: &std::path::Path, dest: &std::path::Path, reflink_supported: &
             Ok(()) => {
                 // Reflink succeeded, get file size for progress tracking
                 let metadata = std::fs::metadata(dest)
-                    .with_context(|| format!("Failed to get metadata for {dest:?}"))?;
+                    .with_context(|| format!("Failed to get metadata for {}", dest.display()))?;
                 return Ok(metadata.len());
             }
             Err(e) => {
@@ -51,7 +51,7 @@ fn copy_file(src: &std::path::Path, dest: &std::path::Path, reflink_supported: &
     
     // Fall back to regular copy
     std::fs::copy(src, dest)
-        .with_context(|| format!("Failed to copy {:?} to {dest:?}", src))
+        .with_context(|| format!("Failed to copy {} to {}", src.display(), dest.display()))
 }
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
