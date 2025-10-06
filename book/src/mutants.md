@@ -6,6 +6,17 @@ that is likely to compile but have different behavior.
 
 Mutants each have a "genre", each of which is described below.
 
+## Functions that are excluded from mutation
+
+Some functions are automatically excluded from mutation:
+
+- Functions marked with `#[cfg(test)]` or in files marked with `#![cfg(test)]`
+- Test functions: functions with attributes whose path ends with `test`, including `#[test]`, `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes
+- Functions marked with `#[mutants::skip]`
+- `unsafe` functions
+
+You can also explicitly [skip functions](skip.md) or [filter which functions are mutated](filter_mutants.md).
+
 ## Replace function body with value
 
 The `FnValue` genre of mutants replaces a function's body with a value that is guessed to be of the right type.
