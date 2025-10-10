@@ -12,6 +12,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use ignore::WalkBuilder;
 use tempfile::TempDir;
 use tracing::{debug, warn};
+use path_slash::PathExt;
 
 use crate::options::Options;
 use crate::{check_interrupted, Console, Result};
