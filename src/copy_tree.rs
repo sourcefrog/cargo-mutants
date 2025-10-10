@@ -12,7 +12,6 @@ use camino::{Utf8Path, Utf8PathBuf};
 use ignore::WalkBuilder;
 use tempfile::TempDir;
 use tracing::{debug, warn};
-use path_slash::PathExt;
 
 use crate::options::Options;
 use crate::{check_interrupted, Console, Result};
@@ -31,7 +30,7 @@ static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".jj", ".p
 
 /// Copy a file, attempting to use reflink if supported.
 /// Returns the number of bytes copied.
-fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> anyhow::Result<u64> {
+fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> Result<u64> {
     // Try reflink first if we haven't determined it's not supported
     if reflink_supported.load(Ordering::Relaxed) {
         match reflink::reflink(src, dest) {
