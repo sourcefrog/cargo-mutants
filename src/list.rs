@@ -22,12 +22,11 @@ pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
         let mut list: Vec<serde_json::Value> = Vec::new();
         for mutant in mutants {
             let mut obj = serde_json::to_value(mutant).expect("Serialize mutant");
-            if options.emit_diffs {
-                obj.as_object_mut().unwrap().insert(
-                    "diff".to_owned(),
-                    json!(mutant.diff(&mutant.mutated_code())),
-                );
-            }
+            // Always include diff in JSON output for programmatic consumers
+            obj.as_object_mut().unwrap().insert(
+                "diff".to_owned(),
+                json!(mutant.diff(&mutant.mutated_code())),
+            );
             list.push(obj);
         }
         serde_json::to_string_pretty(&list).expect("Serialize mutants")
