@@ -591,9 +591,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Shr(_) => vec![quote! {<<}],
             BinOp::ShrAssign(_) => vec![quote! {<<=}],
             BinOp::BitAnd(_) => vec![quote! {|}, quote! {^}],
-            BinOp::BitAndAssign(_) => vec![quote! {|=}, quote! {^=}],
+            BinOp::BitAndAssign(_) => vec![quote! {|=}],
             BinOp::BitOr(_) => vec![quote! {&}, quote! {^}],
-            BinOp::BitOrAssign(_) => vec![quote! {&=}, quote! {^=}],
+            BinOp::BitOrAssign(_) => vec![quote! {&=}],
             BinOp::BitXor(_) => vec![quote! {|}, quote! {&}],
             BinOp::BitXorAssign(_) => vec![quote! {|=}, quote! {&=}],
             _ => {
@@ -1481,14 +1481,8 @@ mod test {
             mutate_expr("a /= b"),
             &["replace /= with %=", "replace /= with *="]
         );
-        assert_eq!(
-            mutate_expr("a &= b"),
-            &["replace &= with |=", "replace &= with ^="]
-        );
-        assert_eq!(
-            mutate_expr("a |= b"),
-            &["replace |= with &=", "replace |= with ^="]
-        );
+        assert_eq!(mutate_expr("a &= b"), &["replace &= with |="]);
+        assert_eq!(mutate_expr("a |= b"), &["replace |= with &="]);
         assert_eq!(
             mutate_expr("a ^= b"),
             &["replace ^= with |=", "replace ^= with &="]
