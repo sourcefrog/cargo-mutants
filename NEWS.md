@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: Tree copying now attempts to use reflinks (copy-on-write) for faster copying on supported filesystems (Btrfs, XFS, APFS), with automatic fallback to regular copying.
+
 - Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.
 
 - Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
@@ -9,6 +11,8 @@
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
 - New: `cargo_mutants_version` field in `outcomes.json`.
+
+- Changed: The bitwise assignment operators `&=` and `|=` are no longer mutated to `^=`. In code that accumulates bits into a bitmap starting from zero (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result, making such mutations uninformative.
 
 ## 25.3.1 2025-08-10
 

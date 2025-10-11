@@ -83,11 +83,16 @@ like `a == 0`.
 | `&`      | `\|`,`^`           |
 | `\|`     | `&`, `^`           |
 | `^`      | `&`, `\|`          |
-| `+=` and similar assignments | assignment corresponding to the line above |
+| `&=`     | `\|=`              |
+| `\|=`    | `&=`               |
+| `^=`     | `\|=`, `&=`        |
+| `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=` | assignment corresponding to the operator above |
 
 Equality operators are not currently replaced with comparisons like `<` or `<=`
 because they are
 too prone to generate false positives, for example when unsigned integers are compared to 0.
+
+The bitwise assignment operators `&=` and `|=` are not mutated to `^=` because in code that accumulates bits (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result when starting from zero, making such mutations uninformative.
 
 ## Unary operators
 
