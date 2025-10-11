@@ -3,7 +3,6 @@
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
 use std::fs;
-use std::io::ErrorKind;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -41,17 +40,10 @@ fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> Result<
                 return Ok(metadata.len());
             }
             Err(e) => {
-                // Check if this is a "not supported" error
-                if e.kind() == ErrorKind::Unsupported {
-                    // Mark reflink as not supported so we don't try again
-                    reflink_supported.store(false, Ordering::Relaxed);
-                    debug!(
-                        "Reflinks not supported on this filesystem, falling back to regular copy"
-                    );
-                } else {
-                    // Log other errors
-                    debug!("Reflink failed: {}, falling back to regular copy", e);
-                }
+                // On Windows, reflink can fail without returning ErrorKind::Unsupported,
+                // so we give up on reflinks after any error to avoid repeated failures.
+                reflink_supported.store(false, Ordering::Relaxed);
+                debug!("Reflink failed: {}, falling back to regular copy", e);
             }
         }
     }
