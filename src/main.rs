@@ -67,7 +67,8 @@ use crate::interrupt::check_interrupted;
 use crate::lab::test_mutants;
 use crate::list::{list_files, list_mutants};
 use crate::mutant::{Genre, Mutant};
-use crate::options::{Colors, Options, TestTool};
+use crate::options::Common;
+use crate::options::{Colors, Options};
 use crate::outcome::{Phase, ScenarioOutcome};
 use crate::scenario::Scenario;
 use crate::shard::Shard;
@@ -279,10 +280,6 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     shuffle: bool,
 
-    /// Tool used to run test suites: cargo or nextest.
-    #[arg(long, help_heading = "Execution")]
-    test_tool: Option<TestTool>,
-
     /// Maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't', help_heading = "Execution")]
     timeout: Option<f64>,
@@ -417,10 +414,6 @@ pub struct Args {
     )]
     colors: Colors,
 
-    /// Show the mutation diffs.
-    #[arg(long, long = "diff", help_heading = "Output")]
-    emit_diffs: bool,
-
     /// Output json (only for --list).
     #[arg(long, help_heading = "Output")]
     json: bool,
@@ -463,6 +456,10 @@ pub struct Args {
     /// Emit a JSON schema for the specified format and exit.
     #[arg(long, value_enum, help_heading = "Misc")]
     emit_schema: Option<SchemaType>,
+
+    // Common definitions between config file and command line.
+    #[clap(flatten)]
+    common: Common,
 }
 
 fn main() -> Result<()> {
@@ -567,7 +564,7 @@ fn main() -> Result<()> {
         };
     }
     if let Some(shard) = &args.shard {
-        mutants = shard.select(mutants);
+        mutants = options.sharding().shard(*shard, mutants);
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));

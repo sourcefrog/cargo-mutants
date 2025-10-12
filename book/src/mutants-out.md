@@ -18,7 +18,7 @@ The output directory contains:
   This file is completely written before testing begins.
 
 * An `outcomes.json` file describing the results of all tests,
-  and summary counts of each outcome.
+  summary counts of each outcome, and the cargo-mutants version.
 
 * A `diff/` directory, containing a diff file for each mutation, relative to the unmutated baseline.
   `mutants.json` includes for each mutant the name of the diff file.

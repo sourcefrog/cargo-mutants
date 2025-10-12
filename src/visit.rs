@@ -24,7 +24,7 @@ use tracing::{debug_span, error, info, trace, trace_span, warn};
 
 use crate::console::WalkProgress;
 use crate::fnvalue::return_type_replacements;
-use crate::mutant::Function;
+use crate::mutant::{Function, MutationTarget};
 use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
@@ -324,6 +324,7 @@ impl DiscoveryVisitor<'_> {
             short_replaced: None,
             replacement: replacement.to_pretty_string(),
             genre,
+            target: None,
         });
     }
 
@@ -591,9 +592,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Shr(_) => vec![quote! {<<}],
             BinOp::ShrAssign(_) => vec![quote! {<<=}],
             BinOp::BitAnd(_) => vec![quote! {|}, quote! {^}],
-            BinOp::BitAndAssign(_) => vec![quote! {|=}, quote! {^=}],
+            BinOp::BitAndAssign(_) => vec![quote! {|=}],
             BinOp::BitOr(_) => vec![quote! {&}, quote! {^}],
-            BinOp::BitOrAssign(_) => vec![quote! {&=}, quote! {^=}],
+            BinOp::BitOrAssign(_) => vec![quote! {&=}],
             BinOp::BitXor(_) => vec![quote! {|}, quote! {&}],
             BinOp::BitXorAssign(_) => vec![quote! {|=}, quote! {&=}],
             _ => {
@@ -661,6 +662,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     short_replaced,
                     replacement: String::new(),
                     genre: Genre::MatchArm,
+                    target: None,
                 };
                 self.mutants.push(mutant);
             }
@@ -685,6 +687,58 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             });
 
         syn::visit::visit_expr_match(self, i);
+    }
+
+    fn visit_expr_struct(&mut self, i: &'ast syn::ExprStruct) {
+        let _span = trace_span!("struct", line = i.span().start().line).entered();
+        trace!("visit struct expression");
+
+        if attrs_excluded(&i.attrs) {
+            return;
+        }
+
+        // Check if this struct has a base (default) expression like `..Default::default()`
+        if let Some(_rest) = &i.rest {
+            // Get the struct type name
+            let struct_name = i.path.to_pretty_string();
+
+            // Generate a mutant for each field by deleting it
+            // We need to include the trailing comma in the span
+            for pair in i.fields.pairs() {
+                let field = pair.value();
+                if let syn::Member::Named(field_name) = &field.member {
+                    let field_name_str = field_name.to_string();
+                    // Span includes the field and its trailing comma (if present)
+                    let span = if let Some(comma) = pair.punct() {
+                        // Include the comma in the span
+                        let field_span = field.span();
+                        let comma_span = comma.span();
+                        Span {
+                            start: field_span.start().into(),
+                            end: comma_span.end().into(),
+                        }
+                    } else {
+                        // No comma, just the field
+                        field.span().into()
+                    };
+                    let mutant = Mutant {
+                        source_file: self.source_file.clone(),
+                        function: self.fn_stack.last().cloned(),
+                        span,
+                        short_replaced: None,
+                        replacement: String::new(),
+                        genre: Genre::StructField,
+                        target: Some(MutationTarget::StructLiteralField {
+                            field_name: field_name_str,
+                            struct_name: struct_name.clone(),
+                        }),
+                    };
+                    self.mutants.push(mutant);
+                }
+            }
+        }
+
+        syn::visit::visit_expr_struct(self, i);
     }
 }
 
@@ -793,7 +847,7 @@ fn fn_sig_excluded(sig: &syn::Signature) -> bool {
 
 /// True if any of the attrs indicate that we should skip this node and everything inside it.
 ///
-/// This checks for `#[cfg(test)]`, `#[test]`, and `#[mutants::skip]`.
+/// This checks for `#[cfg(test)]`, attributes whose path ends with `test` (like `#[test]` or `#[tokio::test]`), and `#[mutants::skip]`.
 fn attrs_excluded(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
@@ -828,9 +882,11 @@ fn attr_is_cfg_test(attr: &Attribute) -> bool {
     contains_test
 }
 
-/// True if the attribute is `#[test]`.
+/// True if the attribute path ends with `test`.
+///
+/// This matches `#[test]`, `#[tokio::test]`, `#[sqlx::test]`, etc.
 fn attr_is_test(attr: &Attribute) -> bool {
-    attr.path().is_ident("test")
+    path_ends_with(attr.path(), "test")
 }
 
 fn path_is(path: &syn::Path, idents: &[&str]) -> bool {
@@ -1079,6 +1135,96 @@ mod test {
         )
         .unwrap();
         assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[test]
+                fn test_function() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_tokio_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[tokio::test]
+                async fn tokio_test() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_sqlx_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[sqlx::test]
+                async fn sqlx_test() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn skip_functions_with_arbitrary_test_attribute() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[my_framework::test]
+                fn custom_test() {
+                    println!(\"test\");
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        assert_eq!(mutants, []);
+    }
+
+    #[test]
+    fn do_not_skip_functions_with_non_test_attributes() {
+        let mutants = mutate_source_str(
+            indoc! {"
+                #[derive(Debug)]
+                pub fn testing_something() -> i32 {
+                    42
+                }
+                
+                #[some_crate::test]
+                fn some_test() {
+                    println!(\"test\");
+                }
+                
+                #[some_attr]
+                pub fn regular_function() -> i32 {
+                    100
+                }
+            "},
+            &Options::default(),
+        )
+        .unwrap();
+        // Should have mutants for testing_something and regular_function, but not for some_test
+        let mutant_names = mutants.iter().map(|m| m.name(false)).collect_vec();
+        assert_eq!(mutant_names.len(), 6); // 3 mutants each for the two non-test functions
+        assert!(mutant_names.iter().any(|n| n.contains("testing_something")));
+        assert!(mutant_names.iter().any(|n| n.contains("regular_function")));
+        assert!(!mutant_names.iter().any(|n| n.contains("some_test")));
     }
 
     /// Skip mutating arguments to a particular named function.
@@ -1389,14 +1535,8 @@ mod test {
             mutate_expr("a /= b"),
             &["replace /= with %=", "replace /= with *="]
         );
-        assert_eq!(
-            mutate_expr("a &= b"),
-            &["replace &= with |=", "replace &= with ^="]
-        );
-        assert_eq!(
-            mutate_expr("a |= b"),
-            &["replace |= with &=", "replace |= with ^="]
-        );
+        assert_eq!(mutate_expr("a &= b"), &["replace &= with |="]);
+        assert_eq!(mutate_expr("a |= b"), &["replace |= with &="]);
         assert_eq!(
             mutate_expr("a ^= b"),
             &["replace ^= with |=", "replace ^= with &="]
@@ -1407,5 +1547,99 @@ mod test {
         );
         assert_eq!(mutate_expr("a >>= b"), &["replace >>= with <<="]);
         assert_eq!(mutate_expr("a <<= b"), &["replace <<= with >>="]);
+    }
+
+    #[test]
+    fn delete_struct_field_with_default() {
+        let mutants = mutate_expr(
+            r#"
+            let cat = Cat {
+                name: "Felix", 
+                coat: Coat::Tuxedo,
+                ..Default::default()
+            };
+            "#,
+        );
+        // Should generate mutants to delete each field
+        assert_eq!(
+            mutants,
+            &[
+                "delete field name from struct Cat expression",
+                "delete field coat from struct Cat expression"
+            ]
+        );
+    }
+
+    #[test]
+    fn skip_struct_without_default() {
+        let mutants = mutate_expr(
+            r#"
+            let cat = Cat {
+                name: "Felix", 
+                coat: Coat::Tuxedo,
+            };
+            "#,
+        );
+        // Should not generate any field deletion mutants without a default
+        assert!(mutants.is_empty());
+    }
+
+    #[test]
+    fn delete_struct_field_with_custom_default() {
+        let mutants = mutate_expr(
+            r#"
+            let config = Config {
+                timeout: 30,
+                retries: 5,
+                ..base_config
+            };
+            "#,
+        );
+        // Should work with any base expression, not just Default::default()
+        assert_eq!(
+            mutants,
+            &[
+                "delete field timeout from struct Config expression",
+                "delete field retries from struct Config expression"
+            ]
+        );
+    }
+
+    #[test]
+    fn delete_struct_field_single_field_with_default() {
+        let mutants = mutate_expr(
+            r#"
+            let point = Point {
+                x: 10,
+                ..Default::default()
+            };
+            "#,
+        );
+        // Should work with a single field too
+        assert_eq!(mutants, &["delete field x from struct Point expression"]);
+    }
+
+    #[test]
+    fn delete_struct_field_complex_values() {
+        let mutants = mutate_expr(
+            r#"
+            let settings = Settings {
+                enabled: get_enabled(),
+                count: compute_count() + 10,
+                ..Settings::default()
+            };
+            "#,
+        );
+        // Should work regardless of the complexity of the field values
+        // The visitor also generates mutants for expressions within field values
+        assert_eq!(
+            mutants,
+            &[
+                "delete field enabled from struct Settings expression",
+                "delete field count from struct Settings expression",
+                "replace + with -",
+                "replace + with *"
+            ]
+        );
     }
 }

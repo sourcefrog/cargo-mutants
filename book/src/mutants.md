@@ -6,6 +6,17 @@ that is likely to compile but have different behavior.
 
 Mutants each have a "genre", each of which is described below.
 
+## Functions that are excluded from mutation
+
+Some functions are automatically excluded from mutation:
+
+- Functions marked with `#[cfg(test)]` or in files marked with `#![cfg(test)]`
+- Test functions: functions with attributes whose path ends with `test`, including `#[test]`, `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes
+- Functions marked with `#[mutants::skip]`
+- `unsafe` functions
+
+You can also explicitly [skip functions](skip.md) or [filter which functions are mutated](filter_mutants.md).
+
 ## Replace function body with value
 
 The `FnValue` genre of mutants replaces a function's body with a value that is guessed to be of the right type.
@@ -83,11 +94,16 @@ like `a == 0`.
 | `&`      | `\|`,`^`           |
 | `\|`     | `&`, `^`           |
 | `^`      | `&`, `\|`          |
-| `+=` and similar assignments | assignment corresponding to the line above |
+| `&=`     | `\|=`              |
+| `\|=`    | `&=`               |
+| `^=`     | `\|=`, `&=`        |
+| `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=` | assignment corresponding to the operator above |
 
 Equality operators are not currently replaced with comparisons like `<` or `<=`
 because they are
 too prone to generate false positives, for example when unsigned integers are compared to 0.
+
+The bitwise assignment operators `&=` and `|=` are not mutated to `^=` because in code that accumulates bits (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result when starting from zero, making such mutations uninformative.
 
 ## Unary operators
 
@@ -103,3 +119,25 @@ Match expressions without a wildcard pattern would be too prone to unviable muta
 ## Match arm guards
 
 Match arm guard expressions are replaced with `true` and `false`.
+
+## Struct literal fields
+
+Individual fields are deleted from struct literals that have a base (default) expression,
+such as `..Default::default()` or `..base_value`.
+
+For example, in this code:
+
+```rust
+let cat = Cat {
+    name: "Felix",
+    coat: Coat::Tuxedo,
+    ..Default::default()
+};
+```
+
+cargo-mutants will generate two mutants: one deleting the `name` field and one deleting
+the `coat` field. This checks that tests verify that each field is set correctly and not
+just relying on the default values.
+
+Struct literals without a base expression are not mutated in this way, because deleting
+a required field would make the code fail to compile.

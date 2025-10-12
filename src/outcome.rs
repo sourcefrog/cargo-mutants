@@ -67,6 +67,7 @@ pub struct LabOutcome {
     pub success: usize,
     pub start_time: Timestamp,
     pub end_time: Option<Timestamp>,
+    pub cargo_mutants_version: String,
 }
 
 impl LabOutcome {
@@ -81,6 +82,7 @@ impl LabOutcome {
             success: 0,
             start_time,
             end_time: None,
+            cargo_mutants_version: crate::VERSION.to_string(),
         }
     }
 

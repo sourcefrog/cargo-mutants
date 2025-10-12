@@ -15,6 +15,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use camino::{Utf8Path, Utf8PathBuf};
+use clap::ArgAction;
 use globset::GlobSet;
 use regex::RegexSet;
 use schemars::JsonSchema;
@@ -27,10 +28,10 @@ use crate::annotation::ResolvedAnnotation;
 use crate::config::Config;
 use crate::glob::build_glob_set;
 use crate::mutant::Mutant;
+use crate::shard::Sharding;
 use crate::{Args, BaselineStrategy, Phase, Result, ValueEnum};
 
-/// Options for mutation testing, based on both command-line arguments and the
-/// config file.
+/// Options for mutation testing, based on both command-line arguments and the config file.
 #[derive(Default, Debug, Clone)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Options {
@@ -160,11 +161,44 @@ pub struct Options {
     /// List mutants in json, etc.
     pub emit_json: bool,
 
-    /// Emit diffs showing just what changed.
-    pub emit_diffs: bool,
+    pub common: Common,
+}
 
-    /// The tool to use to run tests.
-    pub test_tool: TestTool,
+// Options that are implemented only once between clap and serde.
+//
+// All fields should be optional so that we can represent a field being set on the command line but
+// not in the config, or vice versa.
+//
+// In general we try to have the options use the same name, but sometimes either for historical or common-sense reasons they differ, or
+// fields are not allowed in the config.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, clap::Args, Deserialize, JsonSchema)]
+pub struct Common {
+    /// Emit diffs showing the mutations, within `--list`.
+    #[arg(long, long = "diff", help_heading = "Output", action = ArgAction::SetTrue)]
+    #[serde(skip)] // Doesn't make a lot of sense in the config file
+    pub emit_diffs: Option<bool>,
+
+    /// Tool used to run test suites: cargo or nextest.
+    #[arg(long, help_heading = "Execution")]
+    pub test_tool: Option<TestTool>,
+
+    /// Sharding method to use when running with --shards.
+    #[arg(long, help_heading = "Execution", requires = "shard")]
+    pub sharding: Option<Sharding>,
+}
+
+impl Common {
+    /// Merge two `MoreOptions`, taking values from self first.
+    ///
+    /// Scalar values are taken from self if present, otherwise from other.
+    #[allow(clippy::trivially_copy_pass_by_ref)] // will be bigger later
+    pub fn merge(&self, other: &Common) -> Common {
+        Common {
+            emit_diffs: self.emit_diffs.or(other.emit_diffs),
+            test_tool: self.test_tool.or(other.test_tool),
+            sharding: self.sharding.or(other.sharding),
+        }
+    }
 }
 
 /// Which packages should be tested for a given mutant?
@@ -309,7 +343,7 @@ impl Options {
             colors: args.colors,
             copy_vcs: args.copy_vcs.or(config.copy_vcs).unwrap_or(false),
             emit_json: args.json,
-            emit_diffs: args.emit_diffs,
+            common: args.common.merge(&config.common),
             error_values: join_slices(&args.error, &config.error_values),
             examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
                 .context("Failed to compile examine_re regex")?,
@@ -346,7 +380,6 @@ impl Options {
             test_package,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
-            test_tool: args.test_tool.or(config.test_tool).unwrap_or_default(),
         };
         if let Some(jobs) = options.jobs {
             if jobs > 8 {
@@ -442,6 +475,18 @@ impl Options {
         (self.examine_names.is_empty() || self.examine_names.is_match(&name))
             && (self.exclude_names.is_empty() || !self.exclude_names.is_match(&name))
     }
+
+    pub fn emit_diffs(&self) -> bool {
+        self.common.emit_diffs.unwrap_or(false)
+    }
+
+    pub fn test_tool(&self) -> TestTool {
+        self.common.test_tool.unwrap_or_default()
+    }
+
+    pub fn sharding(&self) -> Sharding {
+        self.common.sharding.unwrap_or_default()
+    }
 }
 
 /// If the first slices is non-empty, return that, otherwise the second.
@@ -472,8 +517,11 @@ mod test {
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.check_only);
-        assert_eq!(options.test_tool, TestTool::Cargo);
+        assert!(options.common.test_tool.is_none());
+        assert_eq!(options.test_tool(), TestTool::Cargo);
         assert!(!options.cap_lints);
+        assert!(options.common.sharding.is_none());
+        assert_eq!(options.sharding(), Sharding::Slice);
     }
 
     #[test]
@@ -481,7 +529,7 @@ mod test {
         let args = Args::parse_from(["mutants", "--test-tool", "nextest"]);
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
-        assert_eq!(options.test_tool, TestTool::Nextest);
+        assert_eq!(options.test_tool(), TestTool::Nextest);
     }
 
     #[test]
@@ -577,7 +625,7 @@ mod test {
         let args = Args::try_parse_from(["mutants"]).unwrap();
         let config = Config::read_file(config_file.path()).unwrap();
         let options = Options::new(&args, &config).unwrap();
-        assert_eq!(options.test_tool, TestTool::Nextest);
+        assert_eq!(options.test_tool(), TestTool::Nextest);
         assert!(options.cap_lints);
     }
 
@@ -1171,6 +1219,39 @@ mod test {
         assert_eq!(
             options.additional_cargo_test_args,
             vec!["--all-targets", "--lib", "--no-fail-fast"]
+        );
+    }
+
+    #[test]
+    fn sharding() {
+        let args = Args::try_parse_from(["mutants", "--sharding=slice", "--shard=0/10"]).unwrap();
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::Slice);
+
+        let args = Args::parse_from(["mutants", "--sharding=round-robin", "--shard=0/10"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::RoundRobin);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(r#"sharding = "slice""#).unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::Slice);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str(r#"sharding = "round-robin""#).unwrap();
+        dbg!(&config);
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(options.sharding(), Sharding::RoundRobin);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert_eq!(
+            options.sharding(),
+            Sharding::Slice,
+            "Default sharding should be slice"
         );
     }
 }

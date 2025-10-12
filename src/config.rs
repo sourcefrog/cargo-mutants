@@ -19,7 +19,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use tracing::debug;
 
-use crate::options::TestTool;
+use crate::options::Common;
 use crate::Result;
 
 // NOTE: Docstrings on this struct and its members turn into descriptions in the JSON schema,
@@ -80,14 +80,17 @@ pub struct Config {
     pub skip_calls_defaults: Option<bool>,
     /// Run tests from these packages for all mutants.
     pub test_package: Vec<String>,
-    /// Choice of test tool: cargo or nextest.
-    pub test_tool: Option<TestTool>,
+
     /// Run tests from all packages in the workspace, not just the mutated package.
     ///
     /// Overrides `test_package`.
     pub test_workspace: Option<bool>,
     /// Timeout multiplier, relative to the baseline 'cargo test'.
     pub timeout_multiplier: Option<f64>,
+
+    // Common definition of options that can be set from both the command line and the config file.
+    #[serde(flatten)]
+    pub common: Common,
 }
 
 impl Config {

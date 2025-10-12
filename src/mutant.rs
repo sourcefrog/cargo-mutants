@@ -31,6 +31,20 @@ pub enum Genre {
     MatchArm,
     /// Replace the expression of a match arm guard with a fixed value.
     MatchArmGuard,
+    /// Delete a field from a struct literal that has a base (default) expression.
+    StructField,
+}
+
+/// The target of a mutation, providing additional context about what is being mutated.
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum MutationTarget {
+    /// A field in a struct literal expression.
+    StructLiteralField {
+        /// The name of the field being deleted.
+        field_name: String,
+        /// The name/type of the struct.
+        struct_name: String,
+    },
 }
 
 /// A mutation applied to source code.
@@ -63,6 +77,12 @@ pub struct Mutant {
 
     /// What general category of mutant this is.
     pub genre: Genre,
+
+    /// Additional context about what is being mutated.
+    ///
+    /// This provides structured information about the mutation target, rather than
+    /// encoding it in strings that need to be parsed.
+    pub target: Option<MutationTarget>,
 }
 
 /// The function containing a mutant.
@@ -176,6 +196,22 @@ impl Mutant {
                     ))
                     .yellow(),
                 );
+            }
+            Genre::StructField => {
+                if let Some(MutationTarget::StructLiteralField {
+                    field_name,
+                    struct_name,
+                }) = &self.target
+                {
+                    v.push(s("delete field "));
+                    v.push(s(field_name).yellow());
+                    v.push(s(" from struct "));
+                    v.push(s(struct_name).yellow());
+                    v.push(s(" expression"));
+                } else {
+                    // Fallback: shouldn't happen with proper initialization
+                    v.push(s("delete field from struct expression"));
+                }
             }
             _ => {
                 if self.replacement.is_empty() {
