@@ -14,6 +14,8 @@
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
+- New: Delete individual fields from struct literals that have a base (default) expression like `..Default::default()` or `..base_value`. This checks that tests verify each field is set correctly and not just relying on default values.
+
 - New: `cargo_mutants_version` field in `outcomes.json`.
 
 - Changed: Functions with attributes whose path ends with `test` are now skipped, not just those with the plain `#[test]` attribute. This means functions with `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes are automatically excluded from mutation testing.
