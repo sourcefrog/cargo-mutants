@@ -241,6 +241,15 @@ fn small_well_tested_tree_is_clean() {
     let end_time: Timestamp = end_time.as_str().unwrap().parse().unwrap();
     assert!(end_time >= start_time);
     assert!(end_time <= Timestamp::now());
+
+    // Verify cargo_mutants_version field exists
+    let version = outcomes["cargo_mutants_version"]
+        .as_str()
+        .expect("cargo_mutants_version should be present and be a string");
+    assert!(
+        version.contains('.'),
+        "cargo_mutants_version should look like a version"
+    );
 }
 
 #[test]

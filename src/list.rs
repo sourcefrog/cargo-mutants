@@ -31,7 +31,7 @@ pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
                 out.push_str(&mutant.name(options.show_line_col));
             }
             out.push('\n');
-            if options.emit_diffs {
+            if options.emit_diffs() {
                 out.push_str(&mutant.diff(&mutant.mutated_code()));
                 out.push('\n');
             }
@@ -68,6 +68,6 @@ pub fn list_files(source_files: &[SourceFile], options: &Options) -> String {
 /// Each mutant includes its diff. This is used for both `--list --json` output
 /// and for writing `mutants.out/mutants.json`.
 pub fn mutants_to_json_string(mutants: &[Mutant]) -> String {
-    let list: Vec<serde_json::Value> = mutants.iter().map(|m| m.to_json()).collect();
+    let list: Vec<serde_json::Value> = mutants.iter().map(Mutant::to_json).collect();
     serde_json::to_string_pretty(&list).expect("Serialize mutants")
 }

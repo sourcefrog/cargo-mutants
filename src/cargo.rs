@@ -95,7 +95,7 @@ pub fn cargo_bin() -> String {
 fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> Vec<String> {
     let mut cargo_args = vec![cargo_bin()];
     match phase {
-        Phase::Test => match &options.test_tool {
+        Phase::Test => match &options.test_tool() {
             TestTool::Cargo => cargo_args.push("test".to_string()),
             TestTool::Nextest => {
                 cargo_args.push("nextest".to_string());
@@ -103,7 +103,7 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
             }
         },
         Phase::Build => {
-            match &options.test_tool {
+            match &options.test_tool() {
                 TestTool::Cargo => {
                     // These invocations default to the test profile, and might
                     // have other differences? Generally we want to do everything
@@ -125,7 +125,7 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
         }
     }
     if let Some(profile) = &options.profile {
-        match options.test_tool {
+        match options.test_tool() {
             TestTool::Cargo => {
                 cargo_args.push(format!("--profile={profile}"));
             }

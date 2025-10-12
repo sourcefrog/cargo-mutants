@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-- Diffs are now always included in the JSON output in `mutants.json` and show by `--list --json`. This makes the JSON output more useful for programmatic consumers.
+- Diffs are now included in the JSON output in `mutants.json` and shown by `--list --json`. This makes the JSON output more useful for programmatic consumers.
+
+- New: `--sharding` option to control how mutants are distributed across multiple machines, with choices of `slice` or `round-robin`.
+
+- Changed: The default sharding strategy is now `slice`; previously it was `round-robin`. Sliced sharding gives each worker better locality of reference due to testing changes to related packages, but may make the runtime more uneven between workers if some packages are slower to test than others.
 
 - Changed: Tree copying now attempts to use reflinks (copy-on-write) for faster copying on supported filesystems (Btrfs, XFS, APFS), with automatic fallback to regular copying.
 
@@ -11,6 +15,10 @@
 - Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
+
+- New: Delete individual fields from struct literals that have a base (default) expression like `..Default::default()` or `..base_value`. This checks that tests verify each field is set correctly and not just relying on default values.
+
+- New: `cargo_mutants_version` field in `outcomes.json`.
 
 - Changed: Functions with attributes whose path ends with `test` are now skipped, not just those with the plain `#[test]` attribute. This means functions with `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes are automatically excluded from mutation testing.
 
