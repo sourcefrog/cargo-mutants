@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: Tree copying now attempts to use reflinks (copy-on-write) for faster copying on supported filesystems (Btrfs, XFS, APFS), with automatic fallback to regular copying.
+
 - Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.
 
 - Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
@@ -9,6 +11,12 @@
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
 - New: Delete individual fields from struct literals that have a base (default) expression like `..Default::default()` or `..base_value`. This checks that tests verify each field is set correctly and not just relying on default values.
+
+- New: `cargo_mutants_version` field in `outcomes.json`.
+
+- Changed: Functions with attributes whose path ends with `test` are now skipped, not just those with the plain `#[test]` attribute. This means functions with `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes are automatically excluded from mutation testing.
+
+- Changed: The bitwise assignment operators `&=` and `|=` are no longer mutated to `^=`. In code that accumulates bits into a bitmap starting from zero (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result, making such mutations uninformative.
 
 ## 25.3.1 2025-08-10
 

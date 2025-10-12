@@ -6,6 +6,17 @@ that is likely to compile but have different behavior.
 
 Mutants each have a "genre", each of which is described below.
 
+## Functions that are excluded from mutation
+
+Some functions are automatically excluded from mutation:
+
+- Functions marked with `#[cfg(test)]` or in files marked with `#![cfg(test)]`
+- Test functions: functions with attributes whose path ends with `test`, including `#[test]`, `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes
+- Functions marked with `#[mutants::skip]`
+- `unsafe` functions
+
+You can also explicitly [skip functions](skip.md) or [filter which functions are mutated](filter_mutants.md).
+
 ## Replace function body with value
 
 The `FnValue` genre of mutants replaces a function's body with a value that is guessed to be of the right type.
@@ -83,11 +94,16 @@ like `a == 0`.
 | `&`      | `\|`,`^`           |
 | `\|`     | `&`, `^`           |
 | `^`      | `&`, `\|`          |
-| `+=` and similar assignments | assignment corresponding to the line above |
+| `&=`     | `\|=`              |
+| `\|=`    | `&=`               |
+| `^=`     | `\|=`, `&=`        |
+| `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=` | assignment corresponding to the operator above |
 
 Equality operators are not currently replaced with comparisons like `<` or `<=`
 because they are
 too prone to generate false positives, for example when unsigned integers are compared to 0.
+
+The bitwise assignment operators `&=` and `|=` are not mutated to `^=` because in code that accumulates bits (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result when starting from zero, making such mutations uninformative.
 
 ## Unary operators
 
