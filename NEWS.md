@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Diffs are now included in the JSON output in `mutants.json` and shown by `--list --json`. This makes the JSON output more useful for programmatic consumers.
+
 - New: `--sharding` option to control how mutants are distributed across multiple machines, with choices of `slice` or `round-robin`.
 
 - Changed: The default sharding strategy is now `slice`; previously it was `round-robin`. Sliced sharding gives each worker better locality of reference due to testing changes to related packages, but may make the runtime more uneven between workers if some packages are slower to test than others.

@@ -233,9 +233,9 @@ impl OutputDir {
     }
 
     pub fn write_mutants_list(&self, mutants: &[Mutant]) -> Result<()> {
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(self.path.join("mutants.json"))?),
-            mutants,
+        write(
+            self.path.join("mutants.json"),
+            crate::list::mutants_to_json_string(mutants),
         )
         .context("write mutants.json")
     }

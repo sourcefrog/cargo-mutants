@@ -1,9 +1,12 @@
 ---
 source: tests/util/mod.rs
+assertion_line: 69
 expression: "String::from_utf8_lossy(&output.stdout)"
+
 ---
 [
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace divisible_by_three -> bool with true\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -34,6 +37,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace == with != in divisible_by_three\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    a % 3 != /* ~ changed by cargo-mutants ~ */ 0\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -64,6 +68,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace % with / in divisible_by_three\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    a / /* ~ changed by cargo-mutants ~ */ 3 == 0\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -94,6 +99,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace % with + in divisible_by_three\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    a + /* ~ changed by cargo-mutants ~ */ 3 == 0\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
