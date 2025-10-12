@@ -59,13 +59,13 @@ cargo mutants -- --all-targets
 Alternatively, you can use the explicit `--cargo-test-arg` option, which can be repeated:
 
 ```shell
-cargo mutants --cargo-test-arg=--all-targets --cargo-test-arg=--no-fail-fast
+cargo mutants --cargo-test-arg=--all-targets --cargo-test-arg=--lib
 ```
 
 Both formats can be used together if needed:
 
 ```shell
-cargo mutants --cargo-test-arg=--all-targets -- --nocapture
+cargo mutants --cargo-test-arg=--lib -- --all-targets
 ```
 
 These options can also be configured statically with the `additional_cargo_test_args` key in `.cargo/mutants.toml`:
