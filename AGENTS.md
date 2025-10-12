@@ -38,9 +38,9 @@ If the test exercises a particular test tree, option, or function, make sure tha
 
 ### testdata trees
 
-Tests run against trees under `testdata/`. These have `Cargo.toml` renamed to `Cargo_test.toml` to prevent cargo from seeing them as part of the workspace.
+Tests run against trees under `testdata/`. These are stored with `Cargo_test.toml` (instead of `Cargo.toml`) to prevent cargo from seeing them as part of the main workspace.
 
-Always use `copy_of_testdata()` to create a temporary copy before running tests against these trees, to avoid side effects.
+Always use `copy_of_testdata()` to create a temporary copy before running tests. This function automatically renames `Cargo_test.toml` to `Cargo.toml` in the copy, so the test tree becomes a valid cargo workspace.
 
 Describe the purpose of each testdata tree in its `Cargo.toml` or `README.md`.
 
