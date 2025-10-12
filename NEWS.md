@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: `--cargo-test-arg` option to pass additional arguments to `cargo test`.
+
 - New: `--sharding` option to control how mutants are distributed across multiple machines, with choices of `slice` or `round-robin`.
 
 - Changed: The default sharding strategy is now `slice`; previously it was `round-robin`. Sliced sharding gives each worker better locality of reference due to testing changes to related packages, but may make the runtime more uneven between workers if some packages are slower to test than others.
