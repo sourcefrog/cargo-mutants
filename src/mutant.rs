@@ -3,7 +3,6 @@
 //! Mutations to source files, and inference of interesting mutations to apply.
 
 use std::borrow::Cow;
-use std::fmt;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -48,7 +47,7 @@ pub enum MutationTarget {
 }
 
 /// A mutation applied to source code.
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Mutant {
     /// Which file is being mutated.
     pub source_file: SourceFile,
@@ -287,20 +286,6 @@ impl Mutant {
     }
 }
 
-impl fmt::Debug for Mutant {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Custom implementation to show spans more concisely
-        f.debug_struct("Mutant")
-            .field("function", &self.function)
-            .field("replacement", &self.replacement)
-            .field("genre", &self.genre)
-            .field("span", &self.span)
-            .field("short_replaced", &self.short_replaced)
-            .field("package_name", &self.source_file.package.name)
-            .finish()
-    }
-}
-
 impl Serialize for Mutant {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -373,48 +358,45 @@ mod test {
             .unwrap()
             .mutants;
         assert_eq!(mutants.len(), 5);
-        assert_eq!(
-            format!("{:#?}", mutants[0]),
-            indoc! {
-                r#"Mutant {
-                    function: Some(
-                        Function {
-                            function_name: "main",
-                            return_type: "",
-                            span: Span(1, 1, 5, 2),
-                        },
-                    ),
-                    replacement: "()",
-                    genre: FnValue,
-                    span: Span(2, 5, 4, 6),
-                    short_replaced: None,
-                    package_name: "cargo-mutants-testdata-factorial",
-                }"#
-            }
+
+        // Some checks about fields that we expect in the debug format, without being too brittle
+        let debug_format = format!("{:#?}", mutants[0]);
+        println!("mutants[0]: {debug_format}");
+        assert!(debug_format.contains("Mutant {"));
+        assert!(debug_format.contains("function: Some("));
+        assert!(debug_format.contains(r#"replacement: "()""#));
+        assert!(debug_format.contains("genre: FnValue"));
+        assert!(debug_format.contains("span: Span(2, 5, 4, 6)"));
+        assert!(debug_format.contains("short_replaced: None"));
+        assert!(debug_format.contains(r#"name: "cargo-mutants-testdata-factorial""#));
+        assert!(debug_format.contains(r#""src/bin/factorial.rs""#));
+        assert!(
+            !debug_format.contains("fn main()"),
+            "Debug form seems to contain source code"
         );
+        assert!(
+            debug_format.len() < 800,
+            "Debug form seems to be too long: {} bytes",
+            debug_format.len()
+        );
+
         assert_eq!(
             mutants[0].name(true),
             "src/bin/factorial.rs:2:5: replace main with ()"
         );
+
+        println!("mutants[1]: {:#?}", mutants[1]);
         assert_eq!(
-            format!("{:#?}", mutants[1]),
-            indoc! { r#"
-                Mutant {
-                    function: Some(
-                        Function {
-                            function_name: "factorial",
-                            return_type: "-> u32",
-                            span: Span(7, 1, 13, 2),
-                        },
-                    ),
-                    replacement: "0",
-                    genre: FnValue,
-                    span: Span(8, 5, 12, 6),
-                    short_replaced: None,
-                    package_name: "cargo-mutants-testdata-factorial",
-                }"#
-            }
+            mutants[1].source_file.package.name,
+            "cargo-mutants-testdata-factorial"
         );
+        assert_eq!(
+            mutants[1].function.as_ref().unwrap().function_name,
+            "factorial"
+        );
+        assert_eq!(mutants[1].function.as_ref().unwrap().return_type, "-> u32");
+        assert_eq!(mutants[1].genre, Genre::FnValue);
+        assert_eq!(mutants[1].replacement, "0");
         assert_eq!(
             mutants[1].name(false),
             "src/bin/factorial.rs: replace factorial -> u32 with 0"
