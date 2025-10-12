@@ -8,6 +8,7 @@
 //! follows `mod` statements to recursively visit other referenced files.
 
 #![warn(clippy::pedantic)]
+#![allow(clippy::needless_raw_string_hashes)]
 
 use std::collections::VecDeque;
 use std::sync::Arc;
@@ -1205,12 +1206,12 @@ mod test {
                 pub fn testing_something() -> i32 {
                     42
                 }
-                
+
                 #[some_crate::test]
                 fn some_test() {
                     println!(\"test\");
                 }
-                
+
                 #[some_attr]
                 pub fn regular_function() -> i32 {
                     100
@@ -1554,7 +1555,7 @@ mod test {
         let mutants = mutate_expr(
             r#"
             let cat = Cat {
-                name: "Felix", 
+                name: "Felix",
                 coat: Coat::Tuxedo,
                 ..Default::default()
             };
@@ -1575,7 +1576,7 @@ mod test {
         let mutants = mutate_expr(
             r#"
             let cat = Cat {
-                name: "Felix", 
+                name: "Felix",
                 coat: Coat::Tuxedo,
             };
             "#,
