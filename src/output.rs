@@ -233,9 +233,19 @@ impl OutputDir {
     }
 
     pub fn write_mutants_list(&self, mutants: &[Mutant]) -> Result<()> {
+        // Include diffs in the JSON output for programmatic consumers
+        let mut list: Vec<serde_json::Value> = Vec::new();
+        for mutant in mutants {
+            let mut obj = serde_json::to_value(mutant).context("Serialize mutant")?;
+            obj.as_object_mut().unwrap().insert(
+                "diff".to_owned(),
+                serde_json::json!(mutant.diff(&mutant.mutated_code())),
+            );
+            list.push(obj);
+        }
         serde_json::to_writer_pretty(
             BufWriter::new(File::create(self.path.join("mutants.json"))?),
-            mutants,
+            &list,
         )
         .context("write mutants.json")
     }

@@ -439,6 +439,58 @@ fn uncaught_mutant_in_factorial() {
 }
 
 #[test]
+fn mutants_json_includes_diffs() {
+    // Test that mutants.out/mutants.json includes diff fields
+    let tmp_src_dir = copy_of_testdata("factorial");
+    
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+
+    // Read and parse mutants.json
+    let mutants_json_path = tmp_src_dir.path().join("mutants.out/mutants.json");
+    let mutants_json_str = fs::read_to_string(&mutants_json_path)
+        .unwrap_or_else(|e| panic!("Failed to read {}: {}", mutants_json_path.display(), e));
+    let mutants_json: serde_json::Value = serde_json::from_str(&mutants_json_str)
+        .unwrap_or_else(|e| panic!("Failed to parse mutants.json: {}", e));
+    
+    let mutants = mutants_json
+        .as_array()
+        .expect("mutants.json should contain an array");
+    
+    assert!(!mutants.is_empty(), "mutants.json should not be empty");
+    
+    // Check that all mutants have a diff field
+    for (i, mutant) in mutants.iter().enumerate() {
+        let obj = mutant.as_object()
+            .unwrap_or_else(|| panic!("Mutant {} is not an object", i));
+        assert!(
+            obj.contains_key("diff"),
+            "Mutant {} is missing diff field: {:?}",
+            i,
+            mutant
+        );
+        let diff = obj["diff"].as_str()
+            .unwrap_or_else(|| panic!("Mutant {} diff is not a string", i));
+        assert!(
+            !diff.is_empty(),
+            "Mutant {} has empty diff",
+            i
+        );
+        assert!(
+            diff.contains("---") && diff.contains("+++"),
+            "Mutant {} diff doesn't look like a unified diff: {}",
+            i,
+            diff
+        );
+    }
+}
+
+#[test]
 fn factorial_mutants_with_all_logs() {
     // The log contains a lot of build output, which is hard to deal with, but let's check that
     // some key lines are there.

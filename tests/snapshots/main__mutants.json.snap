@@ -1,156 +1,163 @@
 ---
 source: tests/main.rs
+assertion_line: 436
 expression: mutants_json
+
 ---
 [
   {
-    "package": "cargo-mutants-testdata-factorial",
+    "diff": "--- src/bin/factorial.rs\n+++ replace main with ()\n@@ -1,12 +1,10 @@\n fn main() {\n-    for i in 1..=6 {\n-        println!(\"{}! = {}\", i, factorial(i));\n-    }\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n fn factorial(n: u32) -> u32 {\n     let mut a = 1;\n     for i in 2..=n {\n         a *= i;\n     }\n     a\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "main",
       "return_type": "",
       "span": {
-        "start": {
-          "line": 1,
-          "column": 1
-        },
         "end": {
-          "line": 5,
-          "column": 2
+          "column": 2,
+          "line": 5
+        },
+        "start": {
+          "column": 1,
+          "line": 1
         }
       }
     },
-    "span": {
-      "start": {
-        "line": 2,
-        "column": 5
-      },
-      "end": {
-        "line": 4,
-        "column": 6
-      }
-    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "()",
-    "genre": "FnValue"
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 4
+      },
+      "start": {
+        "column": 5,
+        "line": 2
+      }
+    }
   },
   {
-    "package": "cargo-mutants-testdata-factorial",
+    "diff": "--- src/bin/factorial.rs\n+++ replace factorial -> u32 with 0\n@@ -1,19 +1,15 @@\n fn main() {\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n-    let mut a = 1;\n-    for i in 2..=n {\n-        a *= i;\n-    }\n-    a\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
       "return_type": "-> u32",
       "span": {
-        "start": {
-          "line": 7,
-          "column": 1
-        },
         "end": {
-          "line": 13,
-          "column": 2
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
         }
       }
     },
-    "span": {
-      "start": {
-        "line": 8,
-        "column": 5
-      },
-      "end": {
-        "line": 12,
-        "column": 6
-      }
-    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "0",
-    "genre": "FnValue"
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
   },
   {
-    "package": "cargo-mutants-testdata-factorial",
+    "diff": "--- src/bin/factorial.rs\n+++ replace factorial -> u32 with 1\n@@ -1,19 +1,15 @@\n fn main() {\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n-    let mut a = 1;\n-    for i in 2..=n {\n-        a *= i;\n-    }\n-    a\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
       "return_type": "-> u32",
       "span": {
-        "start": {
-          "line": 7,
-          "column": 1
-        },
         "end": {
-          "line": 13,
-          "column": 2
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
         }
       }
     },
-    "span": {
-      "start": {
-        "line": 8,
-        "column": 5
-      },
-      "end": {
-        "line": 12,
-        "column": 6
-      }
-    },
+    "genre": "FnValue",
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "1",
-    "genre": "FnValue"
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 12
+      },
+      "start": {
+        "column": 5,
+        "line": 8
+      }
+    }
   },
   {
-    "package": "cargo-mutants-testdata-factorial",
+    "diff": "--- src/bin/factorial.rs\n+++ replace *= with += in factorial\n@@ -2,17 +2,17 @@\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n     let mut a = 1;\n     for i in 2..=n {\n-        a *= i;\n+        a += /* ~ changed by cargo-mutants ~ */ i;\n     }\n     a\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
       "return_type": "-> u32",
       "span": {
-        "start": {
-          "line": 7,
-          "column": 1
-        },
         "end": {
-          "line": 13,
-          "column": 2
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
         }
       }
     },
-    "span": {
-      "start": {
-        "line": 10,
-        "column": 11
-      },
-      "end": {
-        "line": 10,
-        "column": 13
-      }
-    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "+=",
-    "genre": "BinaryOperator"
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 10
+      },
+      "start": {
+        "column": 11,
+        "line": 10
+      }
+    }
   },
   {
-    "package": "cargo-mutants-testdata-factorial",
+    "diff": "--- src/bin/factorial.rs\n+++ replace *= with /= in factorial\n@@ -2,17 +2,17 @@\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n     let mut a = 1;\n     for i in 2..=n {\n-        a *= i;\n+        a /= /* ~ changed by cargo-mutants ~ */ i;\n     }\n     a\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
       "return_type": "-> u32",
       "span": {
-        "start": {
-          "line": 7,
-          "column": 1
-        },
         "end": {
-          "line": 13,
-          "column": 2
+          "column": 2,
+          "line": 13
+        },
+        "start": {
+          "column": 1,
+          "line": 7
         }
       }
     },
-    "span": {
-      "start": {
-        "line": 10,
-        "column": 11
-      },
-      "end": {
-        "line": 10,
-        "column": 13
-      }
-    },
+    "genre": "BinaryOperator",
+    "package": "cargo-mutants-testdata-factorial",
     "replacement": "/=",
-    "genre": "BinaryOperator"
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 10
+      },
+      "start": {
+        "column": 11,
+        "line": 10
+      }
+    }
   }
 ]
