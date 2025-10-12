@@ -35,6 +35,18 @@ pub enum Genre {
     StructField,
 }
 
+/// The target of a mutation, providing additional context about what is being mutated.
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum MutationTarget {
+    /// A field in a struct literal expression.
+    StructLiteralField {
+        /// The name of the field being deleted.
+        field_name: String,
+        /// The name/type of the struct.
+        struct_name: String,
+    },
+}
+
 /// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq)]
 pub struct Mutant {
@@ -65,6 +77,12 @@ pub struct Mutant {
 
     /// What general category of mutant this is.
     pub genre: Genre,
+
+    /// Additional context about what is being mutated.
+    ///
+    /// This provides structured information about the mutation target, rather than
+    /// encoding it in strings that need to be parsed.
+    pub target: Option<MutationTarget>,
 }
 
 /// The function containing a mutant.
@@ -180,22 +198,19 @@ impl Mutant {
                 );
             }
             Genre::StructField => {
-                let field_and_type = self
-                    .short_replaced
-                    .as_ref()
-                    .expect("short_replaced should be set on StructField");
-                // Parse "field_name::StructType" format
-                if let Some((field_name, struct_type)) = field_and_type.split_once("::") {
+                if let Some(MutationTarget::StructLiteralField {
+                    field_name,
+                    struct_name,
+                }) = &self.target
+                {
                     v.push(s("delete field "));
                     v.push(s(field_name).yellow());
                     v.push(s(" from struct "));
-                    v.push(s(struct_type).yellow());
+                    v.push(s(struct_name).yellow());
                     v.push(s(" expression"));
                 } else {
-                    // Fallback for older format (shouldn't happen)
-                    v.push(s("delete field "));
-                    v.push(s(field_and_type).yellow());
-                    v.push(s(" from struct expression"));
+                    // Fallback: shouldn't happen with proper initialization
+                    v.push(s("delete field from struct expression"));
                 }
             }
             _ => {

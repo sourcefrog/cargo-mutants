@@ -24,7 +24,7 @@ use tracing::{debug_span, error, info, trace, trace_span, warn};
 
 use crate::console::WalkProgress;
 use crate::fnvalue::return_type_replacements;
-use crate::mutant::Function;
+use crate::mutant::{Function, MutationTarget};
 use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
@@ -324,6 +324,7 @@ impl DiscoveryVisitor<'_> {
             short_replaced: None,
             replacement: replacement.to_pretty_string(),
             genre,
+            target: None,
         });
     }
 
@@ -661,6 +662,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     short_replaced,
                     replacement: String::new(),
                     genre: Genre::MatchArm,
+                    target: None,
                 };
                 self.mutants.push(mutant);
             }
@@ -698,7 +700,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         // Check if this struct has a base (default) expression like `..Default::default()`
         if let Some(_rest) = &i.rest {
             // Get the struct type name
-            let struct_type = i.path.to_pretty_string();
+            let struct_name = i.path.to_pretty_string();
 
             // Generate a mutant for each field by deleting it
             // We need to include the trailing comma in the span
@@ -706,8 +708,6 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 let field = pair.value();
                 if let syn::Member::Named(field_name) = &field.member {
                     let field_name_str = field_name.to_string();
-                    // Store both field name and struct type, separated by "::"
-                    let short_replaced = Some(format!("{}::{}", field_name_str, struct_type));
                     // Span includes the field and its trailing comma (if present)
                     let span = if let Some(comma) = pair.punct() {
                         // Include the comma in the span
@@ -725,9 +725,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                         source_file: self.source_file.clone(),
                         function: self.fn_stack.last().cloned(),
                         span,
-                        short_replaced,
+                        short_replaced: None,
                         replacement: String::new(),
                         genre: Genre::StructField,
+                        target: Some(MutationTarget::StructLiteralField {
+                            field_name: field_name_str,
+                            struct_name: struct_name.clone(),
+                        }),
                     };
                     self.mutants.push(mutant);
                 }
