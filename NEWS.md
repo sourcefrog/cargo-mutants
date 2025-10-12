@@ -10,6 +10,8 @@
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
+- New: `cargo_mutants_version` field in `outcomes.json`.
+
 - Changed: Functions with attributes whose path ends with `test` are now skipped, not just those with the plain `#[test]` attribute. This means functions with `#[tokio::test]`, `#[sqlx::test]`, and similar testing framework attributes are automatically excluded from mutation testing.
 
 - Changed: The bitwise assignment operators `&=` and `|=` are no longer mutated to `^=`. In code that accumulates bits into a bitmap starting from zero (e.g., `bitmap |= new_bits`), `|=` and `^=` produce the same result, making such mutations uninformative.
