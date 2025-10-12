@@ -249,6 +249,18 @@ impl Mutant {
             col = self.span.start.column,
         )
     }
+
+    /// Convert this mutant to a JSON value including the diff.
+    ///
+    /// This is used for both `--list --json` output and for writing `mutants.out/mutants.json`.
+    pub fn to_json(&self) -> serde_json::Value {
+        let mut obj = serde_json::to_value(self).expect("Serialize mutant");
+        obj.as_object_mut().unwrap().insert(
+            "diff".to_owned(),
+            serde_json::json!(self.diff(&self.mutated_code())),
+        );
+        obj
+    }
 }
 
 impl fmt::Debug for Mutant {
