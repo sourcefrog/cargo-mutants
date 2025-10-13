@@ -41,7 +41,8 @@ impl TailFile {
             .read_to_end(&mut self.read_buf)
             .context("Read tail of log file")?;
         if let Some(new_last) = String::from_utf8_lossy(&self.read_buf)
-            .lines().rfind(|l| !l.trim().is_empty())
+            .lines()
+            .rfind(|l| !l.trim().is_empty())
         {
             new_last.clone_into(&mut self.last_line_seen);
         }
