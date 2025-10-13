@@ -369,7 +369,10 @@ mod test {
         assert!(debug_format.contains("span: Span(2, 5, 4, 6)"));
         assert!(debug_format.contains("short_replaced: None"));
         assert!(debug_format.contains(r#"name: "cargo-mutants-testdata-factorial""#));
-        assert!(debug_format.contains(r#""src/bin/factorial.rs""#));
+        assert!(
+            debug_format.contains(r#""src/bin/factorial.rs""#)
+                || debug_format.contains(r#""src\bin\factorial.rs""#)
+        );
         assert!(
             !debug_format.contains("fn main()"),
             "Debug form seems to contain source code"
