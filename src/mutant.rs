@@ -371,7 +371,7 @@ mod test {
         assert!(debug_format.contains(r#"name: "cargo-mutants-testdata-factorial""#));
         assert!(
             debug_format.contains(r#""src/bin/factorial.rs""#)
-                || debug_format.contains(r#""src\bin\factorial.rs""#)
+                || debug_format.contains(r#""src\\bin\\factorial.rs""#) // backslashes escaped in string debug form
         );
         assert!(
             !debug_format.contains("fn main()"),
