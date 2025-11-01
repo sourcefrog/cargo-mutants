@@ -2,6 +2,7 @@
 
 //! Access to a Rust source tree and files.
 
+use std::fmt;
 use std::fs::read_to_string;
 use std::sync::Arc;
 
@@ -21,7 +22,7 @@ use crate::span::LineColumn;
 ///
 /// Code is normalized to Unix line endings as it's read in, and modified
 /// files are written with Unix line endings.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 #[allow(clippy::module_name_repetitions)]
 pub struct SourceFile {
     /// What package includes this file?
@@ -39,6 +40,18 @@ pub struct SourceFile {
     /// True if this is the top source file for its target: typically but
     /// not always `lib.rs` or `main.rs`.
     pub is_top: bool,
+}
+
+#[allow(clippy::missing_fields_in_debug)] // intentional
+impl fmt::Debug for SourceFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SourceFile")
+            .field("package", &self.package)
+            .field("tree_relative_path", &self.tree_relative_path)
+            // Omit `code`, it can be too big.
+            .field("is_top", &self.is_top)
+            .finish()
+    }
 }
 
 impl SourceFile {

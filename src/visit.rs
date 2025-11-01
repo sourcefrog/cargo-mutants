@@ -8,6 +8,7 @@
 //! follows `mod` statements to recursively visit other referenced files.
 
 #![warn(clippy::pedantic)]
+#![allow(clippy::needless_raw_string_hashes)]
 
 use std::collections::VecDeque;
 use std::sync::Arc;

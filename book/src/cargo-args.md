@@ -56,11 +56,25 @@ excludes doctests. (If the doctests are numerous and slow, and not relied upon t
 cargo mutants -- --all-targets
 ```
 
+Alternatively, you can use the explicit `--cargo-test-arg` option, which can be repeated:
+
+```shell
+cargo mutants --cargo-test-arg=--all-targets --cargo-test-arg=--lib
+```
+
+Both formats can be used together if needed:
+
+```shell
+cargo mutants --cargo-test-arg=--lib -- --all-targets
+```
+
 These options can also be configured statically with the `additional_cargo_test_args` key in `.cargo/mutants.toml`:
 
 ```toml
 additional_cargo_test_args = ["--jobs=1"]
 ```
+
+When both command-line options and configuration are specified, arguments from `--cargo-test-arg`, then arguments after `--`, and finally configuration file arguments are all combined in that order.
 
 ## Arguments to test binaries
 
