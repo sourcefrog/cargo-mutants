@@ -1,9 +1,12 @@
 ---
 source: tests/util/mod.rs
+assertion_line: 69
 expression: "String::from_utf8_lossy(&output.stdout)"
+
 ---
 [
   {
+    "diff": "--- src/bin/factorial.rs\n+++ replace main with ()\n@@ -1,12 +1,10 @@\n fn main() {\n-    for i in 1..=6 {\n-        println!(\"{}! = {}\", i, factorial(i));\n-    }\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n fn factorial(n: u32) -> u32 {\n     let mut a = 1;\n     for i in 2..=n {\n         a *= i;\n     }\n     a\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "main",
@@ -34,6 +37,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/bin/factorial.rs\n+++ replace factorial -> u32 with 0\n@@ -1,19 +1,15 @@\n fn main() {\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n-    let mut a = 1;\n-    for i in 2..=n {\n-        a *= i;\n-    }\n-    a\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
@@ -64,6 +68,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/bin/factorial.rs\n+++ replace factorial -> u32 with 1\n@@ -1,19 +1,15 @@\n fn main() {\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n-    let mut a = 1;\n-    for i in 2..=n {\n-        a *= i;\n-    }\n-    a\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
@@ -94,6 +99,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/bin/factorial.rs\n+++ replace *= with += in factorial\n@@ -2,17 +2,17 @@\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n     let mut a = 1;\n     for i in 2..=n {\n-        a *= i;\n+        a += /* ~ changed by cargo-mutants ~ */ i;\n     }\n     a\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",
@@ -124,6 +130,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/bin/factorial.rs\n+++ replace *= with /= in factorial\n@@ -2,17 +2,17 @@\n     for i in 1..=6 {\n         println!(\"{}! = {}\", i, factorial(i));\n     }\n }\n \n fn factorial(n: u32) -> u32 {\n     let mut a = 1;\n     for i in 2..=n {\n-        a *= i;\n+        a /= /* ~ changed by cargo-mutants ~ */ i;\n     }\n     a\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n",
     "file": "src/bin/factorial.rs",
     "function": {
       "function_name": "factorial",

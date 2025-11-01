@@ -1,9 +1,12 @@
 ---
 source: tests/util/mod.rs
+assertion_line: 69
 expression: "String::from_utf8_lossy(&output.stdout)"
+
 ---
 [
   {
+    "diff": "--- src/lib.rs\n+++ replace double -> usize with 0\n@@ -10,17 +10,17 @@\n         a *= i;\n     }\n     a\n }\n \n // This has a cfg_attr, but not one that we should match\n #[cfg_attr(feature = \"magic\", sparkles, crackles)]\n pub fn double(x: usize) -> usize {\n-    2 * x\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n \n",
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
@@ -34,6 +37,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/lib.rs\n+++ replace double -> usize with 1\n@@ -10,17 +10,17 @@\n         a *= i;\n     }\n     a\n }\n \n // This has a cfg_attr, but not one that we should match\n #[cfg_attr(feature = \"magic\", sparkles, crackles)]\n pub fn double(x: usize) -> usize {\n-    2 * x\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n \n",
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
@@ -64,6 +68,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/lib.rs\n+++ replace * with + in double\n@@ -10,17 +10,17 @@\n         a *= i;\n     }\n     a\n }\n \n // This has a cfg_attr, but not one that we should match\n #[cfg_attr(feature = \"magic\", sparkles, crackles)]\n pub fn double(x: usize) -> usize {\n-    2 * x\n+    2 + /* ~ changed by cargo-mutants ~ */ x\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n \n",
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",
@@ -94,6 +99,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/lib.rs\n+++ replace * with / in double\n@@ -10,17 +10,17 @@\n         a *= i;\n     }\n     a\n }\n \n // This has a cfg_attr, but not one that we should match\n #[cfg_attr(feature = \"magic\", sparkles, crackles)]\n pub fn double(x: usize) -> usize {\n-    2 * x\n+    2 / /* ~ changed by cargo-mutants ~ */ x\n }\n \n #[test]\n fn test_factorial() {\n     println!(\"factorial({}) = {}\", 6, factorial(6)); // This line is here so we can see it in --nocapture\n     assert_eq!(factorial(6), 720);\n }\n \n",
     "file": "src/lib.rs",
     "function": {
       "function_name": "double",

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Diffs are now included in the JSON output in `mutants.json` and shown by `--list --json`.
+
 - New: `--cargo-test-arg` option to pass additional arguments to `cargo test`.
 
 - New: `--sharding` option to control how mutants are distributed across multiple machines, with choices of `slice` or `round-robin`.
