@@ -224,7 +224,7 @@ jobs:
           install cargo-mutants ~/.cargo/bin/
       - name: Mutants in-diff
         run: >
-          cargo mutants --no-shuffle -vV --in-diff=git.diff --in-place
+          cargo mutants -vV --in-diff=git.diff --in-place
           --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
           --exclude=windows.rs --exclude=console.rs
       - name: Archive mutants.out
@@ -269,7 +269,7 @@ jobs:
       - name: Mutants in-diff
         # Normally this would have --in-place, but for the sake of exercising more cases, it does not.
         run: >
-          cargo mutants --no-shuffle -vV --in-diff git.diff
+          cargo mutants -vV --in-diff git.diff
           --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
           --exclude=windows.rs --exclude=console.rs
       - name: Archive mutants.out
@@ -315,7 +315,7 @@ jobs:
       - name: Mutants
         # Skip baselines because this job only runs after the baseline has been separately run.
         run: >
-          cargo mutants --no-shuffle -vV --shard ${{ matrix.shard }}/10
+          cargo mutants -vV --shard ${{ matrix.shard }}/10
           --test-tool ${{ matrix.test_tool }} --baseline=skip --timeout=500
           --build-timeout=500 --in-place --exclude=windows.rs
           --exclude=console.rs

@@ -372,7 +372,7 @@ impl Options {
             print_caught: args.caught,
             print_unviable: args.unviable,
             profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),
-            shuffle: !args.no_shuffle,
+            shuffle: args.shuffle,
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
@@ -1253,5 +1253,29 @@ mod test {
             Sharding::Slice,
             "Default sharding should be slice"
         );
+    }
+
+    #[test]
+    fn no_shuffle_by_default() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.shuffle);
+    }
+
+    #[test]
+    fn no_shuffle_option_is_accepted() {
+        let args = Args::parse_from(["mutants", "--no-shuffle"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.shuffle);
+    }
+
+    #[test]
+    fn shuffle_option_is_accepted() {
+        let args = Args::parse_from(["mutants", "--shuffle"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.shuffle);
     }
 }

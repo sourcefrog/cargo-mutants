@@ -269,6 +269,8 @@ pub struct Args {
     minimum_test_timeout: Option<f64>,
 
     /// Run mutants in the fixed order they occur in the source tree.
+    ///
+    /// This is now the default behavior.
     #[arg(long, help_heading = "Execution")]
     no_shuffle: bool,
 
@@ -277,7 +279,10 @@ pub struct Args {
     shard: Option<Shard>,
 
     /// Run mutants in random order.
-    #[arg(long, help_heading = "Execution")]
+    ///
+    /// Randomization occurs after sharding: each shard will run its assigned mutants
+    /// in random order.
+    #[arg(long, help_heading = "Execution", conflicts_with = "no_shuffle")]
     shuffle: bool,
 
     /// Maximum run time for all cargo commands, in seconds.

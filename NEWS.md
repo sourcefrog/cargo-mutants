@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: The default is now *not* to shuffle mutants: they run in the deterministic order they are generated in the source tree. This should give somewhat better locality of reference due to consecutively testing changes in each package or module. The previous behavior can be restored with `--shuffle`.
+
 - New: `--cargo-test-arg` option to pass additional arguments to `cargo test`.
 
 - New: `--sharding` option to control how mutants are distributed across multiple machines, with choices of `slice` or `round-robin`.
