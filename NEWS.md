@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed: Mutate `NonZeroUsize` into e.g. `1.try_into().unwrap()`: the previously generated mutants were always unviable. Thanks @sandersaares.
+
 ## 26.1.2 - 2026-01-15
 
 - No content changes, just iterating on release automation.

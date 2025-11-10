@@ -50,9 +50,12 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
             } else if path_is_signed(path) {
                 vec![quote! { 0 }, quote! { 1 }, quote! { -1 }]
             } else if path_is_nonzero_signed(path) {
-                vec![quote! { 1 }, quote! { -1 }]
+                vec![
+                    quote! { 1.try_into().unwrap() },
+                    quote! { (-1).try_into().unwrap() },
+                ]
             } else if path_is_nonzero_unsigned(path) {
-                vec![quote! { 1 }]
+                vec![quote! { 1.try_into().unwrap() }]
             } else if path_is_float(path) {
                 vec![quote! { 0.0 }, quote! { 1.0 }, quote! { -1.0 }]
             } else if path_ends_with(path, "Result") {
@@ -390,6 +393,7 @@ fn path_is_nonzero_signed(path: &Path) -> bool {
 }
 
 fn path_is_nonzero_unsigned(path: &Path) -> bool {
+    // TODO: Also NonZero<usize> etc.
     if let Some(l) = path.segments.last().map(|p| p.ident.to_string()) {
         matches!(
             l.as_str(),
@@ -474,12 +478,20 @@ mod test {
         check_replacements(
             &parse_quote! { -> std::num::NonZeroIsize },
             &[],
-            &["1", "-1"],
+            &["1.try_into().unwrap()", "(-1).try_into().unwrap()"],
         );
 
-        check_replacements(&parse_quote! { -> std::num::NonZeroUsize }, &[], &["1"]);
+        check_replacements(
+            &parse_quote! { -> std::num::NonZeroUsize },
+            &[],
+            &["1.try_into().unwrap()"],
+        );
 
-        check_replacements(&parse_quote! { -> std::num::NonZeroU32 }, &[], &["1"]);
+        check_replacements(
+            &parse_quote! { -> std::num::NonZeroU32 },
+            &[],
+            &["1.try_into().unwrap()"],
+        );
     }
 
     #[test]
