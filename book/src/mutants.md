@@ -33,9 +33,9 @@ More mutation genres and patterns will be added in future releases.
 | `()`              | `()` (return unit, with no side effects) |
 | signed integers   | `0, 1, -1`    |
 | unsigned integers | `0, 1`      |
-| floats            | `0.0, 1.0, -1.0`                                        |
-| `NonZeroI*`       | `1, -1`     |
-| `NonZeroU*`       | `1`         |
+| floats            | `0.0, 1.0, -1.0`                                           |
+| `NonZeroI*`       | `1.try_into().unwrap(), (-1).try_into().unwrap()`            |
+| `NonZeroU*`       | `1.try_into().unwrap()`                                    |
 | `bool`            | `true`, `false` |
 | `String`          | `String::new()`, `"xyzzy".into()` |
 | `&'_ str` .       | `""`, `"xyzzy"` |
@@ -43,7 +43,7 @@ More mutation genres and patterns will be added in future releases.
 | `&mut T`          | `Box::leak(Box::new(...))` |
 | `&[T]`            | `Vec::leak(...)` |
 | `&mut [T]`            | `Vec::leak(...)` |
-| `Result<T>`       | `Ok(...)` , [and an error if configured](error-values.md) |
+| `Result<T>`       | `Ok(...)` , [and an error if configured](error-values.md)  |
 | `Option<T>`       | `Some(...)`, `None` |
 | `Box<T>`          | `Box::new(...)`                                            |
 | `Vec<T>`          | `vec![]`, `vec![...]`                                      |
