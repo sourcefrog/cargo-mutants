@@ -49,6 +49,12 @@ pub enum MutationTarget {
 /// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Mutant {
+    /// A precomputed human-readable name for this mutant, including the file,
+    /// location, and change description.
+    ///
+    /// This is used in CLI output, filtering, and JSON.
+    pub name: String,
+
     /// Which file is being mutated.
     pub source_file: SourceFile,
 
@@ -293,6 +299,7 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
+        ss.serialize_field("name", &self.name)?;
         ss.serialize_field("package", &self.source_file.package.name)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("function", &self.function.as_ref().map(Arc::as_ref))?;

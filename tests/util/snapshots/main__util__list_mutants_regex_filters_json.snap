@@ -20,6 +20,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:18:5: replace divisible_by_three -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -50,6 +51,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:18:11: replace == with != in divisible_by_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -80,6 +82,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:18:7: replace % with / in divisible_by_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/",
     "span": {
@@ -110,6 +113,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:18:7: replace % with + in divisible_by_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+",
     "span": {

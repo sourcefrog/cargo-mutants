@@ -4,6 +4,7 @@ expression: mutants_json
 ---
 [
   {
+    "name": "src/bin/factorial.rs:2:5: replace main with ()",
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "function": {
@@ -34,6 +35,7 @@ expression: mutants_json
     "genre": "FnValue"
   },
   {
+    "name": "src/bin/factorial.rs:8:5: replace factorial -> u32 with 0",
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "function": {
@@ -64,6 +66,7 @@ expression: mutants_json
     "genre": "FnValue"
   },
   {
+    "name": "src/bin/factorial.rs:8:5: replace factorial -> u32 with 1",
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "function": {
@@ -94,6 +97,7 @@ expression: mutants_json
     "genre": "FnValue"
   },
   {
+    "name": "src/bin/factorial.rs:10:11: replace *= with += in factorial",
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "function": {
@@ -124,6 +128,7 @@ expression: mutants_json
     "genre": "BinaryOperator"
   },
   {
+    "name": "src/bin/factorial.rs:10:11: replace *= with /= in factorial",
     "package": "cargo-mutants-testdata-factorial",
     "file": "src/bin/factorial.rs",
     "function": {

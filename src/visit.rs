@@ -44,10 +44,9 @@ pub struct Discovered {
 impl Discovered {
     pub(crate) fn remove_previously_caught(&mut self, previously_caught: &[String]) {
         self.mutants.retain(|m| {
-            let name = m.name(true);
-            let c = previously_caught.contains(&name);
+            let c = previously_caught.contains(&m.name);
             if c {
-                trace!(?name, "skip previously caught mutant");
+                trace!(name = %m.name, "skip previously caught mutant");
             }
             !c
         });
@@ -75,6 +74,11 @@ pub fn walk_tree(
         mutants.append(&mut package_mutants);
         files.append(&mut package_files);
     }
+
+    for mutant in &mut mutants {
+        mutant.name = mutant.name(true);
+    }
+
     progress.finish();
     Ok(Discovered { mutants, files })
 }
@@ -319,6 +323,7 @@ impl DiscoveryVisitor<'_> {
     /// Record that we generated some mutants.
     fn collect_mutant(&mut self, span: Span, replacement: &TokenStream, genre: Genre) {
         self.mutants.push(Mutant {
+            name: String::new(),
             source_file: self.source_file.clone(),
             function: self.fn_stack.last().cloned(),
             span,
@@ -657,6 +662,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 }
                 let short_replaced = Some(arm.pat.to_pretty_string());
                 let mutant = Mutant {
+                    name: String::new(),
                     source_file: self.source_file.clone(),
                     function: self.fn_stack.last().cloned(),
                     span: arm.span().into(),
@@ -723,6 +729,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                         field.span().into()
                     };
                     let mutant = Mutant {
+                        name: String::new(),
                         source_file: self.source_file.clone(),
                         function: self.fn_stack.last().cloned(),
                         span,
