@@ -2067,6 +2067,31 @@ fn binary_diff_is_not_an_error_and_matches_nothing() {
 }
 
 #[test]
+fn binary_git_diff_is_not_an_error_and_matches_nothing() {
+    // From https://github.com/sourcefrog/cargo-mutants/issues/391
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(
+        indoc! {
+            "
+            diff --git a/test-renderers/expected/renderers/fog-None-wgpu.png b/test-renderers/expected/renderers/fog-None-wgpu.png
+            index 616d6ea8..afd1b043 100644
+            Binary files a/test-renderers/expected/renderers/fog-None-wgpu.png and b/test-renderers/expected/renderers/fog-None-wgpu.png differ
+            "
+        }.as_bytes()).unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
+}
+
+#[test]
 fn empty_diff_is_not_an_error_and_matches_nothing() {
     let diff_file = NamedTempFile::new().unwrap();
     let tmp = copy_of_testdata("diff1");
