@@ -89,18 +89,28 @@ pub fn diff_filter_file(
 
 /// Filter a list of mutants to those intersecting a diff on the file tree.
 pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>, DiffFilterError> {
-    // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
-    // the moment; this could be removed when there's a new release of `patch` including
-    // <https://github.com/uniphil/patch-rs/pull/32>.
-    let fixed_diff = diff_text
-        .lines()
-        .filter(|line| !(line.starts_with("Binary files ")))
-        .chain(once(""))
-        .join("\n");
-    if fixed_diff.trim().is_empty() {
+    if diff_text.trim().is_empty() {
         return Err(DiffFilterError::EmptyDiff);
     }
-
+    // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
+    // the moment; this could be removed when there's a new release of `patch` including
+    // <https://github.com/uniphil/patch-rs/pull/32>. Similarly, the lines emitted by
+    // git explaining file modes etc: <https://github.com/gitpatch-rs/gitpatch/issues/11>.
+    let fixed_diff = diff_text
+        .lines()
+        .filter(|line| {
+            !(line.starts_with("Binary files ")
+                || line.starts_with("diff --git")
+                || line.starts_with("index "))
+        })
+        .chain(once(""))
+        .join("\n");
+    // Our diff library treats an empty diff as an error, which perhaps is not the correct behavior.
+    // If after stripping binaries it's empty, let's say it matched nothing, rather than
+    // being strictly empty.
+    if fixed_diff.trim().is_empty() {
+        return Err(DiffFilterError::NoSourceFiles);
+    }
     let patches = match Patch::from_multiple(&fixed_diff) {
         Ok(patches) => patches,
         Err(err) => return Err(DiffFilterError::InvalidDiff(err.to_string())), // squash to a string to simplify lifetimes
