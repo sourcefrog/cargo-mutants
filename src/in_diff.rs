@@ -7,7 +7,6 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
-use std::iter::once;
 
 use anyhow::bail;
 use camino::Utf8Path;
@@ -92,22 +91,10 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
     if diff_text.trim().is_empty() {
         return Err(DiffFilterError::EmptyDiff);
     }
-    // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
-    // the moment; this could be removed when there's a new release of `patch` including
-    // <https://github.com/uniphil/patch-rs/pull/32>. Similarly, the lines emitted by
-    // git explaining file modes etc: <https://github.com/gitpatch-rs/gitpatch/issues/11>.
-    let fixed_diff = diff_text
-        .lines()
-        .filter(|line| {
-            !(line.starts_with("Binary files ")
-                || line.starts_with("diff --git")
-                || line.starts_with("index "))
-        })
-        .chain(once(""))
-        .join("\n");
+    let fixed_diff = diff_text;
     // Our diff library treats an empty diff as an error, which perhaps is not the correct behavior.
     // If after stripping binaries it's empty, let's say it matched nothing, rather than
-    // being strictly empty.
+    // being strictly empty. This would be fixed by <https://github.com/gitpatch-rs/gitpatch/pull/14>.
     if fixed_diff.trim().is_empty() {
         return Err(DiffFilterError::NoSourceFiles);
     }
@@ -327,7 +314,7 @@ mod test_super {
         let err = diff_filter(Vec::new(), diff).unwrap_err();
         assert_eq!(
             err.to_string(),
-            "Failed to parse diff: Line 1: Error while parsing: not really a diff\n"
+            "Failed to parse diff: Line 1: Error while parsing: \"not really a diff\\n\": Eof"
         );
     }
 
@@ -340,7 +327,10 @@ mod test_super {
             Binary files a/test-renderers/expected/renderers/fog-None-wgpu.png and b/test-renderers/expected/renderers/fog-None-wgpu.png differ
             "
         };
-        diff_filter(Vec::new(), diff).unwrap();
+        assert_eq!(
+            diff_filter(Vec::new(), diff),
+            Err(DiffFilterError::NoSourceFiles)
+        );
     }
 
     #[test]
