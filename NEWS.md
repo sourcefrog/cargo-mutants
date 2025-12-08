@@ -1,6 +1,6 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 26.0.0 2025-12-07
 
 - Changed: The default is now *not* to shuffle mutants: they run in the deterministic order they are generated in the source tree. This should give somewhat better locality of reference due to consecutively testing changes in each package or module. The previous behavior can be restored with `--shuffle`.
 
@@ -14,7 +14,7 @@
 
 - Book: Recommend using the `-Zunstable-options --fail-fast` argument to test targets to speed up mutation testing, on recent nightly toolchains.
 
-- Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files.
+- Fixed: Don't error if the `--in-diff` patch file contains non-UTF-8 data in non-Rust files, or contains messages about binary files or git index changes.
 
 - New: `start_time` and `end_time` fields in `outcomes.json`.
 
