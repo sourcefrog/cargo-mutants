@@ -2063,7 +2063,9 @@ fn binary_diff_is_not_an_error_and_matches_nothing() {
         .assert()
         .success()
         .stdout("")
-        .stderr(predicate::str::contains("INFO Diff file is empty"));
+        .stderr(predicate::str::contains(
+            "INFO Diff changes no Rust source files",
+        ));
 }
 
 #[test]
@@ -2088,7 +2090,9 @@ fn binary_git_diff_is_not_an_error_and_matches_nothing() {
         .assert()
         .success()
         .stdout("")
-        .stderr(predicate::str::contains("INFO Diff file is empty"));
+        .stderr(predicate::str::contains(
+            "INFO Diff changes no Rust source files",
+        ));
 }
 
 #[test]
