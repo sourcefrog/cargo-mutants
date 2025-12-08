@@ -88,7 +88,7 @@ insta = "1.12"
 lazy_static = "1.4"
 predicates = "3"
 pretty_assertions = "1"
-rusty-fork = "0.3"
+rusty-fork = "0.3.1"
 walkdir = "2.5"
 
 [workspace]
