@@ -191,6 +191,7 @@ dependencies = [
  "ctrlc",
  "fastrand",
  "fs2",
+ "gitpatch",
  "globset",
  "ignore",
  "indoc",
@@ -204,7 +205,6 @@ dependencies = [
  "nix",
  "num_cpus",
  "nutmeg",
- "patch",
  "path-slash",
  "predicates",
  "pretty_assertions",
@@ -571,6 +571,17 @@ dependencies = [
  "libc",
  "r-efi",
  "wasi",
+]
+
+[[package]]
+name = "gitpatch"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0ce212119eb3801015ea7e8bfb78f029ca16805de0d808358c080ff55ecbe675"
+dependencies = [
+ "chrono",
+ "nom",
+ "nom_locate",
 ]
 
 [[package]]
@@ -967,17 +978,6 @@ name = "once_cell"
 version = "1.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "945462a4b81e43c4e3ba96bd7b49d834c6f61198356aa858733bc4acf3cbe62e"
-
-[[package]]
-name = "patch"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15c07fdcdd8b05bdcf2a25bc195b6c34cbd52762ada9dba88bf81e7686d14e7a"
-dependencies = [
- "chrono",
- "nom",
- "nom_locate",
-]
 
 [[package]]
 name = "path-slash"

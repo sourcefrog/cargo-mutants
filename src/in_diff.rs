@@ -11,9 +11,9 @@ use std::iter::once;
 
 use anyhow::bail;
 use camino::Utf8Path;
+use gitpatch::{Line, Patch};
 use indoc::formatdoc;
 use itertools::Itertools;
-use patch::{Line, Patch};
 use tracing::{error, trace, warn};
 
 use crate::mutant::Mutant;
@@ -305,6 +305,7 @@ fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
 mod test_super {
     use std::fs::read_to_string;
 
+    use indoc::indoc;
     use pretty_assertions::assert_eq;
     use similar::TextDiff;
 
@@ -318,6 +319,18 @@ mod test_super {
             err.to_string(),
             "Failed to parse diff: Line 1: Error while parsing: not really a diff\n"
         );
+    }
+
+    #[test]
+    fn parse_git_binary_diff() {
+        // From <https://github.com/sourcefrog/cargo-mutants/issues/391>
+        let diff = indoc! {
+            "diff --git a/test-renderers/expected/renderers/fog-None-wgpu.png b/test-renderers/expected/renderers/fog-None-wgpu.png
+            index 616d6ea8..afd1b043 100644
+            Binary files a/test-renderers/expected/renderers/fog-None-wgpu.png and b/test-renderers/expected/renderers/fog-None-wgpu.png differ
+            "
+        };
+        diff_filter(Vec::new(), diff).unwrap();
     }
 
     #[test]
