@@ -75,10 +75,6 @@ pub fn walk_tree(
         files.append(&mut package_files);
     }
 
-    for mutant in &mut mutants {
-        mutant.name = mutant.name(true);
-    }
-
     progress.finish();
     Ok(Discovered { mutants, files })
 }
@@ -322,16 +318,16 @@ impl DiscoveryVisitor<'_> {
 
     /// Record that we generated some mutants.
     fn collect_mutant(&mut self, span: Span, replacement: &TokenStream, genre: Genre) {
-        self.mutants.push(Mutant {
-            name: String::new(),
-            source_file: self.source_file.clone(),
-            function: self.fn_stack.last().cloned(),
+        let mutant = Mutant::new_discovered(
+            self.source_file.clone(),
+            self.fn_stack.last().cloned(),
             span,
-            short_replaced: None,
-            replacement: replacement.to_pretty_string(),
+            None,
+            replacement.to_pretty_string(),
             genre,
-            target: None,
-        });
+            None,
+        );
+        self.mutants.push(mutant);
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
@@ -661,16 +657,15 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     continue;
                 }
                 let short_replaced = Some(arm.pat.to_pretty_string());
-                let mutant = Mutant {
-                    name: String::new(),
-                    source_file: self.source_file.clone(),
-                    function: self.fn_stack.last().cloned(),
-                    span: arm.span().into(),
+                let mutant = Mutant::new_discovered(
+                    self.source_file.clone(),
+                    self.fn_stack.last().cloned(),
+                    arm.span().into(),
                     short_replaced,
-                    replacement: String::new(),
-                    genre: Genre::MatchArm,
-                    target: None,
-                };
+                    String::new(),
+                    Genre::MatchArm,
+                    None,
+                );
                 self.mutants.push(mutant);
             }
         } else {
@@ -728,19 +723,18 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                         // No comma, just the field
                         field.span().into()
                     };
-                    let mutant = Mutant {
-                        name: String::new(),
-                        source_file: self.source_file.clone(),
-                        function: self.fn_stack.last().cloned(),
+                    let mutant = Mutant::new_discovered(
+                        self.source_file.clone(),
+                        self.fn_stack.last().cloned(),
                         span,
-                        short_replaced: None,
-                        replacement: String::new(),
-                        genre: Genre::StructField,
-                        target: Some(MutationTarget::StructLiteralField {
+                        None,
+                        String::new(),
+                        Genre::StructField,
+                        Some(MutationTarget::StructLiteralField {
                             field_name: field_name_str,
                             struct_name: struct_name.clone(),
                         }),
-                    };
+                    );
                     self.mutants.push(mutant);
                 }
             }

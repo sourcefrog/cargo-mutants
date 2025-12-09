@@ -109,6 +109,34 @@ pub struct Function {
 }
 
 impl Mutant {
+    /// Construct a mutant discovered while walking source code.
+    ///
+    /// This initializes all fields and precomputes the human-readable `name`
+    /// (including file path, line/column, and change description) for use in
+    /// CLI output, filtering, and JSON.
+    pub(crate) fn new_discovered(
+        source_file: SourceFile,
+        function: Option<Arc<Function>>,
+        span: Span,
+        short_replaced: Option<String>,
+        replacement: String,
+        genre: Genre,
+        target: Option<MutationTarget>,
+    ) -> Self {
+        let mut mutant = Mutant {
+            name: String::new(),
+            source_file,
+            function,
+            span,
+            short_replaced,
+            replacement,
+            genre,
+            target,
+        };
+        mutant.name = mutant.name(true);
+        mutant
+    }
+
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         self.span.replace(
