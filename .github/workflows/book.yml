@@ -16,10 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install mdbook and mdbook-linkcheck
+      - name: Install mdbook
         uses: taiki-e/install-action@v2
         with:
-          tool: mdbook, mdbook-linkcheck
+          tool: mdbook
+      - name: Install mdbook-linkcheck
+        # Temporarily pull the fix for https://github.com/Michael-F-Bryan/mdbook-linkcheck/pull/98
+        run: cargo install mdbook-linkcheck --git https://github.com/schilkp/mdbook-linkcheck --branch mdbook_v0.5
       - name: Build mdbook
         run: |
           mdbook build book
