@@ -49,6 +49,12 @@ pub enum MutationTarget {
 /// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Mutant {
+    /// A precomputed human-readable name for this mutant, including the file,
+    /// location, and change description.
+    ///
+    /// This is used in CLI output, filtering, and JSON.
+    pub name: String,
+
     /// Which file is being mutated.
     pub source_file: SourceFile,
 
@@ -103,6 +109,34 @@ pub struct Function {
 }
 
 impl Mutant {
+    /// Construct a mutant discovered while walking source code.
+    ///
+    /// This initializes all fields and precomputes the human-readable `name`
+    /// (including file path, line/column, and change description) for use in
+    /// CLI output, filtering, and JSON.
+    pub(crate) fn new_discovered(
+        source_file: SourceFile,
+        function: Option<Arc<Function>>,
+        span: Span,
+        short_replaced: Option<String>,
+        replacement: String,
+        genre: Genre,
+        target: Option<MutationTarget>,
+    ) -> Self {
+        let mut mutant = Mutant {
+            name: String::new(),
+            source_file,
+            function,
+            span,
+            short_replaced,
+            replacement,
+            genre,
+            target,
+        };
+        mutant.name = mutant.name(true);
+        mutant
+    }
+
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         self.span.replace(
@@ -293,6 +327,7 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
+        ss.serialize_field("name", &self.name)?;
         ss.serialize_field("package", &self.source_file.package.name)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("function", &self.function.as_ref().map(Arc::as_ref))?;

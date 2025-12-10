@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: Added a `name` field in the JSON representation of mutants. Thanks to @0xLoopTheory.
+
 ## 26.0.0 2025-12-07
 
 - Changed: The default is now *not* to shuffle mutants: they run in the deterministic order they are generated in the source tree. This should give somewhat better locality of reference due to consecutively testing changes in each package or module. The previous behavior can be restored with `--shuffle`.

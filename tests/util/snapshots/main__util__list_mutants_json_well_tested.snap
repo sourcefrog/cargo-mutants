@@ -20,6 +20,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(String::new())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(String::new())",
     "span": {
@@ -50,6 +51,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/arc.rs:4:5: replace return_arc -> Arc<String> with Arc::new(\"xyzzy\".into())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Arc::new(\"xyzzy\".into())",
     "span": {
@@ -80,6 +82,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:2:5: replace and -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -110,6 +113,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:2:5: replace and -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -140,6 +144,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/booleans.rs:2:7: replace && with || in and",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "||",
     "span": {
@@ -170,6 +175,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:6:5: replace or -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -200,6 +206,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:6:5: replace or -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -230,6 +237,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/booleans.rs:6:7: replace || with && in or",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "&&",
     "span": {
@@ -260,6 +268,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:10:5: replace xor -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -290,6 +299,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:10:5: replace xor -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -320,6 +330,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/booleans.rs:10:7: replace ^ with | in xor",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "|",
     "span": {
@@ -350,6 +361,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/booleans.rs:10:7: replace ^ with & in xor",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "&",
     "span": {
@@ -380,6 +392,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:14:5: replace not -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -410,6 +423,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/booleans.rs:14:5: replace not -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -440,6 +454,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "UnaryOperator",
+    "name": "src/booleans.rs:14:5: delete ! in not",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "",
     "span": {
@@ -470,6 +485,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with \"\"",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"\"",
     "span": {
@@ -500,6 +516,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/inside_mod.rs:4:13: replace outer::inner::name -> &'static str with \"xyzzy\"",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\"",
     "span": {
@@ -530,6 +547,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/methods.rs:17:9: replace Foo::double with ()",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
     "span": {
@@ -560,6 +578,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/methods.rs:17:16: replace *= with += in Foo::double",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+=",
     "span": {
@@ -590,6 +609,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/methods.rs:17:16: replace *= with /= in Foo::double",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/=",
     "span": {
@@ -620,6 +640,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/methods.rs:23:9: replace <impl fmt::Display for Foo>::fmt -> fmt::Result with Ok(Default::default())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -650,6 +671,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/methods.rs:29:9: replace <impl fmt::Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -680,6 +702,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/nested_function.rs:2:5: replace has_nested -> u32 with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -710,6 +733,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/nested_function.rs:2:5: replace has_nested -> u32 with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -740,6 +764,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -770,6 +795,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/nested_function.rs:3:9: replace has_nested::inner -> u32 with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -800,6 +826,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/nested_function.rs:5:13: replace * with + in has_nested",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+",
     "span": {
@@ -830,6 +857,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/nested_function.rs:5:13: replace * with / in has_nested",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/",
     "span": {
@@ -860,6 +888,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:2:5: replace double_float -> f32 with 0.0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0.0",
     "span": {
@@ -890,6 +919,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:2:5: replace double_float -> f32 with 1.0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1.0",
     "span": {
@@ -920,6 +950,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:2:5: replace double_float -> f32 with -1.0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1.0",
     "span": {
@@ -950,6 +981,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/numbers.rs:2:9: replace * with + in double_float",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+",
     "span": {
@@ -980,6 +1012,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/numbers.rs:2:9: replace * with / in double_float",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/",
     "span": {
@@ -1010,6 +1043,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:6:5: replace is_double -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -1040,6 +1074,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:6:5: replace is_double -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -1070,6 +1105,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/numbers.rs:6:7: replace == with != in is_double",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -1100,6 +1136,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/numbers.rs:6:12: replace * with + in is_double",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+",
     "span": {
@@ -1130,6 +1167,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/numbers.rs:6:12: replace * with / in is_double",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/",
     "span": {
@@ -1160,6 +1198,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:10:5: replace negate_i32 -> i32 with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -1190,6 +1229,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:10:5: replace negate_i32 -> i32 with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -1220,6 +1260,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:10:5: replace negate_i32 -> i32 with -1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1",
     "span": {
@@ -1250,6 +1291,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "UnaryOperator",
+    "name": "src/numbers.rs:10:5: delete - in negate_i32",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "",
     "span": {
@@ -1280,6 +1322,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:14:5: replace negate_f32 -> f32 with 0.0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0.0",
     "span": {
@@ -1310,6 +1353,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:14:5: replace negate_f32 -> f32 with 1.0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1.0",
     "span": {
@@ -1340,6 +1384,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:14:5: replace negate_f32 -> f32 with -1.0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1.0",
     "span": {
@@ -1370,6 +1415,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "UnaryOperator",
+    "name": "src/numbers.rs:14:5: delete - in negate_f32",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "",
     "span": {
@@ -1400,6 +1446,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:18:5: replace bitwise_not_i32 -> i32 with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -1430,6 +1477,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:18:5: replace bitwise_not_i32 -> i32 with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -1460,6 +1508,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:18:5: replace bitwise_not_i32 -> i32 with -1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-1",
     "span": {
@@ -1490,6 +1539,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "UnaryOperator",
+    "name": "src/numbers.rs:18:5: delete ! in bitwise_not_i32",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "",
     "span": {
@@ -1520,6 +1570,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:22:5: replace bitwise_not_u32 -> u32 with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -1550,6 +1601,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/numbers.rs:22:5: replace bitwise_not_u32 -> u32 with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -1580,6 +1632,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "UnaryOperator",
+    "name": "src/numbers.rs:22:5: delete ! in bitwise_not_u32",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "",
     "span": {
@@ -1610,6 +1663,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok(\"\")",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"\")",
     "span": {
@@ -1640,6 +1694,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/result.rs:6:5: replace simple_result -> Result<&'static str, ()> with Ok(\"xyzzy\")",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(\"xyzzy\")",
     "span": {
@@ -1670,6 +1725,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/result.rs:10:5: replace error_if_negative -> Result<(), ()> with Ok(())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(())",
     "span": {
@@ -1700,6 +1756,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/result.rs:10:10: replace < with == in error_if_negative",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "==",
     "span": {
@@ -1730,6 +1787,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/result.rs:10:10: replace < with > in error_if_negative",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": ">",
     "span": {
@@ -1760,6 +1818,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/result.rs:10:10: replace < with <= in error_if_negative",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "<=",
     "span": {
@@ -1790,6 +1849,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/result.rs:18:5: replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Ok(Default::default())",
     "span": {
@@ -1820,6 +1880,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::new()",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::new()",
     "span": {
@@ -1850,6 +1911,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([String::new()])",
     "span": {
@@ -1880,6 +1942,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/sets.rs:4:5: replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([\"xyzzy\".into()])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "BTreeSet::from_iter([\"xyzzy\".into()])",
     "span": {
@@ -1910,6 +1973,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:8:5: replace returns_unit with ()",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "()",
     "span": {
@@ -1940,6 +2004,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:8:8: replace += with -= in returns_unit",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-=",
     "span": {
@@ -1970,6 +2035,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:8:8: replace += with *= in returns_unit",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "*=",
     "span": {
@@ -2000,6 +2066,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:13:5: replace returns_42u32 -> u32 with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -2030,6 +2097,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:13:5: replace returns_42u32 -> u32 with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -2060,6 +2128,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:18:5: replace divisible_by_three -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -2090,6 +2159,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:18:5: replace divisible_by_three -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -2120,6 +2190,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:18:11: replace == with != in divisible_by_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -2150,6 +2221,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:18:7: replace % with / in divisible_by_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/",
     "span": {
@@ -2180,6 +2252,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/simple_fns.rs:18:7: replace % with + in divisible_by_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+",
     "span": {
@@ -2210,6 +2283,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:27:5: replace double_string -> String with String::new()",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "String::new()",
     "span": {
@@ -2240,6 +2314,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/simple_fns.rs:27:5: replace double_string -> String with \"xyzzy\".into()",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "\"xyzzy\".into()",
     "span": {
@@ -2270,6 +2345,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
     "span": {
@@ -2300,6 +2376,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed(\"\")])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"\")])",
     "span": {
@@ -2330,6 +2407,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"\".to_owned())])",
     "span": {
@@ -2360,6 +2438,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])",
     "span": {
@@ -2390,6 +2469,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:4:5: replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])",
     "span": {
@@ -2420,6 +2500,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/slices.rs:5:20: replace < with == in pad",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "==",
     "span": {
@@ -2450,6 +2531,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/slices.rs:5:20: replace < with > in pad",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": ">",
     "span": {
@@ -2480,6 +2562,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/slices.rs:5:20: replace < with <= in pad",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "<=",
     "span": {
@@ -2510,6 +2593,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(Vec::new())",
     "span": {
@@ -2540,6 +2624,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![0])",
     "span": {
@@ -2570,6 +2655,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/slices.rs:13:5: replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "Vec::leak(vec![1])",
     "span": {
@@ -2600,6 +2686,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/slices.rs:14:12: replace *= with += in return_mut_slice",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "+=",
     "span": {
@@ -2630,6 +2717,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/slices.rs:14:12: replace *= with /= in return_mut_slice",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "/=",
     "span": {
@@ -2647,6 +2735,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/static_item.rs",
     "function": null,
     "genre": "BinaryOperator",
+    "name": "src/static_item.rs:1:33: replace == with !=",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
@@ -2664,6 +2753,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/static_item.rs",
     "function": null,
     "genre": "BinaryOperator",
+    "name": "src/static_item.rs:1:39: replace + with -",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "-",
     "span": {
@@ -2681,6 +2771,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "file": "src/static_item.rs",
     "function": null,
     "genre": "BinaryOperator",
+    "name": "src/static_item.rs:1:39: replace + with *",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "*",
     "span": {
@@ -2711,6 +2802,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 0",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "0",
     "span": {
@@ -2741,6 +2833,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/struct_with_lifetime.rs:15:9: replace Lex<'buf>::buf_len -> usize with 1",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "1",
     "span": {
@@ -2771,6 +2864,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/traits.rs:5:9: replace Something::is_three -> bool with true",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "true",
     "span": {
@@ -2801,6 +2895,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/traits.rs:5:9: replace Something::is_three -> bool with false",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "false",
     "span": {
@@ -2831,6 +2926,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/traits.rs:5:11: replace == with != in Something::is_three",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "!=",
     "span": {
