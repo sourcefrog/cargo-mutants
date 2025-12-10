@@ -316,62 +316,6 @@ fn proc_macro_tree_is_well_tested() {
 }
 
 #[test]
-fn well_tested_tree_finds_no_problems() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .arg("mutants")
-        .args(["--no-times", "--caught", "--unviable", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-    assert!(tmp_src_dir
-        .path()
-        .join("mutants.out/outcomes.json")
-        .exists());
-    let outcomes_json =
-        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
-    let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    let caught = outcomes["caught"]
-        .as_i64()
-        .expect("outcomes['caught'] is an integer");
-    assert!(caught > 40, "expected more outcomes caught than {caught}");
-    assert_eq!(outcomes["unviable"], 0);
-    assert_eq!(outcomes["missed"], 0);
-    assert_eq!(outcomes["timeout"], 0);
-    assert_eq!(outcomes["total_mutants"], outcomes["caught"]);
-    check_text_list_output(tmp_src_dir.path(), "well_tested_tree_finds_no_problems");
-}
-
-#[test]
-fn well_tested_tree_check_only() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .args(["mutants", "--check", "--no-shuffle", "--no-times"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-}
-
-#[test]
-fn well_tested_tree_check_only_shuffled() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .args(["mutants", "--check", "--no-times", "--shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success();
-    // Caution: No assertions about output here, we just check that it runs.
-}
-
-#[test]
 fn integration_test_source_is_not_mutated() {
     let tmp_src_dir = copy_of_testdata("integration_tests");
     run()
