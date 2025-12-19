@@ -21,10 +21,12 @@ use serde_json::json;
 use similar::TextDiff;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
+mod integration_util;
 mod util;
+use integration_util::run;
 use util::{
-    assert_bytes_eq_json, copy_of_testdata, copy_testdata_to, outcome_json_counts, run,
-    CommandInstaExt, OUTER_TIMEOUT,
+    assert_bytes_eq_json, copy_of_testdata, copy_testdata_to, outcome_json_counts, CommandInstaExt,
+    OUTER_TIMEOUT,
 };
 
 #[test]
@@ -1413,7 +1415,7 @@ fn interrupt_caught_and_kills_children() {
     use nix::sys::signal::{kill, SIGTERM};
     use nix::unistd::Pid;
 
-    use crate::util::main_binary;
+    use crate::integration_util::main_binary;
 
     let tmp_src_dir = copy_of_testdata("well_tested");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,

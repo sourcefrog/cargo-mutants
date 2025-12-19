@@ -8,7 +8,6 @@
 //! cargo-mutants (as `use crate::test_util`).
 
 use std::borrow::Borrow;
-use std::env;
 use std::fs::{read_dir, read_to_string, rename};
 use std::path::Path;
 use std::time::Duration;
@@ -21,42 +20,6 @@ use tempfile::TempDir;
 /// CI VMs and even on Windows, but short enough that the test does not hang
 /// forever.
 pub const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
-
-/// Returns the path to the cargo-mutants binary under test.
-pub fn main_binary() -> &'static Path {
-    assert_cmd::cargo_bin!("cargo-mutants")
-}
-
-pub fn run() -> assert_cmd::Command {
-    let mut cmd = assert_cmd::Command::new(main_binary());
-    // Strip any options configured in the environment running these tests,
-    // so that they don't cause unexpected behavior in the code under test.
-    //
-    // For example, without this,
-    // `env CARGO_MUTANTS_JOBS=4 cargo mutants`
-    //
-    // would end up with tests running 4 jobs by default, which would cause
-    // the tests to fail.
-    //
-    // Even more generally than that example, we want the tests to be as hermetic
-    // as reasonably possible.
-    //
-    // Also strip GITHUB_ACTION to avoid automatically emitting github annotations,
-    // so that tests are more hermetic and reproducible between local and CI.
-    env::vars()
-        .map(|(k, _v)| k)
-        .filter(|k| {
-            k.starts_with("CARGO_MUTANTS_")
-                || k == "CLICOLOR_FORCE"
-                || k == "NOCOLOR"
-                || k == "CARGO_TERM_COLOR"
-                || k == "GITHUB_ACTION"
-        })
-        .for_each(|k| {
-            cmd.env_remove(k);
-        });
-    cmd
-}
 
 pub trait CommandInstaExt {
     fn assert_insta(&mut self, snapshot_name: &str);
