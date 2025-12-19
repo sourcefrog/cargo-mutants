@@ -10,11 +10,10 @@
 use std::borrow::Borrow;
 use std::env;
 use std::fs::{read_dir, read_to_string, rename};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use itertools::Itertools;
-use lazy_static::lazy_static;
 use tempfile::TempDir;
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
@@ -23,12 +22,13 @@ use tempfile::TempDir;
 /// forever.
 pub const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
 
-lazy_static! {
-    pub static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
+/// Returns the path to the cargo-mutants binary under test.
+pub fn main_binary() -> &'static Path {
+    assert_cmd::cargo_bin!("cargo-mutants")
 }
 
 pub fn run() -> assert_cmd::Command {
-    let mut cmd = assert_cmd::Command::new(MAIN_BINARY.as_os_str());
+    let mut cmd = assert_cmd::Command::new(main_binary());
     // Strip any options configured in the environment running these tests,
     // so that they don't cause unexpected behavior in the code under test.
     //

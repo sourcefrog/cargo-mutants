@@ -1413,7 +1413,7 @@ fn interrupt_caught_and_kills_children() {
     use nix::sys::signal::{kill, SIGTERM};
     use nix::unistd::Pid;
 
-    use crate::util::MAIN_BINARY;
+    use crate::util::main_binary;
 
     let tmp_src_dir = copy_of_testdata("well_tested");
     // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
@@ -1426,7 +1426,7 @@ fn interrupt_caught_and_kills_children() {
     // Skip baseline because firstly it should already pass but more importantly
     // #333 exhibited only during non-baseline scenarios.
     let args = [
-        MAIN_BINARY.to_str().unwrap(),
+        main_binary().to_str().unwrap(),
         "mutants",
         "--timeout=300",
         "--baseline=skip",
