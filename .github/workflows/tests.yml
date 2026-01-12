@@ -131,6 +131,26 @@ jobs:
       - name: Test after cargo update
         run: cargo test --workspace
 
+  cross-build:
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+    runs-on: ubuntu-latest
+    needs: [quick-check]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: beta
+          target: ${{ matrix.target }}
+      - run: cargo build --all-targets --all-features --target ${{ matrix.target }}
+
   # Testing direct-minimal-versions seems to have unclear value for a binary
   # crate?
   #
