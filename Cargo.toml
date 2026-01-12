@@ -47,7 +47,6 @@ num_cpus = "1.16"
 patch = "0.7"
 path-slash = "0.2"
 quote = "1.0.35"
-reflink = "0.1"
 regex = "1.10"
 schemars = "0.9"
 serde_json = "1.0.128"
@@ -79,6 +78,12 @@ features = ["full", "extra-traits", "visit"]
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.30", features = ["process", "signal"] }
+
+# reflink is disabled on musl for the time being due to
+# <https://github.com/nicokoch/reflink/issues/11> and
+# <https://github.com/sourcefrog/cargo-mutants/issues/581>
+[target.'cfg(not(target_env = "musl"))'.dependencies]
+reflink = "0.1"
 
 [dev-dependencies]
 assert_cmd = "2.0"
