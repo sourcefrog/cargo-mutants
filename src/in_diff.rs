@@ -1,7 +1,9 @@
-// Copyright 2023 - 2025 Martin Pool
+// Copyright 2023 - 2026 Martin Pool
 
 //! Filter mutants to those intersecting a diff on the file tree,
 //! for example from uncommitted or unmerged changes.
+//!
+//! Changes to non-Rust files are ignored.
 
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -11,9 +13,9 @@ use std::iter::once;
 
 use anyhow::bail;
 use camino::Utf8Path;
+use flickzeug::{patch_from_str, Diff, Line};
 use indoc::formatdoc;
 use itertools::Itertools;
-use patch::{Line, Patch};
 use tracing::{error, trace, warn};
 
 use crate::mutant::Mutant;
@@ -111,17 +113,20 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
     if fixed_diff.trim().is_empty() {
         return Err(DiffFilterError::NoSourceFiles);
     }
-    let patches = match Patch::from_multiple(&fixed_diff) {
+    let patches = match patch_from_str(&fixed_diff) {
         Ok(patches) => patches,
         Err(err) => return Err(DiffFilterError::InvalidDiff(err.to_string())), // squash to a string to simplify lifetimes
     };
+    if patches.is_empty() {
+        return Err(DiffFilterError::EmptyDiff);
+    }
     if let Err(err) = check_diff_new_text_matches(&patches, &mutants) {
         return Err(DiffFilterError::MismatchedDiff(err.to_string()));
     }
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
     let mut changed_rs_file = false;
     for patch in &patches {
-        let path = strip_patch_path(&patch.new.path);
+        let path = strip_patch_path(&patch.modified().unwrap_or_default());
         if path != "/dev/null" && path.extension() == Some("rs") {
             changed_rs_file = true;
             lines_changed_by_path
@@ -173,17 +178,20 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
 /// the regions in the diff will be meaningless.
 ///
 /// Error if the new text from the diffs doesn't match the source files.
-fn check_diff_new_text_matches(patches: &[Patch], mutants: &[Mutant]) -> Result<()> {
+fn check_diff_new_text_matches(diffs: &[Diff<str>], mutants: &[Mutant]) -> Result<()> {
     let mut source_by_name: HashMap<&Utf8Path, &SourceFile> = HashMap::new();
     for mutant in mutants {
         source_by_name
             .entry(mutant.source_file.path())
             .or_insert_with(|| &mutant.source_file);
     }
-    for patch in patches {
-        let path = strip_patch_path(&patch.new.path);
+    for diff in diffs {
+        let Some(path) = diff.modified() else {
+            continue;
+        };
+        let path = strip_patch_path(path);
         if let Some(source_file) = source_by_name.get(&path) {
-            let reconstructed = partial_new_file(patch);
+            let reconstructed = partial_new_file(diff);
             let lines = source_file.code().lines().collect_vec();
             for (lineno, diff_content) in reconstructed {
                 let source_content = lines.get(lineno - 1).unwrap_or(&"");
@@ -224,19 +232,19 @@ fn strip_patch_path(path: &str) -> &Utf8Path {
 /// (A list of ranges would be more concise but this is easier for a first version.)
 ///
 /// If a line is deleted then the range will span from the line before to the line after.
-fn affected_lines(patch: &Patch) -> Vec<usize> {
-    let mut affected_lines = Vec::new();
-    for hunk in &patch.hunks {
-        let mut lineno: usize = hunk.new_range.start.try_into().unwrap();
+fn affected_lines(diff: &Diff<str>) -> Vec<usize> {
+    let mut affected_lines = Vec::new(); // TODO: Could be simplified in non-debug builds; it's really an assertion the patch is parsed properly and not nonsense?
+    for hunk in diff.hunks() {
+        let mut lineno: usize = hunk.new_range().start();
         // True if the previous line was deleted. If set, then the next line that exists in the
         // new file, if there is one, will be marked as affected.
         let mut prev_removed = false;
-        for line in &hunk.lines {
+        for line in hunk.lines() {
             match line {
-                Line::Remove(_) => {
+                Line::Delete(_) => {
                     prev_removed = true;
                 }
-                Line::Add(_) | Line::Context(_) => {
+                Line::Insert(_) | Line::Context(_) => {
                     if prev_removed {
                         debug_assert!(
                             affected_lines.last().map_or(true, |last| *last < lineno),
@@ -252,13 +260,13 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
                 Line::Context(_) => {
                     lineno += 1;
                 }
-                Line::Add(_) => {
+                Line::Insert(_) => {
                     if affected_lines.last().map_or(true, |last| *last != lineno) {
                         affected_lines.push(lineno);
                     }
                     lineno += 1;
                 }
-                Line::Remove(_) => {
+                Line::Delete(_) => {
                     if lineno > 1
                         && affected_lines
                             .last()
@@ -284,27 +292,27 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
 /// By extracting the added lines and context lines, we can recreate a partial
 /// view of the new file. From this we can check that the patch matches the
 /// expected changes.
-fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
+fn partial_new_file<'d>(diff: &'d Diff<'d, str>) -> Vec<(usize, &'d str)> {
     let mut r: Vec<(usize, &'d str)> = Vec::new();
-    for hunk in &patch.hunks {
-        let mut lineno: usize = hunk.new_range.start.try_into().unwrap();
-        for line in &hunk.lines {
+    for hunk in diff.hunks() {
+        let mut lineno: usize = hunk.new_range().start();
+        for line in hunk.lines() {
             match line {
-                Line::Context(text) | Line::Add(text) => {
+                Line::Context((text, _line_end)) | Line::Insert((text, _line_end)) => {
                     debug_assert!(lineno >= 1, "{lineno}");
                     debug_assert!(
-                        r.last().map_or(true, |last| last.0 < lineno),
+                        r.last().is_none_or(|last| last.0 < lineno),
                         "{lineno} {r:?}"
                     );
                     r.push((lineno, text));
                     lineno += 1;
                 }
-                Line::Remove(_) => {}
+                Line::Delete(_) => {}
             }
         }
         debug_assert_eq!(
-            Ok(lineno),
-            (hunk.new_range.start + hunk.new_range.count).try_into(),
+            lineno,
+            hunk.new_range().end(),
             "Wrong number of resulting lines?"
         );
     }
@@ -323,11 +331,12 @@ mod test_super {
     #[test]
     fn patch_parse_error() {
         let diff = "not really a diff\n";
+        // diff parsing is generally tolerant of non-diff text before and after the hunks, such
+        // as VCS metadata. So we don't (arguably can't) strictly distinguish between a diff file
+        // with no hunks, and input that's not a diff at all.
         let err = diff_filter(Vec::new(), diff).unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "Failed to parse diff: Line 1: Error while parsing: not really a diff\n"
-        );
+        dbg!(&err);
+        assert_eq!(err.to_string(), "Diff file is empty");
     }
 
     #[test]
@@ -395,10 +404,10 @@ index cc3ce8c..8fe9aa0 100644
             } else {
                 new.push(new_value);
             }
-            let diff = make_diff(&orig_lines.join(""), &new.join(""));
-            println!("{diff}");
-            let patch = Patch::from_single(&diff).unwrap();
-            let affected = affected_lines(&patch);
+            let diff_str = make_diff(&orig_lines.join(""), &new.join(""));
+            println!("{diff_str}");
+            let diff = Diff::from_str(&diff_str).unwrap();
+            let affected = affected_lines(&diff);
             // When we insert a line then only that one line is affected.
             assert_eq!(affected, &[i]);
         }
@@ -410,10 +419,10 @@ index cc3ce8c..8fe9aa0 100644
         for i in 1..=5 {
             let mut new = orig_lines.clone();
             new.remove(i - 1);
-            let diff = make_diff(&orig_lines.join(""), &new.join(""));
-            println!("{diff}");
-            let patch = Patch::from_single(&diff).unwrap();
-            let affected = affected_lines(&patch);
+            let diff_str = make_diff(&orig_lines.join(""), &new.join(""));
+            println!("{diff_str}");
+            let diff = Diff::from_str(&diff_str).unwrap();
+            let affected = affected_lines(&diff);
             // If line 1 is removed we should see line 1 as affected. If line 2 is removed
             // then 1 and 2 are affected, etc. If line 5 is removed, then only 4, the last
             // remaining line is affected.
@@ -432,10 +441,10 @@ index cc3ce8c..8fe9aa0 100644
             let mut new = orig_lines.clone();
             new.remove(i - 1);
             new.remove(i - 1);
-            let diff = make_diff(&orig_lines.join(""), &new.join(""));
-            println!("{diff}");
-            let patch = Patch::from_single(&diff).unwrap();
-            let affected = affected_lines(&patch);
+            let diff_str = make_diff(&orig_lines.join(""), &new.join(""));
+            println!("{diff_str}");
+            let diff = Diff::from_str(&diff_str).unwrap();
+            let affected = affected_lines(&diff);
             match i {
                 1 => assert_eq!(affected, &[1]),
                 4 => assert_eq!(affected, &[3]),
@@ -456,10 +465,10 @@ index cc3ce8c..8fe9aa0 100644
                 .chain(insertion)
                 .chain(orig_lines[i..].iter().cloned())
                 .collect_vec();
-            let diff = make_diff(&orig_lines.join(""), &new.join(""));
-            println!("{diff}");
-            let patch = Patch::from_single(&diff).unwrap();
-            let affected = affected_lines(&patch);
+            let diff_str = make_diff(&orig_lines.join(""), &new.join(""));
+            println!("{diff_str}");
+            let diff = Diff::from_str(&diff_str).unwrap();
+            let affected = affected_lines(&diff);
             if i > 1 {
                 // The line before the deletion also counts as affected.
                 assert_eq!(affected, &[i - 1, i, i + 1]);
@@ -473,9 +482,9 @@ index cc3ce8c..8fe9aa0 100644
     fn reconstruct_partial_new_file() {
         let old = read_to_string("testdata/diff0/src/lib.rs").unwrap();
         let new = read_to_string("testdata/diff1/src/lib.rs").unwrap();
-        let diff = make_diff(&old, &new);
-        let patch = Patch::from_single(&diff).unwrap();
-        let reconstructed = partial_new_file(&patch);
+        let diff_str = make_diff(&old, &new);
+        let diff = Diff::from_str(&diff_str).unwrap();
+        let reconstructed = partial_new_file(&diff);
         println!("{reconstructed:#?}");
         assert_eq!(reconstructed.len(), 16);
         let new_lines = new.lines().collect_vec();
