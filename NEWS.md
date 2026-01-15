@@ -4,6 +4,8 @@
 
 - New: Added a `name` field in the JSON representation of mutants. Thanks to @0xLoopTheory.
 
+- Changed: Minimum supported Rust version increased to 1.89.
+
 - Fixed: Fix build on musl by disabling, for now, reflink copies.
 
 - Fixed: Don't error on diffs that contain only git file moves, by moving to Flickzeug. Thanks to @eirnym.
