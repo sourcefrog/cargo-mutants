@@ -1,3 +1,18 @@
+[changelog]
+header = """# Changelog
+"""
+
+commit_parsers = [
+    { message = "^.*: add", group = "Added" },
+    { message = "^.*: support", group = "Added" },
+    { message = "^.*: remove", group = "Removed" },
+    { message = "^.*: delete", group = "Removed" },
+    { message = "^test", group = "Fixed" },
+    { message = "^fix", group = "Fixed" },
+    { message = "^.*: fix", group = "Fixed" },
+    { message = "^.*", group = "Changed" },
+]
+
 [[package]]
 name = "cargo-mutants"
 changelog_path = "NEWS.md"
