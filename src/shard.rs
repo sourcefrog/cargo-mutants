@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use anyhow::{anyhow, ensure, Context, Error};
+use anyhow::{Context, Error, anyhow, ensure};
 use clap::ValueEnum;
 use schemars::JsonSchema;
 use serde::Deserialize;

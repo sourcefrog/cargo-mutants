@@ -54,7 +54,7 @@ impl Utf8PathSlashes for Utf8Path {
 mod test {
     use camino::{Utf8Path, Utf8PathBuf};
 
-    use super::{ascent, Utf8PathSlashes};
+    use super::{Utf8PathSlashes, ascent};
 
     #[test]
     fn path_slashes_drops_empty_parts() {

@@ -6,18 +6,18 @@
 
 use std::fs::write;
 
-use anyhow::{ensure, Context};
+use anyhow::{Context, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 use tracing::info;
 
 use crate::{
+    Result,
     console::Console,
     copy_tree::copy_tree,
     manifest::{fix_cargo_config, fix_manifest},
     options::Options,
     workspace::Workspace,
-    Result,
 };
 
 /// A directory containing source, that can be mutated, built, and tested.

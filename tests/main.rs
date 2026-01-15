@@ -4,7 +4,7 @@
 
 use std::collections::HashSet;
 use std::env;
-use std::fs::{self, create_dir, create_dir_all, read_dir, read_to_string, rename, write, File};
+use std::fs::{self, File, create_dir, create_dir_all, read_dir, read_to_string, rename, write};
 use std::io::Write as IoWrite;
 use std::path::Path;
 
@@ -19,14 +19,14 @@ use pretty_assertions::assert_eq;
 use regex::Regex;
 use serde_json::json;
 use similar::TextDiff;
-use tempfile::{tempdir, NamedTempFile, TempDir};
+use tempfile::{NamedTempFile, TempDir, tempdir};
 
 mod integration_util;
 mod util;
 use integration_util::run;
 use util::{
-    assert_bytes_eq_json, copy_of_testdata, copy_testdata_to, outcome_json_counts, CommandInstaExt,
-    OUTER_TIMEOUT,
+    CommandInstaExt, OUTER_TIMEOUT, assert_bytes_eq_json, copy_of_testdata, copy_testdata_to,
+    outcome_json_counts,
 };
 
 #[test]
@@ -282,10 +282,12 @@ fn test_small_well_tested_tree_with_baseline_skip() {
             )
             .and(predicate::str::contains("Unmutated baseline in").not()),
         );
-    assert!(!tmp_src_dir
-        .path()
-        .join("mutants.out/log/baseline.log")
-        .exists());
+    assert!(
+        !tmp_src_dir
+            .path()
+            .join("mutants.out/log/baseline.log")
+            .exists()
+    );
 }
 
 #[test]
@@ -1412,7 +1414,7 @@ fn interrupt_caught_and_kills_children() {
     use std::time::Duration;
 
     use nix::libc::pid_t;
-    use nix::sys::signal::{kill, SIGTERM};
+    use nix::sys::signal::{SIGTERM, kill};
     use nix::unistd::Pid;
 
     use crate::integration_util::main_binary;
@@ -1726,10 +1728,12 @@ fn iterate_retries_missed_mutants() {
         read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
         ""
     );
-    assert!(!temp
-        .path()
-        .join("mutants.out/previously_caught.txt")
-        .is_file());
+    assert!(
+        !temp
+            .path()
+            .join("mutants.out/previously_caught.txt")
+            .is_file()
+    );
 
     // Now add a test that should catch this.
     write(
@@ -2522,7 +2526,7 @@ fn warning_when_no_mutants_found() {
         ))
         .stdout(predicate::str::contains("Found 0 mutants to test"))
         .success(); // It's arguable, but better if CI doesn't fail in this case.
-                    // There is no outcomes.json? Arguably a bug.
+    // There is no outcomes.json? Arguably a bug.
 }
 
 #[test]
@@ -3076,10 +3080,12 @@ fn list_diff_json_contains_diffs() {
     let out_json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
     let mutants_json = out_json.as_array().expect("json output is array");
     assert_eq!(mutants_json.len(), 5);
-    assert!(mutants_json.iter().all(|e| e.as_object().unwrap()["diff"]
-        .as_str()
-        .unwrap()
-        .contains("--- src/bin/factorial.rs")));
+    assert!(mutants_json.iter().all(|e| {
+        e.as_object().unwrap()["diff"]
+            .as_str()
+            .unwrap()
+            .contains("--- src/bin/factorial.rs")
+    }));
 }
 
 #[test]

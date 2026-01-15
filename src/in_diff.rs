@@ -19,7 +19,7 @@ use tracing::{error, trace, warn};
 
 use crate::mutant::Mutant;
 use crate::source::SourceFile;
-use crate::{exit_code, Result};
+use crate::{Result, exit_code};
 
 /// The result of filtering mutants based on a diff.
 #[derive(Debug, PartialEq, Eq, Clone)]

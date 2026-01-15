@@ -49,15 +49,15 @@ use std::env;
 use std::io;
 use std::process::exit;
 
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{Context, Result, anyhow, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
-use clap::builder::styling::{self};
 use clap::builder::Styles;
+use clap::builder::styling::{self};
 use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use color_print::cstr;
 use console::enable_console_colors;
-use output::{load_previously_caught, OutputDir};
+use output::{OutputDir, load_previously_caught};
 use tracing::{debug, error, info};
 
 use crate::build_dir::BuildDir;
@@ -80,7 +80,9 @@ const NAME: &str = env!("CARGO_PKG_NAME");
 /// A comment marker inserted next to changes, so they can be easily found.
 static MUTATION_MARKER_COMMENT: &str = "/* ~ changed by cargo-mutants ~ */";
 
-static SPONSOR_MESSAGE: &str = cstr!("<magenta><bold>Support and accelerate cargo-mutants at <<https://github.com/sponsors/sourcefrog>></></>");
+static SPONSOR_MESSAGE: &str = cstr!(
+    "<magenta><bold>Support and accelerate cargo-mutants at <<https://github.com/sponsors/sourcefrog>></></>"
+);
 
 #[mutants::skip] // only visual effects, not worth testing
 fn clap_styles() -> Styles {

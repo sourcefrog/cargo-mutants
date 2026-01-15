@@ -16,10 +16,10 @@ use jiff::Timestamp;
 use tracing::{debug, debug_span, error, trace, warn};
 
 use crate::{
-    cargo::run_cargo, options::TestPackages, outcome::LabOutcome, output::OutputDir,
-    package::Package, package::PackageSelection, timeouts::Timeouts, workspace::Workspace,
     BaselineStrategy, BuildDir, Console, Context, Mutant, Options, Phase, Result, Scenario,
-    ScenarioOutcome,
+    ScenarioOutcome, cargo::run_cargo, options::TestPackages, outcome::LabOutcome,
+    output::OutputDir, package::Package, package::PackageSelection, timeouts::Timeouts,
+    workspace::Workspace,
 };
 
 /// Run all possible mutation experiments.
@@ -123,7 +123,9 @@ pub fn test_mutants(
         // the tree if no mutants are generated.
         warn!("No mutants were generated");
     } else if lab_outcome.unviable == lab_outcome.total_mutants {
-        warn!("No mutants were viable: perhaps there is a problem with building in a scratch directory. Look in mutants.out/log/* for more information.");
+        warn!(
+            "No mutants were viable: perhaps there is a problem with building in a scratch directory. Look in mutants.out/log/* for more information."
+        );
     }
     Ok(lab_outcome)
 }

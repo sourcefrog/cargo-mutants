@@ -10,14 +10,14 @@ use anyhow::Context;
 use camino::Utf8PathBuf;
 use jiff::Timestamp;
 use output::ScenarioOutput;
-use serde::ser::SerializeStruct;
 use serde::Serialize;
 use serde::Serializer;
+use serde::ser::SerializeStruct;
 use tracing::warn;
 
 use crate::console::{format_duration, plural};
 use crate::process::Exit;
-use crate::{exit_code, output, Options, Result, Scenario};
+use crate::{Options, Result, Scenario, exit_code, output};
 
 /// What phase of running a scenario.
 ///
