@@ -9,11 +9,10 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
-use std::iter::once;
 
 use anyhow::bail;
 use camino::Utf8Path;
-use flickzeug::{patch_from_str, Diff, Line};
+use flickzeug::{Diff, Line};
 use indoc::formatdoc;
 use itertools::Itertools;
 use tracing::{error, trace, warn};
@@ -91,29 +90,7 @@ pub fn diff_filter_file(
 
 /// Filter a list of mutants to those intersecting a diff on the file tree.
 pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>, DiffFilterError> {
-    if diff_text.trim().is_empty() {
-        return Err(DiffFilterError::EmptyDiff);
-    }
-    // Strip any "Binary files .. differ" lines because `patch` doesn't understand them at
-    // the moment; this could be removed when there's a new release of `patch` including
-    // <https://github.com/uniphil/patch-rs/pull/32>. Similarly, the lines emitted by
-    // git explaining file modes etc: <https://github.com/gitpatch-rs/gitpatch/issues/11>.
-    let fixed_diff = diff_text
-        .lines()
-        .filter(|line| {
-            !(line.starts_with("Binary files ")
-                || line.starts_with("diff --git")
-                || line.starts_with("index "))
-        })
-        .chain(once(""))
-        .join("\n");
-    // Our diff library treats an empty diff as an error, which perhaps is not the correct behavior.
-    // If after stripping binaries it's empty, let's say it matched nothing, rather than
-    // being strictly empty.
-    if fixed_diff.trim().is_empty() {
-        return Err(DiffFilterError::NoSourceFiles);
-    }
-    let patches = match patch_from_str(&fixed_diff) {
+    let patches = match flickzeug::patch_from_str(&diff_text) {
         Ok(patches) => patches,
         Err(err) => return Err(DiffFilterError::InvalidDiff(err.to_string())), // squash to a string to simplify lifetimes
     };
@@ -323,6 +300,7 @@ fn partial_new_file<'d>(diff: &'d Diff<'d, str>) -> Vec<(usize, &'d str)> {
 mod test_super {
     use std::fs::read_to_string;
 
+    use assert_matches::assert_matches;
     use pretty_assertions::assert_eq;
     use similar::TextDiff;
 
@@ -331,6 +309,17 @@ mod test_super {
     #[test]
     fn patch_parse_error() {
         let diff = "not really a diff\n";
+        // diff parsing is generally tolerant of non-diff text before and after the hunks, such
+        // as VCS metadata. So we don't (arguably can't) strictly distinguish between a diff file
+        // with no hunks, and input that's not a diff at all.
+        let err = diff_filter(Vec::new(), diff).unwrap_err();
+        dbg!(&err);
+        assert_eq!(err.to_string(), "Diff file is empty");
+    }
+
+    #[test]
+    fn in_empty_diff_file() {
+        let diff = "";
         // diff parsing is generally tolerant of non-diff text before and after the hunks, such
         // as VCS metadata. So we don't (arguably can't) strictly distinguish between a diff file
         // with no hunks, and input that's not a diff at all.
@@ -396,6 +385,20 @@ rename to test-utils/src/write.rs
         });
         let err = diff_filter(Vec::new(), diff_str);
         assert_eq!(err, Err(DiffFilterError::NoMutants));
+    }
+
+    #[test]
+    fn parse_diff_with_binary_files() {
+        let diff_str = "\
+Binary files target/release/cargo-mutants and target/debug/cargo-mutants differ
+";
+        // Flickzeug treats this as empty (maybe reading it as just a preface) which is reasonable,
+        // but we don't insist on the specific error.
+        let err = diff_filter(Vec::new(), diff_str);
+        assert_matches!(
+            err,
+            Err(DiffFilterError::EmptyDiff) | Err(DiffFilterError::NoSourceFiles)
+        );
     }
 
     #[test]
