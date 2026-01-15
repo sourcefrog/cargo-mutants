@@ -4,7 +4,7 @@
 
 - New: Added a `name` field in the JSON representation of mutants. Thanks to @0xLoopTheory.
 
-- Changed: Minimum supported Rust version increased to 1.89.
+- Changed: Minimum supported Rust version increased to 1.88.
 
 - Fixed: Fix build on musl by disabling, for now, reflink copies.
 

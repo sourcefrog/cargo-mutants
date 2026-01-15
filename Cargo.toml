@@ -9,7 +9,7 @@ repository = "https://github.com/sourcefrog/cargo-mutants"
 homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
-rust-version = "1.89"
+rust-version = "1.88"
 
 [package.metadata.wix]
 upgrade-guid = "CA7BFE8D-F3A7-4D1D-AE43-B7749110FA90"
@@ -34,7 +34,7 @@ color-print = "0.3"
 console = "0.15"
 ctrlc = { version = "3.4", features = ["termination"] }
 fastrand = "2"
-flickzeug = "0.4"
+flickzeug = "0.4.5"
 fs2 = "0.4"
 globset = "0.4.16"
 ignore = "0.4.23"
