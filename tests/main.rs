@@ -4,20 +4,30 @@
 
 use std::collections::HashSet;
 use std::env;
-use std::fs::{self, create_dir, read_dir, read_to_string};
+use std::fs::{self, File, create_dir, create_dir_all, read_dir, read_to_string, rename, write};
+use std::io::Write as IoWrite;
 use std::path::Path;
 
 use indoc::indoc;
+use insta::assert_snapshot;
 use itertools::Itertools;
 use jiff::Timestamp;
 use predicate::str::{contains, is_match};
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 
-use tempfile::TempDir;
+use regex::Regex;
+use serde_json::json;
+use similar::TextDiff;
+use tempfile::{NamedTempFile, TempDir, tempdir};
 
+mod integration_util;
 mod util;
-use util::{copy_of_testdata, copy_testdata_to, run, OUTER_TIMEOUT};
+use integration_util::run;
+use util::{
+    CommandInstaExt, OUTER_TIMEOUT, assert_bytes_eq_json, copy_of_testdata, copy_testdata_to,
+    outcome_json_counts,
+};
 
 #[test]
 fn incorrect_cargo_subcommand() {
@@ -272,10 +282,12 @@ fn test_small_well_tested_tree_with_baseline_skip() {
             )
             .and(predicate::str::contains("Unmutated baseline in").not()),
         );
-    assert!(!tmp_src_dir
-        .path()
-        .join("mutants.out/log/baseline.log")
-        .exists());
+    assert!(
+        !tmp_src_dir
+            .path()
+            .join("mutants.out/log/baseline.log")
+            .exists()
+    );
 }
 
 #[test]
@@ -305,90 +317,6 @@ fn proc_macro_tree_is_well_tested() {
         .stdout(predicate::str::contains(
             "2 mutants tested: 1 caught, 1 unviable",
         ));
-}
-
-#[test]
-fn well_tested_tree_finds_no_problems() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .arg("mutants")
-        .args(["--no-times", "--caught", "--unviable", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-    assert!(tmp_src_dir
-        .path()
-        .join("mutants.out/outcomes.json")
-        .exists());
-    let outcomes_json =
-        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
-    let outcomes: serde_json::Value = outcomes_json.parse().unwrap();
-    let caught = outcomes["caught"]
-        .as_i64()
-        .expect("outcomes['caught'] is an integer");
-    assert!(caught > 40, "expected more outcomes caught than {caught}");
-    assert_eq!(outcomes["unviable"], 0);
-    assert_eq!(outcomes["missed"], 0);
-    assert_eq!(outcomes["timeout"], 0);
-    assert_eq!(outcomes["total_mutants"], outcomes["caught"]);
-    check_text_list_output(tmp_src_dir.path(), "well_tested_tree_finds_no_problems");
-}
-
-#[test]
-fn well_tested_tree_check_only() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .args(["mutants", "--check", "--no-shuffle", "--no-times"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
-}
-
-#[test]
-fn well_tested_tree_check_only_shuffled() {
-    let tmp_src_dir = copy_of_testdata("well_tested");
-    run()
-        .args(["mutants", "--check", "--no-times", "--shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .assert()
-        .success();
-    // Caution: No assertions about output here, we just check that it runs.
-}
-
-#[test]
-fn unviable_mutation_of_struct_with_no_default() {
-    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
-    run()
-        .args([
-            "mutants",
-            "--line-col=false",
-            "--no-times",
-            "--no-shuffle",
-            "-v",
-            "-V",
-        ])
-        .arg("-d")
-        .arg(tmp_src_dir.path())
-        .assert()
-        .success()
-        .stdout(
-            predicate::str::is_match(
-                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
-            )
-            .unwrap(),
-        );
-    check_text_list_output(
-        tmp_src_dir.path(),
-        "unviable_mutation_of_struct_with_no_default",
-    );
 }
 
 #[test]
@@ -642,22 +570,6 @@ fn output_option_use_env() {
     ] {
         assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
     }
-}
-
-#[test]
-fn check_succeeds_in_tree_that_builds_but_fails_tests() {
-    // --check doesn't actually run the tests so won't discover that they fail.
-    let tmp_src_dir = copy_of_testdata("already_failing_tests");
-    run()
-        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
-        .current_dir(tmp_src_dir.path())
-        .env_remove("RUST_BACKTRACE")
-        .assert()
-        .success()
-        .stdout(predicate::function(|stdout: &str| {
-            insta::assert_snapshot!(stdout);
-            true
-        }));
 }
 
 #[test]
@@ -1287,6 +1199,47 @@ fn config_option_vs_default_behavior() {
 }
 
 #[test]
+fn cargo_test_arg_option() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    run()
+        .args(["mutants", "--cargo-test-arg=--all-features", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn cargo_test_arg_multiple_options() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    run()
+        .args([
+            "mutants",
+            "--cargo-test-arg=--all-features",
+            "--cargo-test-arg=--no-fail-fast",
+            "-d",
+        ])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn cargo_test_arg_and_additional_cargo_test_args_combined() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        additional_cargo_test_args = ["--no-fail-fast"]
+        "#,
+    );
+    run()
+        .args(["mutants", "--cargo-test-arg=--all-features", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
 fn example_config_file_can_be_loaded() {
     let tmp_src_dir = copy_of_testdata("well_tested");
 
@@ -1298,4 +1251,2475 @@ fn example_config_file_can_be_loaded() {
         .assert()
         .success()
         .stdout(contains("custom mutant error"));
+}
+
+#[test]
+fn test_with_nextest_on_small_tree() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    let assert = run()
+        .args(["mutants", "--test-tool", "nextest", "-vV", "--no-shuffle"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .stderr(predicates::str::contains("WARN").not())
+        .stdout(
+            predicates::str::contains("4 mutants tested")
+                .and(predicates::str::contains("Found 4 mutants to test"))
+                .and(predicates::str::contains("4 caught")),
+        )
+        .success();
+    println!(
+        "stdout:\n{}",
+        String::from_utf8_lossy(&assert.get_output().stdout)
+    );
+}
+
+#[test]
+fn unexpected_nextest_error_code_causes_a_warning() {
+    let temp = TempDir::new().unwrap();
+    let path = temp.path();
+    write(
+        path.join("Cargo.toml"),
+        r#"[package]
+            name = "cargo-mutants-test"
+            version = "0.1.0"
+            publish = false
+            "#,
+    )
+    .unwrap();
+    create_dir(path.join("src")).unwrap();
+    write(
+        path.join("src/main.rs"),
+        r#"fn main() {
+        println!("{}", 1 + 2);
+        }"#,
+    )
+    .unwrap();
+    create_dir(path.join(".config")).unwrap();
+    write(
+        path.join(".config/nextest.toml"),
+        r#"nextest-version = { required = "9999.0.0" }"#,
+    )
+    .unwrap();
+
+    let assert = run()
+        .args([
+            "mutants",
+            "--test-tool",
+            "nextest",
+            "-vV",
+            "--no-shuffle",
+            "-Ldebug",
+        ])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .stderr(predicates::str::contains(
+            "nextest process exited with unexpected code (allowed: [4, 100, 101]) code=92",
+        ))
+        .code(4); // CLEAN_TESTS_FAILED
+    println!(
+        "stdout:\n{}",
+        String::from_utf8_lossy(&assert.get_output().stdout)
+    );
+    println!(
+        "stderr:\n{}",
+        String::from_utf8_lossy(&assert.get_output().stderr)
+    );
+}
+
+#[test]
+fn gitignore_respected_when_enabled() {
+    // Make a tree with a (dumb) gitignore that excludes the source file; when you copy it
+    // to a build directory with gitignore enabled, the source file should not be there and so the check will fail.
+    let tmp = copy_of_testdata("factorial");
+    // There must be something that looks like a `.git` dir, otherwise we don't read
+    // `.gitignore` files.
+    create_dir(tmp.path().join(".git")).unwrap();
+    write(tmp.path().join(".gitignore"), b"src\n").unwrap();
+    run()
+        .args(["mutants", "--check", "--gitignore=true", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .stdout(predicates::str::contains("can't find `factorial` bin"))
+        .code(4);
+}
+
+#[test]
+fn gitignore_can_be_turned_off() {
+    // Make a tree with a (dumb) gitignore that excludes the source file; when you copy it
+    // to a build directory, with gitignore off, it succeeds.
+    let tmp = copy_of_testdata("factorial");
+    write(tmp.path().join(".gitignore"), b"src\n").unwrap();
+    run()
+        .args(["mutants", "--check", "--gitignore=false", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn gitignore_not_respected_by_default() {
+    // Make a tree with a (dumb) gitignore that excludes the source file; when you copy it
+    // to a build directory by default (gitignore=false), it should succeed because gitignore is ignored.
+    let tmp = copy_of_testdata("factorial");
+    // There must be something that looks like a `.git` dir, otherwise we don't read
+    // `.gitignore` files anyway.
+    create_dir(tmp.path().join(".git")).unwrap();
+    write(tmp.path().join(".gitignore"), b"src\n").unwrap();
+    run()
+        .args(["mutants", "--check", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+}
+
+/// A tree containing a symlink that must exist for the tests to pass works properly.
+#[test]
+fn symlink_in_source_tree_is_copied() {
+    let tmp = copy_of_testdata("symlink");
+    let testdata = tmp.path().join("testdata");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("target", testdata.join("symlink")).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_file("target", testdata.join("symlink")).unwrap();
+    assert!(tmp.path().join("testdata").join("symlink").is_symlink());
+    run()
+        .args(["mutants", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+}
+
+/// Only on Windows, backslash can be used as a path separator in filters.
+#[cfg(windows)]
+#[test]
+fn list_mutants_well_tested_exclude_folder_containing_backslash_on_windows() {
+    // This could be written more simply as `--exclude module` but we want to
+    // test that backslash is accepted.
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "**\\module\\**\\*.rs"])
+        .current_dir(tmp.path())
+        .assert()
+        .stdout(
+            predicates::str::contains(r"src/module")
+                .not()
+                .and(predicates::str::contains(r"src/methods.rs")),
+        );
+}
+
+/// If the test hangs and the user (in this case the test suite) interrupts it, then
+/// the `cargo test` child should be killed.
+///
+/// This is a bit hard to directly observe: the property that we really most care
+/// about is that _all_ grandchild processes are also killed and nothing is left
+/// behind. (On Unix, this is accomplished by use of a pgroup.) However that's a bit
+/// hard to mechanically check without reading and interpreting the process tree, which
+/// seems likely to be a bit annoying to do portably and without flakes.
+/// (But maybe we still should?)
+///
+/// An easier thing to test is that the cargo-mutants process _thinks_ it has killed
+/// the children, and we can observe this in the debug log.
+///
+/// In this test cargo-mutants has a very long timeout, but the test driver has a
+/// short timeout, so it should kill cargo-mutants.
+// TODO: An equivalent test on Windows?
+#[cfg(unix)]
+#[test]
+fn interrupt_caught_and_kills_children() {
+    // Test a tree that has enough tests that we'll probably kill it before it completes.
+
+    use std::process::{Command, Stdio};
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    use nix::libc::pid_t;
+    use nix::sys::signal::{SIGTERM, kill};
+    use nix::unistd::Pid;
+
+    use crate::integration_util::main_binary;
+
+    let tmp_src_dir = copy_of_testdata("well_tested");
+    // We can't use `assert_cmd` `timeout` here because that sends the child a `SIGKILL`,
+    // which doesn't give it a chance to clean up. And, `std::process::Command` only
+    // has an abrupt kill.
+
+    // Drop RUST_BACKTRACE because the traceback mentions "panic" handler functions
+    // and we want to check that the process does not panic.
+
+    // Skip baseline because firstly it should already pass but more importantly
+    // #333 exhibited only during non-baseline scenarios.
+    let args = [
+        main_binary().to_str().unwrap(),
+        "mutants",
+        "--timeout=300",
+        "--baseline=skip",
+        "--level=trace",
+    ];
+
+    println!("Running: {args:?}");
+    let mut child = Command::new(args[0])
+        .args(&args[1..])
+        .current_dir(&tmp_src_dir)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .env_remove("RUST_BACKTRACE")
+        .spawn()
+        .expect("spawn child");
+
+    sleep(Duration::from_secs(2)); // Let it get started
+    assert!(
+        child.try_wait().expect("try to wait for child").is_none(),
+        "child exited early"
+    );
+
+    println!("Sending SIGTERM to cargo-mutants...");
+    kill(Pid::from_raw(child.id() as pid_t), SIGTERM).expect("send SIGTERM");
+
+    println!("Wait for cargo-mutants to exit...");
+    let output = child
+        .wait_with_output()
+        .expect("wait for child after SIGTERM");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    println!("stdout:\n{stdout}");
+    println!("stderr:\n{stderr}");
+
+    assert!(stderr.contains("interrupted"));
+    // We used to look here for some other trace messages about how it's interrupted, but
+    // that seems to be racy: sometimes the parent sees the child interrupted before it
+    // emits these messages? Anyhow, it's not essential.
+
+    // This shouldn't cause a panic though (#333)
+    assert!(!stderr.contains("panic"));
+    // And we don't want duplicate messages about workers failing.
+    assert!(!stderr.contains("Worker thread failed"));
+}
+
+#[test]
+fn env_var_controls_trace() {
+    let tmp = copy_of_testdata("never_type");
+    run()
+        .env("CARGO_MUTANTS_TRACE_LEVEL", "trace")
+        .args(["mutants", "--list"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        // This is a debug!() message; it should only be seen if the trace var
+        // was wired correctly to stderr.
+        .stderr(predicate::str::contains(
+            "No mutants generated for this return type",
+        ));
+}
+
+#[test]
+fn shard_divides_all_mutants() {
+    // For speed, this only lists the mutants, trusting that the mutants
+    // that are listed are the ones that are run.
+    let tmp = copy_of_testdata("well_tested");
+    let common_args = ["mutants", "--list", "-d", tmp.path().to_str().unwrap()];
+    let full_list = String::from_utf8(
+        run()
+            .args(common_args)
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone(),
+    )
+    .unwrap()
+    .lines()
+    .map(ToOwned::to_owned)
+    .collect_vec();
+
+    let n_shards = 5;
+    let rr_shard_lists = (0..n_shards)
+        .map(|k| {
+            String::from_utf8(
+                run()
+                    .args(common_args)
+                    .args([
+                        "--shard",
+                        &format!("{k}/{n_shards}"),
+                        "--sharding=round-robin",
+                    ])
+                    .assert()
+                    .success()
+                    .get_output()
+                    .stdout
+                    .clone(),
+            )
+            .unwrap()
+            .lines()
+            .map(ToOwned::to_owned)
+            .collect_vec()
+        })
+        .collect_vec();
+
+    // If you combine all the mutants selected for each shard, you get the
+    // full list, with nothing lost or duplicated, disregarding order.
+    //
+    // If we had a bug where we shuffled before sharding, then the shards would
+    // see inconsistent lists and this test would fail in at least some attempts.
+    assert_eq!(
+        rr_shard_lists.iter().flatten().sorted().collect_vec(),
+        full_list.iter().sorted().collect_vec()
+    );
+
+    // The shards should also be approximately the same size.
+    let shard_lens = rr_shard_lists.iter().map(|l| l.len()).collect_vec();
+    assert!(shard_lens.iter().max().unwrap() - shard_lens.iter().min().unwrap() <= 1);
+
+    // And the shards are disjoint
+    for i in 0..n_shards {
+        for j in 0..n_shards {
+            if i != j {
+                assert!(
+                    rr_shard_lists[i]
+                        .iter()
+                        .all(|m| !rr_shard_lists[j].contains(m)),
+                    "shard {} contains {}",
+                    j,
+                    rr_shard_lists[j]
+                        .iter()
+                        .filter(|m| rr_shard_lists[j].contains(m))
+                        .join(", ")
+                );
+            }
+        }
+    }
+
+    // If you reassemble the round-robin shards in order, you get the original order back.
+    //
+    // To do so: cycle around the list of shards, taking one from each shard in order, until
+    // we get to the end of any list.
+    let mut reassembled = Vec::new();
+    let mut rr_iters = rr_shard_lists
+        .clone()
+        .into_iter()
+        .map(|l| l.into_iter())
+        .collect_vec();
+    let mut i = 0;
+    let mut limit = 0;
+    for name in rr_iters[i].by_ref() {
+        reassembled.push(name);
+        i = (i + 1) % n_shards;
+        limit += 1;
+        assert!(limit < full_list.len() * 2, "too many iterations");
+    }
+
+    // Check with slice sharding, the new default
+    let slice_shard_lists = (0..n_shards)
+        .map(|k| {
+            String::from_utf8(
+                run()
+                    .args(common_args)
+                    .args([&format!("--shard={k}/{n_shards}")]) //  "--sharding=slice"
+                    .assert()
+                    .success()
+                    .get_output()
+                    .stdout
+                    .clone(),
+            )
+            .unwrap()
+            .lines()
+            .map(ToOwned::to_owned)
+            .collect_vec()
+        })
+        .collect_vec();
+
+    // These can just be concatenated
+    let slice_reassembled = slice_shard_lists.into_iter().flatten().collect_vec();
+    assert_eq!(slice_reassembled, full_list);
+}
+
+/// Test that `--jobs` seems to launch multiple threads.
+///
+/// It's a bit hard to assess that multiple jobs really ran in parallel,
+/// but we can at least check that the option is accepted, and see that the
+/// debug log looks like it's using multiple threads.
+#[test]
+fn jobs_option_accepted_and_causes_multiple_threads() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j2")
+        .arg("--minimum-test-timeout=120") // to avoid flakes on slow CI
+        .assert()
+        .success();
+    let debug_log =
+        read_to_string(testdata.path().join("mutants.out/debug.log")).expect("read debug log");
+    println!("debug log:\n{debug_log}");
+    // This might be brittle, as the ThreadId debug form is not specified, and
+    // also _possibly_ everything will complete on one thread before the next
+    // gets going, though that seems unlikely.
+    let re = Regex::new(r#"start thread thread_id=ThreadId\(\d+\)"#).expect("compile regex");
+    let matches = re
+        .find_iter(&debug_log)
+        .map(|m| m.as_str())
+        .unique()
+        .collect::<Vec<_>>();
+    println!("threadid matches: {matches:?}");
+    assert!(
+        matches.len() > 1,
+        "expected more than {} thread ids in debug log",
+        matches.len()
+    );
+}
+
+#[test]
+fn warn_about_too_many_jobs() {
+    let testdata = copy_of_testdata("small_well_tested");
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(testdata.path())
+        .arg("-j40")
+        .arg("--shard=0/1000")
+        .assert()
+        .stderr(predicates::str::contains(
+            "WARN --jobs=40 is probably too high",
+        ))
+        .success();
+}
+
+#[test]
+#[allow(clippy::too_many_lines)] // long but pretty straightforward
+fn iterate_retries_missed_mutants() {
+    let temp = tempdir().unwrap();
+
+    write(
+        temp.path().join("Cargo.toml"),
+        indoc! { r#"
+            [package]
+            name = "cargo_mutants_iterate"
+            edition = "2021"
+            version = "0.0.0"
+            publish = false
+        "# },
+    )
+    .unwrap();
+    create_dir(temp.path().join("src")).unwrap();
+    create_dir(temp.path().join("tests")).unwrap();
+
+    // First, write some untested code, and expect that the mutant is missed.
+    write(
+        temp.path().join("src/lib.rs"),
+        indoc! { r#"
+            pub fn is_two(a: usize) -> bool { a == 2 }
+        "#},
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .arg("-d")
+        .arg(temp.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stderr(predicate::str::is_empty())
+        .stdout(indoc! { r#"
+            src/lib.rs:1:35: replace is_two -> bool with true
+            src/lib.rs:1:35: replace is_two -> bool with false
+            src/lib.rs:1:37: replace == with != in is_two
+        "# });
+
+    run()
+        .arg("mutants")
+        .arg("--no-shuffle")
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(2); // missed mutants
+
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        indoc! { r#"
+            src/lib.rs:1:35: replace is_two -> bool with true
+            src/lib.rs:1:35: replace is_two -> bool with false
+            src/lib.rs:1:37: replace == with != in is_two
+        "# }
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+        ""
+    );
+    assert!(
+        !temp
+            .path()
+            .join("mutants.out/previously_caught.txt")
+            .is_file()
+    );
+
+    // Now add a test that should catch this.
+    write(
+        temp.path().join("tests/main.rs"),
+        indoc! { r#"
+        use cargo_mutants_iterate::*;
+
+        #[test]
+        fn some_test() {
+            assert!(is_two(2));
+            assert!(!is_two(4));
+        }
+    "#},
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .arg("--no-shuffle")
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(0); // caught it
+
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+        indoc! { r#"
+            src/lib.rs:1:35: replace is_two -> bool with true
+            src/lib.rs:1:35: replace is_two -> bool with false
+            src/lib.rs:1:37: replace == with != in is_two
+        "# }
+    );
+
+    // Now that everything's caught, run tests again and there should be nothing to test,
+    // on both the first and second run with --iterate
+    for _ in 0..2 {
+        run()
+            .arg("mutants")
+            .args(["--list", "--iterate"])
+            .arg("-d")
+            .arg(temp.path())
+            .assert()
+            .success()
+            .stdout("");
+        run()
+            .arg("mutants")
+            .args(["--no-shuffle", "--iterate", "--in-place"])
+            .arg("-d")
+            .arg(temp.path())
+            .assert()
+            .success()
+            .stderr(predicate::str::contains(
+                "No mutants found under the active filters",
+            ))
+            .stdout(predicate::str::contains("Found 0 mutants to test"));
+        assert_eq!(
+            read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+            ""
+        );
+        assert_eq!(
+            read_to_string(temp.path().join("mutants.out/previously_caught.txt"))
+                .unwrap()
+                .lines()
+                .count(),
+            3
+        );
+    }
+
+    // Add some more code and it should be seen as untested.
+    let mut src = File::options()
+        .append(true)
+        .open(temp.path().join("src/lib.rs"))
+        .unwrap();
+    src.write_all("pub fn not_two(a: usize) -> bool { !is_two(a) }\n".as_bytes())
+        .unwrap();
+    drop(src);
+
+    // We should see only the new function as untested
+    let added_mutants = indoc! { r#"
+        src/lib.rs:2:36: replace not_two -> bool with true
+        src/lib.rs:2:36: replace not_two -> bool with false
+        src/lib.rs:2:36: delete ! in not_two
+    "# };
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout(added_mutants);
+
+    // These are missed by a new incremental run
+    run()
+        .arg("mutants")
+        .args(["--no-shuffle", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(2);
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        added_mutants
+    );
+
+    // Add a new test that catches some but not all mutants
+    File::options()
+        .append(true)
+        .open(temp.path().join("tests/main.rs"))
+        .unwrap()
+        .write_all("#[test] fn three_is_not_two() { assert!(not_two(3)); }\n".as_bytes())
+        .unwrap();
+    run()
+        .arg("mutants")
+        .args(["--no-shuffle", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .code(2);
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        "src/lib.rs:2:36: replace not_two -> bool with true\n"
+    );
+
+    // There should only be one more mutant to test
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout("src/lib.rs:2:36: replace not_two -> bool with true\n");
+
+    // Add another test
+    File::options()
+        .append(true)
+        .open(temp.path().join("tests/main.rs"))
+        .unwrap()
+        .write_all("#[test] fn two_is_not_not_two() { assert!(!not_two(2)); }\n".as_bytes())
+        .unwrap();
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout("src/lib.rs:2:36: replace not_two -> bool with true\n");
+    run()
+        .arg("mutants")
+        .args(["--no-shuffle", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success();
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/caught.txt")).unwrap(),
+        "src/lib.rs:2:36: replace not_two -> bool with true\n"
+    );
+    assert_eq!(
+        read_to_string(temp.path().join("mutants.out/previously_caught.txt"))
+            .unwrap()
+            .lines()
+            .count(),
+        5
+    );
+
+    // nothing more is missed
+    run()
+        .arg("mutants")
+        .args(["--list", "--iterate", "--in-place"])
+        .arg("-d")
+        .arg(temp.path())
+        .assert()
+        .success()
+        .stdout("");
+}
+
+/// `INSTA_UPDATE=always` in the environment will cause Insta to update
+/// the snapshots, so the tests will pass, so mutants will not be caught.
+/// This test checks that cargo-mutants sets the environment variable
+/// so that mutants are caught properly.
+#[test]
+fn insta_test_failures_are_detected() {
+    for insta_update in ["auto", "always"] {
+        println!("INSTA_UPDATE={insta_update}");
+        let tmp_src_dir = copy_of_testdata("insta");
+        run()
+            .arg("mutants")
+            .args(["--no-times", "--no-shuffle", "--caught", "-Ltrace"])
+            .env("INSTA_UPDATE", insta_update)
+            .current_dir(tmp_src_dir.path())
+            .assert()
+            .success();
+    }
+}
+
+#[test]
+fn diff_trees_well_tested() {
+    for name in &["diff0", "diff1"] {
+        let tmp = copy_of_testdata(name);
+        run()
+            .args(["mutants", "-d"])
+            .arg(tmp.path())
+            .assert()
+            .success();
+    }
+}
+
+#[test]
+fn list_mutants_changed_in_diff1() {
+    let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+    let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
+    let diff = TextDiff::from_lines(&src0, &src1)
+        .unified_diff()
+        .context_radius(2)
+        .header("a/src/lib.rs", "b/src/lib.rs")
+        .to_string();
+    println!("{diff}");
+
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .success();
+
+    // Between these trees we just added one function; the existing unchanged
+    // function does not need to be tested.
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        indoc! { "\
+            src/lib.rs:6:5: replace two -> String with String::new()
+            src/lib.rs:6:5: replace two -> String with \"xyzzy\".into()
+        "}
+    );
+
+    let mutants_json: serde_json::Value =
+        serde_json::from_str(&read_to_string(tmp.path().join("mutants.out/mutants.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        mutants_json
+            .as_array()
+            .expect("mutants.json contains an array")
+            .len(),
+        2
+    );
+}
+
+#[test]
+fn binary_diff_is_not_an_error_and_matches_nothing() {
+    // From https://github.com/sourcefrog/cargo-mutants/issues/391
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(b"Binary files a/test-renderers/expected/renderers/fog-None-wgpu.png and b/test-renderers/expected/renderers/fog-None-wgpu.png differ\n").unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
+}
+
+#[test]
+fn binary_git_diff_is_not_an_error_and_matches_nothing() {
+    // From https://github.com/sourcefrog/cargo-mutants/issues/391
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(
+        indoc! {
+            "
+            diff --git a/test-renderers/expected/renderers/fog-None-wgpu.png b/test-renderers/expected/renderers/fog-None-wgpu.png
+            index 616d6ea8..afd1b043 100644
+            Binary files a/test-renderers/expected/renderers/fog-None-wgpu.png and b/test-renderers/expected/renderers/fog-None-wgpu.png differ
+            "
+        }.as_bytes()).unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains(
+            "INFO Diff changes no Rust source files",
+        ));
+}
+
+#[test]
+fn empty_diff_is_not_an_error_and_matches_nothing() {
+    let diff_file = NamedTempFile::new().unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(predicate::str::contains("INFO Diff file is empty"));
+}
+
+// <https://github.com/sourcefrog/cargo-mutants/issues/547>
+#[test]
+fn diff_containing_non_utf8_is_not_an_error() {
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file
+        .write_all(
+            b"--- b   2025-10-05 09:13:10.260014347 -0700
++++ b.8859-1    2025-10-05 09:13:46.056014914 -0700
+@@ -1 +1 @@
+-\xc3\x9f
++\xdf
+",
+        )
+        .unwrap();
+    let tmp = copy_of_testdata("diff1");
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .arg("--list")
+        .assert()
+        .success()
+        .stdout("")
+        .stderr(" INFO Diff changes no Rust source files\n");
+}
+
+/// If the text in the diff doesn't look like the tree then error out.
+#[test]
+fn mismatched_diff_causes_error() {
+    let src0 = read_to_string("testdata/diff0/src/lib.rs").unwrap();
+    let src1 = read_to_string("testdata/diff1/src/lib.rs").unwrap();
+    let diff = TextDiff::from_lines(&src0, &src1)
+        .unified_diff()
+        .context_radius(2)
+        .header("a/src/lib.rs", "b/src/lib.rs")
+        .to_string();
+    let diff = diff.replace("fn", "FUNCTION");
+    println!("{diff}");
+
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "Diff content doesn't match source file: src/lib.rs",
+        ));
+}
+
+/// If the diff contains multiple deletions (with a new filename of /dev/null),
+/// don't fail.
+///
+/// <https://github.com/sourcefrog/cargo-mutants/issues/219>
+#[test]
+fn diff_with_multiple_deletions_is_ok() {
+    let diff = indoc! {r#"
+        diff --git a/src/monitor/collect.rs b/src/monitor/collect.rs
+        deleted file mode 100644
+        index d842cf9..0000000
+        --- a/src/monitor/collect.rs
+        +++ /dev/null
+        @@ -1,1 +0,0 @@
+        -// Some stuff
+        diff --git a/src/monitor/another.rs b/src/monitor/another.rs
+        deleted file mode 100644
+        index d842cf9..0000000
+        --- a/src/monitor/collect.rs
+        +++ /dev/null
+        @@ -1,1 +0,0 @@
+        -// More stuff
+    "#};
+    let mut diff_file = NamedTempFile::new().unwrap();
+    diff_file.write_all(diff.as_bytes()).unwrap();
+
+    let tmp = copy_of_testdata("diff1");
+
+    run()
+        .args(["mutants", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .arg("--in-diff")
+        .arg(diff_file.path())
+        .assert()
+        .stderr(predicates::str::contains(
+            "INFO Diff changes no Rust source files",
+        ))
+        .success();
+}
+
+#[test]
+fn in_place_check_leaves_no_changes() -> anyhow::Result<()> {
+    fn check_file(tmp: &Path, new_name: &str, old_name: &str) -> anyhow::Result<()> {
+        let orig_path = Path::new("testdata/small_well_tested");
+        println!("comparing {new_name} and {old_name}");
+        assert_eq!(
+            read_to_string(tmp.join(new_name))?.replace("\r\n", "\n"),
+            read_to_string(orig_path.join(old_name))?.replace("\r\n", "\n"),
+            "{old_name} should be the same as {new_name}"
+        );
+        Ok(())
+    }
+
+    let tmp = copy_of_testdata("small_well_tested");
+    let tmp_path = tmp.path();
+    let output_tmp = TempDir::with_prefix("in_place_check_leaves_no_changes").unwrap();
+    let cmd = run()
+        .args(["mutants", "--in-place", "--check", "-d"])
+        .arg(tmp.path())
+        .arg("-o")
+        .arg(output_tmp.path())
+        .assert()
+        .success();
+    println!(
+        "stdout:\n{}",
+        String::from_utf8_lossy(&cmd.get_output().stdout)
+    );
+    println!(
+        "stderr:\n{}",
+        String::from_utf8_lossy(&cmd.get_output().stderr)
+    );
+    check_file(tmp_path, "Cargo.toml", "Cargo_test.toml")?;
+    check_file(tmp_path, "src/lib.rs", "src/lib.rs")?;
+    Ok(())
+}
+
+#[test]
+fn error_value_catches_untested_ok_case() {
+    // By default this tree should fail because it's configured to
+    // generate an error value, and the tests forgot to check that
+    // the code under test does return Ok.
+    let tmp = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args(["-v", "-V", "--no-times", "--no-shuffle"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        .code(2)
+        .stderr("");
+}
+
+#[test]
+fn no_config_option_disables_config_file_so_error_value_is_not_generated() {
+    // In this case, the config file is not loaded. Error values are not
+    // generated by default (because we don't know what a good value for
+    // this tree would be), so no mutants are caught.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args(["-v", "-V", "--no-times", "--no-shuffle", "--no-config"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr("")
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
+fn list_mutants_with_error_value_from_command_line_list() {
+    // This is not a good error mutant for this tree, which uses
+    // anyhow, but it's a good test of the command line option.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=::eyre::eyre!(\"mutant\")",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr("")
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout);
+            true
+        }));
+}
+
+#[test]
+fn warn_if_error_value_starts_with_err() {
+    // Users might misunderstand what should be passed to --error,
+    // so give a warning.
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=Err(anyhow!(\"mutant\"))",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            "error_value option gives the value of the error, and probably should not start with Err(: got Err(anyhow!(\"mutant\"))"
+        ));
+}
+
+#[test]
+fn warn_unresolved_module() {
+    let tmp_src_dir = copy_of_testdata("dangling_mod");
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--no-config", "--list"])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            r#"referent of mod not found definition_site="src/main.rs:3:1" mod_name=nonexistent"#,
+        ));
+}
+#[test]
+fn warn_module_outside_of_tree() {
+    // manually copy tree, so that external path still resolves correctly for `cargo`
+    //
+    // [TEMP]/dangling_mod/*
+    // [TEMP]/nested_mod/src/paths_in_main/a/foo.rs
+    //
+    let tree_name = "dangling_mod";
+    let tmp_src_dir_parent = TempDir::with_prefix("warn_module_outside_of_tree").unwrap();
+    let tmp_src_dir = tmp_src_dir_parent.path().join("dangling_mod");
+    cp_r::CopyOptions::new()
+        .filter(|path, _stat| {
+            Ok(["target", "mutants.out", "mutants.out.old"]
+                .iter()
+                .all(|p| !path.starts_with(p)))
+        })
+        .copy_tree(
+            std::path::Path::new("testdata").join(tree_name),
+            &tmp_src_dir,
+        )
+        .unwrap();
+    rename(
+        tmp_src_dir.join("Cargo_test.toml"),
+        tmp_src_dir.join("Cargo.toml"),
+    )
+    .unwrap();
+
+    let external_file_path = tmp_src_dir_parent
+        .path()
+        .join("nested_mod/src/paths_in_main/a");
+    create_dir_all(&external_file_path).unwrap();
+    std::fs::copy(
+        std::path::Path::new("testdata/nested_mod/src/paths_in_main/a/foo.rs"),
+        external_file_path.join("foo.rs"),
+    )
+    .unwrap();
+
+    run()
+        .arg("mutants")
+        .args(["--no-times", "--no-shuffle", "--no-config", "--list"])
+        .arg("-d")
+        .arg(tmp_src_dir)
+        .assert()
+        .code(0)
+        .stderr(predicate::str::contains(
+            r#"skipping source outside of tree: "src/../../nested_mod/src/paths_in_main/a/foo.rs""#,
+        ));
+}
+
+#[test]
+fn fail_when_error_value_does_not_parse() {
+    let tmp_src_dir = copy_of_testdata("error_value");
+    run()
+        .arg("mutants")
+        .args([
+            "--no-times",
+            "--no-shuffle",
+            "--no-config",
+            "--list",
+            "--error=shouldn't work",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(1)
+        .stderr(predicate::str::contains(indoc! { "
+            Error: Failed to parse error value \"shouldn\'t work\"
+
+            Caused by:
+                unexpected token
+        "}))
+        .stdout(predicate::str::is_empty());
+}
+
+fn has_color_listing() -> impl Predicate<str> {
+    predicates::str::contains("with \x1b[33m0\x1b[0m")
+}
+
+fn has_ansi_escape() -> impl Predicate<str> {
+    predicates::str::contains("\x1b[")
+}
+
+fn has_color_debug() -> impl Predicate<str> {
+    predicates::str::contains("\x1b[34mDEBUG\x1b[0m")
+}
+
+/// The test fixtures force off colors, even if something else tries to turn it on.
+#[test]
+fn no_color_in_test_subprocesses_by_default() {
+    run()
+        .args(["mutants", "-d", "testdata/small_well_tested", "--list"])
+        .assert()
+        .success()
+        .stdout(has_ansi_escape().not())
+        .stderr(has_ansi_escape().not());
+}
+
+/// Colors can be turned on with `--color` and they show up in the listing and
+/// in trace output.
+#[test]
+fn colors_always_shows_in_stdout_and_trace() {
+    run()
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "--colors=always",
+            "-Ltrace",
+        ])
+        .assert()
+        .success()
+        .stdout(has_color_listing())
+        .stderr(has_color_debug());
+}
+
+#[test]
+fn cargo_term_color_env_shows_colors() {
+    run()
+        .env("CARGO_TERM_COLOR", "always")
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "-Ltrace",
+        ])
+        .assert()
+        .success()
+        .stdout(has_color_listing())
+        .stderr(has_color_debug());
+}
+
+#[test]
+fn invalid_cargo_term_color_rejected_with_message() {
+    run()
+        .env("CARGO_TERM_COLOR", "invalid")
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "-Ltrace",
+        ])
+        .assert()
+        .stderr(predicate::str::contains(
+            // The message does not currently name the variable due to <https://github.com/clap-rs/clap/issues/5202>.
+            "invalid value 'invalid'",
+        ))
+        .code(1);
+}
+
+/// Colors can be turned on with `CLICOLOR_FORCE`.
+#[test]
+fn clicolor_force_shows_in_stdout_and_trace() {
+    run()
+        .env("CLICOLOR_FORCE", "1")
+        .args([
+            "mutants",
+            "-d",
+            "testdata/small_well_tested",
+            "--list",
+            "--colors=never",
+            "-Ltrace",
+        ])
+        .assert()
+        .success()
+        .stdout(has_color_listing())
+        .stderr(has_color_debug());
+}
+
+#[test]
+fn small_well_tested_tree_check_only() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--check", "--no-shuffle", "--no-times"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(indoc! {r"
+            Found 4 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:5:5: replace factorial -> u32 with 0
+            ok       src/lib.rs:5:5: replace factorial -> u32 with 1
+            ok       src/lib.rs:7:11: replace *= with += in factorial
+            ok       src/lib.rs:7:11: replace *= with /= in factorial
+            4 mutants tested: 4 succeeded
+        "})
+        .stderr("");
+    let outcomes = outcome_json_counts(&tmp_src_dir);
+    assert_eq!(
+        outcomes,
+        serde_json::json!({
+            "success": 4, // They did all build
+            "caught": 0, // They weren't actually tested
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 4,
+        })
+    );
+}
+
+#[test]
+fn small_well_tested_tree_check_only_shuffled() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--check", "--no-times", "--shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("4 mutants tested: 4 succeeded"));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 4, // They did all build
+            "caught": 0, // They weren't actually tested
+            "unviable": 0,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 4,
+        })
+    );
+}
+
+#[test]
+fn warning_when_no_mutants_found() {
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    run()
+        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .assert()
+        .stderr(predicate::str::contains(
+            "No mutants found under the active filters",
+        ))
+        .stdout(predicate::str::contains("Found 0 mutants to test"))
+        .success(); // It's arguable, but better if CI doesn't fail in this case.
+    // There is no outcomes.json? Arguably a bug.
+}
+
+#[test]
+fn check_succeeds_in_tree_that_builds_but_fails_tests() {
+    // --check doesn't actually run the tests so won't discover that they fail.
+    let tmp_src_dir = copy_of_testdata("already_failing_tests");
+    run()
+        .args(["mutants", "--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout, @r###"
+            Found 4 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:2:5: replace factorial -> u32 with 0
+            ok       src/lib.rs:2:5: replace factorial -> u32 with 1
+            ok       src/lib.rs:4:11: replace *= with += in factorial
+            ok       src/lib.rs:4:11: replace *= with /= in factorial
+            4 mutants tested: 4 succeeded
+            "###);
+            true
+        }));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 4,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 4,
+        })
+    );
+}
+
+#[test]
+fn check_tree_with_mutants_skip() {
+    let tmp_src_dir = copy_of_testdata("hang_avoided_by_attr");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(indoc! { r"
+            Found 6 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:15:5: replace controlled_loop with ()
+            ok       src/lib.rs:21:28: replace > with == in controlled_loop
+            ok       src/lib.rs:21:28: replace > with < in controlled_loop
+            ok       src/lib.rs:21:28: replace > with >= in controlled_loop
+            ok       src/lib.rs:21:53: replace * with + in controlled_loop
+            ok       src/lib.rs:21:53: replace * with / in controlled_loop
+            6 mutants tested: 6 succeeded
+            "})
+        .stderr("");
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 6,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 6,
+        })
+    );
+}
+
+#[test]
+fn check_tree_where_build_fails() {
+    let tmp_src_dir = copy_of_testdata("typecheck_fails");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .code(4) // clean tests failed
+        .stdout(predicate::str::contains("FAILED   Unmutated baseline"));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 0,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 0,
+        })
+    );
+}
+
+#[test]
+fn unviable_mutation_of_struct_with_no_default() {
+    let tmp_src_dir = copy_of_testdata("struct_with_no_default");
+    run()
+        .args([
+            "mutants",
+            "--line-col=false",
+            "--check",
+            "--no-times",
+            "--no-shuffle",
+            "-v",
+            "-V",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::is_match(
+                r"unviable *src/lib.rs:\d+:\d+: replace make_an_s -> S with Default::default\(\)",
+            )
+            .unwrap(),
+        );
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 0,
+            "caught": 0,
+            "unviable": 1,
+            "missed": 0,
+            "timeout": 0,
+            "total_mutants": 1,
+        })
+    );
+}
+
+#[test]
+fn open_by_manifest_path() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .args(["mutants", "--list", "--line-col=false", "--manifest-path"])
+        .arg(tmp.path().join("Cargo.toml"))
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "src/bin/factorial.rs: replace main with ()",
+        ));
+}
+
+#[test]
+fn list_warns_about_unmatched_packages() {
+    run()
+        .args([
+            "mutants",
+            "--list",
+            "-d",
+            "testdata/workspace",
+            "-p",
+            "notapackage",
+        ])
+        .assert()
+        .stderr(predicates::str::contains(
+            "Package \"notapackage\" not found in source tree",
+        ))
+        .code(0);
+}
+
+#[test]
+fn list_files_json_workspace() {
+    // Demonstrates that we get package names in the json listing.
+    let tmp = copy_of_testdata("workspace");
+    let cmd = run()
+        .args(["mutants", "--list-files", "--json"])
+        .current_dir(tmp.path())
+        .assert()
+        .success();
+    assert_bytes_eq_json(
+        &cmd.get_output().stdout,
+        json! {
+        [
+          {
+            "package": "cargo_mutants_testdata_workspace_utils",
+            "path": "utils/src/lib.rs"
+          },
+          {
+            "package": "main",
+            "path": "main/src/main.rs"
+          },
+          {
+            "package": "main2",
+            "path": "main2/src/main.rs"
+          }
+        ]
+        },
+    );
+}
+
+#[test]
+fn list_files_as_json_in_workspace_subdir() {
+    let tmp = copy_of_testdata("workspace");
+    let cmd = run()
+        .args(["mutants", "--list-files", "--json", "--workspace"])
+        .current_dir(tmp.path().join("main2"))
+        .assert()
+        .success();
+    assert_bytes_eq_json(
+        &cmd.get_output().stdout,
+        json! {
+            [
+              {
+                "package": "cargo_mutants_testdata_workspace_utils",
+                "path": "utils/src/lib.rs"
+              },
+              {
+                "package": "main",
+                "path": "main/src/main.rs"
+              },
+              {
+                "package": "main2",
+                "path": "main2/src/main.rs"
+              }
+            ]
+        },
+    );
+}
+
+#[test]
+fn workspace_tree_is_well_tested() {
+    let tmp_src_dir = copy_of_testdata("workspace");
+    run()
+        .args(["mutants", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .success();
+    // The outcomes.json has some summary data
+    let json_str =
+        fs::read_to_string(tmp_src_dir.path().join("mutants.out/outcomes.json")).unwrap();
+    println!("outcomes.json:\n{json_str}");
+    let json: serde_json::Value = json_str.parse().unwrap();
+    let total = json["total_mutants"].as_u64().unwrap();
+    assert!(total > 8);
+    assert_eq!(json["caught"].as_u64().unwrap(), total);
+    assert_eq!(json["missed"].as_u64().unwrap(), 0);
+    assert_eq!(json["timeout"].as_u64().unwrap(), 0);
+    let outcomes = json["outcomes"].as_array().unwrap();
+
+    {
+        let baseline = outcomes[0].as_object().unwrap();
+        assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
+        assert_eq!(baseline["summary"], "Success");
+        let baseline_phases = baseline["phase_results"].as_array().unwrap();
+        assert_eq!(baseline_phases.len(), 2);
+        assert_eq!(baseline_phases[0]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[0]["argv"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .skip(1)
+                .collect_vec(),
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ]
+        );
+        assert_eq!(baseline_phases[1]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[1]["argv"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .skip(1)
+                .collect_vec(),
+            [
+                "test",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ],
+        );
+    }
+
+    assert!(outcomes.len() > 9);
+    for outcome in &outcomes[1..] {
+        let mutant = &outcome["scenario"]["Mutant"];
+        let package_name = mutant["package"].as_str().unwrap();
+        assert!(!package_name.is_empty());
+        assert_eq!(outcome["summary"], "CaughtMutant");
+        let mutant_phases = outcome["phase_results"].as_array().unwrap();
+        assert_eq!(mutant_phases.len(), 2);
+        assert_eq!(mutant_phases[0]["process_status"], "Success");
+        assert_eq!(
+            mutant_phases[0]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--no-run"]
+        );
+        assert_eq!(mutant_phases[1]["process_status"], json!({"Failure": 101}));
+        assert_eq!(
+            mutant_phases[1]["argv"].as_array().unwrap()[1..=2],
+            ["test", "--verbose"],
+        );
+    }
+    {
+        let baseline = json["outcomes"][0].as_object().unwrap();
+        assert_eq!(baseline["scenario"].as_str().unwrap(), "Baseline");
+        assert_eq!(baseline["summary"], "Success");
+        let baseline_phases = baseline["phase_results"].as_array().unwrap();
+        assert_eq!(baseline_phases.len(), 2);
+        assert_eq!(baseline_phases[0]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[0]["argv"].as_array().unwrap()[1..]
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect_vec(),
+            [
+                "test",
+                "--no-run",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ],
+        );
+        assert_eq!(baseline_phases[1]["process_status"], "Success");
+        assert_eq!(
+            baseline_phases[1]["argv"].as_array().unwrap()[1..]
+                .iter()
+                .map(|v| v.as_str().unwrap())
+                .collect_vec(),
+            [
+                "test",
+                "--verbose",
+                "--package=cargo_mutants_testdata_workspace_utils@0.1.0",
+                "--package=main@0.1.0",
+                "--package=main2@0.1.0"
+            ],
+        );
+    }
+}
+
+#[test]
+/// Baseline tests in a workspace only test the packages that will later
+/// be mutated.
+/// See <https://github.com/sourcefrog/cargo-mutants/issues/151>
+fn in_workspace_only_relevant_packages_included_in_baseline_tests_by_file_filter() {
+    let tmp = copy_of_testdata("package_fails");
+    run()
+        .args(["mutants", "-f", "passing/src/lib.rs", "--no-shuffle", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success();
+    assert_snapshot!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        @r###"
+    passing/src/lib.rs:2:5: replace triple -> usize with 0
+    passing/src/lib.rs:2:5: replace triple -> usize with 1
+    passing/src/lib.rs:2:7: replace * with + in triple
+    passing/src/lib.rs:2:7: replace * with / in triple
+    "###);
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
+        ""
+    );
+}
+
+/// Even the baseline test only tests the explicitly selected packages,
+/// so it doesn't fail if some packages don't build.
+#[test]
+fn baseline_test_respects_package_options() {
+    let tmp = copy_of_testdata("package_fails");
+    run()
+        .args([
+            "mutants",
+            "--package",
+            "cargo-mutants-testdata-package-fails-passing",
+            "--no-shuffle",
+            "-d",
+        ])
+        .arg(tmp.path())
+        .assert()
+        .success();
+    assert_snapshot!(
+        read_to_string(tmp.path().join("mutants.out/caught.txt")).unwrap(),
+        @r###"
+    passing/src/lib.rs:2:5: replace triple -> usize with 0
+    passing/src/lib.rs:2:5: replace triple -> usize with 1
+    passing/src/lib.rs:2:7: replace * with + in triple
+    passing/src/lib.rs:2:7: replace * with / in triple
+    "###
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/timeout.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/missed.txt")).unwrap(),
+        ""
+    );
+    assert_eq!(
+        read_to_string(tmp.path().join("mutants.out/unviable.txt")).unwrap(),
+        ""
+    );
+}
+
+#[test]
+fn in_workspace_only_default_members_are_mutated_if_present() {
+    let tmp = copy_of_testdata("workspace_default_members");
+    run()
+        .args(["mutants", "--no-shuffle", "--list", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success()
+        .stdout(
+            predicates::ord::eq(
+                "\
+            main/src/main.rs:1:18: replace + with -\n\
+            main/src/main.rs:1:18: replace + with *\n\
+            ",
+            )
+            .normalize(),
+        );
+}
+
+#[test]
+fn cross_package_tests() {
+    // This workspace has two packages, one of which contains the tests.
+    // Mutating the one with no tests will find test gaps, but
+    // either testing the whole workspace, or naming the test package,
+    // will show that it's actually all well tested.
+    //
+    // <https://github.com/sourcefrog/cargo-mutants/issues/394>
+
+    let tmp = copy_of_testdata("cross_package_tests");
+    let path = tmp.path();
+
+    // Testing only this one package will find gaps.
+    run()
+        .args(["mutants", "-v", "--shard=0/4"])
+        .arg("--no-times")
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 mutant tested: 1 missed"))
+        .code(2); // missed mutants
+
+    // Just asking to *mutate* the whole workspace will not cause us
+    // to run the tests in "tests" against mutants in "lib".
+    run()
+        .args(["mutants", "--workspace", "--shard=0/4"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 missed"))
+        .code(2); // missed mutants
+
+    // Similarly, starting in the workspace dir is not enough.
+    run()
+        .args(["mutants", "-v", "--shard=0/4"])
+        .arg("-d")
+        .arg(path)
+        .assert()
+        .stdout(predicate::str::contains("1 missed"))
+        .code(2); // missed mutants
+
+    // Testing the whole workspace does catch everything.
+    run()
+        .args(["mutants", "--test-workspace=true", "--shard=0/4"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+
+    // And naming the test package also catches everything.
+    run()
+        .args([
+            "mutants",
+            "--test-package=cargo-mutants-testdata-cross-package-tests-tests",
+            "--shard=0/4",
+        ])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+
+    // Using the wrong package name gives a warning
+    run()
+        .args(["mutants", "--test-package=tests"])
+        .arg("-d")
+        .arg(path.join("lib"))
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .stderr(predicate::str::contains(
+            "WARN Package \"tests\" not found in source tree\n",
+        ))
+        .success();
+
+    // You can configure the test package in the workspace
+    let cargo_dir = path.join(".cargo");
+    create_dir(&cargo_dir).unwrap();
+    let mutants_toml_path = cargo_dir.join("mutants.toml");
+    write(&mutants_toml_path, b"test_workspace = true").unwrap();
+    // Now the mutants are caught
+    run()
+        .args(["mutants"])
+        .arg("--shard=0/4")
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+
+    // It would also work to name the test package
+    write(
+        &mutants_toml_path,
+        br#"test_package = ["cargo-mutants-testdata-cross-package-tests-tests"]"#,
+    )
+    .unwrap();
+    run()
+        .args(["mutants"])
+        .arg("--shard=0/4")
+        .arg("-d")
+        .arg(path.join("lib"))
+        .assert()
+        .stdout(predicate::str::contains("1 caught"))
+        .code(0);
+}
+
+#[test]
+fn list_diff_json_contains_diffs() {
+    let tmp = copy_of_testdata("factorial");
+    let cmd = run()
+        .args(["mutants", "--list", "--json", "--diff", "-d"])
+        .arg(tmp.path())
+        .assert()
+        .success(); // needed for lifetime
+    let out = cmd.get_output();
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+    println!("{}", String::from_utf8_lossy(&out.stdout));
+    let out_json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
+    let mutants_json = out_json.as_array().expect("json output is array");
+    assert_eq!(mutants_json.len(), 5);
+    assert!(mutants_json.iter().all(|e| {
+        e.as_object().unwrap()["diff"]
+            .as_str()
+            .unwrap()
+            .contains("--- src/bin/factorial.rs")
+    }));
+}
+
+#[test]
+fn list_mutants_in_factorial() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(&tmp)
+        .assert_insta("list_mutants_in_factorial");
+}
+
+#[test]
+fn list_mutants_in_factorial_json() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_in_factorial_json");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_mutants_skip() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_mutants_skip");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_mutants_skip_json() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_mutants_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_mutants_skip_json");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_test_skip() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_test_skip");
+}
+
+#[test]
+fn list_mutants_in_cfg_attr_test_skip_json() {
+    let tmp_src_dir = copy_of_testdata("cfg_attr_test_skip");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_cfg_attr_test_skip_json");
+}
+
+#[test]
+fn list_mutants_with_dir_option() {
+    let temp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--dir")
+        .arg(temp.path())
+        .assert_insta("list_mutants_with_dir_option");
+}
+
+#[test]
+fn list_mutants_with_diffs_in_factorial() {
+    let tmp = copy_of_testdata("factorial");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--diff")
+        .current_dir(&tmp)
+        .assert_insta("list_mutants_with_diffs_in_factorial");
+}
+
+#[test]
+fn list_mutants_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested");
+}
+
+#[test]
+fn list_mutants_well_tested_examine_name_filter() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "nested_function.rs"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_examine_name_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_exclude_name_filter() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "simple_fns.rs"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_exclude_name_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_exclude_folder_filter() {
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args(["--list", "--exclude", "module"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_exclude_folder_filter");
+}
+
+#[test]
+fn list_mutants_well_tested_examine_and_exclude_name_filter_combined() {
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--file",
+            "src/module/utils/**/*.rs",
+            "--exclude",
+            "nested_function.rs",
+        ])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_examine_and_exclude_name_filter_combined");
+}
+
+#[test]
+fn list_mutants_regex_filters() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list", "--re", "divisible"])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert_insta("list_mutants_regex_filters");
+}
+
+#[test]
+fn list_mutants_regex_anchored_matches_full_line() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--re",
+            r"^src/simple_fns.rs:\d+:\d+: replace returns_unit with \(\)$",
+        ])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert()
+        .success()
+        .stdout("src/simple_fns.rs:8:5: replace returns_unit with ()\n");
+}
+
+#[test]
+fn list_mutants_regex_filters_json() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args([
+            "--list",
+            "--re",
+            "divisible",
+            "--exclude-re",
+            "false",
+            "--json",
+        ])
+        .arg("-d")
+        .arg(tmp.path())
+        .assert_insta("list_mutants_regex_filters_json");
+}
+
+#[test]
+fn list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders() {
+    let tmp = copy_of_testdata("with_child_directories");
+    run()
+        .arg("mutants")
+        .args(["--list", "--file", "module_methods.rs", "--file", "utils", "--exclude", "**/sub_utils/**", "--exclude", "nested_function.rs"])
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_well_tested_multiple_examine_and_exclude_name_filter_with_files_and_folders");
+}
+
+#[test]
+fn list_mutants_json_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--json")
+        .current_dir(tmp.path())
+        .assert_insta("list_mutants_json_well_tested");
+}
+
+#[test]
+fn list_files_text_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list-files")
+        .current_dir(tmp.path())
+        .assert_insta("list_files_text_well_tested");
+}
+
+#[test]
+fn list_files_respects_file_filters() {
+    // Files matching excludes *are* visited to find references to other modules,
+    // but they're not included in --list-files.
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .args(["--list-files", "--exclude", "lib.rs"])
+        .current_dir(tmp.path())
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("methods.rs"))
+        .stdout(predicate::str::contains("lib.rs").not());
+}
+
+#[test]
+fn list_files_json_well_tested() {
+    let tmp = copy_of_testdata("well_tested");
+    run()
+        .arg("mutants")
+        .arg("--list-files")
+        .arg("--json")
+        .current_dir(tmp.path())
+        .assert_insta("list_files_json_well_tested");
+}
+
+#[test]
+fn no_mutants_in_tree_everything_skipped() {
+    let tmp_src_dir = copy_of_testdata("everything_skipped");
+    run()
+        .args(["mutants", "--list"])
+        .arg("--dir")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .stderr(predicate::str::is_empty()) // not an error or warning
+        .stdout(predicate::str::is_empty())
+        .success();
+}
+
+#[test]
+fn list_mutants_with_alternate_registry() {
+    // For https://github.com/sourcefrog/cargo-mutants/issues/428
+
+    // This tree has a non-default registry that ends up just pointing back to crates.io, but under another name.
+    //
+    // Without running cargo metadata properly this will fail.
+    //
+    // The tree doesn't actually generate any mutants.
+    //
+    // To reproduce the failure it's important that we *don't* run from the tree's directory.
+    let tmp = copy_of_testdata("alternate_registry");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .arg("--dir")
+        .arg(tmp.path())
+        .assert()
+        .stdout("")
+        .success();
+}
+
+fn write_config_file(tempdir: &TempDir, config: &str) {
+    let path = tempdir.path();
+    create_dir_all(path.join(".cargo")).unwrap();
+    write(path.join(".cargo/mutants.toml"), config.as_bytes()).unwrap();
+}
+
+#[test]
+fn invalid_toml_rejected() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"what even is this?
+        "#,
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("Error: parse toml from "));
+}
+
+#[test]
+fn invalid_field_rejected() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"wobble = false
+        "#,
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .failure()
+        .stderr(
+            predicates::str::contains("Error: parse toml from ")
+                .and(predicates::str::contains("unknown field `wobble`")),
+        );
+}
+
+#[test]
+fn list_with_config_file_exclusion() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"exclude_globs = ["src/*_mod.rs"]
+        "#,
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("_mod.rs").not());
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("_mod.rs").not());
+}
+
+#[test]
+fn list_with_config_file_inclusion() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"examine_globs = ["src/*_mod.rs"]
+        "#,
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(indoc! { "\
+            src/inside_mod.rs
+            src/item_mod.rs
+        " }));
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("simple_fns.rs").not());
+}
+
+#[test]
+fn file_argument_overrides_config_examine_globs_key() {
+    let testdata = copy_of_testdata("well_tested");
+    // This config key has no effect because the command line argument
+    // takes precedence.
+    write_config_file(
+        &testdata,
+        r#"examine_globs = ["src/*_mod.rs"]
+        "#,
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .args(["--file", "src/simple_fns.rs"])
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(indoc! { "\
+            src/simple_fns.rs
+        " }));
+}
+
+#[test]
+fn exclude_file_argument_overrides_config() {
+    let testdata = copy_of_testdata("well_tested");
+    // This config key has no effect because the command line argument
+    // takes precedence.
+    write_config_file(
+        &testdata,
+        indoc! { r#"
+            examine_globs = ["src/*_mod.rs"]
+            exclude_globs = ["src/inside_mod.rs"]
+        "#},
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .args(["--file", "src/*.rs"])
+        .args(["--exclude", "src/*_mod.rs"])
+        .args(["--exclude", "src/s*.rs"])
+        .args(["--exclude", "src/n*.rs"])
+        .args(["--exclude", "src/b*.rs"])
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(indoc! { "\
+            src/lib.rs
+            src/arc.rs
+            src/empty_fns.rs
+            src/methods.rs
+            src/result.rs
+            src/traits.rs
+        " }));
+}
+
+// Note: copy_target config option parsing and command line override behavior
+// is tested in unit tests in src/options.rs, not here, because these integration
+// tests cannot easily verify that the target directory was actually copied or not
+// (the temporary build directories are cleaned up after cargo-mutants finishes).
+
+#[test]
+fn list_with_config_file_regexps() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"
+        # comments are ok
+        examine_re = ["divisible"]
+        exclude_re = ["-> bool with true"]
+        "#,
+    );
+    let cmd = run()
+        .args(["mutants", "--list", "--line-col=false", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+    assert_snapshot!(
+        String::from_utf8_lossy(&cmd.get_output().stdout),
+        @r###"
+    src/simple_fns.rs: replace divisible_by_three -> bool with false
+    src/simple_fns.rs: replace == with != in divisible_by_three
+    src/simple_fns.rs: replace % with / in divisible_by_three
+    src/simple_fns.rs: replace % with + in divisible_by_three
+    "###
+    );
+}
+
+#[test]
+fn exclude_re_overrides_config() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(
+        &testdata,
+        r#"
+            exclude_re = [".*"]     # would exclude everything
+        "#,
+    );
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::is_empty());
+    // Also tests that the alias --exclude-regex is accepted
+    let cmd = run()
+        .args(["mutants", "--list", "--line-col=false", "-d"])
+        .arg(testdata.path())
+        .args(["--exclude-regex", " -> "])
+        .args(["-f", "src/simple_fns.rs"])
+        .assert()
+        .success();
+    assert_snapshot!(
+        String::from_utf8_lossy(&cmd.get_output().stdout),
+        @r###"
+    src/simple_fns.rs: replace returns_unit with ()
+    src/simple_fns.rs: replace += with -= in returns_unit
+    src/simple_fns.rs: replace += with *= in returns_unit
+    src/simple_fns.rs: replace == with != in divisible_by_three
+    src/simple_fns.rs: replace % with / in divisible_by_three
+    src/simple_fns.rs: replace % with + in divisible_by_three
+    "###);
+}
+
+#[test]
+fn tree_fails_without_needed_feature() {
+    // The point of this tree is to check that Cargo features can be turned on,
+    // but let's make sure it does fail as intended if they're not.
+    let testdata = copy_of_testdata("fails_without_feature");
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains(
+            "test failed in an unmutated tree",
+        ));
+}
+
+#[test]
+fn additional_cargo_args() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        additional_cargo_args = ["--features", "needed"]
+        "#,
+    );
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn additional_cargo_test_args() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        additional_cargo_test_args = ["--all-features", ]
+        "#,
+    );
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn features_config_option() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        features = ["needed"]
+        "#,
+    );
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+fn all_features_config_option() {
+    let testdata = copy_of_testdata("fails_without_feature");
+    write_config_file(
+        &testdata,
+        r#"
+        all_features = true
+        "#,
+    );
+    run()
+        .args(["mutants", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success();
+}
+
+#[test]
+/// Set the `--output` directory via `output` config directive.
+fn output_option_use_config() {
+    let output_tmpdir = TempDir::new().unwrap();
+    let output_via_config = output_tmpdir.path().join("output_via_config");
+    let testdata = copy_of_testdata("factorial");
+
+    let out_path_str = output_via_config
+        .to_string_lossy()
+        .escape_default()
+        .to_string();
+    write_config_file(&testdata, &format!("output = \"{out_path_str}\""));
+
+    assert!(
+        !testdata.path().join("mutants.out").exists(),
+        "mutants.out should not be in a clean copy of the test data"
+    );
+
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times"])
+        .arg("-d")
+        .arg(testdata.path())
+        .assert()
+        .success();
+
+    assert!(
+        !testdata.path().join("mutants.out").exists(),
+        "mutants.out should not be in the source directory"
+    );
+    let mutants_out = output_via_config.join("mutants.out");
+    assert!(
+        mutants_out.exists(),
+        "mutants.out is in changed `output` directory"
+    );
+    for name in [
+        "mutants.json",
+        "debug.log",
+        "outcomes.json",
+        "missed.txt",
+        "caught.txt",
+        "timeout.txt",
+        "unviable.txt",
+    ] {
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+    }
 }

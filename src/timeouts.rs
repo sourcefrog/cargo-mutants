@@ -48,7 +48,9 @@ impl Timeouts {
 
 const FALLBACK_TIMEOUT_SECS: u64 = 300;
 fn warn_fallback_timeout(phase_name: &str, option: &str) {
-    warn!("An explicit {phase_name} timeout is recommended when using {option}; using {FALLBACK_TIMEOUT_SECS} seconds by default");
+    warn!(
+        "An explicit {phase_name} timeout is recommended when using {option}; using {FALLBACK_TIMEOUT_SECS} seconds by default"
+    );
 }
 
 fn test_timeout(baseline_duration: Option<Duration>, options: &Options) -> Duration {
@@ -101,7 +103,7 @@ mod test {
     use indoc::indoc;
 
     use super::*;
-    use crate::{config::Config, Args};
+    use crate::{Args, config::Config};
 
     #[test]
     fn timeout_multiplier_from_option() {

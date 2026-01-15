@@ -1,4 +1,4 @@
-// Copyright 2023 - 2025 Martin Pool
+// Copyright 2023 - 2026 Martin Pool
 
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
@@ -13,7 +13,7 @@ use tempfile::TempDir;
 use tracing::{debug, warn};
 
 use crate::options::Options;
-use crate::{check_interrupted, Console, Result};
+use crate::{Console, Result, check_interrupted};
 
 #[cfg(unix)]
 mod unix;
@@ -28,7 +28,9 @@ use windows::copy_symlink;
 static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".jj", ".pijul"];
 
 /// Copy a file, attempting to use reflink if supported.
+///
 /// Returns the number of bytes copied.
+#[cfg(not(target_env = "musl"))] // https://github.com/sourcefrog/cargo-mutants/issues/581
 fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> Result<u64> {
     // Try reflink first if we haven't determined it's not supported
     if reflink_supported.load(Ordering::Relaxed) {
@@ -49,6 +51,13 @@ fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> Result<
     }
 
     // Fall back to regular copy
+    fs::copy(src, dest)
+        .with_context(|| format!("Failed to copy {} to {}", src.display(), dest.display()))
+}
+
+#[cfg(target_env = "musl")] // https://github.com/sourcefrog/cargo-mutants/issues/581
+#[mutants::skip]
+fn copy_file(src: &Path, dest: &Path, _reflink_supported: &AtomicBool) -> Result<u64> {
     fs::copy(src, dest)
         .with_context(|| format!("Failed to copy {} to {}", src.display(), dest.display()))
 }
@@ -152,9 +161,9 @@ mod test {
     use camino::Utf8PathBuf;
     use tempfile::TempDir;
 
+    use crate::Result;
     use crate::console::Console;
     use crate::options::Options;
-    use crate::Result;
 
     use super::copy_tree;
 

@@ -16,7 +16,7 @@ use std::vec;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use proc_macro2::{Ident, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
@@ -30,7 +30,7 @@ use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
 use crate::span::Span;
-use crate::{check_interrupted, Console, Context, Genre, Mutant, Options, Result};
+use crate::{Console, Context, Genre, Mutant, Options, Result, check_interrupted};
 
 /// Mutants and files discovered in a source tree.
 ///
@@ -44,10 +44,9 @@ pub struct Discovered {
 impl Discovered {
     pub(crate) fn remove_previously_caught(&mut self, previously_caught: &[String]) {
         self.mutants.retain(|m| {
-            let name = m.name(true);
-            let c = previously_caught.contains(&name);
+            let c = previously_caught.contains(&m.name);
             if c {
-                trace!(?name, "skip previously caught mutant");
+                trace!(name = %m.name, "skip previously caught mutant");
             }
             !c
         });
@@ -75,6 +74,7 @@ pub fn walk_tree(
         mutants.append(&mut package_mutants);
         files.append(&mut package_files);
     }
+
     progress.finish();
     Ok(Discovered { mutants, files })
 }
@@ -318,15 +318,16 @@ impl DiscoveryVisitor<'_> {
 
     /// Record that we generated some mutants.
     fn collect_mutant(&mut self, span: Span, replacement: &TokenStream, genre: Genre) {
-        self.mutants.push(Mutant {
-            source_file: self.source_file.clone(),
-            function: self.fn_stack.last().cloned(),
+        let mutant = Mutant::new_discovered(
+            self.source_file.clone(),
+            self.fn_stack.last().cloned(),
             span,
-            short_replaced: None,
-            replacement: replacement.to_pretty_string(),
+            None,
+            replacement.to_pretty_string(),
             genre,
-            target: None,
-        });
+            None,
+        );
+        self.mutants.push(mutant);
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
@@ -656,15 +657,15 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     continue;
                 }
                 let short_replaced = Some(arm.pat.to_pretty_string());
-                let mutant = Mutant {
-                    source_file: self.source_file.clone(),
-                    function: self.fn_stack.last().cloned(),
-                    span: arm.span().into(),
+                let mutant = Mutant::new_discovered(
+                    self.source_file.clone(),
+                    self.fn_stack.last().cloned(),
+                    arm.span().into(),
                     short_replaced,
-                    replacement: String::new(),
-                    genre: Genre::MatchArm,
-                    target: None,
-                };
+                    String::new(),
+                    Genre::MatchArm,
+                    None,
+                );
                 self.mutants.push(mutant);
             }
         } else {
@@ -722,18 +723,18 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                         // No comma, just the field
                         field.span().into()
                     };
-                    let mutant = Mutant {
-                        source_file: self.source_file.clone(),
-                        function: self.fn_stack.last().cloned(),
+                    let mutant = Mutant::new_discovered(
+                        self.source_file.clone(),
+                        self.fn_stack.last().cloned(),
                         span,
-                        short_replaced: None,
-                        replacement: String::new(),
-                        genre: Genre::StructField,
-                        target: Some(MutationTarget::StructLiteralField {
+                        None,
+                        String::new(),
+                        Genre::StructField,
+                        Some(MutationTarget::StructLiteralField {
                             field_name: field_name_str,
                             struct_name: struct_name.clone(),
                         }),
-                    };
+                    );
                     self.mutants.push(mutant);
                 }
             }

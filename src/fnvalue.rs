@@ -247,24 +247,15 @@ fn path_ends_with(path: &Path, ident: &str) -> bool {
 
 fn match_impl_iterator(TypeImplTrait { bounds, .. }: &TypeImplTrait) -> Option<&Type> {
     for bound in bounds {
-        if let TypeParamBound::Trait(TraitBound { path, .. }) = bound {
-            if let Some(last_segment) = path.segments.last() {
-                if last_segment.ident == "Iterator" {
-                    if let PathArguments::AngleBracketed(AngleBracketedGenericArguments {
-                        args,
-                        ..
-                    }) = &last_segment.arguments
-                    {
-                        if let Some(GenericArgument::AssocType(AssocType { ident, ty, .. })) =
-                            args.first()
-                        {
-                            if ident == "Item" {
-                                return Some(ty);
-                            }
-                        }
-                    }
-                }
-            }
+        if let TypeParamBound::Trait(TraitBound { path, .. }) = bound
+            && let Some(last_segment) = path.segments.last()
+            && last_segment.ident == "Iterator"
+            && let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+                &last_segment.arguments
+            && let Some(GenericArgument::AssocType(AssocType { ident, ty, .. })) = args.first()
+            && ident == "Item"
+        {
+            return Some(ty);
         }
     }
     None
@@ -279,17 +270,15 @@ fn known_container(path: &Path) -> Option<(&Ident, &Type)> {
     if ["Box", "Cell", "RefCell", "Arc", "Rc", "Mutex"]
         .iter()
         .any(|v| last.ident == v)
-    {
-        if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        && let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
             &last.arguments
+    {
+        // TODO: Skip lifetime args.
+        // TODO: Return the path with args stripped out.
+        if args.len() == 1
+            && let Some(GenericArgument::Type(inner_type)) = args.first()
         {
-            // TODO: Skip lifetime args.
-            // TODO: Return the path with args stripped out.
-            if args.len() == 1 {
-                if let Some(GenericArgument::Type(inner_type)) = args.first() {
-                    return Some((&last.ident, inner_type));
-                }
-            }
+            return Some((&last.ident, inner_type));
         }
     }
     None
@@ -318,10 +307,10 @@ fn known_collection(path: &Path) -> Option<(&Ident, &Type)> {
     {
         // TODO: Skip lifetime args.
         // TODO: Return the path with args stripped out.
-        if args.len() == 1 {
-            if let Some(GenericArgument::Type(inner_type)) = args.first() {
-                return Some((&last.ident, inner_type));
-            }
+        if args.len() == 1
+            && let Some(GenericArgument::Type(inner_type)) = args.first()
+        {
+            return Some((&last.ident, inner_type));
         }
     }
     None
@@ -339,7 +328,7 @@ fn known_map(path: &Path) -> Option<(&Ident, &Type, &Type)> {
     {
         // TODO: Skip lifetime args.
         // TODO: Return the path with args stripped out.
-        if let Some((GenericArgument::Type(ref key_type), GenericArgument::Type(ref value_type))) =
+        if let Some((GenericArgument::Type(key_type), GenericArgument::Type(value_type))) =
             args.iter().collect_tuple()
         {
             return Some((&last.ident, key_type, value_type));
@@ -421,16 +410,15 @@ fn path_is_nonzero_unsigned(path: &Path) -> bool {
 fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p Type> {
     // TODO: Maybe match only things with one arg?
     let last = path.segments.last()?;
-    if last.ident == expected_ident {
-        if let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+    if last.ident == expected_ident
+        && let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
             &last.arguments
-        {
-            for arg in args {
-                match arg {
-                    GenericArgument::Type(arg_type) => return Some(arg_type),
-                    GenericArgument::Lifetime(_) => (),
-                    _ => return None,
-                }
+    {
+        for arg in args {
+            match arg {
+                GenericArgument::Type(arg_type) => return Some(arg_type),
+                GenericArgument::Lifetime(_) => (),
+                _ => return None,
             }
         }
     }
@@ -441,7 +429,7 @@ fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p 
 mod test {
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
-    use syn::{parse_quote, Expr, ReturnType};
+    use syn::{Expr, ReturnType, parse_quote};
 
     use crate::fnvalue::match_impl_iterator;
     use crate::pretty::ToPrettyString;

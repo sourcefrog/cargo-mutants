@@ -372,7 +372,7 @@ impl Options {
             print_caught: args.caught,
             print_unviable: args.unviable,
             profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),
-            shuffle: !args.no_shuffle,
+            shuffle: args.shuffle,
             show_line_col: args.line_col,
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
@@ -381,10 +381,12 @@ impl Options {
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
         };
-        if let Some(jobs) = options.jobs {
-            if jobs > 8 {
-                warn!("--jobs={jobs} is probably too high and may overload your machine: each job runs a separate `cargo` process, and cargo may internally start many threads and subprocesses; values <= 8 are usually safe");
-            }
+        if let Some(jobs) = options.jobs
+            && jobs > 8
+        {
+            warn!(
+                "--jobs={jobs} is probably too high and may overload your machine: each job runs a separate `cargo` process, and cargo may internally start many threads and subprocesses; values <= 8 are usually safe"
+            );
         }
         options.error_values.iter().for_each(|e| {
             if e.starts_with("Err(") {
@@ -462,7 +464,7 @@ impl Options {
         // TODO: Use Option::is_none_or when MSRV>1.80
         self.examine_globset
             .as_ref()
-            .map_or(true, |g| g.is_match(path))
+            .is_none_or(|g| g.is_match(path))
             && !self
                 .exclude_globset
                 .as_ref()
@@ -491,11 +493,7 @@ impl Options {
 
 /// If the first slices is non-empty, return that, otherwise the second.
 fn or_slices<'a: 'c, 'b: 'c, 'c, T>(a: &'a [T], b: &'b [T]) -> &'c [T] {
-    if a.is_empty() {
-        b
-    } else {
-        a
-    }
+    if a.is_empty() { b } else { a }
 }
 
 #[cfg(test)]
@@ -505,7 +503,6 @@ mod test {
 
     use clap::Parser;
     use indoc::indoc;
-    use rusty_fork::rusty_fork_test;
     use tempfile::NamedTempFile;
 
     use super::*;
@@ -875,64 +872,6 @@ mod test {
         assert!(options.copy_target);
     }
 
-    rusty_fork_test! {
-        #[test]
-        fn color_control_from_cargo_env() {
-            use std::env::{set_var,remove_var};
-
-            set_var("CARGO_TERM_COLOR", "always");
-            remove_var("CLICOLOR_FORCE");
-            remove_var("NO_COLOR");
-            let args = Args::parse_from(["mutants"]);
-        let config = Config::default();
-            let options = Options::new(&args, &config).unwrap();
-            assert_eq!(options.colors.forced_value(), Some(true));
-
-            set_var("CARGO_TERM_COLOR", "never");
-            let args = Args::parse_from(["mutants"]);
-            let options = Options::new(&args, &config).unwrap();
-            assert_eq!(options.colors.forced_value(), Some(false));
-
-            set_var("CARGO_TERM_COLOR", "auto");
-            let args = Args::parse_from(["mutants"]);
-            let options = Options::new(&args, &config).unwrap();
-            assert_eq!(options.colors.forced_value(), None);
-
-            remove_var("CARGO_TERM_COLOR");
-            let args = Args::parse_from(["mutants"]);
-            let options = Options::new(&args, &config).unwrap();
-            assert_eq!(options.colors.forced_value(), None);
-        }
-
-        #[test]
-        fn color_control_from_env() {
-            use std::env::{set_var,remove_var};
-
-            remove_var("CARGO_TERM_COLOR");
-            remove_var("CLICOLOR_FORCE");
-            remove_var("NO_COLOR");
-            let args = Args::parse_from(["mutants"]);
-        let config = Config::default();
-            let options = Options::new(&args, &config).unwrap();
-            assert_eq!(options.colors.forced_value(), None);
-
-            remove_var("CLICOLOR_FORCE");
-            set_var("NO_COLOR", "1");
-            let options = Options::new(&args, &Config::default()).unwrap();
-            assert_eq!(options.colors.forced_value(), Some(false));
-
-            remove_var("NO_COLOR");
-            set_var("CLICOLOR_FORCE", "1");
-            let options = Options::new(&args, &Config::default()).unwrap();
-            assert_eq!(options.colors.forced_value(), Some(true));
-
-            remove_var("CLICOLOR_FORCE");
-            remove_var("NO_COLOR");
-            let options = Options::new(&args, &Config::default()).unwrap();
-            assert_eq!(options.colors.forced_value(), None);
-        }
-    }
-
     #[test]
     fn profile_option_from_args() {
         let args = Args::parse_from(["mutants", "--profile=mutants"]);
@@ -1253,5 +1192,97 @@ mod test {
             Sharding::Slice,
             "Default sharding should be slice"
         );
+    }
+
+    #[test]
+    fn no_shuffle_by_default() {
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.shuffle);
+    }
+
+    #[test]
+    fn no_shuffle_option_is_accepted() {
+        let args = Args::parse_from(["mutants", "--no-shuffle"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(!options.shuffle);
+    }
+
+    #[test]
+    fn shuffle_option_is_accepted() {
+        let args = Args::parse_from(["mutants", "--shuffle"]);
+        let config = Config::default();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.shuffle);
+    }
+}
+
+#[cfg(test)]
+mod single_threaded_tests {
+    use clap::Parser;
+
+    use rusty_fork::rusty_fork_test;
+
+    use super::*;
+    use crate::Args;
+    use crate::test_util::{single_threaded_remove_env_var, single_threaded_set_env_var};
+
+    rusty_fork_test! {
+        #[test]
+        fn color_control_from_cargo_env() {
+
+            single_threaded_set_env_var("CARGO_TERM_COLOR", "always");
+            single_threaded_remove_env_var("CLICOLOR_FORCE");
+            single_threaded_remove_env_var("NO_COLOR");
+            let args = Args::parse_from(["mutants"]);
+            let config = Config::default();
+            let options = Options::new(&args, &config).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(true));
+
+            single_threaded_set_env_var("CARGO_TERM_COLOR", "never");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &config).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(false));
+
+            single_threaded_set_env_var("CARGO_TERM_COLOR", "auto");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &config).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+
+            single_threaded_remove_env_var("CARGO_TERM_COLOR");
+            let args = Args::parse_from(["mutants"]);
+            let options = Options::new(&args, &config).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+        }
+
+        #[test]
+        fn color_control_from_env() {
+            use crate::test_util::single_threaded_remove_env_var;
+
+            single_threaded_remove_env_var("CARGO_TERM_COLOR");
+            single_threaded_remove_env_var("CLICOLOR_FORCE");
+            single_threaded_remove_env_var("NO_COLOR");
+            let args = Args::parse_from(["mutants"]);
+            let config = Config::default();
+            let options = Options::new(&args, &config).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+
+            single_threaded_remove_env_var("CLICOLOR_FORCE");
+            single_threaded_set_env_var("NO_COLOR", "1");
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(false));
+
+            single_threaded_remove_env_var("NO_COLOR");
+            single_threaded_set_env_var("CLICOLOR_FORCE", "1");
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), Some(true));
+
+            single_threaded_remove_env_var("CLICOLOR_FORCE");
+            single_threaded_remove_env_var("NO_COLOR");
+            let options = Options::new(&args, &Config::default()).unwrap();
+            assert_eq!(options.colors.forced_value(), None);
+        }
     }
 }

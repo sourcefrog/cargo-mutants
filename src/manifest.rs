@@ -11,8 +11,8 @@ use anyhow::Context;
 use camino::Utf8Path;
 use tracing::debug;
 
-use crate::path::ascent;
 use crate::Result;
+use crate::path::ascent;
 
 /// Rewrite the scratch copy of a manifest to have absolute paths.
 ///
@@ -89,14 +89,12 @@ fn fix_manifest_toml(
 fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Utf8Path) {
     if let Some(dependencies_table) = dependencies.as_table_mut() {
         for (_, value) in dependencies_table.iter_mut() {
-            if let Some(dependency_table) = value.as_table_mut() {
-                if let Some(path_value) = dependency_table.get_mut("path") {
-                    if let Some(path_str) = path_value.as_str() {
-                        if let Some(new_path) = fix_path(path_str, manifest_source_dir) {
-                            *path_value = toml::Value::String(new_path);
-                        }
-                    }
-                }
+            if let Some(dependency_table) = value.as_table_mut()
+                && let Some(path_value) = dependency_table.get_mut("path")
+                && let Some(path_str) = path_value.as_str()
+                && let Some(new_path) = fix_path(path_str, manifest_source_dir)
+            {
+                *path_value = toml::Value::String(new_path);
             }
         }
     }
@@ -125,11 +123,11 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
     let mut changed = false;
     if let Some(paths) = value.get_mut("paths").and_then(|p| p.as_array_mut()) {
         for path_value in paths {
-            if let Some(path_str) = path_value.as_str() {
-                if let Some(new_path) = fix_path(path_str, source_dir) {
-                    *path_value = toml::Value::String(new_path);
-                    changed = true;
-                }
+            if let Some(path_str) = path_value.as_str()
+                && let Some(new_path) = fix_path(path_str, source_dir)
+            {
+                *path_value = toml::Value::String(new_path);
+                changed = true;
             }
         }
     }

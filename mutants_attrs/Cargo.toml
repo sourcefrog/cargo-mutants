@@ -1,6 +1,6 @@
 [package]
 name = "mutants"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2018"
 license = "MIT"
 description = "Decorator attributes to be used with cargo-mutants"

@@ -10,11 +10,10 @@
 use std::borrow::Borrow;
 use std::env;
 use std::fs::{read_dir, read_to_string, rename};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use itertools::Itertools;
-use lazy_static::lazy_static;
 use tempfile::TempDir;
 
 /// A timeout for a `cargo mutants` invocation from the test suite. Needs to be
@@ -22,41 +21,6 @@ use tempfile::TempDir;
 /// CI VMs and even on Windows, but short enough that the test does not hang
 /// forever.
 pub const OUTER_TIMEOUT: Duration = Duration::from_secs(60);
-
-lazy_static! {
-    pub static ref MAIN_BINARY: PathBuf = assert_cmd::cargo::cargo_bin("cargo-mutants");
-}
-
-pub fn run() -> assert_cmd::Command {
-    let mut cmd = assert_cmd::Command::new(MAIN_BINARY.as_os_str());
-    // Strip any options configured in the environment running these tests,
-    // so that they don't cause unexpected behavior in the code under test.
-    //
-    // For example, without this,
-    // `env CARGO_MUTANTS_JOBS=4 cargo mutants`
-    //
-    // would end up with tests running 4 jobs by default, which would cause
-    // the tests to fail.
-    //
-    // Even more generally than that example, we want the tests to be as hermetic
-    // as reasonably possible.
-    //
-    // Also strip GITHUB_ACTION to avoid automatically emitting github annotations,
-    // so that tests are more hermetic and reproducible between local and CI.
-    env::vars()
-        .map(|(k, _v)| k)
-        .filter(|k| {
-            k.starts_with("CARGO_MUTANTS_")
-                || k == "CLICOLOR_FORCE"
-                || k == "NOCOLOR"
-                || k == "CARGO_TERM_COLOR"
-                || k == "GITHUB_ACTION"
-        })
-        .for_each(|k| {
-            cmd.env_remove(k);
-        });
-    cmd
-}
 
 pub trait CommandInstaExt {
     fn assert_insta(&mut self, snapshot_name: &str);
@@ -161,4 +125,15 @@ pub fn outcome_json_counts(tmp_src_dir: &TempDir) -> serde_json::Value {
     outcomes_object.remove("start_time").unwrap();
     outcomes_object.remove("cargo_mutants_version").unwrap();
     outcomes
+}
+
+/// Safely remove an environment variable inside a single-threaded `rusty_fork` test.
+///
+/// See <https://github.com/AltSysrq/rusty-fork/issues/16>
+pub fn single_threaded_remove_env_var(key: &str) {
+    unsafe { env::remove_var(key) };
+}
+
+pub fn single_threaded_set_env_var(key: &str, value: &str) {
+    unsafe { env::set_var(key, value) };
 }

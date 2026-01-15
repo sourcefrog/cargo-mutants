@@ -6,12 +6,12 @@
 #![allow(clippy::module_name_repetitions)]
 
 use itertools::Itertools;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
+use crate::Options;
 use crate::mutant::Mutant;
 use crate::path::Utf8PathSlashes;
 use crate::source::SourceFile;
-use crate::Options;
 
 /// Return a string representation of a list of mutants.
 ///

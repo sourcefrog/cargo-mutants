@@ -2,8 +2,8 @@
 
 //! A `mutants.out` directory holding logs and other output.
 
-use std::collections::{hash_map::Entry, HashMap};
-use std::fs::{create_dir, read_to_string, remove_dir_all, rename, write, File, OpenOptions};
+use std::collections::{HashMap, hash_map::Entry};
+use std::fs::{File, OpenOptions, create_dir, read_to_string, remove_dir_all, rename, write};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 use std::thread::sleep;
@@ -17,7 +17,7 @@ use serde::Serialize;
 use tracing::{info, trace};
 
 use crate::outcome::{LabOutcome, SummaryOutcome};
-use crate::{check_interrupted, Context, Mutant, Result, Scenario, ScenarioOutcome};
+use crate::{Context, Mutant, Result, Scenario, ScenarioOutcome, check_interrupted};
 
 const OUTDIR_NAME: &str = "mutants.out";
 const ROTATED_NAME: &str = "mutants.out.old";
@@ -371,7 +371,7 @@ mod test {
     use indoc::indoc;
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
-    use tempfile::{tempdir, TempDir};
+    use tempfile::{TempDir, tempdir};
 
     use super::*;
     use crate::workspace::Workspace;
@@ -461,31 +461,41 @@ mod test {
         // The second time we create it in the same directory, the old one is moved away.
         let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.start_scenario(&Scenario::Baseline).unwrap();
-        assert!(temp_dir
-            .path()
-            .join("mutants.out.old/log/baseline.log")
-            .is_file());
-        assert!(temp_dir
-            .path()
-            .join("mutants.out/log/baseline.log")
-            .is_file());
+        assert!(
+            temp_dir
+                .path()
+                .join("mutants.out.old/log/baseline.log")
+                .is_file()
+        );
+        assert!(
+            temp_dir
+                .path()
+                .join("mutants.out/log/baseline.log")
+                .is_file()
+        );
         drop(output_dir);
 
         // The third time (and later), the .old directory is removed.
         let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
         output_dir.start_scenario(&Scenario::Baseline).unwrap();
-        assert!(temp_dir
-            .path()
-            .join("mutants.out/log/baseline.log")
-            .is_file());
-        assert!(temp_dir
-            .path()
-            .join("mutants.out.old/log/baseline.log")
-            .is_file());
-        assert!(temp_dir
-            .path()
-            .join("mutants.out.old/log/baseline.log")
-            .is_file());
+        assert!(
+            temp_dir
+                .path()
+                .join("mutants.out/log/baseline.log")
+                .is_file()
+        );
+        assert!(
+            temp_dir
+                .path()
+                .join("mutants.out.old/log/baseline.log")
+                .is_file()
+        );
+        assert!(
+            temp_dir
+                .path()
+                .join("mutants.out.old/log/baseline.log")
+                .is_file()
+        );
     }
 
     #[test]
@@ -498,14 +508,18 @@ src/process.rs:248:5: replace get_command_output -> Result<String> with Ok(Strin
 ";
 
         // Read from an empty dir: succeeds.
-        assert!(load_previously_caught(parent)
-            .expect("load succeeds")
-            .is_empty());
+        assert!(
+            load_previously_caught(parent)
+                .expect("load succeeds")
+                .is_empty()
+        );
 
         let output_dir = OutputDir::new(parent).unwrap();
-        assert!(load_previously_caught(parent)
-            .expect("load succeeds")
-            .is_empty());
+        assert!(
+            load_previously_caught(parent)
+                .expect("load succeeds")
+                .is_empty()
+        );
 
         write(parent.join("mutants.out/caught.txt"), example.as_bytes()).unwrap();
         let previously_caught = load_previously_caught(parent).expect("load succeeds");

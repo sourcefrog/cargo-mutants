@@ -1,6 +1,7 @@
 ---
-source: tests/error_value.rs
+source: tests/main.rs
 expression: stdout
+snapshot_kind: text
 ---
 Found 3 mutants to test
 ok       Unmutated baseline
@@ -8,4 +9,3 @@ caught   src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Ok
 caught   src/lib.rs:4:5: replace zero_is_ok -> Result<u32, &'static str> with Ok(1)
 caught   src/lib.rs:4:10: replace == with != in zero_is_ok
 3 mutants tested: 3 caught
-

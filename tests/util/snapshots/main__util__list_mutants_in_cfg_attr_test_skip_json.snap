@@ -23,6 +23,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/lib.rs:18:5: replace double -> usize with 0",
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "0",
     "span": {
@@ -54,6 +55,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "FnValue",
+    "name": "src/lib.rs:18:5: replace double -> usize with 1",
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "1",
     "span": {
@@ -85,6 +87,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/lib.rs:18:7: replace * with + in double",
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "+",
     "span": {
@@ -116,6 +119,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/lib.rs:18:7: replace * with / in double",
     "package": "cargo-mutants-testdata-cfg-attr-test-skip",
     "replacement": "/",
     "span": {

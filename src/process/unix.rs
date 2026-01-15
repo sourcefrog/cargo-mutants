@@ -3,7 +3,7 @@ use std::process::{Child, Command, ExitStatus};
 
 use anyhow::bail;
 use nix::errno::Errno;
-use nix::sys::signal::{killpg, Signal};
+use nix::sys::signal::{Signal, killpg};
 use nix::unistd::Pid;
 use tracing::warn;
 

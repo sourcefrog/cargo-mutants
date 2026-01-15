@@ -6,17 +6,17 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use anyhow::Result;
-use console::{style, StyledObject};
-use serde::ser::{SerializeStruct, Serializer};
+use console::{StyledObject, style};
 use serde::Serialize;
+use serde::ser::{SerializeStruct, Serializer};
 use similar::TextDiff;
 use tracing::trace;
 
+use crate::MUTATION_MARKER_COMMENT;
 use crate::build_dir::BuildDir;
 use crate::output::clean_filename;
 use crate::source::SourceFile;
 use crate::span::Span;
-use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
@@ -49,6 +49,12 @@ pub enum MutationTarget {
 /// A mutation applied to source code.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Mutant {
+    /// A precomputed human-readable name for this mutant, including the file,
+    /// location, and change description.
+    ///
+    /// This is used in CLI output, filtering, and JSON.
+    pub name: String,
+
     /// Which file is being mutated.
     pub source_file: SourceFile,
 
@@ -103,6 +109,34 @@ pub struct Function {
 }
 
 impl Mutant {
+    /// Construct a mutant discovered while walking source code.
+    ///
+    /// This initializes all fields and precomputes the human-readable `name`
+    /// (including file path, line/column, and change description) for use in
+    /// CLI output, filtering, and JSON.
+    pub(crate) fn new_discovered(
+        source_file: SourceFile,
+        function: Option<Arc<Function>>,
+        span: Span,
+        short_replaced: Option<String>,
+        replacement: String,
+        genre: Genre,
+        target: Option<MutationTarget>,
+    ) -> Self {
+        let mut mutant = Mutant {
+            name: String::new(),
+            source_file,
+            function,
+            span,
+            short_replaced,
+            replacement,
+            genre,
+            target,
+        };
+        mutant.name = mutant.name(true);
+        mutant
+    }
+
     /// Return text of the whole file with the mutation applied.
     pub fn mutated_code(&self) -> String {
         self.span.replace(
@@ -225,11 +259,11 @@ impl Mutant {
                 }
             }
         }
-        if !matches!(self.genre, Genre::FnValue) {
-            if let Some(func) = &self.function {
-                v.push(s(" in "));
-                v.push(s(&func.function_name).bright().magenta());
-            }
+        if !matches!(self.genre, Genre::FnValue)
+            && let Some(func) = &self.function
+        {
+            v.push(s(" in "));
+            v.push(s(&func.function_name).bright().magenta());
         }
         v
     }
@@ -305,6 +339,7 @@ impl Serialize for Mutant {
     {
         // custom serialize to omit inessential info
         let mut ss = serializer.serialize_struct("Mutant", 7)?;
+        ss.serialize_field("name", &self.name)?;
         ss.serialize_field("package", &self.source_file.package.name)?;
         ss.serialize_field("file", &self.source_file.tree_relative_slashes())?;
         ss.serialize_field("function", &self.function.as_ref().map(Arc::as_ref))?;

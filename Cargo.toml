@@ -1,7 +1,7 @@
 [package]
 name = "cargo-mutants"
-version = "25.3.1"
-edition = "2021"
+version = "26.1.2"
+edition = "2024"
 authors = ["Martin Pool"]
 license = "MIT"
 description = "Inject bugs and see if your tests catch them"
@@ -9,7 +9,7 @@ repository = "https://github.com/sourcefrog/cargo-mutants"
 homepage = "https://mutants.rs/"
 categories = ["development-tools::testing"]
 keywords = ["testing", "mutants", "cargo", "mutation-testing", "coverage"]
-rust-version = "1.78"
+rust-version = "1.88"
 
 [package.metadata.wix]
 upgrade-guid = "CA7BFE8D-F3A7-4D1D-AE43-B7749110FA90"
@@ -34,6 +34,7 @@ color-print = "0.3"
 console = "0.15"
 ctrlc = { version = "3.4", features = ["termination"] }
 fastrand = "2"
+flickzeug = "0.4.5"
 fs2 = "0.4"
 globset = "0.4.16"
 ignore = "0.4.23"
@@ -44,10 +45,8 @@ jobserver = "0.1"
 mutants = "0.0.3"
 nextest-metadata = "0.12.1"
 num_cpus = "1.16"
-patch = "0.7"
 path-slash = "0.2"
 quote = "1.0.35"
-reflink = "0.1"
 regex = "1.10"
 schemars = "0.9"
 serde_json = "1.0.128"
@@ -57,7 +56,6 @@ tempfile = "3.20"
 test-log = { version = "0.2.16", features = ["trace"] }
 toml = "0.8"
 tracing = "0.1.41"
-tracing-appender = "0.2"
 tracing-subscriber = "0.3.20"
 whoami = "1.5"
 
@@ -81,6 +79,12 @@ features = ["full", "extra-traits", "visit"]
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.30", features = ["process", "signal"] }
 
+# reflink is disabled on musl for the time being due to
+# <https://github.com/nicokoch/reflink/issues/11> and
+# <https://github.com/sourcefrog/cargo-mutants/issues/581>
+[target.'cfg(not(target_env = "musl"))'.dependencies]
+reflink = "0.1"
+
 [dev-dependencies]
 assert_cmd = "2.0"
 assert_matches = "1.5"
@@ -89,7 +93,7 @@ insta = "1.12"
 lazy_static = "1.4"
 predicates = "3"
 pretty_assertions = "1"
-rusty-fork = "0.3"
+rusty-fork = "0.3.1"
 walkdir = "2.5"
 
 [workspace]
