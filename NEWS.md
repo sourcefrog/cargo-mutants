@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Other
 
-- Add 26.1.0 release to news
-- Set up release-plz action in dry run mode
+- Switch to using release-plz for release automation.
+ 
 # cargo-mutants changelog
 
 ## 26.1.0 2026-01-15
