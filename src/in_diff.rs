@@ -363,6 +363,41 @@ index eb42779..a0091b7 100644
         assert_eq!(err.unwrap_err().exit_code(), 0);
     }
 
+    /// https://github.com/sourcefrog/cargo-mutants/issues/580
+    #[test]
+    fn parse_diff_with_only_moves() {
+        let diff_str = "\
+diff --git a/tests/test-utils/Cargo.toml b/test-utils/Cargo.toml
+similarity index 100%
+rename from tests/test-utils/Cargo.toml
+rename to test-utils/Cargo.toml
+diff --git a/tests/test-utils/src/io.rs b/test-utils/src/io.rs
+similarity index 100%
+rename from tests/test-utils/src/io.rs
+rename to test-utils/src/io.rs
+diff --git a/tests/test-utils/src/lib.rs b/test-utils/src/lib.rs
+similarity index 100%
+rename from tests/test-utils/src/lib.rs
+rename to test-utils/src/lib.rs
+diff --git a/tests/test-utils/src/read.rs b/test-utils/src/read.rs
+similarity index 100%
+rename from tests/test-utils/src/read.rs
+rename to test-utils/src/read.rs
+diff --git a/tests/test-utils/src/write.rs b/test-utils/src/write.rs
+similarity index 100%
+rename from tests/test-utils/src/write.rs
+rename to test-utils/src/write.rs
+";
+        // Assert our diff library, Flickzeug, doesn't break on this
+        let diffs = flickzeug::patch_from_str(diff_str).unwrap();
+        assert_eq!(diffs.len(), 5);
+        diffs.iter().for_each(|diff| {
+            assert_eq!(diff.hunks().len(), 0);
+        });
+        let err = diff_filter(Vec::new(), diff_str);
+        assert_eq!(err, Err(DiffFilterError::NoMutants));
+    }
+
     #[test]
     fn read_diff_with_no_sourcecode() {
         let diff = "\
