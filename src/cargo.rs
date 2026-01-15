@@ -206,7 +206,10 @@ mod test {
     use pretty_assertions::assert_eq;
     use rusty_fork::rusty_fork_test;
 
-    use crate::Args;
+    use crate::{
+        test_util::{single_threaded_remove_env_var, single_threaded_set_env_var},
+        Args,
+    };
 
     use super::*;
 
@@ -384,8 +387,8 @@ mod test {
     rusty_fork_test! {
         #[test]
         fn rustflags_without_cap_lints_and_no_environment_variables() {
-            env::remove_var("RUSTFLAGS");
-            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            single_threaded_remove_env_var("RUSTFLAGS");
+            single_threaded_remove_env_var("CARGO_ENCODED_RUSTFLAGS");
             assert_eq!(
                 encoded_rustflags(&Options {
                     ..Default::default()
@@ -395,8 +398,8 @@ mod test {
         }
         #[test]
         fn rustflags_with_cap_lints_and_no_environment_variables() {
-            env::remove_var("RUSTFLAGS");
-            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            single_threaded_remove_env_var("RUSTFLAGS");
+            single_threaded_remove_env_var("CARGO_ENCODED_RUSTFLAGS");
             assert_eq!(
                 encoded_rustflags(&Options {
                     cap_lints: true,
@@ -409,7 +412,7 @@ mod test {
         // Don't generate an empty argument if the encoded rustflags is empty.
         #[test]
         fn rustflags_with_empty_encoded_rustflags() {
-            env::set_var("CARGO_ENCODED_RUSTFLAGS", "");
+            single_threaded_set_env_var("CARGO_ENCODED_RUSTFLAGS", "");
             assert_eq!(
                 encoded_rustflags(&Options {
                     cap_lints: true,
@@ -421,8 +424,8 @@ mod test {
 
         #[test]
         fn rustflags_added_to_existing_encoded_rustflags() {
-            env::set_var("RUSTFLAGS", "--something\x1f--else");
-            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            single_threaded_set_env_var("RUSTFLAGS", "--something\x1f--else");
+            single_threaded_remove_env_var("CARGO_ENCODED_RUSTFLAGS");
             let options = Options {
                 cap_lints: true,
                 ..Default::default()
@@ -432,8 +435,8 @@ mod test {
 
         #[test]
         fn rustflags_added_to_existing_rustflags() {
-            env::set_var("RUSTFLAGS", "-Dwarnings");
-            env::remove_var("CARGO_ENCODED_RUSTFLAGS");
+            single_threaded_set_env_var("RUSTFLAGS", "-Dwarnings");
+            single_threaded_remove_env_var("CARGO_ENCODED_RUSTFLAGS");
             assert_eq!(encoded_rustflags(&Options {
                 cap_lints: true,
                 ..Default::default()

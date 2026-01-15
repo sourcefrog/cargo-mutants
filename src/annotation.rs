@@ -71,7 +71,11 @@ impl ResolvedAnnotation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{options::Options, visit::mutate_source_str};
+    use crate::{
+        options::Options,
+        test_util::{single_threaded_remove_env_var, single_threaded_set_env_var},
+        visit::mutate_source_str,
+    };
 
     use super::*;
 
@@ -81,13 +85,13 @@ mod tests {
     rusty_fork_test! {
         #[test]
         fn resolve_auto_not_on_github() {
-            env::remove_var("GITHUB_ACTION");
+            single_threaded_remove_env_var("GITHUB_ACTION");
             assert_eq!(AutoAnnotation::Auto.resolve(), ResolvedAnnotation::None);
         }
 
         #[test]
         fn resolve_auto_github_isolated() {
-            env::set_var("GITHUB_ACTION", "something");
+            single_threaded_set_env_var("GITHUB_ACTION", "something");
             assert_eq!(AutoAnnotation::Auto.resolve(), ResolvedAnnotation::GitHub);
         }
     }

@@ -8,6 +8,7 @@
 //! cargo-mutants (as `use crate::test_util`).
 
 use std::borrow::Borrow;
+use std::env;
 use std::fs::{read_dir, read_to_string, rename};
 use std::path::Path;
 use std::time::Duration;
@@ -124,4 +125,15 @@ pub fn outcome_json_counts(tmp_src_dir: &TempDir) -> serde_json::Value {
     outcomes_object.remove("start_time").unwrap();
     outcomes_object.remove("cargo_mutants_version").unwrap();
     outcomes
+}
+
+/// Safely remove an environment variable inside a single-threaded `rusty_fork` test.
+///
+/// See <https://github.com/AltSysrq/rusty-fork/issues/16>
+pub fn single_threaded_remove_env_var(key: &str) {
+    unsafe { env::remove_var(key) };
+}
+
+pub fn single_threaded_set_env_var(key: &str, value: &str) {
+    unsafe { env::set_var(key, value) };
 }
