@@ -16,7 +16,7 @@ use std::vec;
 
 use camino::{Utf8Path, Utf8PathBuf};
 use proc_macro2::{Ident, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
@@ -30,7 +30,7 @@ use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
 use crate::span::Span;
-use crate::{check_interrupted, Console, Context, Genre, Mutant, Options, Result};
+use crate::{Console, Context, Genre, Mutant, Options, Result, check_interrupted};
 
 /// Mutants and files discovered in a source tree.
 ///

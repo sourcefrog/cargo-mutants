@@ -16,12 +16,12 @@ use std::time::{Duration, Instant};
 use anyhow::Context;
 use camino::Utf8Path;
 use serde::Serialize;
-use tracing::{debug, span, trace, Level};
+use tracing::{Level, debug, span, trace};
 
+use crate::Result;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::output::ScenarioOutput;
-use crate::Result;
 
 /// How frequently to check if a subprocess finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);

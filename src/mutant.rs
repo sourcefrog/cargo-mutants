@@ -6,17 +6,17 @@ use std::borrow::Cow;
 use std::sync::Arc;
 
 use anyhow::Result;
-use console::{style, StyledObject};
-use serde::ser::{SerializeStruct, Serializer};
+use console::{StyledObject, style};
 use serde::Serialize;
+use serde::ser::{SerializeStruct, Serializer};
 use similar::TextDiff;
 use tracing::trace;
 
+use crate::MUTATION_MARKER_COMMENT;
 use crate::build_dir::BuildDir;
 use crate::output::clean_filename;
 use crate::source::SourceFile;
 use crate::span::Span;
-use crate::MUTATION_MARKER_COMMENT;
 
 /// Various broad categories of mutants.
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
@@ -259,11 +259,11 @@ impl Mutant {
                 }
             }
         }
-        if !matches!(self.genre, Genre::FnValue) {
-            if let Some(func) = &self.function {
-                v.push(s(" in "));
-                v.push(s(&func.function_name).bright().magenta());
-            }
+        if !matches!(self.genre, Genre::FnValue)
+            && let Some(func) = &self.function
+        {
+            v.push(s(" in "));
+            v.push(s(&func.function_name).bright().magenta());
         }
         v
     }

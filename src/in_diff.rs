@@ -18,7 +18,7 @@ use tracing::{error, trace, warn};
 
 use crate::mutant::Mutant;
 use crate::source::SourceFile;
-use crate::{exit_code, Result};
+use crate::{Result, exit_code};
 
 /// The result of filtering mutants based on a diff.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -239,7 +239,7 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
                 Line::Add(_) | Line::Context(_) => {
                     if prev_removed {
                         debug_assert!(
-                            affected_lines.last().map_or(true, |last| *last < lineno),
+                            affected_lines.last().is_none_or(|last| *last < lineno),
                             "{lineno} {affected_lines:?}"
                         );
                         debug_assert!(lineno >= 1, "{lineno}");
@@ -253,7 +253,7 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
                     lineno += 1;
                 }
                 Line::Add(_) => {
-                    if affected_lines.last().map_or(true, |last| *last != lineno) {
+                    if affected_lines.last().is_none_or(|last| *last != lineno) {
                         affected_lines.push(lineno);
                     }
                     lineno += 1;
@@ -262,7 +262,7 @@ fn affected_lines(patch: &Patch) -> Vec<usize> {
                     if lineno > 1
                         && affected_lines
                             .last()
-                            .map_or(true, |last| *last != (lineno - 1))
+                            .is_none_or(|last| *last != (lineno - 1))
                     {
                         affected_lines.push(lineno - 1);
                     }
@@ -293,7 +293,7 @@ fn partial_new_file<'d>(patch: &Patch<'d>) -> Vec<(usize, &'d str)> {
                 Line::Context(text) | Line::Add(text) => {
                     debug_assert!(lineno >= 1, "{lineno}");
                     debug_assert!(
-                        r.last().map_or(true, |last| last.0 < lineno),
+                        r.last().is_none_or(|last| last.0 < lineno),
                         "{lineno} {r:?}"
                     );
                     r.push((lineno, text));

@@ -13,7 +13,7 @@ use tempfile::TempDir;
 use tracing::{debug, warn};
 
 use crate::options::Options;
-use crate::{check_interrupted, Console, Result};
+use crate::{Console, Result, check_interrupted};
 
 #[cfg(unix)]
 mod unix;
@@ -161,9 +161,9 @@ mod test {
     use camino::Utf8PathBuf;
     use tempfile::TempDir;
 
+    use crate::Result;
     use crate::console::Console;
     use crate::options::Options;
-    use crate::Result;
 
     use super::copy_tree;
 

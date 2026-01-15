@@ -19,8 +19,8 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use tracing::debug;
 
-use crate::options::Common;
 use crate::Result;
+use crate::options::Common;
 
 // NOTE: Docstrings on this struct and its members turn into descriptions in the JSON schema,
 // so keep them focused on the externally-visible behavior.

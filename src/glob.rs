@@ -50,9 +50,11 @@ mod test {
 
     #[test]
     fn empty_globs() {
-        assert!(build_glob_set(&[] as &[&str])
-            .expect("build GlobSet")
-            .is_none());
+        assert!(
+            build_glob_set(&[] as &[&str])
+                .expect("build GlobSet")
+                .is_none()
+        );
     }
 
     #[test]

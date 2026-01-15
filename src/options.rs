@@ -381,10 +381,12 @@ impl Options {
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
         };
-        if let Some(jobs) = options.jobs {
-            if jobs > 8 {
-                warn!("--jobs={jobs} is probably too high and may overload your machine: each job runs a separate `cargo` process, and cargo may internally start many threads and subprocesses; values <= 8 are usually safe");
-            }
+        if let Some(jobs) = options.jobs
+            && jobs > 8
+        {
+            warn!(
+                "--jobs={jobs} is probably too high and may overload your machine: each job runs a separate `cargo` process, and cargo may internally start many threads and subprocesses; values <= 8 are usually safe"
+            );
         }
         options.error_values.iter().for_each(|e| {
             if e.starts_with("Err(") {
@@ -462,7 +464,7 @@ impl Options {
         // TODO: Use Option::is_none_or when MSRV>1.80
         self.examine_globset
             .as_ref()
-            .map_or(true, |g| g.is_match(path))
+            .is_none_or(|g| g.is_match(path))
             && !self
                 .exclude_globset
                 .as_ref()
@@ -491,11 +493,7 @@ impl Options {
 
 /// If the first slices is non-empty, return that, otherwise the second.
 fn or_slices<'a: 'c, 'b: 'c, 'c, T>(a: &'a [T], b: &'b [T]) -> &'c [T] {
-    if a.is_empty() {
-        b
-    } else {
-        a
-    }
+    if a.is_empty() { b } else { a }
 }
 
 #[cfg(test)]
@@ -1228,8 +1226,8 @@ mod single_threaded_tests {
     use rusty_fork::rusty_fork_test;
 
     use super::*;
-    use crate::test_util::{single_threaded_remove_env_var, single_threaded_set_env_var};
     use crate::Args;
+    use crate::test_util::{single_threaded_remove_env_var, single_threaded_set_env_var};
 
     rusty_fork_test! {
         #[test]

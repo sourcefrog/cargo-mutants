@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 use nextest_metadata::NextestExitCode;
 use tracing::{debug, debug_span, warn};
 
+use crate::Result;
 use crate::build_dir::BuildDir;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
@@ -20,7 +21,6 @@ use crate::outcome::{Phase, PhaseResult};
 use crate::output::ScenarioOutput;
 use crate::package::PackageSelection;
 use crate::process::{Exit, Process};
-use crate::Result;
 
 // Allowed nextest codes (those will be considered a mutation caught / ignored without a warning)
 const NEXTEST_ALLOWED_CODES: &[i32] = &[
@@ -66,12 +66,13 @@ pub fn run_cargo(
     )?;
     check_interrupted()?;
     debug!(?process_status, elapsed = ?start.elapsed());
-    if let Exit::Failure(code) = process_status {
-        if argv[1] == "nextest" && !NEXTEST_ALLOWED_CODES.contains(&code) {
-            // Nextest returns detailed exit codes. I think we should still treat any non-zero result as just an
-            // error, but we can at least warn if it's unexpected.
-            warn!(%code, "nextest process exited with unexpected code (allowed: {NEXTEST_ALLOWED_CODES:?})");
-        }
+    if let Exit::Failure(code) = process_status
+        && argv[1] == "nextest"
+        && !NEXTEST_ALLOWED_CODES.contains(&code)
+    {
+        // Nextest returns detailed exit codes. I think we should still treat any non-zero result as
+        // just an error, but we can at least warn if it's unexpected.
+        warn!(%code, "nextest process exited with unexpected code (allowed: {NEXTEST_ALLOWED_CODES:?})");
     }
     Ok(PhaseResult {
         phase,
@@ -207,8 +208,8 @@ mod test {
     use rusty_fork::rusty_fork_test;
 
     use crate::{
-        test_util::{single_threaded_remove_env_var, single_threaded_set_env_var},
         Args,
+        test_util::{single_threaded_remove_env_var, single_threaded_set_env_var},
     };
 
     use super::*;

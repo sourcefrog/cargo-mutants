@@ -21,19 +21,19 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::{Context, anyhow, bail, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
 use itertools::Itertools;
 use serde_json::Value;
 use tracing::{debug, error, warn};
 
+use crate::Result;
 use crate::cargo::cargo_bin;
 use crate::console::Console;
 use crate::interrupt::check_interrupted;
 use crate::options::Options;
-use crate::package::{packages_from_metadata, Package, PackageSelection};
-use crate::visit::{walk_tree, Discovered};
-use crate::Result;
+use crate::package::{Package, PackageSelection, packages_from_metadata};
+use crate::visit::{Discovered, walk_tree};
 
 /// Which packages to mutate in a workspace?
 ///

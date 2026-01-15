@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use camino::{Utf8Path, Utf8PathBuf};
-use console::{style, StyledObject};
+use console::{StyledObject, style};
 use nutmeg::Destination;
 use tracing::Level;
 use tracing_subscriber::fmt::MakeWriter;
@@ -116,12 +116,12 @@ impl Console {
         }
         s.push('\n');
         self.message(&s);
-        if let Some(mutant) = scenario.mutant() {
-            if outcome.mutant_missed() {
-                let annotation = options.annotations.format(mutant);
-                if !annotation.is_empty() {
-                    self.message(&annotation);
-                }
+        if let Some(mutant) = scenario.mutant()
+            && outcome.mutant_missed()
+        {
+            let annotation = options.annotations.format(mutant);
+            if !annotation.is_empty() {
+                self.message(&annotation);
             }
         }
     }

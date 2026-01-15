@@ -12,7 +12,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use tracing::{debug, info, warn};
 
 use crate::package::Package;
-use crate::path::{ascent, Utf8PathSlashes};
+use crate::path::{Utf8PathSlashes, ascent};
 use crate::span::LineColumn;
 
 /// A Rust source file within a source tree.
