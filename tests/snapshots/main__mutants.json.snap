@@ -1,6 +1,6 @@
 ---
 source: tests/main.rs
-assertion_line: 436
+assertion_line: 373
 expression: mutants_json
 
 ---
@@ -23,6 +23,7 @@ expression: mutants_json
       }
     },
     "genre": "FnValue",
+    "name": "src/bin/factorial.rs:2:5: replace main with ()",
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "()",
     "span": {
@@ -54,6 +55,7 @@ expression: mutants_json
       }
     },
     "genre": "FnValue",
+    "name": "src/bin/factorial.rs:8:5: replace factorial -> u32 with 0",
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "0",
     "span": {
@@ -85,6 +87,7 @@ expression: mutants_json
       }
     },
     "genre": "FnValue",
+    "name": "src/bin/factorial.rs:8:5: replace factorial -> u32 with 1",
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "1",
     "span": {
@@ -116,6 +119,7 @@ expression: mutants_json
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/bin/factorial.rs:10:11: replace *= with += in factorial",
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "+=",
     "span": {
@@ -147,6 +151,7 @@ expression: mutants_json
       }
     },
     "genre": "BinaryOperator",
+    "name": "src/bin/factorial.rs:10:11: replace *= with /= in factorial",
     "package": "cargo-mutants-testdata-factorial",
     "replacement": "/=",
     "span": {
