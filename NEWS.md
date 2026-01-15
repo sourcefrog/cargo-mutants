@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [26.1.2](https://github.com/sourcefrog/cargo-mutants/compare/cargo-mutants-v26.1.1...cargo-mutants-v26.1.2) - 2026-01-15
+
+### Other
+
+- Shallow fetch in more CI workflows
+- Don't need to run mdbook-linkcheck again during deploy
+- Fix git ref in book deploy job
+- Merge the two book workflows
+
 ## 26.1.1 - 2026-01-15
 
 ### Other
