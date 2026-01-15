@@ -1,0 +1,3 @@
+[[package]]
+name = "cargo-mutants"
+changelog_path = "NEWS.md"
