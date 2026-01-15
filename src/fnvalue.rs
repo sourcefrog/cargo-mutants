@@ -339,7 +339,7 @@ fn known_map(path: &Path) -> Option<(&Ident, &Type, &Type)> {
     {
         // TODO: Skip lifetime args.
         // TODO: Return the path with args stripped out.
-        if let Some((GenericArgument::Type(ref key_type), GenericArgument::Type(ref value_type))) =
+        if let Some((GenericArgument::Type(key_type), GenericArgument::Type(value_type))) =
             args.iter().collect_tuple()
         {
             return Some((&last.ident, key_type, value_type));
@@ -441,7 +441,7 @@ fn match_first_type_arg<'p>(path: &'p Path, expected_ident: &str) -> Option<&'p 
 mod test {
     use itertools::Itertools;
     use pretty_assertions::assert_eq;
-    use syn::{parse_quote, Expr, ReturnType};
+    use syn::{Expr, ReturnType, parse_quote};
 
     use crate::fnvalue::match_impl_iterator;
     use crate::pretty::ToPrettyString;
