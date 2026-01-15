@@ -36,7 +36,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.repository == 'sourcefrog/cargo-mutants' && github.ref == 'refs/head/main'
+    if: github.repository == 'sourcefrog/cargo-mutants' && github.ref == 'refs/heads/main'
 
     permissions:
       contents: read
