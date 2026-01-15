@@ -1,4 +1,5 @@
-name: Build book
+name: Book
+
 on:
   push:
     branches:
@@ -32,3 +33,43 @@ jobs:
         with:
           name: book
           path: book/book
+
+  deploy:
+    needs: build
+    if: github.repository == 'sourcefrog/cargo-mutants' && github.ref == 'refs/head/main'
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency: # Allow one concurrent deployment
+      group: "pages"
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install mdbook
+        uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook
+      - name: Install mdbook-linkcheck
+        # Temporarily pull the fix for https://github.com/Michael-F-Bryan/mdbook-linkcheck/pull/98
+        run: cargo install mdbook-linkcheck --git https://github.com/schilkp/mdbook-linkcheck --branch mdbook_v0.5
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Build book
+        run: |
+          mdbook build book
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "book/book/html"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
