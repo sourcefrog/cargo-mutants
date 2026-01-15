@@ -7,6 +7,7 @@ use crate::Mutant;
 
 /// A scenario is either a freshening build in the source tree, a baseline test with no mutations, or a mutation test.
 #[derive(Clone, Eq, PartialEq, Debug, Serialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum Scenario {
     /// Build in a copy of the source tree but with no mutations applied.
     Baseline,

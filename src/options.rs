@@ -462,7 +462,7 @@ impl Options {
         // TODO: Use Option::is_none_or when MSRV>1.80
         self.examine_globset
             .as_ref()
-            .map_or(true, |g| g.is_match(path))
+            .is_none_or(|g| g.is_match(path))
             && !self
                 .exclude_globset
                 .as_ref()

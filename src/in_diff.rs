@@ -90,7 +90,7 @@ pub fn diff_filter_file(
 
 /// Filter a list of mutants to those intersecting a diff on the file tree.
 pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>, DiffFilterError> {
-    let patches = match flickzeug::patch_from_str(&diff_text) {
+    let patches = match flickzeug::patch_from_str(diff_text) {
         Ok(patches) => patches,
         Err(err) => return Err(DiffFilterError::InvalidDiff(err.to_string())), // squash to a string to simplify lifetimes
     };
@@ -103,7 +103,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
     let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
     let mut changed_rs_file = false;
     for patch in &patches {
-        let path = strip_patch_path(&patch.modified().unwrap_or_default());
+        let path = strip_patch_path(patch.modified().unwrap_or_default());
         if path != "/dev/null" && path.extension() == Some("rs") {
             changed_rs_file = true;
             lines_changed_by_path
@@ -224,7 +224,7 @@ fn affected_lines(diff: &Diff<str>) -> Vec<usize> {
                 Line::Insert(_) | Line::Context(_) => {
                     if prev_removed {
                         debug_assert!(
-                            affected_lines.last().map_or(true, |last| *last < lineno),
+                            affected_lines.last().is_none_or(|last| *last < lineno),
                             "{lineno} {affected_lines:?}"
                         );
                         debug_assert!(lineno >= 1, "{lineno}");
@@ -238,7 +238,7 @@ fn affected_lines(diff: &Diff<str>) -> Vec<usize> {
                     lineno += 1;
                 }
                 Line::Insert(_) => {
-                    if affected_lines.last().map_or(true, |last| *last != lineno) {
+                    if affected_lines.last().is_none_or(|last| *last != lineno) {
                         affected_lines.push(lineno);
                     }
                     lineno += 1;
@@ -247,7 +247,7 @@ fn affected_lines(diff: &Diff<str>) -> Vec<usize> {
                     if lineno > 1
                         && affected_lines
                             .last()
-                            .map_or(true, |last| *last != (lineno - 1))
+                            .is_none_or(|last| *last != (lineno - 1))
                     {
                         affected_lines.push(lineno - 1);
                     }
@@ -352,7 +352,7 @@ index eb42779..a0091b7 100644
         assert_eq!(err.unwrap_err().exit_code(), 0);
     }
 
-    /// https://github.com/sourcefrog/cargo-mutants/issues/580
+    /// <https://github.com/sourcefrog/cargo-mutants/issues/580>
     #[test]
     fn parse_diff_with_only_moves() {
         let diff_str = "\
@@ -380,9 +380,9 @@ rename to test-utils/src/write.rs
         // Assert our diff library, Flickzeug, doesn't break on this
         let diffs = flickzeug::patch_from_str(diff_str).unwrap();
         assert_eq!(diffs.len(), 5);
-        diffs.iter().for_each(|diff| {
+        for diff in &diffs {
             assert_eq!(diff.hunks().len(), 0);
-        });
+        }
         let err = diff_filter(Vec::new(), diff_str);
         assert_eq!(err, Err(DiffFilterError::NoMutants));
     }
@@ -397,7 +397,7 @@ Binary files target/release/cargo-mutants and target/debug/cargo-mutants differ
         let err = diff_filter(Vec::new(), diff_str);
         assert_matches!(
             err,
-            Err(DiffFilterError::EmptyDiff) | Err(DiffFilterError::NoSourceFiles)
+            Err(DiffFilterError::EmptyDiff | DiffFilterError::NoSourceFiles)
         );
     }
 
