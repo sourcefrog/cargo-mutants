@@ -18,19 +18,7 @@ use crate::source::SourceFile;
 /// The format is controlled by the `emit_json`, `emit_diffs`, `show_line_col`, and `colors` options.
 pub fn list_mutants(mutants: &[Mutant], options: &Options) -> String {
     if options.emit_json {
-        // Panic: only if we created illegal json, which would be a bug.
-        let mut list: Vec<serde_json::Value> = Vec::new();
-        for mutant in mutants {
-            let mut obj = serde_json::to_value(mutant).expect("Serialize mutant");
-            if options.emit_diffs() {
-                obj.as_object_mut().unwrap().insert(
-                    "diff".to_owned(),
-                    json!(mutant.diff(&mutant.mutated_code())),
-                );
-            }
-            list.push(obj);
-        }
-        serde_json::to_string_pretty(&list).expect("Serialize mutants")
+        mutants_to_json_string(mutants)
     } else {
         // TODO: Do we need to check this? Could the console library strip them if they're not
         // supported?
@@ -73,4 +61,13 @@ pub fn list_files(source_files: &[SourceFile], options: &Options) -> String {
             .map(|file| file.tree_relative_path.to_slash_path() + "\n")
             .join("")
     }
+}
+
+/// Convert a slice of mutants to a pretty-printed JSON string.
+///
+/// Each mutant includes its diff. This is used for both `--list --json` output
+/// and for writing `mutants.out/mutants.json`.
+pub fn mutants_to_json_string(mutants: &[Mutant]) -> String {
+    let list: Vec<serde_json::Value> = mutants.iter().map(Mutant::to_json).collect();
+    serde_json::to_string_pretty(&list).expect("Serialize mutants")
 }

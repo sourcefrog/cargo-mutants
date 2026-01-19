@@ -1,9 +1,12 @@
 ---
 source: tests/util/mod.rs
+assertion_line: 33
 expression: "String::from_utf8_lossy(&output.stdout)"
+
 ---
 [
   {
+    "diff": "--- src/arc.rs\n+++ replace return_arc -> Arc<String> with Arc::new(String::new())\n@@ -1,10 +1,10 @@\n use std::sync::Arc;\n \n fn return_arc() -> Arc<String> {\n-    Arc::new(String::from(\"hello!\"))\n+    Arc::new(String::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn returns_hello() {\n     assert_eq!(return_arc().as_ref(), \"hello!\");\n }\n",
     "file": "src/arc.rs",
     "function": {
       "function_name": "return_arc",
@@ -35,6 +38,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/arc.rs\n+++ replace return_arc -> Arc<String> with Arc::new(\"xyzzy\".into())\n@@ -1,10 +1,10 @@\n use std::sync::Arc;\n \n fn return_arc() -> Arc<String> {\n-    Arc::new(String::from(\"hello!\"))\n+    Arc::new(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn returns_hello() {\n     assert_eq!(return_arc().as_ref(), \"hello!\");\n }\n",
     "file": "src/arc.rs",
     "function": {
       "function_name": "return_arc",
@@ -66,6 +70,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace and -> bool with true\n@@ -1,10 +1,10 @@\n fn and(a: bool, b: bool) -> bool {\n-    a && b\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "and",
@@ -97,6 +102,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace and -> bool with false\n@@ -1,10 +1,10 @@\n fn and(a: bool, b: bool) -> bool {\n-    a && b\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "and",
@@ -128,6 +134,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace && with || in and\n@@ -1,10 +1,10 @@\n fn and(a: bool, b: bool) -> bool {\n-    a && b\n+    a || /* ~ changed by cargo-mutants ~ */ b\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "and",
@@ -159,6 +166,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace or -> bool with true\n@@ -1,14 +1,14 @@\n fn and(a: bool, b: bool) -> bool {\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n-    a || b\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n }\n \n fn not(a: bool) -> bool {\n     !a\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "or",
@@ -190,6 +198,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace or -> bool with false\n@@ -1,14 +1,14 @@\n fn and(a: bool, b: bool) -> bool {\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n-    a || b\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n }\n \n fn not(a: bool) -> bool {\n     !a\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "or",
@@ -221,6 +230,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace || with && in or\n@@ -1,14 +1,14 @@\n fn and(a: bool, b: bool) -> bool {\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n-    a || b\n+    a && /* ~ changed by cargo-mutants ~ */ b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n }\n \n fn not(a: bool) -> bool {\n     !a\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "or",
@@ -252,6 +262,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace xor -> bool with true\n@@ -2,17 +2,17 @@\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n-    a ^ b\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn not(a: bool) -> bool {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "xor",
@@ -283,6 +294,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace xor -> bool with false\n@@ -2,17 +2,17 @@\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n-    a ^ b\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn not(a: bool) -> bool {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "xor",
@@ -314,6 +326,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace ^ with | in xor\n@@ -2,17 +2,17 @@\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n-    a ^ b\n+    a | /* ~ changed by cargo-mutants ~ */ b\n }\n \n fn not(a: bool) -> bool {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "xor",
@@ -345,6 +358,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace ^ with & in xor\n@@ -2,17 +2,17 @@\n     a && b\n }\n \n fn or(a: bool, b: bool) -> bool {\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n-    a ^ b\n+    a & /* ~ changed by cargo-mutants ~ */ b\n }\n \n fn not(a: bool) -> bool {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "xor",
@@ -376,6 +390,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace not -> bool with true\n@@ -6,17 +6,17 @@\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n }\n \n fn not(a: bool) -> bool {\n-    !a\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     #[test]\n     fn all_and() {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "not",
@@ -407,6 +422,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ replace not -> bool with false\n@@ -6,17 +6,17 @@\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n }\n \n fn not(a: bool) -> bool {\n-    !a\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     #[test]\n     fn all_and() {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "not",
@@ -438,6 +454,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/booleans.rs\n+++ delete ! in not\n@@ -6,17 +6,17 @@\n     a || b\n }\n \n fn xor(a: bool, b: bool) -> bool {\n     a ^ b\n }\n \n fn not(a: bool) -> bool {\n-    !a\n+     /* ~ changed by cargo-mutants ~ */a\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     #[test]\n     fn all_and() {\n",
     "file": "src/booleans.rs",
     "function": {
       "function_name": "not",
@@ -469,6 +486,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/inside_mod.rs\n+++ replace outer::inner::name -> &'static str with \"\"\n@@ -1,12 +1,12 @@\n mod outer {\n     mod inner {\n         pub fn name() -> &'static str {\n-            \"Bob\"\n+            \"\" /* ~ changed by cargo-mutants ~ */\n         }\n \n         #[test]\n         fn test_name() {\n             assert_eq!(name(), \"Bob\");\n         }\n     }\n }\n",
     "file": "src/inside_mod.rs",
     "function": {
       "function_name": "outer::inner::name",
@@ -500,6 +518,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/inside_mod.rs\n+++ replace outer::inner::name -> &'static str with \"xyzzy\"\n@@ -1,12 +1,12 @@\n mod outer {\n     mod inner {\n         pub fn name() -> &'static str {\n-            \"Bob\"\n+            \"xyzzy\" /* ~ changed by cargo-mutants ~ */\n         }\n \n         #[test]\n         fn test_name() {\n             assert_eq!(name(), \"Bob\");\n         }\n     }\n }\n",
     "file": "src/inside_mod.rs",
     "function": {
       "function_name": "outer::inner::name",
@@ -531,6 +550,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/methods.rs\n+++ replace Foo::double with ()\n@@ -9,17 +9,17 @@\n }\n \n impl Foo {\n     pub fn new() -> Foo {\n         Foo { i: 32 }\n     }\n \n     pub fn double(&mut self) {\n-        self.i *= 2;\n+        () /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl fmt::Display for Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n         write!(f, \"Foo {}\", self.i)\n     }\n }\n",
     "file": "src/methods.rs",
     "function": {
       "function_name": "Foo::double",
@@ -562,6 +582,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/methods.rs\n+++ replace *= with += in Foo::double\n@@ -9,17 +9,17 @@\n }\n \n impl Foo {\n     pub fn new() -> Foo {\n         Foo { i: 32 }\n     }\n \n     pub fn double(&mut self) {\n-        self.i *= 2;\n+        self.i += /* ~ changed by cargo-mutants ~ */ 2;\n     }\n }\n \n impl fmt::Display for Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n         write!(f, \"Foo {}\", self.i)\n     }\n }\n",
     "file": "src/methods.rs",
     "function": {
       "function_name": "Foo::double",
@@ -593,6 +614,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/methods.rs\n+++ replace *= with /= in Foo::double\n@@ -9,17 +9,17 @@\n }\n \n impl Foo {\n     pub fn new() -> Foo {\n         Foo { i: 32 }\n     }\n \n     pub fn double(&mut self) {\n-        self.i *= 2;\n+        self.i /= /* ~ changed by cargo-mutants ~ */ 2;\n     }\n }\n \n impl fmt::Display for Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n         write!(f, \"Foo {}\", self.i)\n     }\n }\n",
     "file": "src/methods.rs",
     "function": {
       "function_name": "Foo::double",
@@ -624,6 +646,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/methods.rs\n+++ replace <impl fmt::Display for Foo>::fmt -> fmt::Result with Ok(Default::default())\n@@ -15,17 +15,17 @@\n \n     pub fn double(&mut self) {\n         self.i *= 2;\n     }\n }\n \n impl fmt::Display for Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n-        write!(f, \"Foo {}\", self.i)\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl fmt::Debug for &Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n         write!(f, \"&Foo {}\", self.i)\n     }\n }\n",
     "file": "src/methods.rs",
     "function": {
       "function_name": "<impl fmt::Display for Foo>::fmt",
@@ -655,6 +678,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/methods.rs\n+++ replace <impl fmt::Debug for &Foo>::fmt -> fmt::Result with Ok(Default::default())\n@@ -21,17 +21,17 @@\n impl fmt::Display for Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n         write!(f, \"Foo {}\", self.i)\n     }\n }\n \n impl fmt::Debug for &Foo {\n     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n-        write!(f, \"&Foo {}\", self.i)\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl Default for Foo {\n     fn default() -> Self {\n         Foo::new()\n     }\n }\n",
     "file": "src/methods.rs",
     "function": {
       "function_name": "<impl fmt::Debug for &Foo>::fmt",
@@ -686,6 +710,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/nested_function.rs\n+++ replace has_nested -> u32 with 0\n@@ -1,13 +1,10 @@\n fn has_nested() -> u32 {\n-    fn inner() -> u32 {\n-        12\n-    }\n-    inner() * inner()\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn has_nested() {\n         assert_eq!(super::has_nested(), 144);\n     }\n",
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested",
@@ -717,6 +742,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/nested_function.rs\n+++ replace has_nested -> u32 with 1\n@@ -1,13 +1,10 @@\n fn has_nested() -> u32 {\n-    fn inner() -> u32 {\n-        12\n-    }\n-    inner() * inner()\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn has_nested() {\n         assert_eq!(super::has_nested(), 144);\n     }\n",
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested",
@@ -748,6 +774,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/nested_function.rs\n+++ replace has_nested::inner -> u32 with 0\n@@ -1,11 +1,11 @@\n fn has_nested() -> u32 {\n     fn inner() -> u32 {\n-        12\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n     inner() * inner()\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn has_nested() {\n",
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
@@ -779,6 +806,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/nested_function.rs\n+++ replace has_nested::inner -> u32 with 1\n@@ -1,11 +1,11 @@\n fn has_nested() -> u32 {\n     fn inner() -> u32 {\n-        12\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n     inner() * inner()\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn has_nested() {\n",
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested::inner",
@@ -810,6 +838,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/nested_function.rs\n+++ replace * with + in has_nested\n@@ -1,13 +1,13 @@\n fn has_nested() -> u32 {\n     fn inner() -> u32 {\n         12\n     }\n-    inner() * inner()\n+    inner() + /* ~ changed by cargo-mutants ~ */ inner()\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn has_nested() {\n         assert_eq!(super::has_nested(), 144);\n     }\n",
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested",
@@ -841,6 +870,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/nested_function.rs\n+++ replace * with / in has_nested\n@@ -1,13 +1,13 @@\n fn has_nested() -> u32 {\n     fn inner() -> u32 {\n         12\n     }\n-    inner() * inner()\n+    inner() / /* ~ changed by cargo-mutants ~ */ inner()\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn has_nested() {\n         assert_eq!(super::has_nested(), 144);\n     }\n",
     "file": "src/nested_function.rs",
     "function": {
       "function_name": "has_nested",
@@ -872,6 +902,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace double_float -> f32 with 0.0\n@@ -1,10 +1,10 @@\n fn double_float(a: f32) -> f32 {\n-    2.0 * a\n+    0.0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
@@ -903,6 +934,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace double_float -> f32 with 1.0\n@@ -1,10 +1,10 @@\n fn double_float(a: f32) -> f32 {\n-    2.0 * a\n+    1.0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
@@ -934,6 +966,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace double_float -> f32 with -1.0\n@@ -1,10 +1,10 @@\n fn double_float(a: f32) -> f32 {\n-    2.0 * a\n+    -1.0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
@@ -965,6 +998,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace * with + in double_float\n@@ -1,10 +1,10 @@\n fn double_float(a: f32) -> f32 {\n-    2.0 * a\n+    2.0 + /* ~ changed by cargo-mutants ~ */ a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
@@ -996,6 +1030,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace * with / in double_float\n@@ -1,10 +1,10 @@\n fn double_float(a: f32) -> f32 {\n-    2.0 * a\n+    2.0 / /* ~ changed by cargo-mutants ~ */ a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "double_float",
@@ -1027,6 +1062,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace is_double -> bool with true\n@@ -1,14 +1,14 @@\n fn double_float(a: f32) -> f32 {\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n-    a == 2 * b\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "is_double",
@@ -1058,6 +1094,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace is_double -> bool with false\n@@ -1,14 +1,14 @@\n fn double_float(a: f32) -> f32 {\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n-    a == 2 * b\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "is_double",
@@ -1089,6 +1126,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace == with != in is_double\n@@ -1,14 +1,14 @@\n fn double_float(a: f32) -> f32 {\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n-    a == 2 * b\n+    a != /* ~ changed by cargo-mutants ~ */ 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "is_double",
@@ -1120,6 +1158,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace * with + in is_double\n@@ -1,14 +1,14 @@\n fn double_float(a: f32) -> f32 {\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n-    a == 2 * b\n+    a == 2 + /* ~ changed by cargo-mutants ~ */ b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "is_double",
@@ -1151,6 +1190,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace * with / in is_double\n@@ -1,14 +1,14 @@\n fn double_float(a: f32) -> f32 {\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n-    a == 2 * b\n+    a == 2 / /* ~ changed by cargo-mutants ~ */ b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "is_double",
@@ -1182,6 +1222,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace negate_i32 -> i32 with 0\n@@ -2,17 +2,17 @@\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n-    -a\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_i32",
@@ -1213,6 +1254,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace negate_i32 -> i32 with 1\n@@ -2,17 +2,17 @@\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n-    -a\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_i32",
@@ -1244,6 +1286,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace negate_i32 -> i32 with -1\n@@ -2,17 +2,17 @@\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n-    -a\n+    -1 /* ~ changed by cargo-mutants ~ */\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_i32",
@@ -1275,6 +1318,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ delete - in negate_i32\n@@ -2,17 +2,17 @@\n     2.0 * a\n }\n \n fn is_double(a: u32, b: u32) -> bool {\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n-    -a\n+     /* ~ changed by cargo-mutants ~ */a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_i32",
@@ -1306,6 +1350,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace negate_f32 -> f32 with 0.0\n@@ -6,17 +6,17 @@\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n-    -a\n+    0.0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_f32",
@@ -1337,6 +1382,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace negate_f32 -> f32 with 1.0\n@@ -6,17 +6,17 @@\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n-    -a\n+    1.0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_f32",
@@ -1368,6 +1414,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace negate_f32 -> f32 with -1.0\n@@ -6,17 +6,17 @@\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n-    -a\n+    -1.0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_f32",
@@ -1399,6 +1446,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ delete - in negate_f32\n@@ -6,17 +6,17 @@\n     a == 2 * b\n }\n \n fn negate_i32(a: i32) -> i32 {\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n-    -a\n+     /* ~ changed by cargo-mutants ~ */a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "negate_f32",
@@ -1430,6 +1478,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace bitwise_not_i32 -> i32 with 0\n@@ -10,17 +10,17 @@\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n-    !a\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_i32",
@@ -1461,6 +1510,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace bitwise_not_i32 -> i32 with 1\n@@ -10,17 +10,17 @@\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n-    !a\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_i32",
@@ -1492,6 +1542,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace bitwise_not_i32 -> i32 with -1\n@@ -10,17 +10,17 @@\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n-    !a\n+    -1 /* ~ changed by cargo-mutants ~ */\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_i32",
@@ -1523,6 +1574,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ delete ! in bitwise_not_i32\n@@ -10,17 +10,17 @@\n     -a\n }\n \n fn negate_f32(a: f32) -> f32 {\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n-    !a\n+     /* ~ changed by cargo-mutants ~ */a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n     !a\n }\n \n #[cfg(test)]\n mod test {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_i32",
@@ -1554,6 +1606,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace bitwise_not_u32 -> u32 with 0\n@@ -14,17 +14,17 @@\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n-    !a\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     #[test]\n     fn double_zero() {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_u32",
@@ -1585,6 +1638,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ replace bitwise_not_u32 -> u32 with 1\n@@ -14,17 +14,17 @@\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n-    !a\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     #[test]\n     fn double_zero() {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_u32",
@@ -1616,6 +1670,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/numbers.rs\n+++ delete ! in bitwise_not_u32\n@@ -14,17 +14,17 @@\n     -a\n }\n \n fn bitwise_not_i32(a: i32) -> i32 {\n     !a\n }\n \n fn bitwise_not_u32(a: u32) -> u32 {\n-    !a\n+     /* ~ changed by cargo-mutants ~ */a\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     #[test]\n     fn double_zero() {\n",
     "file": "src/numbers.rs",
     "function": {
       "function_name": "bitwise_not_u32",
@@ -1647,6 +1702,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace simple_result -> Result<&'static str, ()> with Ok(\"\")\n@@ -1,14 +1,14 @@\n // /// Function returning a Result.\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n-    Ok(\"success\")\n+    Ok(\"\") /* ~ changed by cargo-mutants ~ */\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n     if a < 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "simple_result",
@@ -1678,6 +1734,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace simple_result -> Result<&'static str, ()> with Ok(\"xyzzy\")\n@@ -1,14 +1,14 @@\n // /// Function returning a Result.\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n-    Ok(\"success\")\n+    Ok(\"xyzzy\") /* ~ changed by cargo-mutants ~ */\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n     if a < 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "simple_result",
@@ -1709,6 +1766,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace error_if_negative -> Result<(), ()> with Ok(())\n@@ -2,21 +2,17 @@\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n     Ok(\"success\")\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n-    if a < 0 {\n-        Err(())\n-    } else {\n-        Ok(())\n-    }\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n     Err(Default::default())\n }\n \n mod test {\n     use super::*;\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "error_if_negative",
@@ -1740,6 +1798,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace < with == in error_if_negative\n@@ -2,17 +2,17 @@\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n     Ok(\"success\")\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n-    if a < 0 {\n+    if a == /* ~ changed by cargo-mutants ~ */ 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n     Err(Default::default())\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "error_if_negative",
@@ -1771,6 +1830,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace < with > in error_if_negative\n@@ -2,17 +2,17 @@\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n     Ok(\"success\")\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n-    if a < 0 {\n+    if a > /* ~ changed by cargo-mutants ~ */ 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n     Err(Default::default())\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "error_if_negative",
@@ -1802,6 +1862,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace < with <= in error_if_negative\n@@ -2,17 +2,17 @@\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n     Ok(\"success\")\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n-    if a < 0 {\n+    if a <= /* ~ changed by cargo-mutants ~ */ 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n     Err(Default::default())\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "error_if_negative",
@@ -1833,6 +1894,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())\n@@ -10,17 +10,17 @@\n     if a < 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n-    Err(Default::default())\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n mod test {\n     use super::*;\n \n     #[test]\n     fn simple_result_success() {\n         assert_eq!(simple_result(), Ok(\"success\"));\n",
     "file": "src/result.rs",
     "function": {
       "function_name": "result_with_no_apparent_type_args",
@@ -1864,6 +1926,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/sets.rs\n+++ replace make_a_set -> BTreeSet<String> with BTreeSet::new()\n@@ -1,13 +1,10 @@\n use std::collections::BTreeSet;\n \n fn make_a_set() -> BTreeSet<String> {\n-    let mut s = BTreeSet::new();\n-    s.insert(\"one\".into());\n-    s.insert(\"two\".into());\n-    s\n+    BTreeSet::new() /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn set_has_two_elements() {\n     assert_eq!(make_a_set().len(), 2);\n }\n",
     "file": "src/sets.rs",
     "function": {
       "function_name": "make_a_set",
@@ -1895,6 +1958,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/sets.rs\n+++ replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([String::new()])\n@@ -1,13 +1,10 @@\n use std::collections::BTreeSet;\n \n fn make_a_set() -> BTreeSet<String> {\n-    let mut s = BTreeSet::new();\n-    s.insert(\"one\".into());\n-    s.insert(\"two\".into());\n-    s\n+    BTreeSet::from_iter([String::new()]) /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn set_has_two_elements() {\n     assert_eq!(make_a_set().len(), 2);\n }\n",
     "file": "src/sets.rs",
     "function": {
       "function_name": "make_a_set",
@@ -1926,6 +1990,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/sets.rs\n+++ replace make_a_set -> BTreeSet<String> with BTreeSet::from_iter([\"xyzzy\".into()])\n@@ -1,13 +1,10 @@\n use std::collections::BTreeSet;\n \n fn make_a_set() -> BTreeSet<String> {\n-    let mut s = BTreeSet::new();\n-    s.insert(\"one\".into());\n-    s.insert(\"two\".into());\n-    s\n+    BTreeSet::from_iter([\"xyzzy\".into()]) /* ~ changed by cargo-mutants ~ */\n }\n \n #[test]\n fn set_has_two_elements() {\n     assert_eq!(make_a_set().len(), 2);\n }\n",
     "file": "src/sets.rs",
     "function": {
       "function_name": "make_a_set",
@@ -1957,6 +2022,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace returns_unit with ()\n@@ -1,16 +1,16 @@\n /// This function is only built for tests so shouldn't be mutated.\n #[cfg(test)]\n fn outer_test_helper() {\n     panic!()\n }\n \n fn returns_unit(a: &mut u32) {\n-    *a += 1;\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_unit",
@@ -1988,6 +2054,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace += with -= in returns_unit\n@@ -1,16 +1,16 @@\n /// This function is only built for tests so shouldn't be mutated.\n #[cfg(test)]\n fn outer_test_helper() {\n     panic!()\n }\n \n fn returns_unit(a: &mut u32) {\n-    *a += 1;\n+    *a -= /* ~ changed by cargo-mutants ~ */ 1;\n }\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_unit",
@@ -2019,6 +2086,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace += with *= in returns_unit\n@@ -1,16 +1,16 @@\n /// This function is only built for tests so shouldn't be mutated.\n #[cfg(test)]\n fn outer_test_helper() {\n     panic!()\n }\n \n fn returns_unit(a: &mut u32) {\n-    *a += 1;\n+    *a *= /* ~ changed by cargo-mutants ~ */ 1;\n }\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_unit",
@@ -2050,6 +2118,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace returns_42u32 -> u32 with 0\n@@ -5,17 +5,17 @@\n }\n \n fn returns_unit(a: &mut u32) {\n     *a += 1;\n }\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n-    42\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n     a % 3 == 0\n }\n \n /// Return `s` repeated twice.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_42u32",
@@ -2081,6 +2150,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace returns_42u32 -> u32 with 1\n@@ -5,17 +5,17 @@\n }\n \n fn returns_unit(a: &mut u32) {\n     *a += 1;\n }\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n-    42\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n     a % 3 == 0\n }\n \n /// Return `s` repeated twice.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "returns_42u32",
@@ -2112,6 +2182,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace divisible_by_three -> bool with true\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -2143,6 +2214,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace divisible_by_three -> bool with false\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -2174,6 +2246,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace == with != in divisible_by_three\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    a % 3 != /* ~ changed by cargo-mutants ~ */ 0\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -2205,6 +2278,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace % with / in divisible_by_three\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    a / /* ~ changed by cargo-mutants ~ */ 3 == 0\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -2236,6 +2310,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace % with + in divisible_by_three\n@@ -10,17 +10,17 @@\n \n /// Can be mutated to return default (0).\n fn returns_42u32() -> u32 {\n     42\n }\n \n /// Can be mutated to return bool::default.\n fn divisible_by_three(a: u32) -> bool {\n-    a % 3 == 0\n+    a + /* ~ changed by cargo-mutants ~ */ 3 == 0\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "divisible_by_three",
@@ -2267,6 +2342,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace double_string -> String with String::new()\n@@ -19,19 +19,17 @@\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n-    let mut r = s.to_owned();\n-    r.push_str(s);\n-    r\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     /// A test helper function: it shouldn't be mutated because it's inside a\n     /// `#[cfg(tests)]` mod.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "double_string",
@@ -2298,6 +2374,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/simple_fns.rs\n+++ replace double_string -> String with \"xyzzy\".into()\n@@ -19,19 +19,17 @@\n }\n \n /// Return `s` repeated twice.\n ///\n /// ```\n /// assert_eq!(cargo_mutants_testdata_well_tested::simple_fns::double_string(\"cat\"), \"catcat\");\n /// ```\n pub fn double_string(s: &str) -> String {\n-    let mut r = s.to_owned();\n-    r.push_str(s);\n-    r\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     /// A test helper function: it shouldn't be mutated because it's inside a\n     /// `#[cfg(tests)]` mod.\n",
     "file": "src/simple_fns.rs",
     "function": {
       "function_name": "double_string",
@@ -2329,6 +2406,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace pad -> &'a[Cow<'static, str>] with Vec::leak(Vec::new())\n@@ -1,17 +1,12 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n-    for a in aa.iter_mut() {\n-        if a.len() < 3 {\n-            a.to_mut().push_str(\"___\");\n-        }\n-    }\n-    aa\n+    Vec::leak(Vec::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n         *x *= 2\n     }\n     a\n }\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2360,6 +2438,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed(\"\")])\n@@ -1,17 +1,12 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n-    for a in aa.iter_mut() {\n-        if a.len() < 3 {\n-            a.to_mut().push_str(\"___\");\n-        }\n-    }\n-    aa\n+    Vec::leak(vec![Cow::Borrowed(\"\")]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n         *x *= 2\n     }\n     a\n }\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2391,6 +2470,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned(\"\".to_owned())])\n@@ -1,17 +1,12 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n-    for a in aa.iter_mut() {\n-        if a.len() < 3 {\n-            a.to_mut().push_str(\"___\");\n-        }\n-    }\n-    aa\n+    Vec::leak(vec![Cow::Owned(\"\".to_owned())]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n         *x *= 2\n     }\n     a\n }\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2422,6 +2502,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Borrowed(\"xyzzy\")])\n@@ -1,17 +1,12 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n-    for a in aa.iter_mut() {\n-        if a.len() < 3 {\n-            a.to_mut().push_str(\"___\");\n-        }\n-    }\n-    aa\n+    Vec::leak(vec![Cow::Borrowed(\"xyzzy\")]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n         *x *= 2\n     }\n     a\n }\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2453,6 +2534,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace pad -> &'a[Cow<'static, str>] with Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())])\n@@ -1,17 +1,12 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n-    for a in aa.iter_mut() {\n-        if a.len() < 3 {\n-            a.to_mut().push_str(\"___\");\n-        }\n-    }\n-    aa\n+    Vec::leak(vec![Cow::Owned(\"xyzzy\".to_owned())]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n         *x *= 2\n     }\n     a\n }\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2484,6 +2566,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace < with == in pad\n@@ -1,13 +1,13 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n     for a in aa.iter_mut() {\n-        if a.len() < 3 {\n+        if a.len() == /* ~ changed by cargo-mutants ~ */ 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2515,6 +2598,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace < with > in pad\n@@ -1,13 +1,13 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n     for a in aa.iter_mut() {\n-        if a.len() < 3 {\n+        if a.len() > /* ~ changed by cargo-mutants ~ */ 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2546,6 +2630,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace < with <= in pad\n@@ -1,13 +1,13 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n     for a in aa.iter_mut() {\n-        if a.len() < 3 {\n+        if a.len() <= /* ~ changed by cargo-mutants ~ */ 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "pad",
@@ -2577,6 +2662,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace return_mut_slice -> &mut[usize] with Vec::leak(Vec::new())\n@@ -5,20 +5,17 @@\n         if a.len() < 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n-    for x in a.iter_mut() {\n-        *x *= 2\n-    }\n-    a\n+    Vec::leak(Vec::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn test_pad() {\n         assert_eq!(\n             super::pad(&mut [\"hello\".into(), \"ok\".into(), \"cat\".into()]),\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
@@ -2608,6 +2694,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace return_mut_slice -> &mut[usize] with Vec::leak(vec![0])\n@@ -5,20 +5,17 @@\n         if a.len() < 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n-    for x in a.iter_mut() {\n-        *x *= 2\n-    }\n-    a\n+    Vec::leak(vec![0]) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn test_pad() {\n         assert_eq!(\n             super::pad(&mut [\"hello\".into(), \"ok\".into(), \"cat\".into()]),\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
@@ -2639,6 +2726,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace return_mut_slice -> &mut[usize] with Vec::leak(vec![1])\n@@ -5,20 +5,17 @@\n         if a.len() < 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n-    for x in a.iter_mut() {\n-        *x *= 2\n-    }\n-    a\n+    Vec::leak(vec![1]) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn test_pad() {\n         assert_eq!(\n             super::pad(&mut [\"hello\".into(), \"ok\".into(), \"cat\".into()]),\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
@@ -2670,6 +2758,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace *= with += in return_mut_slice\n@@ -6,17 +6,17 @@\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n-        *x *= 2\n+        *x += /* ~ changed by cargo-mutants ~ */ 2\n     }\n     a\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn test_pad() {\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
@@ -2701,6 +2790,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/slices.rs\n+++ replace *= with /= in return_mut_slice\n@@ -6,17 +6,17 @@\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n-        *x *= 2\n+        *x /= /* ~ changed by cargo-mutants ~ */ 2\n     }\n     a\n }\n \n #[cfg(test)]\n mod test {\n     #[test]\n     fn test_pad() {\n",
     "file": "src/slices.rs",
     "function": {
       "function_name": "return_mut_slice",
@@ -2732,6 +2822,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/static_item.rs\n+++ replace == with !=\n@@ -1,8 +1,8 @@\n-static SHOULD_BE_TRUE: bool = 3 == (2 + 1);\n+static SHOULD_BE_TRUE: bool = 3 != /* ~ changed by cargo-mutants ~ */ (2 + 1);\n \n mod test {\n     #[test]\n     fn static_expression_evaluated() {\n         assert!(super::SHOULD_BE_TRUE);\n     }\n }\n",
     "file": "src/static_item.rs",
     "function": null,
     "genre": "BinaryOperator",
@@ -2750,6 +2841,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/static_item.rs\n+++ replace + with -\n@@ -1,8 +1,8 @@\n-static SHOULD_BE_TRUE: bool = 3 == (2 + 1);\n+static SHOULD_BE_TRUE: bool = 3 == (2 - /* ~ changed by cargo-mutants ~ */ 1);\n \n mod test {\n     #[test]\n     fn static_expression_evaluated() {\n         assert!(super::SHOULD_BE_TRUE);\n     }\n }\n",
     "file": "src/static_item.rs",
     "function": null,
     "genre": "BinaryOperator",
@@ -2768,6 +2860,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/static_item.rs\n+++ replace + with *\n@@ -1,8 +1,8 @@\n-static SHOULD_BE_TRUE: bool = 3 == (2 + 1);\n+static SHOULD_BE_TRUE: bool = 3 == (2 * /* ~ changed by cargo-mutants ~ */ 1);\n \n mod test {\n     #[test]\n     fn static_expression_evaluated() {\n         assert!(super::SHOULD_BE_TRUE);\n     }\n }\n",
     "file": "src/static_item.rs",
     "function": null,
     "genre": "BinaryOperator",
@@ -2786,6 +2879,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/struct_with_lifetime.rs\n+++ replace Lex<'buf>::buf_len -> usize with 0\n@@ -7,17 +7,17 @@\n }\n \n impl<'buf> Lex<'buf> {\n     pub fn new(buf: &'buf [u8]) -> Lex<'buf> {\n         Lex { buf, pos: 0 }\n     }\n \n     pub fn buf_len(&self) -> usize {\n-        self.buf.len()\n+        0 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n #[test]\n fn get_as_slice() {\n     let buf = b\"hello\";\n     let lex = Lex::new(buf);\n     assert_eq!(lex.buf_len(), 5);\n",
     "file": "src/struct_with_lifetime.rs",
     "function": {
       "function_name": "Lex<'buf>::buf_len",
@@ -2817,6 +2911,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/struct_with_lifetime.rs\n+++ replace Lex<'buf>::buf_len -> usize with 1\n@@ -7,17 +7,17 @@\n }\n \n impl<'buf> Lex<'buf> {\n     pub fn new(buf: &'buf [u8]) -> Lex<'buf> {\n         Lex { buf, pos: 0 }\n     }\n \n     pub fn buf_len(&self) -> usize {\n-        self.buf.len()\n+        1 /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n #[test]\n fn get_as_slice() {\n     let buf = b\"hello\";\n     let lex = Lex::new(buf);\n     assert_eq!(lex.buf_len(), 5);\n",
     "file": "src/struct_with_lifetime.rs",
     "function": {
       "function_name": "Lex<'buf>::buf_len",
@@ -2848,6 +2943,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/traits.rs\n+++ replace Something::is_three -> bool with true\n@@ -1,13 +1,13 @@\n //! Test mutation of a default fn in a trait.\n \n trait Something {\n     fn is_three(&self, a: usize) -> bool {\n-        a == 3\n+        true /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     struct Three;\n",
     "file": "src/traits.rs",
     "function": {
       "function_name": "Something::is_three",
@@ -2879,6 +2975,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/traits.rs\n+++ replace Something::is_three -> bool with false\n@@ -1,13 +1,13 @@\n //! Test mutation of a default fn in a trait.\n \n trait Something {\n     fn is_three(&self, a: usize) -> bool {\n-        a == 3\n+        false /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     struct Three;\n",
     "file": "src/traits.rs",
     "function": {
       "function_name": "Something::is_three",
@@ -2910,6 +3007,7 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/traits.rs\n+++ replace == with != in Something::is_three\n@@ -1,13 +1,13 @@\n //! Test mutation of a default fn in a trait.\n \n trait Something {\n     fn is_three(&self, a: usize) -> bool {\n-        a == 3\n+        a != /* ~ changed by cargo-mutants ~ */ 3\n     }\n }\n \n #[cfg(test)]\n mod test {\n     use super::*;\n \n     struct Three;\n",
     "file": "src/traits.rs",
     "function": {
       "function_name": "Something::is_three",

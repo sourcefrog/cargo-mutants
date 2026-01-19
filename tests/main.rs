@@ -368,9 +368,31 @@ fn uncaught_mutant_in_factorial() {
     insta::assert_debug_snapshot!("factorial__log_names", &names);
 
     // A mutants.json is in the mutants.out directory.
-    let mutants_json =
-        fs::read_to_string(tmp_src_dir.path().join("mutants.out/mutants.json")).unwrap();
+    let mutants_json_path = tmp_src_dir.path().join("mutants.out/mutants.json");
+    let mutants_json = fs::read_to_string(&mutants_json_path).unwrap();
     insta::assert_snapshot!("mutants.json", mutants_json);
+
+    // Verify that mutants.json includes diff fields
+    let mutants_json_value: serde_json::Value = serde_json::from_str(&mutants_json).unwrap();
+    let mutants = mutants_json_value
+        .as_array()
+        .expect("mutants.json should contain an array");
+    assert!(!mutants.is_empty(), "mutants.json should not be empty");
+    // Check that all mutants have a diff field with valid content
+    for mutant in mutants {
+        let obj = mutant.as_object().expect("Mutant should be an object");
+        assert!(
+            obj.contains_key("diff"),
+            "Mutant is missing diff field: {:?}",
+            mutant
+        );
+        let diff = obj["diff"].as_str().expect("diff should be a string");
+        assert!(!diff.is_empty(), "Mutant has empty diff");
+        assert!(
+            diff.contains("---") && diff.contains("+++"),
+            "Mutant diff doesn't look like a unified diff"
+        );
+    }
 
     check_text_list_output(tmp_src_dir.path(), "uncaught_mutant_in_factorial");
 }
