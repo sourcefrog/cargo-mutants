@@ -10,7 +10,7 @@
 
 - Switch to using release-plz for release automation.
  
-## 26.1.0 2026-01-15
+## 26.1.0 - 2026-01-15
 
 - New: Added a `name` field in the JSON representation of mutants. Thanks to @0xLoopTheory.
 
