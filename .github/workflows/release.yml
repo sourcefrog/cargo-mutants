@@ -1,9 +1,4 @@
-# 1. Populate the release object when a new release is created
-#    in GitHub.
-#    <https://github.com/taiki-e/create-gh-release-action>
-# 2. Attach binaries to releases
-#    <https://github.com/taiki-e/upload-rust-binary-action>
-# 3. Publish to crates.io.
+# When a tag is pushed, populate the release action, attach binaries, and publish to crates.io.
 
 name: Release
 
@@ -11,9 +6,6 @@ permissions:
   contents: write
 
 on:
-  # release:
-  #   types:
-  #     - created
   push:
     tags:
       - v[0-9]+.*
@@ -38,8 +30,6 @@ jobs:
         with:
           changelog: NEWS.md
           token: ${{ secrets.GITHUB_TOKEN }}
-          # TODO: maybe also `branch: main` as in general we
-          # should not release from other branches
   upload-assets:
     needs: [test, create-release]
     strategy:
