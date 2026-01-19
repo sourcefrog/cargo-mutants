@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: taiki-e/install-action@v2
+      - uses: dtolnay/rust-toolchain@stable
         name: Install nextest using install-action
         with:
           tool: nextest
@@ -26,6 +27,7 @@ jobs:
     environment: release
     steps:
       - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/create-gh-release-action@v1
         with:
           changelog: NEWS.md
@@ -44,6 +46,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
@@ -59,6 +62,7 @@ jobs:
       id-token: write # Required for OIDC token exchange
     steps:
       - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
       - uses: rust-lang/crates-io-auth-action@v1
         id: auth
       - run: cargo publish
