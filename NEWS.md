@@ -1,31 +1,15 @@
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+# cargo-mutants changelog
 
 ## Unreleased
 
-## [26.1.2](https://github.com/sourcefrog/cargo-mutants/compare/cargo-mutants-v26.1.1...cargo-mutants-v26.1.2) - 2026-01-15
+## 26.1.2 - 2026-01-15
 
-### Changed
-
-- Revert "ci: Don't need to run mdbook-linkcheck again during deploy"
-- Simpler changelog header
-- Shallow fetch in more CI workflows
-- Don't need to run mdbook-linkcheck again during deploy
-- Fix git ref in book deploy job
-- Merge the two book workflows
+- No content changes, just iterating on release automation.
 
 ## 26.1.1 - 2026-01-15
 
-### Other
-
 - Switch to using release-plz for release automation.
  
-# cargo-mutants changelog
-
 ## 26.1.0 2026-01-15
 
 - New: Added a `name` field in the JSON representation of mutants. Thanks to @0xLoopTheory.
