@@ -1,61 +1,79 @@
-name: Release-plz
+# 1. Populate the release object when a new release is created
+#    in GitHub.
+#    <https://github.com/taiki-e/create-gh-release-action>
+# 2. Attach binaries to releases
+#    <https://github.com/taiki-e/upload-rust-binary-action>
+# 3. Publish to crates.io.
 
-on:
-  push:
-    branches:
-      - main
+name: Release
 
 permissions:
-  id-token: write
+  contents: write
+
+# TODO: Use "environment:release" for some security benefits?
+
+on:
+  # release:
+  #   types:
+  #     - created
+  push:
+    tags:
+      - v[0-9]+.*
 
 jobs:
-  # Release unpublished packages.
-  release-plz-release:
-    name: Release-plz release
+  test:
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'sourcefrog' }}
-    permissions:
-      contents: write
-      id-token: write
     steps:
-      - &checkout
-        name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        name: Install nextest using install-action
         with:
-          fetch-depth: 0
-          persist-credentials: false
-      - &install-rust
-        name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - name: Run release-plz
-        uses: release-plz/action@v0.5
-        with:
-          command: release
-          # dry_run: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
-  # Create a PR with the new versions and changelog, preparing the next release.
-  release-plz-pr:
-    name: Release-plz PR
+          tool: nextest
+      - run: cargo test --all-features
+  create-release:
+    needs: test
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'sourcefrog' }}
-    permissions:
-      contents: write
-      pull-requests: write
-      id-token: write
-    concurrency:
-      group: release-plz-${{ github.ref }}
-      cancel-in-progress: false
+    environment: release
     steps:
-      - *checkout
-      - *install-rust
-      - name: Run release-plz
-        uses: release-plz/action@v0.5
+      - uses: actions/checkout@v4
+      - uses: taiki-e/create-gh-release-action@v1
         with:
-          command: release-pr
-          # dry_run: true
+          changelog: NEWS.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: maybe also `branch: main` as in general we
+          # should not release from other branches
+  upload-assets:
+    needs: [test, create-release]
+    environment: release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
+          # Note that glob pattern is not supported yet.
+          bin: cargo-mutants
+          # (required) GitHub token for uploading assets to GitHub Releases.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: ${{ matrix.target }}
+  publish-crate:
+    runs-on: ubuntu-latest
+    needs: [test, create-release]
+    permissions:
+      id-token: write # Required for OIDC token exchange
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - run: cargo publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
