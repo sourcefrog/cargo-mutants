@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [26.2.0](https://github.com/sourcefrog/cargo-mutants/compare/cargo-mutants-v26.1.2...cargo-mutants-v26.2.0) - 2026-01-19
+
+### Changed
+
+- Include diffs in JSON listings and mutants.json ([#564](https://github.com/sourcefrog/cargo-mutants/pull/564))
+
 ## [26.1.2](https://github.com/sourcefrog/cargo-mutants/compare/cargo-mutants-v26.1.1...cargo-mutants-v26.1.2) - 2026-01-15
 
 ### Changed
