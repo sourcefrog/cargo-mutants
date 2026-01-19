@@ -27,7 +27,7 @@ jobs:
         name: Install nextest using install-action
         with:
           tool: nextest
-      - run: cargo test --all-features
+      - run: cargo nextest run --all-features
   create-release:
     needs: test
     runs-on: ubuntu-latest
