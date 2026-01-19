@@ -10,8 +10,6 @@ name: Release
 permissions:
   contents: write
 
-# TODO: Use "environment:release" for some security benefits?
-
 on:
   # release:
   #   types:
@@ -44,7 +42,6 @@ jobs:
           # should not release from other branches
   upload-assets:
     needs: [test, create-release]
-    environment: release
     strategy:
       matrix:
         include:
