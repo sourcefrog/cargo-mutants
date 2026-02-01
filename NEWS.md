@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 26.2.0 - 2026-01-31
+
+- New: Mutation diffs are included in JSON listings and `mutants.json`.
 
 - Fixed: Mutate `NonZeroUsize` into e.g. `1.try_into().unwrap()`: the previously generated mutants were always unviable. Thanks to @sandersaares.
 
