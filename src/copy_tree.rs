@@ -3,11 +3,10 @@
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Context;
-use camino::{Utf8Path, Utf8PathBuf};
 use ignore::WalkBuilder;
 use tempfile::TempDir;
 use tracing::{debug, warn};
@@ -64,7 +63,7 @@ fn copy_file(src: &Path, dest: &Path, _reflink_supported: &AtomicBool) -> Result
 
 /// Copy a source tree, with some exclusions, to a new temporary directory.
 pub fn copy_tree(
-    from_path: &Utf8Path,
+    from_path: &Path,
     name_base: &str,
     options: &Options,
     console: &Console,
@@ -77,10 +76,7 @@ pub fn copy_tree(
         .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
-    let dest = temp_dir
-        .path()
-        .try_into()
-        .context("Convert path to UTF-8")?;
+    let dest = temp_dir.path();
     console.start_copy(dest);
     let mut walk_builder = WalkBuilder::new(from_path);
     let copy_vcs = options.copy_vcs; // for lifetime
@@ -113,11 +109,7 @@ pub fn copy_tree(
             .path()
             .strip_prefix(from_path)
             .expect("entry path is in from_path");
-        let dest_path: Utf8PathBuf = temp_dir
-            .path()
-            .join(relative_path)
-            .try_into()
-            .context("Convert path to UTF-8")?;
+        let dest_path = temp_dir.path().join(relative_path);
         let ft = entry.file_type().with_context(|| {
             format!(
                 "Expected file to have a file type: {}",
@@ -126,7 +118,7 @@ pub fn copy_tree(
         })?;
         if ft.is_file() {
             let bytes_copied =
-                copy_file(entry.path(), dest_path.as_std_path(), &reflink_supported)?;
+                copy_file(entry.path(), &dest_path, &reflink_supported)?;
             total_bytes += bytes_copied;
             total_files += 1;
             console.copy_progress(dest, total_bytes);
@@ -134,14 +126,7 @@ pub fn copy_tree(
             std::fs::create_dir_all(&dest_path)
                 .with_context(|| format!("Failed to create directory {dest_path:?}"))?;
         } else if ft.is_symlink() {
-            copy_symlink(
-                ft,
-                entry
-                    .path()
-                    .try_into()
-                    .context("Convert filename to UTF-8")?,
-                &dest_path,
-            )?;
+            copy_symlink(ft, entry.path(), &dest_path)?;
         } else {
             warn!("Unexpected file type: {:?}", entry.path());
         }
@@ -157,8 +142,8 @@ mod test {
     // TODO: Maybe run these with $HOME set to a temp dir so that global git config has no effect?
 
     use std::fs::{create_dir, write};
+    use std::path::PathBuf;
 
-    use camino::Utf8PathBuf;
     use tempfile::TempDir;
 
     use crate::Result;
@@ -174,7 +159,7 @@ mod test {
         let tmp = tmp_dir.path();
         write(tmp.join(".gitignore"), "*\n")?;
 
-        let a = Utf8PathBuf::try_from(tmp.join("a")).unwrap();
+        let a = PathBuf::from(tmp.join("a")).unwrap();
         create_dir(&a)?;
         write(a.join("Cargo.toml"), "[package]\nname = a")?;
         let src = a.join("src");
@@ -195,7 +180,7 @@ mod test {
     #[test]
     fn copy_with_gitignore_but_without_git_dir() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         write(tmp.join(".gitignore"), "foo\n")?;
 
         write(tmp.join("Cargo.toml"), "[package]\nname = a")?;
@@ -219,7 +204,7 @@ mod test {
     #[test]
     fn copy_without_gitignore_by_default() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         write(tmp.join(".gitignore"), "foo\n")?;
         create_dir(tmp.join(".git"))?;
 
@@ -242,7 +227,7 @@ mod test {
     #[test]
     fn copy_with_gitignore_and_git_dir() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         write(tmp.join(".gitignore"), "foo\n")?;
         create_dir(tmp.join(".git"))?;
 
@@ -266,7 +251,7 @@ mod test {
     #[test]
     fn copy_with_gitignore_true_in_config_and_git_dir_excludes_ignored_files() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         write(tmp.join(".gitignore"), "foo\n")?;
         create_dir(tmp.join(".git"))?;
 
@@ -291,7 +276,7 @@ mod test {
     #[test]
     fn copy_without_gitignore() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         write(tmp.join(".gitignore"), "foo\n")?;
         create_dir(tmp.join(".git"))?;
 
@@ -313,7 +298,7 @@ mod test {
     #[test]
     fn dont_copy_git_dir_or_mutants_out_by_default() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         create_dir(tmp.join(".git"))?;
         write(tmp.join(".git/foo"), "bar")?;
         create_dir(tmp.join("mutants.out"))?;
@@ -348,7 +333,7 @@ mod test {
     #[test]
     fn copy_git_dir_when_requested() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         create_dir(tmp.join(".git"))?;
         write(tmp.join(".git/foo"), "bar")?;
         create_dir(tmp.join("mutants.out"))?;
@@ -379,7 +364,7 @@ mod test {
     #[test]
     fn dont_copy_target_dir_by_default_when_copy_target_false() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         create_dir(tmp.join("target"))?;
         write(tmp.join("target/foo"), "bar")?;
 
@@ -406,7 +391,7 @@ mod test {
     #[test]
     fn copy_target_dir_when_requested() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
         create_dir(tmp.join("target"))?;
         write(tmp.join("target/foo"), "bar")?;
 
@@ -437,7 +422,7 @@ mod test {
     #[test]
     fn copy_non_top_level_target_files() -> Result<()> {
         let tmp_dir = TempDir::new().unwrap();
-        let tmp = Utf8PathBuf::try_from(tmp_dir.path().to_owned()).unwrap();
+        let tmp = tmp_dir.path().to_path_buf();
 
         // Create top-level target directory (should be excluded)
         create_dir(tmp.join("target"))?;

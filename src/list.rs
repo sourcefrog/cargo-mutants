@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 
 use crate::Options;
 use crate::mutant::Mutant;
-use crate::path::Utf8PathSlashes;
+use crate::path::PathSlashes;
 use crate::source::SourceFile;
 
 /// Return a string representation of a list of mutants.

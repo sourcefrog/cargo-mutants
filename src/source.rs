@@ -4,15 +4,15 @@
 
 use std::fmt;
 use std::fs::read_to_string;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use camino::{Utf8Path, Utf8PathBuf};
 #[allow(unused_imports)]
 use tracing::{debug, info, warn};
 
 use crate::package::Package;
-use crate::path::{Utf8PathSlashes, ascent};
+use crate::path::{PathSlashes, ascent};
 use crate::span::LineColumn;
 
 /// A Rust source file within a source tree.
@@ -29,7 +29,7 @@ pub struct SourceFile {
     pub package: Arc<Package>,
 
     /// Path of this source file relative to workspace.
-    pub tree_relative_path: Utf8PathBuf,
+    pub tree_relative_path: PathBuf,
 
     /// Full copy of the unmodified source.
     ///
@@ -61,8 +61,8 @@ impl SourceFile {
     ///
     /// This also skip files outside of the tree, returning `Ok(None)`.
     pub fn load(
-        tree_path: &Utf8Path,
-        tree_relative_path: &Utf8Path,
+        tree_path: &std::path::Path,
+        tree_relative_path: &std::path::Path,
         package: &Package,
         is_top: bool,
     ) -> Result<Option<SourceFile>> {
@@ -90,7 +90,7 @@ impl SourceFile {
 
     /// Construct from in-memory text.
     #[cfg(test)]
-    pub fn for_tests<P: Into<Utf8PathBuf>>(
+    pub fn for_tests<P: Into<PathBuf>>(
         tree_relative_path: P,
         code: &str,
         package_name: &str,
@@ -107,7 +107,7 @@ impl SourceFile {
             code: Arc::new(code.to_owned()),
             package: Arc::new(Package {
                 name: package_name.to_owned(),
-                relative_dir: Utf8PathBuf::new(),
+                relative_dir: PathBuf::new(),
                 top_sources,
                 version: "0.1.0".to_owned(),
             }),
@@ -120,7 +120,7 @@ impl SourceFile {
         self.tree_relative_path.to_slash_path()
     }
 
-    pub fn path(&self) -> &Utf8Path {
+    pub fn path(&self) -> &std::path::Path {
         self.tree_relative_path.as_path()
     }
 
@@ -148,7 +148,7 @@ mod test {
     #[test]
     fn source_file_normalizes_crlf() {
         let temp_dir = tempfile::tempdir().unwrap();
-        let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
+        let temp_dir_path = temp_dir.path();
         let file_name = "lib.rs";
         File::create(temp_dir.path().join(file_name))
             .unwrap()
@@ -156,11 +156,11 @@ mod test {
             .unwrap();
         let package = Package {
             name: "imaginary-package".to_owned(),
-            relative_dir: Utf8PathBuf::from(""),
+            relative_dir: PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
             version: "0.1.0".to_owned(),
         };
-        let source_file = SourceFile::load(temp_dir_path, Utf8Path::new(file_name), &package, true)
+        let source_file = SourceFile::load(temp_dir_path, std::path::Path::new(file_name), &package, true)
             .unwrap()
             .unwrap();
         assert_eq!(source_file.code(), "fn main() {\n    640 << 10;\n}\n");
@@ -170,13 +170,13 @@ mod test {
     fn skips_files_outside_of_workspace() {
         let package = Arc::new(Package {
             name: "imaginary-package".to_owned(),
-            relative_dir: Utf8PathBuf::from(""),
+            relative_dir: PathBuf::from(""),
             top_sources: vec!["src/lib.rs".into()],
             version: "0.1.0".to_owned(),
         });
         let source_file = SourceFile::load(
-            Utf8Path::new("unimportant"),
-            Utf8Path::new("../outside_workspace.rs"),
+            std::path::Path::new("unimportant"),
+            std::path::Path::new("../outside_workspace.rs"),
             &package,
             true,
         )

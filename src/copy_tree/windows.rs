@@ -1,12 +1,12 @@
 use std::fs::FileType;
 use std::os::windows::fs::FileTypeExt;
+use std::path::Path;
 
 use anyhow::Context;
-use camino::Utf8Path;
 
 use crate::Result;
 #[mutants::skip] // Mutant tests run on Linux
-pub(super) fn copy_symlink(ft: FileType, src_path: &Utf8Path, dest_path: &Utf8Path) -> Result<()> {
+pub(super) fn copy_symlink(ft: FileType, src_path: &Path, dest_path: &Path) -> Result<()> {
     let link_target =
         std::fs::read_link(src_path).with_context(|| format!("read link {src_path:?}"))?;
     if ft.is_symlink_dir() {
