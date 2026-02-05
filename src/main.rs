@@ -599,7 +599,14 @@ fn emit_schema(schema_type: SchemaType) -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use clap::CommandFactory;
+    use clap::{CommandFactory, Parser};
+
+    #[test]
+    fn config_option_conflicts_with_no_config() {
+        let args = super::Args::try_parse_from(["mutants", "--config=foo.toml", "--no-config"]);
+        assert!(args.is_err(), "Expected error due to conflicting options");
+        println!("Error message: {}", args.unwrap_err());
+    }
 
     #[test]
     fn option_help_sentence_case_without_period() {
