@@ -383,8 +383,7 @@ fn uncaught_mutant_in_factorial() {
         let obj = mutant.as_object().expect("Mutant should be an object");
         assert!(
             obj.contains_key("diff"),
-            "Mutant is missing diff field: {:?}",
-            mutant
+            "Mutant is missing diff field: {mutant:?}"
         );
         let diff = obj["diff"].as_str().expect("diff should be a string");
         assert!(!diff.is_empty(), "Mutant has empty diff");
@@ -1435,9 +1434,10 @@ fn interrupt_caught_and_kills_children() {
     use std::thread::sleep;
     use std::time::Duration;
 
-    use nix::libc::pid_t;
-    use nix::sys::signal::{SIGTERM, kill};
-    use nix::unistd::Pid;
+    use nix::{
+        sys::signal::{SIGTERM, kill},
+        unistd::Pid,
+    };
 
     use crate::integration_util::main_binary;
 
@@ -1476,7 +1476,7 @@ fn interrupt_caught_and_kills_children() {
     );
 
     println!("Sending SIGTERM to cargo-mutants...");
-    kill(Pid::from_raw(child.id() as pid_t), SIGTERM).expect("send SIGTERM");
+    kill(Pid::from_raw(child.id().cast_signed()), SIGTERM).expect("send SIGTERM");
 
     println!("Wait for cargo-mutants to exit...");
     let output = child
@@ -1570,7 +1570,7 @@ fn shard_divides_all_mutants() {
     );
 
     // The shards should also be approximately the same size.
-    let shard_lens = rr_shard_lists.iter().map(|l| l.len()).collect_vec();
+    let shard_lens = rr_shard_lists.iter().map(std::vec::Vec::len).collect_vec();
     assert!(shard_lens.iter().max().unwrap() - shard_lens.iter().min().unwrap() <= 1);
 
     // And the shards are disjoint
@@ -1600,7 +1600,7 @@ fn shard_divides_all_mutants() {
     let mut rr_iters = rr_shard_lists
         .clone()
         .into_iter()
-        .map(|l| l.into_iter())
+        .map(std::iter::IntoIterator::into_iter)
         .collect_vec();
     let mut i = 0;
     let mut limit = 0;

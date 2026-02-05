@@ -71,7 +71,7 @@ pub fn copy_testdata_to<P: AsRef<Path>>(tree_name: &str, dest: P) {
             .unwrap()
             .replace("_test", "");
         if let Err(err) = rename(path, path.parent().unwrap().join(new_name)) {
-            panic!("failed to rename {path:?}: {err:?}")
+            panic!("failed to rename {path}: {err:?}", path = path.display())
         }
     }
 }
