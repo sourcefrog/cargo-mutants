@@ -2,6 +2,12 @@
 
 //! Tests for cargo-mutants CLI layer.
 
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::needless_raw_string_hashes, // for insta, etc
+    clippy::too_many_lines // should fix later
+)]
+
 use std::collections::HashSet;
 use std::env;
 use std::fs::{self, File, create_dir, create_dir_all, read_dir, read_to_string, rename, write};
