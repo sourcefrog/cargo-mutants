@@ -21,7 +21,6 @@ eula = false
 
 [dependencies]
 anyhow = "1.0.86"
-camino = "1.1.9"
 cargo_metadata = "0.19"
 clap = { version = "4.5", features = [
     "deprecated",

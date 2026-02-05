@@ -14,7 +14,6 @@ use std::path::Path;
 use std::str::FromStr;
 
 use anyhow::Context;
-use camino::Utf8Path;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use tracing::debug;
@@ -103,7 +102,7 @@ impl Config {
 
     /// Read the config from a tree's `.cargo/mutants.toml`, and return a default (empty)
     /// Config is the file does not exist.
-    pub fn read_tree_config(workspace_dir: &Utf8Path) -> Result<Config> {
+    pub fn read_tree_config(workspace_dir: &Path) -> Result<Config> {
         let path = workspace_dir.join(".cargo").join("mutants.toml");
         if path.exists() {
             debug!(?path, "Found config in source tree");

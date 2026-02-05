@@ -9,9 +9,9 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 use anyhow::bail;
-use camino::Utf8Path;
 use flickzeug::{Diff, Line};
 use indoc::formatdoc;
 use itertools::Itertools;
@@ -71,7 +71,7 @@ impl Display for DiffFilterError {
 
 pub fn diff_filter_file(
     mutants: Vec<Mutant>,
-    diff_path: &Utf8Path,
+    diff_path: &Path,
 ) -> Result<Vec<Mutant>, DiffFilterError> {
     let mut diff_file = File::open(diff_path).map_err(|err| {
         error!("Failed to open diff file: {err}");
@@ -100,7 +100,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
     if let Err(err) = check_diff_new_text_matches(&patches, &mutants) {
         return Err(DiffFilterError::MismatchedDiff(err.to_string()));
     }
-    let mut lines_changed_by_path: HashMap<&Utf8Path, Vec<usize>> = HashMap::new();
+    let mut lines_changed_by_path: HashMap<&Path, Vec<usize>> = HashMap::new();
     let mut changed_rs_file = false;
     for patch in &patches {
         let path = strip_patch_path(patch.modified().unwrap_or_default());
@@ -156,7 +156,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
 ///
 /// Error if the new text from the diffs doesn't match the source files.
 fn check_diff_new_text_matches(diffs: &[Diff<str>], mutants: &[Mutant]) -> Result<()> {
-    let mut source_by_name: HashMap<&Utf8Path, &SourceFile> = HashMap::new();
+    let mut source_by_name: HashMap<&Path, &SourceFile> = HashMap::new();
     for mutant in mutants {
         source_by_name
             .entry(mutant.source_file.path())
@@ -194,8 +194,8 @@ fn check_diff_new_text_matches(diffs: &[Diff<str>], mutants: &[Mutant]) -> Resul
 }
 
 /// Remove the `b/` prefix commonly found in paths within diffs.
-fn strip_patch_path(path: &str) -> &Utf8Path {
-    let path = Utf8Path::new(path);
+fn strip_patch_path(path: &str) -> &Path {
+    let path = Path::new(path);
     path.strip_prefix("b").unwrap_or(path)
 }
 

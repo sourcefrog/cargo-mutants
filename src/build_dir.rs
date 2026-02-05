@@ -5,9 +5,9 @@
 #![warn(clippy::pedantic)]
 
 use std::fs::write;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, ensure};
-use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 use tracing::info;
 
@@ -27,7 +27,7 @@ use crate::{
 #[derive(Debug)]
 pub struct BuildDir {
     /// The path of the root of the build directory.
-    path: Utf8PathBuf,
+    path: PathBuf,
     /// Holds a reference to the temporary directory, so that it will be deleted when this
     /// object is dropped. If None, there's nothing to clean up.
     #[allow(dead_code)]
@@ -52,17 +52,13 @@ impl BuildDir {
     }
 
     /// Make a new build dir, copying from a source directory, subject to exclusions.
-    pub fn copy_from(source: &Utf8Path, options: &Options, console: &Console) -> Result<BuildDir> {
-        let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or("unnamed"));
+    pub fn copy_from(source: &Path, options: &Options, console: &Console) -> Result<BuildDir> {
+        let name_base = format!("cargo-mutants-{}-", source.file_name().and_then(|n| n.to_str()).unwrap_or("unnamed"));
         let source_abs = source
-            .canonicalize_utf8()
+            .canonicalize()
             .context("canonicalize source path")?;
         let temp_dir = copy_tree(source, &name_base, options, console)?;
-        let path: Utf8PathBuf = temp_dir
-            .path()
-            .to_owned()
-            .try_into()
-            .context("tempdir path to UTF-8")?;
+        let path = temp_dir.path().to_path_buf();
         fix_manifest(&path.join("Cargo.toml"), &source_abs)?;
         fix_cargo_config(&path, &source_abs)?;
         let temp_dir = if options.leak_dirs {
@@ -77,20 +73,20 @@ impl BuildDir {
     }
 
     /// Make a build dir that works in-place on the source directory.
-    pub fn in_place(source_path: &Utf8Path) -> Result<BuildDir> {
+    pub fn in_place(source_path: &Path) -> Result<BuildDir> {
         Ok(BuildDir {
             temp_dir: None,
             path: source_path
-                .canonicalize_utf8()
+                .canonicalize()
                 .context("canonicalize source path")?,
         })
     }
 
-    pub fn path(&self) -> &Utf8Path {
+    pub fn path(&self) -> &Path {
         self.path.as_path()
     }
 
-    pub fn overwrite_file(&self, relative_path: &Utf8Path, code: &str) -> Result<()> {
+    pub fn overwrite_file(&self, relative_path: &Path, code: &str) -> Result<()> {
         let full_path = self.path.join(relative_path);
         // for safety, don't follow symlinks
         ensure!(full_path.is_file(), "{full_path:?} is not a file");
@@ -155,8 +151,8 @@ mod test {
         assert!(build_dir.path().join("src").is_dir());
         assert!(build_dir.temp_dir.is_some());
         assert_ne!(
-            build_dir.path().canonicalize_utf8()?,
-            workspace.root().canonicalize_utf8()?
+            build_dir.path().canonicalize()?,
+            workspace.root().canonicalize()?
         );
         Ok(())
     }
@@ -169,8 +165,8 @@ mod test {
         // On Windows e.g. the paths might not have the same form, but they
         // should point to the same place.
         assert_eq!(
-            build_dir.path().canonicalize_utf8()?,
-            workspace.root().canonicalize_utf8()?
+            build_dir.path().canonicalize()?,
+            workspace.root().canonicalize()?
         );
         Ok(())
     }
