@@ -130,8 +130,8 @@ mod test {
         };
         let build_dir = BuildDir::for_baseline(&workspace, &options, &Console::new())?;
         assert_eq!(
-            build_dir.path().canonicalize_utf8()?,
-            workspace.root().canonicalize_utf8()?
+            build_dir.path().canonicalize()?,
+            workspace.root().canonicalize()?
         );
         assert!(build_dir.temp_dir.is_none());
         Ok(())

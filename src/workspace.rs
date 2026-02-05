@@ -319,11 +319,11 @@ mod test {
         assert_matches!(packages, super::PackageSelection::All);
         let packages = workspace.expand_selection(packages);
         assert_eq!(packages[0].name, "cargo_mutants_testdata_workspace_utils");
-        assert_eq!(packages[0].top_sources, ["utils/src/lib.rs"]);
+        assert_eq!(packages[0].top_sources, [PathBuf::from("utils/src/lib.rs")]);
         assert_eq!(packages[1].name, "main");
-        assert_eq!(packages[1].top_sources, ["main/src/main.rs"]);
+        assert_eq!(packages[1].top_sources, [PathBuf::from("main/src/main.rs")]);
         assert_eq!(packages[2].name, "main2");
-        assert_eq!(packages[2].top_sources, ["main2/src/main.rs"]);
+        assert_eq!(packages[2].top_sources, [PathBuf::from("main2/src/main.rs")]);
     }
 
     #[test]
@@ -389,7 +389,7 @@ mod test {
         };
         assert_eq!(packages.len(), 1);
         assert_eq!(packages[0].name, "main");
-        assert_eq!(packages[0].top_sources, ["main/src/main.rs"]);
+        assert_eq!(packages[0].top_sources, [PathBuf::from("main/src/main.rs")]);
     }
 
     #[test]
@@ -411,7 +411,7 @@ mod test {
                 .iter()
                 .map(|sf| sf.tree_relative_path.clone())
                 .collect_vec(),
-            ["main/src/main.rs", "main2/src/main.rs"]
+            [PathBuf::from("main/src/main.rs"), PathBuf::from("main2/src/main.rs")]
         );
     }
 }

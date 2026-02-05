@@ -448,7 +448,7 @@ mod test {
     #[test]
     fn rotate() {
         let temp_dir = TempDir::new().unwrap();
-        let temp_dir_path = Path::from_path(temp_dir.path()).unwrap();
+        let temp_dir_path = temp_dir.path();
 
         // Create an initial output dir with one log.
         let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
@@ -500,7 +500,7 @@ mod test {
     #[test]
     fn track_previously_caught() {
         let temp_dir = TempDir::new().unwrap();
-        let parent = Path::from_path(temp_dir.path()).unwrap();
+        let parent = temp_dir.path();
 
         let example = "src/process.rs:213:9: replace ProcessStatus::is_success -> bool with true
 src/process.rs:248:5: replace get_command_output -> Result<String> with Ok(String::new())

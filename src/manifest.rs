@@ -173,7 +173,7 @@ mod test {
             .unwrap();
         assert_eq!(
             super::fix_path(
-                dependency_abspath.as_str(),
+                &dependency_abspath.display().to_string(),
                 Path::new("/home/user/src/foo")
             ),
             None
@@ -230,7 +230,7 @@ mod test {
         assert_eq!(fixed["dependencies"]["wibble"].as_str().unwrap(), "1.2.3");
         assert_eq!(
             fixed["replace"]["wibble:1.2.3"]["path"].as_str().unwrap(),
-            orig_path.join("../wibble")
+            orig_path.join("../wibble").display().to_string()
         );
     }
 
@@ -288,7 +288,7 @@ mod test {
             fixed["patch"]["crates-io"]["wibble"]["path"]
                 .as_str()
                 .unwrap(),
-            orig_path.join("../wibble")
+            orig_path.join("../wibble").display().to_string()
         );
     }
 
@@ -318,7 +318,7 @@ mod test {
             .as_array()
             .unwrap()
             .iter()
-            .map(|val| val.as_str().unwrap().into())
+            .map(|val| Path::new(val.as_str().unwrap()))
             .collect::<Vec<&Path>>();
         assert_eq!(
             fixed_paths,

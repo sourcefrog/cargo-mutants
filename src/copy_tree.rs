@@ -159,7 +159,7 @@ mod test {
         let tmp = tmp_dir.path();
         write(tmp.join(".gitignore"), "*\n")?;
 
-        let a = PathBuf::from(tmp.join("a")).unwrap();
+        let a = tmp.join("a");
         create_dir(&a)?;
         write(a.join("Cargo.toml"), "[package]\nname = a")?;
         let src = a.join("src");
