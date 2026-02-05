@@ -3783,7 +3783,7 @@ fn mutate_single_file() {
 fn in_diff_with_mismatched_content_returns_exit_code_5() {
     // Test that when the diff doesn't match the source tree, we get exit code 5
     let tmp = copy_of_testdata("diff1");
-    
+
     // Create a diff that shows the new file content as something different
     // from what's actually in the tree. The diff parser will try to match
     // line 1 to be 'WRONG_CONTENT' but the actual file has 'pub fn one() -> String {'
@@ -3796,10 +3796,10 @@ fn in_diff_with_mismatched_content_returns_exit_code_5() {
      \"one\".to_owned()
  }
 ";
-    
+
     let mut diff_file = NamedTempFile::new().unwrap();
     diff_file.write_all(diff_text.as_bytes()).unwrap();
-    
+
     run()
         .args(["mutants", "-d"])
         .arg(tmp.path())
@@ -3814,7 +3814,7 @@ fn in_diff_with_mismatched_content_returns_exit_code_5() {
 fn in_diff_with_nonexistent_file_returns_exit_code_6() {
     // Test that a nonexistent diff file returns exit code 6
     let tmp = copy_of_testdata("diff1");
-    
+
     run()
         .args(["mutants", "-d"])
         .arg(tmp.path())
@@ -3822,6 +3822,5 @@ fn in_diff_with_nonexistent_file_returns_exit_code_6() {
         .arg("/nonexistent/path/to/diff.patch")
         .assert()
         .code(6)
-        .stderr(contains("Failed to read diff file")
-            .or(contains("Failed to open diff file")));
+        .stderr(contains("Failed to read diff file").or(contains("Failed to open diff file")));
 }
