@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-use camino::{Utf8Path, Utf8PathBuf};
+use std::path::{Path, PathBuf};
 use cargo_metadata::TargetKind;
 use itertools::Itertools;
 use serde::Serialize;
@@ -25,20 +25,21 @@ pub struct Package {
     /// The directory for this package relative to the workspace.
     ///
     /// For a package in the root, this is `""`.
-    pub relative_dir: Utf8PathBuf,
+    pub relative_dir: PathBuf,
 
     /// The top source files for this package, relative to the workspace root,
     /// like `["src/lib.rs"]`.
-    pub top_sources: Vec<Utf8PathBuf>,
+    pub top_sources: Vec<PathBuf>,
 }
 
 /// Read `cargo-metadata` parsed output, and produce our package representation.
 pub fn packages_from_metadata(metadata: &cargo_metadata::Metadata) -> Vec<Arc<Package>> {
+    let workspace_root = PathBuf::from(metadata.workspace_root.as_str());
     metadata
         .workspace_packages()
         .into_iter()
         .sorted_by_key(|p| &p.name)
-        .filter_map(|p| Package::from_cargo_metadata(p, &metadata.workspace_root))
+        .filter_map(|p| Package::from_cargo_metadata(p, &workspace_root))
         .map(Arc::new)
         .collect()
 }
@@ -46,7 +47,7 @@ pub fn packages_from_metadata(metadata: &cargo_metadata::Metadata) -> Vec<Arc<Pa
 impl Package {
     pub fn from_cargo_metadata(
         package_metadata: &cargo_metadata::Package,
-        workspace_root: &Utf8Path,
+        workspace_root: &Path,
     ) -> Option<Self> {
         let name = package_metadata.name.clone();
         let _span = debug_span!("package", %name).entered();
@@ -56,7 +57,7 @@ impl Package {
             .strip_prefix(workspace_root)
             .ok()
             .and_then(|p| p.parent())
-            .map(ToOwned::to_owned)
+            .map(|p| PathBuf::from(p.as_str()))
         else {
             warn!(
                 "manifest path {manifest_path:?} for package {name:?} is not within \
@@ -82,9 +83,9 @@ impl Package {
 ///
 /// These are the starting points for discovering source files.
 fn package_top_sources(
-    workspace_root: &Utf8Path,
+    workspace_root: &Path,
     package_metadata: &cargo_metadata::Package,
-) -> Vec<Utf8PathBuf> {
+) -> Vec<PathBuf> {
     let mut found = Vec::new();
     let pkg_dir = package_metadata.manifest_path.parent().unwrap();
     for target in &package_metadata.targets {
@@ -92,10 +93,10 @@ fn package_top_sources(
             if let Ok(relpath) = target
                 .src_path
                 .strip_prefix(workspace_root)
-                .map(ToOwned::to_owned)
+                .map(|p| PathBuf::from(p.as_str()))
             {
                 debug!(
-                    "found mutation target {relpath} of kind {kind:?}",
+                    "found mutation target {relpath:?} of kind {kind:?}",
                     kind = target.kind
                 );
                 found.push(relpath);
@@ -141,7 +142,7 @@ pub enum PackageSelection {
 
 impl PackageSelection {
     #[cfg(test)]
-    pub fn one<P: Into<Utf8PathBuf>>(
+    pub fn one<P: Into<PathBuf>>(
         name: &str,
         version: &str,
         relative_dir: P,

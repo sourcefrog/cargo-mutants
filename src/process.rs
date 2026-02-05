@@ -14,7 +14,7 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use camino::Utf8Path;
+use std::path::Path;
 use serde::Serialize;
 use tracing::{Level, debug, span, trace};
 
@@ -48,7 +48,7 @@ impl Process {
     pub fn run(
         argv: &[String],
         env: &[(String, String)],
-        cwd: &Utf8Path,
+        cwd: &Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
         scenario_output: &mut ScenarioOutput,
@@ -70,7 +70,7 @@ impl Process {
     pub fn start(
         argv: &[String],
         env: &[(String, String)],
-        cwd: &Utf8Path,
+        cwd: &Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
         scenario_output: &mut ScenarioOutput,

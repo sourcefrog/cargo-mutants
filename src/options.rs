@@ -14,7 +14,7 @@ use std::ffi::OsString;
 use std::time::Duration;
 
 use anyhow::Context;
-use camino::{Utf8Path, Utf8PathBuf};
+use std::path::{Path, PathBuf};
 use clap::ArgAction;
 use globset::GlobSet;
 use regex::RegexSet;
@@ -147,7 +147,7 @@ pub struct Options {
     pub exclude_names: RegexSet,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
-    pub output_in_dir: Option<Utf8PathBuf>,
+    pub output_in_dir: Option<PathBuf>,
 
     /// Run this many `cargo build` or `cargo test` tasks in parallel.
     pub jobs: Option<usize>,
@@ -368,7 +368,7 @@ impl Options {
             output_in_dir: args
                 .output
                 .clone()
-                .or(config.output.as_ref().map(Utf8PathBuf::from)),
+                .or(config.output.as_ref().map(PathBuf::from)),
             print_caught: args.caught,
             print_unviable: args.unviable,
             profile: args.profile.as_ref().or(config.profile.as_ref()).cloned(),
@@ -460,7 +460,7 @@ impl Options {
     ///
     /// That is: it matches the examine globset (if specified) and does not match the exclude globset
     /// (if specified).
-    pub fn allows_source_file_path(&self, path: &Utf8Path) -> bool {
+    pub fn allows_source_file_path(&self, path: &Path) -> bool {
         // TODO: Use Option::is_none_or when MSRV>1.80
         self.examine_globset
             .as_ref()

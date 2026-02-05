@@ -7,7 +7,7 @@ use std::fs::read_to_string;
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use camino::Utf8PathBuf;
+use std::path::PathBuf;
 use jiff::Timestamp;
 use output::ScenarioOutput;
 use serde::Serialize;
@@ -158,11 +158,11 @@ impl LabOutcome {
 pub struct ScenarioOutcome {
     /// A file holding the text output from running this test.
     // TODO: Maybe this should be a log object?
-    output_dir: Utf8PathBuf,
-    log_path: Utf8PathBuf,
+    output_dir: PathBuf,
+    log_path: PathBuf,
     /// The path relative to `mutants.out` for a file showing the diff between the unmutated
     /// and mutated source. Only present for mutant scenarios.
-    diff_path: Option<Utf8PathBuf>,
+    diff_path: Option<PathBuf>,
     /// What kind of scenario was being built?
     pub scenario: Scenario,
     /// For each phase, the duration and the cargo result.

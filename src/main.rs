@@ -47,12 +47,10 @@ mod workspace;
 
 use std::env;
 use std::io;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use anyhow::{Context, Result, anyhow, ensure};
-use camino::{Utf8Path, Utf8PathBuf};
 use clap::{
     ArgAction, CommandFactory, Parser, ValueEnum,
     builder::{Styles, styling},
@@ -156,7 +154,7 @@ pub struct Args {
         value_name = "FILE",
         conflicts_with = "no_config"
     )]
-    config: Option<Utf8PathBuf>,
+    config: Option<PathBuf>,
 
     /// Don't read .cargo/mutants.toml.
     #[arg(long, help_heading = "Config", conflicts_with = "config")]
@@ -362,7 +360,7 @@ pub struct Args {
 
     /// Include only mutants in code touched by this diff.
     #[arg(long, short = 'D', help_heading = "Filters")]
-    in_diff: Option<Utf8PathBuf>,
+    in_diff: Option<PathBuf>,
 
     /// Skip mutants that were caught in previous runs.
     #[arg(long, help_heading = "Filters")]
@@ -406,11 +404,11 @@ pub struct Args {
         conflicts_with = "manifest_path",
         help_heading = "Input"
     )]
-    dir: Option<Utf8PathBuf>,
+    dir: Option<PathBuf>,
 
     /// Path to Cargo.toml for the package to mutate.
     #[arg(long, help_heading = "Input")]
-    manifest_path: Option<Utf8PathBuf>,
+    manifest_path: Option<PathBuf>,
 
     // Meta ============================================================
     /// Generate autocompletions for the given shell.
@@ -463,7 +461,7 @@ pub struct Args {
         env = "CARGO_MUTANTS_OUTPUT",
         help_heading = "Output"
     )]
-    output: Option<Utf8PathBuf>,
+    output: Option<PathBuf>,
 
     /// Print mutations that failed to check or build.
     #[arg(long, short = 'V', help_heading = "Output")]
@@ -536,7 +534,7 @@ fn main() -> Result<()> {
         return mutate_file(path, &options);
     }
 
-    let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
+    let start_dir: &Path = if let Some(manifest_path) = &args.manifest_path {
         ensure!(manifest_path.is_file(), "Manifest path is not a file");
         manifest_path
             .parent()
@@ -544,7 +542,7 @@ fn main() -> Result<()> {
     } else if let Some(dir) = &args.dir {
         dir
     } else {
-        Utf8Path::new(".")
+        Path::new(".")
     };
     let workspace = Workspace::open(start_dir)?;
     let config = if args.no_config {
@@ -637,16 +635,13 @@ fn mutate_file(path: &Path, options: &Options) -> Result<()> {
     let fake_package = Package {
         name: "single_file".to_string(),
         version: "0.0.0".to_string(),
-        relative_dir: Utf8PathBuf::new(),
+        relative_dir: PathBuf::new(),
         top_sources: Vec::new(),
     };
-    let path = Utf8PathBuf::from_path_buf(path.to_owned())
-        .map_err(|_| anyhow!("mutate_file path is not UTF-8"))?;
+    let path = path.to_owned();
     let source_file = SourceFile::load(
         path.parent().context("get parent of mutate_file")?,
-        path.file_name()
-            .context("get file name of mutate_file")?
-            .into(),
+        Path::new(path.file_name().context("get file name of mutate_file")?),
         &fake_package,
         true,
     )

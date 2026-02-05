@@ -52,7 +52,7 @@ impl TailFile {
 
 #[cfg(test)]
 mod test {
-    use camino::Utf8PathBuf;
+    use std::path::PathBuf;
 
     use std::io::Write;
 
@@ -61,7 +61,7 @@ mod test {
     #[test]
     fn last_line_of_file() {
         let mut tempfile = tempfile::NamedTempFile::new().unwrap();
-        let path: Utf8PathBuf = tempfile.path().to_owned().try_into().unwrap();
+        let path: PathBuf = tempfile.path().to_owned().try_into().unwrap();
         let reopened = File::open(&path).unwrap();
         let mut tailer = TailFile::new(reopened);
 

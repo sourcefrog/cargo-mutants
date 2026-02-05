@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::vec;
 
-use camino::{Utf8Path, Utf8PathBuf};
+use std::path::{Path, PathBuf};
 use proc_macro2::{Ident, TokenStream};
 use quote::{ToTokens, quote};
 use syn::ext::IdentExt;
@@ -59,7 +59,7 @@ impl Discovered {
 /// source tree, and also a list of all source files visited (whether
 /// they generated mutants or not).
 pub fn walk_tree(
-    workspace_dir: &Utf8Path,
+    workspace_dir: &Path,
     packages: &[Arc<Package>],
     options: &Options,
     console: &Console,
@@ -83,7 +83,7 @@ pub fn walk_tree(
 /// and mutants.
 #[allow(clippy::from_iter_instead_of_collect)]
 fn walk_package(
-    workspace_dir: &Utf8Path,
+    workspace_dir: &Path,
     package: &Package,
     error_exprs: &[Expr],
     progress: &WalkProgress,
@@ -160,7 +160,7 @@ pub fn walk_file(
 #[cfg(test)]
 pub fn mutate_source_str(code: &str, options: &Options) -> Result<Vec<Mutant>> {
     let source_file = SourceFile::for_tests(
-        Utf8Path::new("src/main.rs"),
+        Path::new("src/main.rs"),
         code,
         "cargo-mutants-testdata-internal",
         true,
@@ -177,7 +177,7 @@ pub fn mutate_expr(code: &str) -> Vec<String> {
     let full_code = format!("fn test_harness() {{\n{code}\n}}\n");
     let options = Options::default();
     let source_file = SourceFile::for_tests(
-        Utf8Path::new("src/main.rs"),
+        Path::new("src/main.rs"),
         &full_code,
         "cargo-mutants-testdata-internal",
         true,
@@ -228,17 +228,17 @@ struct ModNamespace {
     ///
     /// Note that `mod foo { ... }` blocks can also have a file location specified,
     /// which affects the filesystem location of all child `mod bar;` statements.
-    path_attribute: Option<Utf8PathBuf>,
+    path_attribute: Option<PathBuf>,
     /// Location of the module definition in the source file
     source_location: Span,
 }
 
 impl ModNamespace {
     /// Returns the name of the module for filesystem purposes
-    fn get_filesystem_name(&self) -> &Utf8Path {
+    fn get_filesystem_name(&self) -> &Path {
         self.path_attribute
             .as_ref()
-            .map_or(Utf8Path::new(&self.name), Utf8PathBuf::as_path)
+            .map_or(Path::new(&self.name), PathBuf::as_path)
     }
 }
 
@@ -766,10 +766,10 @@ fn function_body_span(block: &Block) -> Option<Span> {
 /// Possibly, our heuristics just won't be able to find which file it is,
 /// in which case we return `Ok(None)`.
 fn find_mod_source(
-    tree_root: &Utf8Path,
+    tree_root: &Path,
     parent: &SourceFile,
     mod_namespace: &ExternalModRef,
-) -> Option<Utf8PathBuf> {
+) -> Option<PathBuf> {
     // First, work out whether the mod will be a sibling in the same directory, or
     // in a child directory.
     //
@@ -835,7 +835,7 @@ fn find_mod_source(
     for relative_path in mod_child_candidates {
         let full_path = tree_root.join(&relative_path);
         if full_path.is_file() {
-            trace!("found submodule in {full_path}");
+            trace!("found submodule in {}", full_path.display());
             return Some(relative_path);
         }
         tried_paths.push(full_path);
@@ -946,7 +946,7 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
 ///
 /// # Errors
 /// Returns an error if the path attribute contains a dubious path (leading `/`)
-fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8PathBuf>, String> {
+fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<PathBuf>, String> {
     attrs
         .iter()
         .find_map(|attr| match &attr.meta {
@@ -963,7 +963,7 @@ fn find_path_attribute(attrs: &[Attribute]) -> std::result::Result<Option<Utf8Pa
                 if path.starts_with('/') {
                     Some(Err(path))
                 } else {
-                    Some(Ok(Utf8PathBuf::from(path)))
+                    Some(Ok(PathBuf::from(path)))
                 }
             }
             _ => None,
@@ -1038,7 +1038,7 @@ mod test {
     /// Helper function for `find_path_attribute` tests
     fn run_find_path_attribute(
         token_stream: &TokenStream,
-    ) -> std::result::Result<Option<Utf8PathBuf>, String> {
+    ) -> std::result::Result<Option<PathBuf>, String> {
         let token_string = token_stream.to_string();
         let item_mod = syn::parse_str::<syn::ItemMod>(&token_string).unwrap_or_else(|err| {
             panic!("Failed to parse test case token stream: {token_string}\n{err}")
@@ -1052,7 +1052,7 @@ mod test {
             #[path = "foo_file.rs"]
             mod foo;
         });
-        assert_eq!(outer, Ok(Some(Utf8PathBuf::from("foo_file.rs"))));
+        assert_eq!(outer, Ok(Some(PathBuf::from("foo_file.rs"))));
 
         let inner = run_find_path_attribute(&quote! {
             mod foo {
@@ -1062,7 +1062,7 @@ mod test {
                 mod bar;
             }
         });
-        assert_eq!(inner, Ok(Some(Utf8PathBuf::from("foo_folder"))));
+        assert_eq!(inner, Ok(Some(PathBuf::from("foo_folder"))));
     }
 
     #[test]
@@ -1081,14 +1081,14 @@ mod test {
             #[path = "contains/../dots.rs"]
             mod dots;
         });
-        assert_eq!(dots, Ok(Some(Utf8PathBuf::from("contains/../dots.rs"))));
+        assert_eq!(dots, Ok(Some(PathBuf::from("contains/../dots.rs"))));
 
         let dots_inner = run_find_path_attribute(&quote! {
             mod dots_in_path {
                 #![path = "contains/../dots"]
             }
         });
-        assert_eq!(dots_inner, Ok(Some(Utf8PathBuf::from("contains/../dots"))));
+        assert_eq!(dots_inner, Ok(Some(PathBuf::from("contains/../dots"))));
 
         let leading_slash = run_find_path_attribute(&quote! {
             #[path = "/leading_slash.rs"]
@@ -1102,7 +1102,7 @@ mod test {
         });
         assert_eq!(
             allow_other_slashes,
-            Ok(Some(Utf8PathBuf::from("foo/other/slashes/are/allowed.rs")))
+            Ok(Some(PathBuf::from("foo/other/slashes/are/allowed.rs")))
         );
 
         let leading_slash2 = run_find_path_attribute(&quote! {

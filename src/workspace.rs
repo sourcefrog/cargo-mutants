@@ -17,12 +17,11 @@
 
 use std::fmt;
 use std::panic::catch_unwind;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Arc;
 
 use anyhow::{Context, anyhow, bail, ensure};
-use camino::{Utf8Path, Utf8PathBuf};
 use itertools::Itertools;
 use serde_json::Value;
 use tracing::{debug, error, warn};
@@ -55,7 +54,7 @@ pub enum PackageFilter {
     /// Otherwise, this is a "virtual workspace" directory, containing members but no
     /// primary package. In this case, if there is a `default-members` field in the workspace,
     /// use that list. Otherwise, apply to all members of the workspace.
-    Auto(Utf8PathBuf),
+    Auto(PathBuf),
 }
 
 impl PackageFilter {
@@ -68,6 +67,7 @@ impl PackageFilter {
 /// A cargo workspace.
 pub struct Workspace {
     metadata: cargo_metadata::Metadata,
+    workspace_root: PathBuf,
     packages: Vec<Arc<Package>>,
 }
 
@@ -77,15 +77,15 @@ impl fmt::Debug for Workspace {
         // The `metadata` value is very large so is omitted here;
         // just the root is enough.
         f.debug_struct("Workspace")
-            .field("root", &self.root().to_string())
+            .field("root", &self.root().display().to_string())
             .finish_non_exhaustive()
     }
 }
 
 impl Workspace {
     /// The root directory of the workspace.
-    pub fn root(&self) -> &Utf8Path {
-        &self.metadata.workspace_root
+    pub fn root(&self) -> &Path {
+        &self.workspace_root
     }
 
     /// Open the workspace containing a given directory.
@@ -105,11 +105,12 @@ impl Workspace {
             .current_dir(&dir)
             .verbose(false)
             .exec()
-            .with_context(|| format!("Failed to run cargo metadata on {manifest_path}"))?;
+            .with_context(|| format!("Failed to run cargo metadata on {}", manifest_path.display()))?;
         debug!(workspace_root = ?metadata.workspace_root, "Found workspace root");
+        let workspace_root = PathBuf::from(metadata.workspace_root.as_str());
         let packages = packages_from_metadata(&metadata);
         debug!(?packages, "Found packages");
-        Ok(Workspace { metadata, packages })
+        Ok(Workspace { metadata, workspace_root, packages })
     }
 
     pub fn packages_by_name<S: AsRef<str>>(&self, names: &[S]) -> Vec<Arc<Package>> {
@@ -225,7 +226,7 @@ impl Workspace {
 }
 
 /// Return the path of the workspace or package directory enclosing a given directory.
-fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
+fn locate_project(path: &Path, workspace: bool) -> Result<PathBuf> {
     ensure!(path.is_dir(), "{path:?} is not a directory");
     let mut args: Vec<&str> = vec!["locate-project"];
     if workspace {
@@ -249,7 +250,7 @@ fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
         String::from_utf8(output.stdout).context("cargo locate-project output is not UTF-8")?;
     debug!("cargo locate-project output: {}", stdout.trim());
     let val: Value = serde_json::from_str(&stdout).context("parse cargo locate-project output")?;
-    let cargo_toml_path: Utf8PathBuf = val["root"]
+    let cargo_toml_path: PathBuf = val["root"]
         .as_str()
         .with_context(|| format!("cargo locate-project output has no root: {stdout:?}"))?
         .to_owned()
@@ -273,7 +274,7 @@ fn locate_project(path: &Utf8Path, workspace: bool) -> Result<Utf8PathBuf> {
 #[cfg(test)]
 mod test {
     use assert_matches::assert_matches;
-    use camino::Utf8PathBuf;
+    use std::path::PathBuf;
     use itertools::Itertools;
 
     use crate::console::Console;
@@ -341,7 +342,7 @@ mod test {
     #[test]
     fn auto_packages_in_workspace_subdir_finds_single_package() {
         let tmp = copy_of_testdata("workspace");
-        let subdir_path = Utf8PathBuf::try_from(tmp.path().join("main")).unwrap();
+        let subdir_path = PathBuf::try_from(tmp.path().join("main")).unwrap();
         let workspace = Workspace::open(&subdir_path).expect("Find workspace root");
         let packages = workspace
             .filter_packages(&PackageFilter::Auto(subdir_path.clone()))

@@ -8,7 +8,7 @@
 use std::fs::{read_to_string, write};
 
 use anyhow::Context;
-use camino::Utf8Path;
+use std::path::Path;
 use tracing::debug;
 
 use crate::Result;
@@ -19,15 +19,15 @@ use crate::path::ascent;
 /// `manifest_source_dir` is the directory originally containing the manifest, from
 /// which the absolute paths are calculated.
 #[allow(clippy::module_name_repetitions)]
-pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> Result<()> {
+pub fn fix_manifest(manifest_scratch_path: &Path, source_dir: &Path) -> Result<()> {
     let toml_str = read_to_string(manifest_scratch_path).with_context(|| {
-        format!("failed to read manifest from build directory: {manifest_scratch_path}")
+        format!("failed to read manifest from build directory: {}", manifest_scratch_path.display())
     })?;
     if let Some(changed_toml) = fix_manifest_toml(&toml_str, source_dir)? {
         let toml_str =
             toml::to_string_pretty(&changed_toml).context("serialize changed manifest")?;
         write(manifest_scratch_path, toml_str.as_bytes()).with_context(|| {
-            format!("Failed to write fixed manifest to {manifest_scratch_path}")
+            format!("Failed to write fixed manifest to {}", manifest_scratch_path.display())
         })?;
     }
     Ok(())
@@ -38,7 +38,7 @@ pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> 
 /// Returns the new manifest, or None if no changes were made.
 fn fix_manifest_toml(
     manifest_toml: &str,
-    manifest_source_dir: &Utf8Path,
+    manifest_source_dir: &Path,
 ) -> Result<Option<toml::Value>> {
     let mut value: toml::Value = manifest_toml.parse().context("parse manifest")?;
     let orig_value = value.clone();
@@ -86,7 +86,7 @@ fn fix_manifest_toml(
 /// other values are left unchanged.
 ///
 /// Entries that have no `path` are left unchanged too.
-fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Utf8Path) {
+fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Path) {
     if let Some(dependencies_table) = dependencies.as_table_mut() {
         for (_, value) in dependencies_table.iter_mut() {
             if let Some(dependency_table) = value.as_table_mut()
@@ -101,7 +101,7 @@ fn fix_dependency_table(dependencies: &mut toml::Value, manifest_source_dir: &Ut
 }
 
 /// Rewrite relative paths within `.cargo/config.toml` to be absolute paths.
-pub fn fix_cargo_config(build_path: &Utf8Path, source_path: &Utf8Path) -> Result<()> {
+pub fn fix_cargo_config(build_path: &Path, source_path: &Path) -> Result<()> {
     let config_path = build_path.join(".cargo/config.toml");
     if config_path.exists() {
         let toml_str = read_to_string(&config_path).context("read .cargo/config.toml")?;
@@ -118,7 +118,7 @@ pub fn fix_cargo_config(build_path: &Utf8Path, source_path: &Utf8Path) -> Result
 /// Returns None if no changes are needed.
 ///
 /// See <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html?search=#paths-overrides>.
-fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Option<String>> {
+fn fix_cargo_config_toml(config_toml: &str, source_dir: &Path) -> Result<Option<String>> {
     let mut value: toml::Value = config_toml.parse().context("parse config.toml")?;
     let mut changed = false;
     if let Some(paths) = value.get_mut("paths").and_then(|p| p.as_array_mut()) {
@@ -144,14 +144,14 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
 /// Paths pointing into a subdirectory of the source tree are left unchanged.
 ///
 /// Returns None if the path does not need to be changed.
-fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
-    let path = Utf8Path::new(path_str);
+fn fix_path(path_str: &str, source_dir: &Path) -> Option<String> {
+    let path = Path::new(path_str);
     if path.is_absolute() || ascent(path) == 0 {
         None
     } else {
         let mut new_path = source_dir.to_owned();
         new_path.push(path);
-        let new_path_str = new_path.to_string();
+        let new_path_str = new_path.display().to_string();
         debug!("fix path {path_str} -> {new_path_str}");
         Some(new_path_str)
     }
@@ -159,7 +159,7 @@ fn fix_path(path_str: &str, source_dir: &Utf8Path) -> Option<String> {
 
 #[cfg(test)]
 mod test {
-    use camino::{Utf8Path, Utf8PathBuf};
+    use std::path::{Path, PathBuf};
     use indoc::indoc;
     use pretty_assertions::assert_eq;
     use toml::Table;
@@ -168,13 +168,13 @@ mod test {
 
     #[test]
     fn fix_path_absolute_unchanged() {
-        let dependency_abspath = Utf8Path::new("testdata/dependency")
-            .canonicalize_utf8()
+        let dependency_abspath = Path::new("testdata/dependency")
+            .canonicalize()
             .unwrap();
         assert_eq!(
             super::fix_path(
                 dependency_abspath.as_str(),
-                Utf8Path::new("/home/user/src/foo")
+                Path::new("/home/user/src/foo")
             ),
             None
         );
@@ -182,15 +182,15 @@ mod test {
 
     #[test]
     fn fix_path_relative() {
-        let fixed_path: Utf8PathBuf = super::fix_path(
+        let fixed_path: PathBuf = super::fix_path(
             "../dependency",
-            Utf8Path::new("testdata/relative_dependency"),
+            Path::new("testdata/relative_dependency"),
         )
         .expect("path was adjusted")
         .into();
         assert_eq!(
             &fixed_path,
-            Utf8Path::new("testdata/relative_dependency/../dependency"),
+            Path::new("testdata/relative_dependency/../dependency"),
         );
     }
 
@@ -202,7 +202,7 @@ mod test {
             [dependencies]
             wibble = { path = "../wibble" } # Use the relative path to the dependency.
         "# };
-        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let orig_path = Path::new("/home/user/src/foo");
         let fixed = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
@@ -210,7 +210,7 @@ mod test {
         assert_eq!(fixed["author"].as_str().unwrap(), "A Smithee");
         assert_eq!(
             fixed["dependencies"]["wibble"]["path"].as_str().unwrap(),
-            Utf8Path::new("/home/user/src/foo/../wibble")
+            Path::new("/home/user/src/foo/../wibble")
         );
     }
 
@@ -222,7 +222,7 @@ mod test {
             [replace]
             "wibble:1.2.3" = { path = "../wibble" } # Use the relative path to the dependency.
         "# };
-        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let orig_path = Path::new("/home/user/src/foo");
         let fixed = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
@@ -247,7 +247,7 @@ mod test {
             wibble = { path = "c:/home/asmithee/src/wibble" }
         "# };
 
-        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let orig_path = Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path).unwrap();
         assert_eq!(
             fixed_toml, None,
@@ -262,7 +262,7 @@ mod test {
             wibble = { path = "wibble" }
         "# };
 
-        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let orig_path = Path::new("/home/user/src/foo");
         let fixed_toml = fix_manifest_toml(manifest_toml, orig_path).unwrap();
         assert_eq!(
             fixed_toml, None,
@@ -278,7 +278,7 @@ mod test {
             [patch.crates-io]
             wibble = { path = "../wibble" } # Use the relative path to the dependency.
         "# };
-        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let orig_path = Path::new("/home/user/src/foo");
         let fixed = fix_manifest_toml(manifest_toml, orig_path)
             .unwrap()
             .expect("toml was modified");
@@ -307,7 +307,7 @@ mod test {
                 "/Users/jane/src/absolute_dependency",
                 "/src/other",
             ]"# };
-        let source_dir = Utf8Path::new("/Users/jane/src/foo");
+        let source_dir = Path::new("/Users/jane/src/foo");
         let fixed_toml = fix_cargo_config_toml(cargo_config_toml, source_dir)
             .unwrap()
             .expect("toml was modified");
@@ -319,15 +319,15 @@ mod test {
             .unwrap()
             .iter()
             .map(|val| val.as_str().unwrap().into())
-            .collect::<Vec<&Utf8Path>>();
+            .collect::<Vec<&Path>>();
         assert_eq!(
             fixed_paths,
             [
-                Utf8Path::new("sub_dependency"),
+                Path::new("sub_dependency"),
                 &source_dir.join("../sibling_dependency"),
                 &source_dir.join("../../parent_dependency"),
                 &source_dir.parent().unwrap().join("absolute_dependency"),
-                Utf8Path::new("/src/other"),
+                Path::new("/src/other"),
             ]
         );
     }

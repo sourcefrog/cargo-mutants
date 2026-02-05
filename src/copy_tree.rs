@@ -3,7 +3,7 @@
 //! Copy a source tree, with some exclusions, to a new temporary directory.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::Context;

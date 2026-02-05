@@ -104,7 +104,7 @@ pub fn diff_filter(mutants: Vec<Mutant>, diff_text: &str) -> Result<Vec<Mutant>,
     let mut changed_rs_file = false;
     for patch in &patches {
         let path = strip_patch_path(patch.modified().unwrap_or_default());
-        if path != "/dev/null" && path.extension() == Some("rs") {
+        if path != Path::new("/dev/null") && path.extension() == Some(std::ffi::OsStr::new("rs")) {
             changed_rs_file = true;
             lines_changed_by_path
                 .entry(path)
@@ -181,11 +181,11 @@ fn check_diff_new_text_matches(diffs: &[Diff<str>], mutants: &[Mutant]) -> Resul
                         "Diff content doesn't match source file"
                     );
                     bail!(formatdoc! { "\
-                        Diff content doesn't match source file: {path} line {lineno}
+                        Diff content doesn't match source file: {} line {lineno}
                         diff has:   {diff_content:?}
                         source has: {source_content:?}
                         The diff might be out of date with this source tree.
-                    "});
+                    ", path.display()});
                 }
             }
         }

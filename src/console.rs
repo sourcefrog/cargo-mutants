@@ -9,7 +9,7 @@ use std::io;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use camino::{Utf8Path, Utf8PathBuf};
+use std::path::{Path, PathBuf};
 use console::{StyledObject, style};
 use nutmeg::Destination;
 use tracing::Level;
@@ -46,7 +46,7 @@ impl Console {
     }
 
     /// Update that a cargo task is starting.
-    pub fn scenario_started(&self, dir: &Utf8Path, scenario: &Scenario, log_file: File) {
+    pub fn scenario_started(&self, dir: &Path, scenario: &Scenario, log_file: File) {
         let start = Instant::now();
         let scenario_model = ScenarioModel::new(dir, scenario, start, log_file);
         self.view.update(|model| {
@@ -57,7 +57,7 @@ impl Console {
     /// Update that cargo finished.
     pub fn scenario_finished(
         &self,
-        dir: &Utf8Path,
+        dir: &Path,
         scenario: &Scenario,
         outcome: &ScenarioOutcome,
         options: &Options,
@@ -126,13 +126,13 @@ impl Console {
         }
     }
 
-    pub fn start_copy(&self, dir: &Utf8Path) {
+    pub fn start_copy(&self, dir: &Path) {
         self.view.update(|model| {
             model.copy_models.push(CopyModel::new(dir.to_owned()));
         });
     }
 
-    pub fn finish_copy(&self, dir: &Utf8Path) {
+    pub fn finish_copy(&self, dir: &Path) {
         self.view.update(|model| {
             let idx = model
                 .copy_models
@@ -143,7 +143,7 @@ impl Console {
         });
     }
 
-    pub fn copy_progress(&self, dest: &Utf8Path, total_bytes: u64) {
+    pub fn copy_progress(&self, dest: &Path, total_bytes: u64) {
         self.view.update(|model| {
             model
                 .copy_models
@@ -174,13 +174,13 @@ impl Console {
     }
 
     /// A new phase of this scenario started.
-    pub fn scenario_phase_started(&self, dir: &Utf8Path, phase: Phase) {
+    pub fn scenario_phase_started(&self, dir: &Path, phase: Phase) {
         self.view.update(|model| {
             model.find_scenario_mut(dir).phase_started(phase);
         });
     }
 
-    pub fn scenario_phase_finished(&self, dir: &Utf8Path, phase: Phase) {
+    pub fn scenario_phase_finished(&self, dir: &Path, phase: Phase) {
         self.view.update(|model| {
             model.find_scenario_mut(dir).phase_finished(phase);
         });
@@ -467,14 +467,14 @@ impl nutmeg::Model for LabModel {
 }
 
 impl LabModel {
-    fn find_scenario_mut(&mut self, dir: &Utf8Path) -> &mut ScenarioModel {
+    fn find_scenario_mut(&mut self, dir: &Path) -> &mut ScenarioModel {
         self.scenario_models
             .iter_mut()
             .find(|sm| sm.dir == *dir)
             .expect("scenario directory not found")
     }
 
-    fn remove_scenario(&mut self, dir: &Utf8Path) {
+    fn remove_scenario(&mut self, dir: &Path) {
         self.scenario_models.retain(|sm| sm.dir != *dir);
     }
 }
@@ -504,7 +504,7 @@ impl nutmeg::Model for WalkModel {
 /// It draws the command and some description of what scenario is being tested.
 struct ScenarioModel {
     /// The directory where this is being built: unique across all models.
-    dir: Utf8PathBuf,
+    dir: PathBuf,
     name: Cow<'static, str>,
     phase_start: Instant,
     phase: Option<Phase>,
@@ -514,7 +514,7 @@ struct ScenarioModel {
 }
 
 impl ScenarioModel {
-    fn new(dir: &Utf8Path, scenario: &Scenario, start: Instant, log_file: File) -> ScenarioModel {
+    fn new(dir: &Path, scenario: &Scenario, start: Instant, log_file: File) -> ScenarioModel {
         ScenarioModel {
             dir: dir.to_owned(),
             name: style_scenario(scenario, true),
@@ -569,13 +569,13 @@ impl nutmeg::Model for ScenarioModel {
 
 /// A Nutmeg model for progress in copying a tree.
 struct CopyModel {
-    dest: Utf8PathBuf,
+    dest: PathBuf,
     bytes_copied: u64,
     start: Instant,
 }
 
 impl CopyModel {
-    fn new(dest: Utf8PathBuf) -> CopyModel {
+    fn new(dest: PathBuf) -> CopyModel {
         CopyModel {
             dest,
             start: Instant::now(),

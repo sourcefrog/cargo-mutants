@@ -5,11 +5,10 @@
 use std::collections::{HashMap, hash_map::Entry};
 use std::fs::{File, OpenOptions, create_dir, read_to_string, remove_dir_all, rename, write};
 use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::thread::sleep;
 use std::time::Duration;
 
-use camino::{Utf8Path, Utf8PathBuf};
 use fs2::FileExt;
 use jiff::Timestamp;
 use path_slash::PathExt;
@@ -84,7 +83,7 @@ impl LockFile {
 #[derive(Debug)]
 #[allow(clippy::module_name_repetitions)]
 pub struct OutputDir {
-    path: Utf8PathBuf,
+    path: PathBuf,
 
     #[allow(unused)] // Lifetime controls the file lock
     lock_file: File,
@@ -113,7 +112,7 @@ impl OutputDir {
     ///
     /// If the directory already exists and `lock.json` exists and is locked, this waits for
     /// the lock to be released. The returned `OutputDir` holds a lock for its lifetime.
-    pub fn new(in_dir: &Utf8Path) -> Result<OutputDir> {
+    pub fn new(in_dir: &Path) -> Result<OutputDir> {
         if !in_dir.exists() {
             create_dir(in_dir)
                 .with_context(|| format!("create output parent directory {in_dir:?}"))?;
@@ -134,7 +133,7 @@ impl OutputDir {
         }
         create_dir(&output_dir)
             .with_context(|| format!("create output directory {:?}", &output_dir))?;
-        let lock_file = LockFile::acquire_lock(output_dir.as_std_path())
+        let lock_file = LockFile::acquire_lock(&output_dir)
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
         create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
@@ -190,7 +189,7 @@ impl OutputDir {
 
     /// Return the path of the `mutants.out` directory.
     #[allow(unused)]
-    pub fn path(&self) -> &Utf8Path {
+    pub fn path(&self) -> &Path {
         &self.path
     }
 
@@ -229,7 +228,7 @@ impl OutputDir {
             .create(true)
             .append(true)
             .open(&debug_log_path)
-            .with_context(|| format!("open {debug_log_path}"))
+            .with_context(|| format!("open {}", debug_log_path.display()))
     }
 
     pub fn write_mutants_list(&self, mutants: &[Mutant]) -> Result<()> {
@@ -269,7 +268,7 @@ impl OutputDir {
 /// unviable mutants.
 ///
 /// Returns an empty vec if there are none.
-pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String>> {
+pub fn load_previously_caught(output_parent_dir: &Path) -> Result<Vec<String>> {
     let mut r = Vec::new();
     for filename in [CAUGHT_TXT, UNVIABLE_TXT, PREVIOUSLY_CAUGHT_TXT] {
         let p = output_parent_dir.join(OUTDIR_NAME).join(filename);
@@ -289,23 +288,23 @@ pub fn load_previously_caught(output_parent_dir: &Utf8Path) -> Result<Vec<String
 /// Where to write output about a particular Scenario.
 #[allow(clippy::module_name_repetitions)]
 pub struct ScenarioOutput {
-    pub output_dir: Utf8PathBuf,
-    log_path: Utf8PathBuf,
+    pub output_dir: PathBuf,
+    log_path: PathBuf,
     pub log_file: File,
     /// File holding the diff of the mutated file, only if it's a mutation.
-    pub diff_path: Option<Utf8PathBuf>,
+    pub diff_path: Option<PathBuf>,
 }
 
 impl ScenarioOutput {
-    fn new(output_dir: &Utf8Path, scenario: &Scenario, basename: &str) -> Result<Self> {
-        let log_path = Utf8PathBuf::from(format!("log/{basename}.log"));
+    fn new(output_dir: &Path, scenario: &Scenario, basename: &str) -> Result<Self> {
+        let log_path = PathBuf::from(format!("log/{basename}.log"));
         let log_file = File::options()
             .append(true)
             .create_new(true)
             .read(true)
             .open(output_dir.join(&log_path))?;
         let diff_path = if scenario.is_mutant() {
-            Some(Utf8PathBuf::from(format!("diff/{basename}.diff")))
+            Some(PathBuf::from(format!("diff/{basename}.diff")))
         } else {
             None
         };
@@ -319,7 +318,7 @@ impl ScenarioOutput {
         Ok(scenario_output)
     }
 
-    pub fn log_path(&self) -> &Utf8Path {
+    pub fn log_path(&self) -> &Path {
         &self.log_path
     }
 
@@ -327,7 +326,7 @@ impl ScenarioOutput {
         self.message(&format!("mutation diff:\n{diff}"))?;
         let diff_path = self.diff_path.as_ref().expect("should know the diff path");
         write(self.output_dir.join(diff_path), diff.as_bytes())
-            .with_context(|| format!("write diff to {diff_path}"))
+            .with_context(|| format!("write diff to {}", diff_path.display()))
     }
 
     /// Open a new handle reading from the start of the log file.
@@ -336,7 +335,7 @@ impl ScenarioOutput {
         OpenOptions::new()
             .read(true)
             .open(&path)
-            .with_context(|| format!("reopen {path} for read"))
+            .with_context(|| format!("reopen {} for read", path.display()))
     }
 
     /// Open a new handle that appends to the log file, so that it can be passed to a subprocess.
@@ -345,7 +344,7 @@ impl ScenarioOutput {
         OpenOptions::new()
             .append(true)
             .open(&path)
-            .with_context(|| format!("reopen {path} for append"))
+            .with_context(|| format!("reopen {} for append", path.display()))
     }
 
     /// Write a message, with a marker.
@@ -422,7 +421,7 @@ mod test {
     #[test]
     fn create_output_dir() {
         let tmp = minimal_source_tree();
-        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let tmp_path: &Path = tmp.path().try_into().unwrap();
         let workspace = Workspace::open(tmp_path).unwrap();
         let output_dir = OutputDir::new(workspace.root()).unwrap();
         assert_eq!(
@@ -449,7 +448,7 @@ mod test {
     #[test]
     fn rotate() {
         let temp_dir = TempDir::new().unwrap();
-        let temp_dir_path = Utf8Path::from_path(temp_dir.path()).unwrap();
+        let temp_dir_path = Path::from_path(temp_dir.path()).unwrap();
 
         // Create an initial output dir with one log.
         let mut output_dir = OutputDir::new(temp_dir_path).unwrap();
@@ -501,7 +500,7 @@ mod test {
     #[test]
     fn track_previously_caught() {
         let temp_dir = TempDir::new().unwrap();
-        let parent = Utf8Path::from_path(temp_dir.path()).unwrap();
+        let parent = Path::from_path(temp_dir.path()).unwrap();
 
         let example = "src/process.rs:213:9: replace ProcessStatus::is_success -> bool with true
 src/process.rs:248:5: replace get_command_output -> Result<String> with Ok(String::new())
