@@ -1,4 +1,4 @@
-// Copyright 2021-2025 Martin Pool
+// Copyright 2021-2026 Martin Pool
 
 //! `cargo-mutants`: Find test gaps by inserting bugs.
 //!
@@ -47,32 +47,39 @@ mod workspace;
 
 use std::env;
 use std::io;
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
 
 use anyhow::{Context, Result, anyhow, ensure};
 use camino::{Utf8Path, Utf8PathBuf};
-use clap::builder::Styles;
-use clap::builder::styling::{self};
-use clap::{ArgAction, CommandFactory, Parser, ValueEnum};
+use clap::{
+    ArgAction, CommandFactory, Parser, ValueEnum,
+    builder::{Styles, styling},
+};
 use clap_complete::{Shell, generate};
 use color_print::cstr;
 use console::enable_console_colors;
-use output::{OutputDir, load_previously_caught};
 use tracing::{debug, error, info};
 
-use crate::build_dir::BuildDir;
-use crate::console::Console;
-use crate::in_diff::diff_filter_file;
-use crate::interrupt::check_interrupted;
-use crate::lab::test_mutants;
-use crate::list::{list_files, list_mutants};
-use crate::mutant::{Genre, Mutant};
-use crate::options::Common;
-use crate::options::{Colors, Options};
-use crate::outcome::{Phase, ScenarioOutcome};
-use crate::scenario::Scenario;
-use crate::shard::Shard;
-use crate::workspace::{PackageFilter, Workspace};
+use crate::{
+    build_dir::BuildDir,
+    console::Console,
+    in_diff::diff_filter_file,
+    interrupt::check_interrupted,
+    lab::test_mutants,
+    list::{list_files, list_mutants},
+    mutant::{Genre, Mutant},
+    options::{Colors, Common, Options},
+    outcome::{Phase, ScenarioOutcome},
+    output::{OutputDir, load_previously_caught},
+    package::Package,
+    scenario::Scenario,
+    shard::Shard,
+    source::SourceFile,
+    visit::walk_file,
+    workspace::{PackageFilter, Workspace},
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -200,6 +207,22 @@ pub struct Args {
         help_heading = "Debug"
     )]
     level: tracing::Level,
+
+    /// Mutate one Rust source file and list the mutants generated.
+    ///
+    /// The file need not be in a workspace, and the workspace manifest (if any) and configuration are ignored.
+    ///
+    /// A configuration file can be specified with the `--config` option.
+    ///
+    /// This is intended for debugging and testing mutant generation.
+    #[arg(
+        help_heading = "Debug",
+        value_name = "FILE",
+        long = "Zmutate-file",
+        conflicts_with = "in_diff",
+        conflicts_with = "package"
+    )]
+    mutate_file: Option<PathBuf>,
 
     // Execution ==========
     /// Baseline strategy: check that tests pass in an unmutated tree before testing mutants.
@@ -502,6 +525,17 @@ fn main() -> Result<()> {
     enable_console_colors(args.colors);
     interrupt::install_handler();
 
+    if let Some(path) = &args.mutate_file {
+        // Don't use tree config here, I think?
+        let config = if let Some(config_path) = &args.config {
+            config::Config::read_file(config_path.as_ref())?
+        } else {
+            config::Config::default()
+        };
+        let options = Options::new(&args, &config)?;
+        return mutate_file(path, &options);
+    }
+
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
         ensure!(manifest_path.is_file(), "Manifest path is not a file");
         manifest_path
@@ -595,6 +629,33 @@ fn emit_schema(schema_type: SchemaType) -> Result<()> {
             Ok(())
         }
     }
+}
+
+/// Mutate one file, that does not need to be in a Cargo workspace, and list the mutants generated,
+/// as either text or JSON.
+fn mutate_file(path: &Path, options: &Options) -> Result<()> {
+    let fake_package = Package {
+        name: "single_file".to_string(),
+        version: "0.0.0".to_string(),
+        relative_dir: Utf8PathBuf::new(),
+        top_sources: Vec::new(),
+    };
+    let path = Utf8PathBuf::from_path_buf(path.to_owned())
+        .map_err(|_| anyhow!("mutate_file path is not UTF-8"))?;
+    let source_file = SourceFile::load(
+        path.parent().context("get parent of mutate_file")?,
+        path.file_name()
+            .context("get file name of mutate_file")?
+            .into(),
+        &fake_package,
+        true,
+    )
+    .context("load source file")?
+    .context("single source file is outside of tree??")?;
+    let error_exprs = options.parsed_error_exprs()?;
+    let (mutants, _mod_refs) = walk_file(&source_file, &error_exprs, options)?;
+    print!("{}", list_mutants(&mutants, options));
+    Ok(())
 }
 
 #[cfg(test)]

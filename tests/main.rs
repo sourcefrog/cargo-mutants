@@ -1,4 +1,4 @@
-// Copyright 2021-2025 Martin Pool
+// Copyright 2021-2026 Martin Pool
 
 //! Tests for cargo-mutants CLI layer.
 
@@ -3722,4 +3722,59 @@ fn output_option_use_config() {
     ] {
         assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
     }
+}
+
+#[test]
+fn mutate_single_file() {
+    let tmp = TempDir::new().unwrap();
+    let source_path = tmp.path().join("source.rs");
+    write(&source_path, b"fn main() { println!(\"Hello, world!\"); }").unwrap();
+
+    // Generate a list as text
+    let cmd = run()
+        .arg("mutants")
+        .arg("--Zmutate-file")
+        .arg(&source_path)
+        .assert()
+        .success();
+    let out = cmd.get_output();
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout),
+        "source.rs:1:13: replace main with ()\n"
+    );
+
+    // Generate a list as JSON
+    let cmd = run()
+        .arg("mutants")
+        .arg("--Zmutate-file")
+        .arg(&source_path)
+        .arg("--json")
+        .assert()
+        .success();
+    let out = cmd.get_output();
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+    let json = serde_json::from_slice::<serde_json::Value>(&out.stdout).unwrap();
+    dbg!(&json);
+    let json = json.as_array().expect("output json should be an array");
+    assert_eq!(json.len(), 1);
+    let j0 = &json[0];
+    assert_eq!(j0["file"].as_str().unwrap(), "source.rs");
+    assert_eq!(j0["span"]["start"]["line"].as_u64().unwrap(), 1);
+    assert_eq!(j0["replacement"].as_str().unwrap(), "()");
+
+    // Generate with a config from the command line
+    let config_path = tmp.path().join("mutants_config.toml");
+    write(&config_path, r#"exclude_re = ["main"]"#.as_bytes()).unwrap();
+    let cmd = run()
+        .arg("mutants")
+        .arg("--Zmutate-file")
+        .arg(&source_path)
+        .arg("--config")
+        .arg(&config_path)
+        .assert()
+        .success();
+    let out = cmd.get_output();
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "");
+    assert_eq!(String::from_utf8_lossy(&out.stdout), "");
 }
