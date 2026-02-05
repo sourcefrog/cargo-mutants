@@ -88,3 +88,5 @@ If you look in `mutants.out/debug.log` you can see messages like `Return type is
 These might be good places to add a new more specific pattern.
 
 Also `mutants.out/unviable.txt` might suggest ways to generate new patterns that are viable.
+
+The `--Zsingle-file` option may be helpful in quickly examining what patterns are generated from a single file, without requiring a surrounding tree.

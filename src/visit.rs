@@ -131,7 +131,7 @@ fn walk_package(
 ///
 /// Returns the mutants found, and the names of modules referenced by `mod` statements
 /// that should be visited later.
-fn walk_file(
+pub fn walk_file(
     source_file: &SourceFile,
     error_exprs: &[Expr],
     options: &Options,
@@ -208,7 +208,7 @@ pub fn mutate_expr(code: &str) -> Vec<String> {
 /// `foo::bar`, but each may also be decorated with a `#[path="..."]` attribute,
 /// and they're attributed to a location in the source.
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct ExternalModRef {
+pub struct ExternalModRef {
     /// Namespace components of the module path
     parts: Vec<ModNamespace>,
 }
@@ -657,6 +657,8 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             .iter()
             .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
         if has_catchall {
+            // Successively delete each of the match arms, allowing them to hit the catch-all arm,
+            // which will often be a viable mutant.
             for arm in &i.arms {
                 if matches!(arm.pat, syn::Pat::Wild(_)) || arm.guard.is_some() {
                     // Don't delete the `_ => whatever` arm, because that will very likely fail to compile.
@@ -665,10 +667,11 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     // the guard with 'false' below is logically equivalent to removing the arm.
                     continue;
                 }
+                let replacement = quote! {};
                 self.collect_mutant(
                     arm.span().into(),
                     Some(arm.pat.to_pretty_string()),
-                    &quote! {},
+                    &replacement,
                     Genre::MatchArm,
                 );
             }

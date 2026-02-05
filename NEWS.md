@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: `--Zmutate-file` lists the mutants generated from a single Rust source file in text or JSON, without reading or requiring a containing package. This is intended as an aid for developing and debugging mutation patterns.
+
 ## 26.2.0 - 2026-01-31
 
 - New: Mutation diffs are included in JSON listings and `mutants.json`.

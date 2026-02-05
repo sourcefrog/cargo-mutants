@@ -52,11 +52,11 @@ pub struct Config {
     pub error_values: Vec<String>,
     /// Generate mutants from source files matching these globs.
     pub examine_globs: Vec<String>,
-    /// Examine only mutants matching these regexps.
+    /// Examine only mutants whose name matches one of these regexps.
     pub examine_re: Vec<String>,
     /// Exclude mutants from source files matching these globs.
     pub exclude_globs: Vec<String>,
-    /// Exclude mutants from source files matches these regexps.
+    /// Exclude mutants whose name matches these regexps.
     pub exclude_re: Vec<String>,
 
     /// When copying the tree, exclude patterns in `.gitignore`.
