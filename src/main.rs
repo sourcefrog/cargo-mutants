@@ -49,9 +49,9 @@ use std::env;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::exit;
+use std::process::ExitCode;
 
-use anyhow::{Context, Result, anyhow, ensure};
+use anyhow::{Context, Result, anyhow, bail};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{
     ArgAction, CommandFactory, Parser, ValueEnum,
@@ -492,10 +492,7 @@ pub struct Args {
     common: Common,
 }
 
-fn main() -> Result<()> {
-    // TODO: Perhaps return an ExitCode and avoid having calls to exit(). And as
-    // part of that, perhaps we should have an error type that implements Termination,
-    // to report its exit code.
+fn main() -> Result<ExitCode> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
@@ -506,18 +503,19 @@ fn main() -> Result<()> {
                 0 => 0,
                 _ => exit_code::SOFTWARE,
             };
-            exit(code);
+            return Ok(exit_code::code_to_exit_code(code));
         }
     };
 
     if args.version {
         println!("{NAME} {VERSION}");
-        return Ok(());
+        return Ok(ExitCode::SUCCESS);
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
-        return Ok(());
+        return Ok(ExitCode::SUCCESS);
     } else if let Some(schema_type) = args.emit_schema {
-        return emit_schema(schema_type);
+        emit_schema(schema_type)?;
+        return Ok(ExitCode::SUCCESS);
     }
 
     let console = Console::new();
@@ -533,14 +531,17 @@ fn main() -> Result<()> {
             config::Config::default()
         };
         let options = Options::new(&args, &config)?;
-        return mutate_file(path, &options);
+        mutate_file(path, &options)?;
+        return Ok(ExitCode::SUCCESS);
     }
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
-        ensure!(manifest_path.is_file(), "Manifest path is not a file");
+        if !manifest_path.is_file() {
+            bail!("Manifest path is not a file");
+        }
         manifest_path
             .parent()
-            .ok_or(anyhow!("Manifest path has no parent"))?
+            .context("Manifest path has no parent")?
     } else if let Some(dir) = &args.dir {
         dir
     } else {
@@ -588,7 +589,7 @@ fn main() -> Result<()> {
     console.clear();
     if args.list_files {
         print!("{}", list_files(&discovered.files, &options));
-        return Ok(());
+        return Ok(ExitCode::SUCCESS);
     }
     let mut mutants = discovered.mutants;
     if let Some(diff_path) = &args.in_diff {
@@ -600,7 +601,7 @@ fn main() -> Result<()> {
                 } else {
                     error!("{err}");
                 }
-                exit(err.exit_code());
+                return Ok(exit_code::code_to_exit_code(err.exit_code()));
             }
         };
     }
@@ -609,6 +610,7 @@ fn main() -> Result<()> {
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
+        Ok(ExitCode::SUCCESS)
     } else {
         let output_dir = OutputDir::new(&output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
@@ -616,9 +618,8 @@ fn main() -> Result<()> {
         }
         console.set_debug_log(output_dir.open_debug_log()?);
         let lab_outcome = test_mutants(mutants, &workspace, output_dir, &options, &console)?;
-        exit(lab_outcome.exit_code());
+        Ok(exit_code::code_to_exit_code(lab_outcome.exit_code()))
     }
-    Ok(())
 }
 
 fn emit_schema(schema_type: SchemaType) -> Result<()> {
