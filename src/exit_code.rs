@@ -40,8 +40,12 @@ pub const SOFTWARE: i32 = 70;
 /// Convert an i32 exit code to `ExitCode`.
 ///
 /// All exit codes defined in this module fit in u8.
-#[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+///
+/// # Panics
+///
+/// Panics if the exit code is not in the valid range 0-255.
 pub fn code_to_exit_code(code: i32) -> ExitCode {
-    debug_assert!((0..=255).contains(&code), "exit code out of range: {code}");
-    ExitCode::from(code as u8)
+    ExitCode::from(
+        u8::try_from(code).unwrap_or_else(|_| panic!("exit code out of range: {code}")),
+    )
 }
