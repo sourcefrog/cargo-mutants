@@ -102,7 +102,6 @@ fn walk_package(
         progress.increment_files(1);
         check_interrupted()?;
         let (mut file_mutants, external_mods) = walk_file(&source_file, error_exprs, options)?;
-        file_mutants.retain(|m| options.allows_mutant(m));
         progress.increment_mutants(file_mutants.len());
         // TODO: It would be better not to spend time generating mutants from
         // files that are not going to be visited later. However, we probably do
@@ -317,17 +316,27 @@ impl DiscoveryVisitor<'_> {
     }
 
     /// Record that we generated some mutants.
-    fn collect_mutant(&mut self, span: Span, replacement: &TokenStream, genre: Genre) {
+    fn collect_mutant(
+        &mut self,
+        span: Span,
+        short_replaced: Option<String>,
+        replacement: &TokenStream,
+        genre: Genre,
+    ) {
         let mutant = Mutant::new_discovered(
             self.source_file.clone(),
             self.fn_stack.last().cloned(),
             span,
-            None,
+            short_replaced,
             replacement.to_pretty_string(),
             genre,
             None,
         );
-        self.mutants.push(mutant);
+        if self.options.allows_mutant(&mutant) {
+            self.mutants.push(mutant);
+        } else {
+            trace!(name = mutant.name(false), "skip mutant by options");
+        }
     }
 
     fn collect_fn_mutants(&mut self, sig: &Signature, block: &Block) {
@@ -356,7 +365,7 @@ impl DiscoveryVisitor<'_> {
                     if orig_block == new_block {
                         trace!("Replacement is the same as the function body; skipping");
                     } else {
-                        self.collect_mutant(body_span, &rep, Genre::FnValue);
+                        self.collect_mutant(body_span, None, &rep, Genre::FnValue);
                     }
                 }
             }
@@ -608,7 +617,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             }
         };
         for rep in replacements {
-            self.collect_mutant(i.op.span().into(), &rep, Genre::BinaryOperator);
+            self.collect_mutant(i.op.span().into(), None, &rep, Genre::BinaryOperator);
         }
         syn::visit::visit_expr_binary(self, i);
     }
@@ -621,7 +630,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         match i.op {
             UnOp::Not(_) | UnOp::Neg(_) => {
-                self.collect_mutant(i.op.span().into(), &quote! {}, Genre::UnaryOperator);
+                self.collect_mutant(i.op.span().into(), None, &quote! {}, Genre::UnaryOperator);
             }
             _ => {
                 trace!(
@@ -656,17 +665,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                     // the guard with 'false' below is logically equivalent to removing the arm.
                     continue;
                 }
-                let short_replaced = Some(arm.pat.to_pretty_string());
-                let mutant = Mutant::new_discovered(
-                    self.source_file.clone(),
-                    self.fn_stack.last().cloned(),
+                self.collect_mutant(
                     arm.span().into(),
-                    short_replaced,
-                    String::new(),
+                    Some(arm.pat.to_pretty_string()),
+                    &quote! {},
                     Genre::MatchArm,
-                    None,
                 );
-                self.mutants.push(mutant);
             }
         } else {
             trace!("match has no `_` pattern");
@@ -678,11 +682,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             .for_each(|(_if, guard_expr)| {
                 self.collect_mutant(
                     guard_expr.span().into(),
+                    None,
                     &quote! { true },
                     Genre::MatchArmGuard,
                 );
                 self.collect_mutant(
                     guard_expr.span().into(),
+                    None,
                     &quote! { false },
                     Genre::MatchArmGuard,
                 );
