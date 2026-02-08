@@ -49,7 +49,7 @@ use std::env;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::ExitCode;
+use std::process::ExitCode as StdExitCode;
 
 use anyhow::{Context, Result, anyhow, bail};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -492,30 +492,30 @@ pub struct Args {
     common: Common,
 }
 
-fn main() -> Result<ExitCode> {
+fn main() -> Result<StdExitCode> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
             e.print().expect("Failed to show clap error message");
             // Clap by default exits with code 2.
             let code = match e.exit_code() {
-                2 => exit_code::USAGE,
-                0 => 0,
-                _ => exit_code::SOFTWARE,
+                2 => exit_code::ExitCode::Usage,
+                0 => exit_code::ExitCode::Success,
+                _ => exit_code::ExitCode::Software,
             };
-            return Ok(exit_code::code_to_exit_code(code));
+            return Ok(code.into());
         }
     };
 
     if args.version {
         println!("{NAME} {VERSION}");
-        return Ok(ExitCode::SUCCESS);
+        return Ok(exit_code::ExitCode::Success.into());
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
-        return Ok(ExitCode::SUCCESS);
+        return Ok(exit_code::ExitCode::Success.into());
     } else if let Some(schema_type) = args.emit_schema {
         emit_schema(schema_type)?;
-        return Ok(ExitCode::SUCCESS);
+        return Ok(exit_code::ExitCode::Success.into());
     }
 
     let console = Console::new();
@@ -532,7 +532,7 @@ fn main() -> Result<ExitCode> {
         };
         let options = Options::new(&args, &config)?;
         mutate_file(path, &options)?;
-        return Ok(ExitCode::SUCCESS);
+        return Ok(exit_code::ExitCode::Success.into());
     }
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
@@ -589,19 +589,19 @@ fn main() -> Result<ExitCode> {
     console.clear();
     if args.list_files {
         print!("{}", list_files(&discovered.files, &options));
-        return Ok(ExitCode::SUCCESS);
+        return Ok(exit_code::ExitCode::Success.into());
     }
     let mut mutants = discovered.mutants;
     if let Some(diff_path) = &args.in_diff {
         mutants = match diff_filter_file(mutants, diff_path) {
             Ok(mutants) => mutants,
             Err(err) => {
-                if err.exit_code() == 0 {
+                if err.exit_code() == exit_code::ExitCode::Success {
                     info!("{err}");
                 } else {
                     error!("{err}");
                 }
-                return Ok(exit_code::code_to_exit_code(err.exit_code()));
+                return Ok(err.exit_code().into());
             }
         };
     }
@@ -610,7 +610,7 @@ fn main() -> Result<ExitCode> {
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
-        Ok(ExitCode::SUCCESS)
+        Ok(exit_code::ExitCode::Success.into())
     } else {
         let output_dir = OutputDir::new(&output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
@@ -618,7 +618,7 @@ fn main() -> Result<ExitCode> {
         }
         console.set_debug_log(output_dir.open_debug_log()?);
         let lab_outcome = test_mutants(mutants, &workspace, output_dir, &options, &console)?;
-        Ok(exit_code::code_to_exit_code(lab_outcome.exit_code()))
+        Ok(lab_outcome.exit_code().into())
     }
 }
 

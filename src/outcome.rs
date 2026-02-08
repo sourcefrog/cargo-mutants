@@ -106,20 +106,20 @@ impl LabOutcome {
     }
 
     /// Return the overall program exit code reflecting this outcome.
-    pub fn exit_code(&self) -> i32 {
+    pub fn exit_code(&self) -> exit_code::ExitCode {
         // TODO: Maybe move this into an error returned from experiment()?
         if self
             .outcomes
             .iter()
             .any(|o| !o.scenario.is_mutant() && !o.success())
         {
-            exit_code::BASELINE_FAILED
+            exit_code::ExitCode::BaselineFailed
         } else if self.timeout > 0 {
-            exit_code::TIMEOUT
+            exit_code::ExitCode::Timeout
         } else if self.missed > 0 {
-            exit_code::FOUND_PROBLEMS
+            exit_code::ExitCode::FoundProblems
         } else {
-            exit_code::SUCCESS
+            exit_code::ExitCode::Success
         }
     }
 
