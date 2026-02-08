@@ -17,10 +17,10 @@ use indoc::formatdoc;
 use itertools::Itertools;
 use tracing::{error, trace, warn};
 
+use crate::Result;
+use crate::exit_code::ExitCode;
 use crate::mutant::Mutant;
 use crate::source::SourceFile;
-use crate::exit_code::ExitCode;
-use crate::Result;
 
 /// The result of filtering mutants based on a diff.
 #[derive(Debug, PartialEq, Eq, Clone)]

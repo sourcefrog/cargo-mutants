@@ -16,9 +16,9 @@ use serde::ser::SerializeStruct;
 use tracing::warn;
 
 use crate::console::{format_duration, plural};
+use crate::exit_code::ExitCode;
 use crate::process::Exit;
 use crate::{Options, Result, Scenario, output};
-use crate::exit_code::ExitCode;
 
 /// What phase of running a scenario.
 ///
