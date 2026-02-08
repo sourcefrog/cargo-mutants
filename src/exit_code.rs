@@ -13,47 +13,32 @@ use std::process::ExitCode as StdExitCode;
 
 /// Exit codes for cargo-mutants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
 pub enum ExitCode {
     /// Everything worked and all the mutants were caught.
-    Success,
+    Success = 0,
     /// The wrong arguments, etc.
     ///
     /// (1 is also the value returned by Clap.)
-    Usage,
+    Usage = 1,
     /// Found one or mutants that were not caught by tests.
-    FoundProblems,
+    FoundProblems = 2,
     /// One or more tests timed out: probably the mutant caused an infinite loop, or the timeout is too low.
-    Timeout,
+    Timeout = 3,
     /// The tests are already failing in an unmutated tree.
-    BaselineFailed,
+    BaselineFailed = 4,
     /// The filter diff new text does not match the source tree content.
-    FilterDiffMismatch,
+    FilterDiffMismatch = 5,
     /// The filter diff could not be parsed.
-    FilterDiffInvalid,
+    FilterDiffInvalid = 6,
     /// An internal software error, from sysexit.
-    Software,
-}
-
-impl ExitCode {
-    /// Returns the numeric exit code value.
-    pub const fn code(self) -> i32 {
-        match self {
-            Self::Success => 0,
-            Self::Usage => 1,
-            Self::FoundProblems => 2,
-            Self::Timeout => 3,
-            Self::BaselineFailed => 4,
-            Self::FilterDiffMismatch => 5,
-            Self::FilterDiffInvalid => 6,
-            Self::Software => 70,
-        }
-    }
+    Software = 70,
 }
 
 impl From<ExitCode> for StdExitCode {
     fn from(code: ExitCode) -> Self {
         // All exit codes are known to be valid u8 values
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-        StdExitCode::from(code.code() as u8)
+        #[allow(clippy::cast_possible_truncation)]
+        StdExitCode::from(code as u8)
     }
 }
