@@ -49,7 +49,6 @@ use std::env;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::ExitCode as StdExitCode;
 
 use anyhow::{Context, Result, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
@@ -492,7 +491,7 @@ pub struct Args {
     common: Common,
 }
 
-fn main() -> Result<StdExitCode> {
+fn main() -> Result<exit_code::ExitCode> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
@@ -503,19 +502,19 @@ fn main() -> Result<StdExitCode> {
                 0 => exit_code::ExitCode::Success,
                 _ => exit_code::ExitCode::Software,
             };
-            return Ok(code.into());
+            return Ok(code);
         }
     };
 
     if args.version {
         println!("{NAME} {VERSION}");
-        return Ok(exit_code::ExitCode::Success.into());
+        return Ok(exit_code::ExitCode::Success);
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
-        return Ok(exit_code::ExitCode::Success.into());
+        return Ok(exit_code::ExitCode::Success);
     } else if let Some(schema_type) = args.emit_schema {
         emit_schema(schema_type)?;
-        return Ok(exit_code::ExitCode::Success.into());
+        return Ok(exit_code::ExitCode::Success);
     }
 
     let console = Console::new();
@@ -532,13 +531,13 @@ fn main() -> Result<StdExitCode> {
         };
         let options = Options::new(&args, &config)?;
         mutate_file(path, &options)?;
-        return Ok(exit_code::ExitCode::Success.into());
+        return Ok(exit_code::ExitCode::Success);
     }
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
         if !manifest_path.is_file() {
             error!("Manifest path is not a file");
-            return Ok(exit_code::ExitCode::Usage.into());
+            return Ok(exit_code::ExitCode::Usage);
         }
         manifest_path
             .parent()
@@ -590,7 +589,7 @@ fn main() -> Result<StdExitCode> {
     console.clear();
     if args.list_files {
         print!("{}", list_files(&discovered.files, &options));
-        return Ok(exit_code::ExitCode::Success.into());
+        return Ok(exit_code::ExitCode::Success);
     }
     let mut mutants = discovered.mutants;
     if let Some(diff_path) = &args.in_diff {
@@ -602,7 +601,7 @@ fn main() -> Result<StdExitCode> {
                 } else {
                     error!("{err}");
                 }
-                return Ok(err.exit_code().into());
+                return Ok(err.exit_code());
             }
         };
     }
@@ -611,7 +610,7 @@ fn main() -> Result<StdExitCode> {
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
-        Ok(exit_code::ExitCode::Success.into())
+        Ok(exit_code::ExitCode::Success)
     } else {
         let output_dir = OutputDir::new(&output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
@@ -619,7 +618,7 @@ fn main() -> Result<StdExitCode> {
         }
         console.set_debug_log(output_dir.open_debug_log()?);
         let lab_outcome = test_mutants(mutants, &workspace, output_dir, &options, &console)?;
-        Ok(lab_outcome.exit_code().into())
+        Ok(lab_outcome.exit_code())
     }
 }
 

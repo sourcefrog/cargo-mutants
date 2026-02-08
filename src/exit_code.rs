@@ -7,7 +7,7 @@
 //!
 //! These are also described in README.md.
 
-use std::process::ExitCode as StdExitCode;
+use std::process::{ExitCode as StdExitCode, Termination};
 
 // TODO: Maybe merge this with outcome::Status, and maybe merge with sysexit.
 
@@ -40,5 +40,11 @@ impl From<ExitCode> for StdExitCode {
         // All exit codes are known to be valid u8 values
         #[allow(clippy::cast_possible_truncation)]
         StdExitCode::from(code as u8)
+    }
+}
+
+impl Termination for ExitCode {
+    fn report(self) -> std::process::ExitCode {
+        self.into()
     }
 }
