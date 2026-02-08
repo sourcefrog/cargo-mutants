@@ -49,9 +49,8 @@ use std::env;
 use std::io;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::exit;
 
-use anyhow::{Context, Result, anyhow, ensure};
+use anyhow::{Context, Result, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{
     ArgAction, CommandFactory, Parser, ValueEnum,
@@ -65,6 +64,7 @@ use tracing::{debug, error, info};
 use crate::{
     build_dir::BuildDir,
     console::Console,
+    exit_code::ExitCode,
     in_diff::diff_filter_file,
     interrupt::check_interrupted,
     lab::test_mutants,
@@ -492,32 +492,30 @@ pub struct Args {
     common: Common,
 }
 
-fn main() -> Result<()> {
-    // TODO: Perhaps return an ExitCode and avoid having calls to exit(). And as
-    // part of that, perhaps we should have an error type that implements Termination,
-    // to report its exit code.
+fn main() -> Result<ExitCode> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
             e.print().expect("Failed to show clap error message");
             // Clap by default exits with code 2.
             let code = match e.exit_code() {
-                2 => exit_code::USAGE,
-                0 => 0,
-                _ => exit_code::SOFTWARE,
+                2 => ExitCode::Usage,
+                0 => ExitCode::Success,
+                _ => ExitCode::Software,
             };
-            exit(code);
+            return Ok(code);
         }
     };
 
     if args.version {
         println!("{NAME} {VERSION}");
-        return Ok(());
+        return Ok(ExitCode::Success);
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
-        return Ok(());
+        return Ok(ExitCode::Success);
     } else if let Some(schema_type) = args.emit_schema {
-        return emit_schema(schema_type);
+        emit_schema(schema_type)?;
+        return Ok(ExitCode::Success);
     }
 
     let console = Console::new();
@@ -533,14 +531,18 @@ fn main() -> Result<()> {
             config::Config::default()
         };
         let options = Options::new(&args, &config)?;
-        return mutate_file(path, &options);
+        mutate_file(path, &options)?;
+        return Ok(ExitCode::Success);
     }
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
-        ensure!(manifest_path.is_file(), "Manifest path is not a file");
+        if !manifest_path.is_file() {
+            error!("Manifest path is not a file");
+            return Ok(ExitCode::Usage);
+        }
         manifest_path
             .parent()
-            .ok_or(anyhow!("Manifest path has no parent"))?
+            .context("Manifest path has no parent")?
     } else if let Some(dir) = &args.dir {
         dir
     } else {
@@ -588,19 +590,19 @@ fn main() -> Result<()> {
     console.clear();
     if args.list_files {
         print!("{}", list_files(&discovered.files, &options));
-        return Ok(());
+        return Ok(ExitCode::Success);
     }
     let mut mutants = discovered.mutants;
     if let Some(diff_path) = &args.in_diff {
         mutants = match diff_filter_file(mutants, diff_path) {
             Ok(mutants) => mutants,
             Err(err) => {
-                if err.exit_code() == 0 {
+                if err.exit_code() == ExitCode::Success {
                     info!("{err}");
                 } else {
                     error!("{err}");
                 }
-                exit(err.exit_code());
+                return Ok(err.exit_code());
             }
         };
     }
@@ -609,6 +611,7 @@ fn main() -> Result<()> {
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
+        Ok(ExitCode::Success)
     } else {
         let output_dir = OutputDir::new(&output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {
@@ -616,9 +619,8 @@ fn main() -> Result<()> {
         }
         console.set_debug_log(output_dir.open_debug_log()?);
         let lab_outcome = test_mutants(mutants, &workspace, output_dir, &options, &console)?;
-        exit(lab_outcome.exit_code());
+        Ok(lab_outcome.exit_code())
     }
-    Ok(())
 }
 
 fn emit_schema(schema_type: SchemaType) -> Result<()> {

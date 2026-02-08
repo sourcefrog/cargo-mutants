@@ -16,8 +16,9 @@ use serde::ser::SerializeStruct;
 use tracing::warn;
 
 use crate::console::{format_duration, plural};
+use crate::exit_code::ExitCode;
 use crate::process::Exit;
-use crate::{Options, Result, Scenario, exit_code, output};
+use crate::{Options, Result, Scenario, output};
 
 /// What phase of running a scenario.
 ///
@@ -106,20 +107,20 @@ impl LabOutcome {
     }
 
     /// Return the overall program exit code reflecting this outcome.
-    pub fn exit_code(&self) -> i32 {
+    pub fn exit_code(&self) -> ExitCode {
         // TODO: Maybe move this into an error returned from experiment()?
         if self
             .outcomes
             .iter()
             .any(|o| !o.scenario.is_mutant() && !o.success())
         {
-            exit_code::BASELINE_FAILED
+            ExitCode::BaselineFailed
         } else if self.timeout > 0 {
-            exit_code::TIMEOUT
+            ExitCode::Timeout
         } else if self.missed > 0 {
-            exit_code::FOUND_PROBLEMS
+            ExitCode::FoundProblems
         } else {
-            exit_code::SUCCESS
+            ExitCode::Success
         }
     }
 
