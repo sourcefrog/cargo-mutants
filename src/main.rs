@@ -64,6 +64,7 @@ use tracing::{debug, error, info};
 use crate::{
     build_dir::BuildDir,
     console::Console,
+    exit_code::ExitCode,
     in_diff::diff_filter_file,
     interrupt::check_interrupted,
     lab::test_mutants,
@@ -491,16 +492,16 @@ pub struct Args {
     common: Common,
 }
 
-fn main() -> Result<exit_code::ExitCode> {
+fn main() -> Result<ExitCode> {
     let args = match Cargo::try_parse() {
         Ok(Cargo::Mutants(args)) => args,
         Err(e) => {
             e.print().expect("Failed to show clap error message");
             // Clap by default exits with code 2.
             let code = match e.exit_code() {
-                2 => exit_code::ExitCode::Usage,
-                0 => exit_code::ExitCode::Success,
-                _ => exit_code::ExitCode::Software,
+                2 => ExitCode::Usage,
+                0 => ExitCode::Success,
+                _ => ExitCode::Software,
             };
             return Ok(code);
         }
@@ -508,13 +509,13 @@ fn main() -> Result<exit_code::ExitCode> {
 
     if args.version {
         println!("{NAME} {VERSION}");
-        return Ok(exit_code::ExitCode::Success);
+        return Ok(ExitCode::Success);
     } else if let Some(shell) = args.completions {
         generate(shell, &mut Cargo::command(), "cargo", &mut io::stdout());
-        return Ok(exit_code::ExitCode::Success);
+        return Ok(ExitCode::Success);
     } else if let Some(schema_type) = args.emit_schema {
         emit_schema(schema_type)?;
-        return Ok(exit_code::ExitCode::Success);
+        return Ok(ExitCode::Success);
     }
 
     let console = Console::new();
@@ -531,13 +532,13 @@ fn main() -> Result<exit_code::ExitCode> {
         };
         let options = Options::new(&args, &config)?;
         mutate_file(path, &options)?;
-        return Ok(exit_code::ExitCode::Success);
+        return Ok(ExitCode::Success);
     }
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
         if !manifest_path.is_file() {
             error!("Manifest path is not a file");
-            return Ok(exit_code::ExitCode::Usage);
+            return Ok(ExitCode::Usage);
         }
         manifest_path
             .parent()
@@ -589,14 +590,14 @@ fn main() -> Result<exit_code::ExitCode> {
     console.clear();
     if args.list_files {
         print!("{}", list_files(&discovered.files, &options));
-        return Ok(exit_code::ExitCode::Success);
+        return Ok(ExitCode::Success);
     }
     let mut mutants = discovered.mutants;
     if let Some(diff_path) = &args.in_diff {
         mutants = match diff_filter_file(mutants, diff_path) {
             Ok(mutants) => mutants,
             Err(err) => {
-                if err.exit_code() == exit_code::ExitCode::Success {
+                if err.exit_code() == ExitCode::Success {
                     info!("{err}");
                 } else {
                     error!("{err}");
@@ -610,7 +611,7 @@ fn main() -> Result<exit_code::ExitCode> {
     }
     if args.list {
         print!("{}", list_mutants(&mutants, &options));
-        Ok(exit_code::ExitCode::Success)
+        Ok(ExitCode::Success)
     } else {
         let output_dir = OutputDir::new(&output_parent_dir)?;
         if let Some(previously_caught) = previously_caught {

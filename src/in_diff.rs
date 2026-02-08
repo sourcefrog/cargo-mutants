@@ -19,7 +19,8 @@ use tracing::{error, trace, warn};
 
 use crate::mutant::Mutant;
 use crate::source::SourceFile;
-use crate::{Result, exit_code};
+use crate::exit_code::ExitCode;
+use crate::Result;
 
 /// The result of filtering mutants based on a diff.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -43,14 +44,14 @@ impl DiffFilterError {
     ///
     /// Some errors such as an empty diff or one that changes no Rust source files
     /// still mean we can't process any mutants, but it's not necessarily a problem.
-    pub fn exit_code(&self) -> exit_code::ExitCode {
+    pub fn exit_code(&self) -> ExitCode {
         match self {
             DiffFilterError::EmptyDiff
             | DiffFilterError::NoSourceFiles
-            | DiffFilterError::NoMutants => exit_code::ExitCode::Success,
-            DiffFilterError::MismatchedDiff(_) => exit_code::ExitCode::FilterDiffMismatch,
+            | DiffFilterError::NoMutants => ExitCode::Success,
+            DiffFilterError::MismatchedDiff(_) => ExitCode::FilterDiffMismatch,
             DiffFilterError::File(_) | DiffFilterError::InvalidDiff(_) => {
-                exit_code::ExitCode::FilterDiffInvalid
+                ExitCode::FilterDiffInvalid
             }
         }
     }
@@ -349,7 +350,7 @@ index eb42779..a0091b7 100644
 ";
         let err = diff_filter(Vec::new(), diff);
         assert_eq!(err, Err(DiffFilterError::NoMutants));
-        assert_eq!(err.unwrap_err().exit_code(), exit_code::ExitCode::Success);
+        assert_eq!(err.unwrap_err().exit_code(), ExitCode::Success);
     }
 
     /// <https://github.com/sourcefrog/cargo-mutants/issues/580>
@@ -415,7 +416,7 @@ index cc3ce8c..8fe9aa0 100644
 ";
         let err = diff_filter(Vec::new(), diff);
         assert_eq!(err, Err(DiffFilterError::NoSourceFiles));
-        assert_eq!(err.unwrap_err().exit_code(), exit_code::ExitCode::Success);
+        assert_eq!(err.unwrap_err().exit_code(), ExitCode::Success);
     }
 
     fn make_diff(old: &str, new: &str) -> String {
