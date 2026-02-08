@@ -3484,10 +3484,8 @@ fn list_with_config_file_inclusion() {
 }
 
 #[test]
-fn file_argument_overrides_config_examine_globs_key() {
+fn file_argument_merges_with_config_examine_globs_key() {
     let testdata = copy_of_testdata("well_tested");
-    // This config key has no effect because the command line argument
-    // takes precedence.
     write_config_file(
         &testdata,
         r#"examine_globs = ["src/*_mod.rs"]
@@ -3500,15 +3498,15 @@ fn file_argument_overrides_config_examine_globs_key() {
         .assert()
         .success()
         .stdout(predicates::str::diff(indoc! { "\
+            src/inside_mod.rs
+            src/item_mod.rs
             src/simple_fns.rs
         " }));
 }
 
 #[test]
-fn exclude_file_argument_overrides_config() {
+fn exclude_file_argument_merge_with_config() {
     let testdata = copy_of_testdata("well_tested");
-    // This config key has no effect because the command line argument
-    // takes precedence.
     write_config_file(
         &testdata,
         indoc! { r#"
@@ -3526,7 +3524,8 @@ fn exclude_file_argument_overrides_config() {
         .args(["--exclude", "src/b*.rs"])
         .assert()
         .success()
-        .stdout(predicates::str::diff(indoc! { "\
+        .stderr("")
+        .stdout(predicates::str::diff(indoc! {"\
             src/lib.rs
             src/arc.rs
             src/empty_fns.rs
@@ -3569,7 +3568,7 @@ fn list_with_config_file_regexps() {
 }
 
 #[test]
-fn exclude_re_overrides_config() {
+fn exclude_re_on_command_line_merged_with_config() {
     let testdata = copy_of_testdata("well_tested");
     write_config_file(
         &testdata,
@@ -3591,16 +3590,7 @@ fn exclude_re_overrides_config() {
         .args(["-f", "src/simple_fns.rs"])
         .assert()
         .success();
-    assert_snapshot!(
-        String::from_utf8_lossy(&cmd.get_output().stdout),
-        @r###"
-    src/simple_fns.rs: replace returns_unit with ()
-    src/simple_fns.rs: replace += with -= in returns_unit
-    src/simple_fns.rs: replace += with *= in returns_unit
-    src/simple_fns.rs: replace == with != in divisible_by_three
-    src/simple_fns.rs: replace % with / in divisible_by_three
-    src/simple_fns.rs: replace % with + in divisible_by_three
-    "###);
+    assert_eq!(String::from_utf8_lossy(&cmd.get_output().stdout), "");
 }
 
 #[test]

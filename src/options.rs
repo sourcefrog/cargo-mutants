@@ -1,4 +1,4 @@
-// Copyright 2021-2025 Martin Pool
+// Copyright 2021-2026 Martin Pool
 
 //! Global in-process options for experimenting on mutants.
 //!
@@ -141,10 +141,10 @@ pub struct Options {
     pub exclude_globset: Option<GlobSet>,
 
     /// Mutants to examine, as a regexp matched against the full name.
-    pub examine_names: RegexSet,
+    pub examine_name_re: RegexSet,
 
     /// Mutants to skip, as a regexp matched against the full name.
-    pub exclude_names: RegexSet,
+    pub exclude_name_re: RegexSet,
 
     /// Create `mutants.out` within this directory (by default, the source directory).
     pub output_in_dir: Option<Utf8PathBuf>,
@@ -165,6 +165,8 @@ pub struct Options {
 }
 
 // Options that are implemented only once between clap and serde.
+//
+// (This is not a docstring so that clap doesn't try to render it as part of the help.)
 //
 // All fields should be optional so that we can represent a field being set on the command line but
 // not in the config, or vice versa.
@@ -345,12 +347,14 @@ impl Options {
             emit_json: args.json,
             common: args.common.merge(&config.common),
             error_values: join_slices(&args.error, &config.error_values),
-            examine_names: RegexSet::new(or_slices(&args.examine_re, &config.examine_re))
+            examine_name_re: RegexSet::new(args.examine_re.iter().chain(config.examine_re.iter()))
                 .context("Failed to compile examine_re regex")?,
-            exclude_names: RegexSet::new(or_slices(&args.exclude_re, &config.exclude_re))
+            exclude_name_re: RegexSet::new(args.exclude_re.iter().chain(&config.exclude_re))
                 .context("Failed to compile exclude_re regex")?,
-            examine_globset: build_glob_set(or_slices(&args.file, &config.examine_globs))?,
-            exclude_globset: build_glob_set(or_slices(&args.exclude, &config.exclude_globs))?,
+            examine_globset: build_glob_set(args.file.iter().chain(config.examine_globs.iter()))?,
+            exclude_globset: build_glob_set(
+                args.exclude.iter().chain(config.exclude_globs.iter()),
+            )?,
             features: join_slices(&args.features, &config.features),
             gitignore: args
                 .gitignore
@@ -474,8 +478,8 @@ impl Options {
     /// True if the options allow this mutant to be tested.
     pub fn allows_mutant(&self, mutant: &Mutant) -> bool {
         let name = mutant.name(true);
-        (self.examine_names.is_empty() || self.examine_names.is_match(&name))
-            && (self.exclude_names.is_empty() || !self.exclude_names.is_match(&name))
+        (self.examine_name_re.is_empty() || self.examine_name_re.is_match(&name))
+            && (self.exclude_name_re.is_empty() || !self.exclude_name_re.is_match(&name))
     }
 
     pub fn emit_diffs(&self) -> bool {
@@ -489,11 +493,6 @@ impl Options {
     pub fn sharding(&self) -> Sharding {
         self.common.sharding.unwrap_or_default()
     }
-}
-
-/// If the first slices is non-empty, return that, otherwise the second.
-fn or_slices<'a: 'c, 'b: 'c, 'c, T>(a: &'a [T], b: &'b [T]) -> &'c [T] {
-    if a.is_empty() { b } else { a }
 }
 
 #[cfg(test)]
@@ -1216,6 +1215,65 @@ mod test {
         let config = Config::default();
         let options = Options::new(&args, &config).unwrap();
         assert!(options.shuffle);
+    }
+
+    #[test]
+    fn merge_exclude_from_config_and_command_line() {
+        let args = Args::parse_from([
+            "mutants",
+            "--exclude-re=foo",
+            "--exclude-re=bar",
+            "--exclude=foo.rs",
+            "--file=ex1.rs",
+            "--examine-re=exr1",
+        ]);
+        let config = Config::from_str(
+            r#"
+            exclude_re = ["baz"]
+            exclude_globs = ["baz.rs"]
+            examine_globs = ["ex2.rs"]
+            examine_re = ["exr2"]
+        "#,
+        )
+        .unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        for name in ["foo", "bar", "baz"] {
+            assert!(
+                options.exclude_name_re.is_match(name),
+                "Expected {name} to be excluded"
+            );
+        }
+        assert!(
+            !options.exclude_name_re.is_match("qux"),
+            "Expected qux not to be excluded"
+        );
+
+        assert!(
+            options.exclude_globset.as_ref().unwrap().is_match("baz.rs"),
+            "Expected baz.rs to be excluded"
+        );
+        assert!(
+            options.exclude_globset.as_ref().unwrap().is_match("foo.rs"),
+            "Expected foo.rs to be excluded"
+        );
+        assert!(
+            !options.exclude_globset.as_ref().unwrap().is_match("qux.rs"),
+            "Expected qux.rs NOT to be excluded"
+        );
+
+        for path in ["ex1.rs", "ex2.rs"] {
+            assert!(
+                options.examine_globset.as_ref().unwrap().is_match(path),
+                "Expected {path} to be examined"
+            );
+        }
+
+        for name in ["exr1", "exr2"] {
+            assert!(
+                options.examine_name_re.is_match(name),
+                "Expected {name} to be examined"
+            );
+        }
     }
 }
 

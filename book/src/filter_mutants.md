@@ -47,7 +47,7 @@ This can be helpful
 if you want to systematically skip testing implementations of certain traits, or functions
 with certain names.
 
-From cargo-mutants 23.11.2 onwards, if the command line options are given then the corresponding config file option is ignored.
+From cargo-mutants 27.0.0 onwards, the command line options are combined with filters specified in the configuration file.
 
 For example:
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: Command line values for `--file`, `--exclude`, `--examine-re`, and `--exclude-re` are now combined with, rather than replacing, values given in the configuration file, consistently with every other option that takes a list. (Use `--config=OTHER` or `--no-config` to avoid using values in the configuration.) Thanks to @sandersaares for pointing this out.
+
 - New: `--Zmutate-file` lists the mutants generated from a single Rust source file in text or JSON, without reading or requiring a containing package. This is intended as an aid for developing and debugging mutation patterns.
 
 ## 26.2.0 - 2026-01-31

@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Martin Pool.
+// Copyright 2022-2026 Martin Pool.
 
 //! `.cargo/mutants.toml` configuration file.
 //!

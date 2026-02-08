@@ -19,7 +19,7 @@ An example config file with detailed comments can be found at
 
 ## Merging config and command-line options
 
-When options are specified in both the config file and the command line, the command line options take precedence.
+When options are specified in both the config file and the command line, for scalar options, the command line options take precedence.
 
 For options that take a list of values, values from the configuration file are appended
 to values from the command line.

@@ -1,6 +1,6 @@
-// Copyright 2024 Martin Pool
+// Copyright 2024-2026 Martin Pool
 
-//! Build globsets.
+//! Build globsets from lists of strings.
 
 use std::borrow::Cow;
 
@@ -9,15 +9,15 @@ use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 
 use crate::Result;
 
-pub fn build_glob_set<S>(globs: &[S]) -> Result<Option<GlobSet>>
+pub fn build_glob_set<S, I>(globs: I) -> Result<Option<GlobSet>>
 where
     S: AsRef<str>,
+    I: IntoIterator<Item = S>,
 {
-    if globs.is_empty() {
-        return Ok(None);
-    }
+    let mut has_globs = false;
     let mut builder = GlobSetBuilder::new();
     for glob_str in globs {
+        has_globs = true;
         let glob_str = glob_str.as_ref();
         let match_whole_path = if cfg!(windows) {
             glob_str.contains(['/', '\\'])
@@ -41,7 +41,11 @@ where
             );
         }
     }
-    Ok(Some(builder.build().context("Failed to build glob set")?))
+    if has_globs {
+        Ok(Some(builder.build().context("Failed to build glob set")?))
+    } else {
+        Ok(None)
+    }
 }
 
 #[cfg(test)]
