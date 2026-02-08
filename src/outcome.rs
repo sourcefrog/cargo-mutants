@@ -17,7 +17,8 @@ use tracing::warn;
 
 use crate::console::{format_duration, plural};
 use crate::process::Exit;
-use crate::{Options, Result, Scenario, exit_code, output};
+use crate::{Options, Result, Scenario, output};
+use crate::exit_code::ExitCode;
 
 /// What phase of running a scenario.
 ///
@@ -106,20 +107,20 @@ impl LabOutcome {
     }
 
     /// Return the overall program exit code reflecting this outcome.
-    pub fn exit_code(&self) -> exit_code::ExitCode {
+    pub fn exit_code(&self) -> ExitCode {
         // TODO: Maybe move this into an error returned from experiment()?
         if self
             .outcomes
             .iter()
             .any(|o| !o.scenario.is_mutant() && !o.success())
         {
-            exit_code::ExitCode::BaselineFailed
+            ExitCode::BaselineFailed
         } else if self.timeout > 0 {
-            exit_code::ExitCode::Timeout
+            ExitCode::Timeout
         } else if self.missed > 0 {
-            exit_code::ExitCode::FoundProblems
+            ExitCode::FoundProblems
         } else {
-            exit_code::ExitCode::Success
+            ExitCode::Success
         }
     }
 

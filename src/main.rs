@@ -51,7 +51,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitCode as StdExitCode;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::{
     ArgAction, CommandFactory, Parser, ValueEnum,
@@ -537,7 +537,8 @@ fn main() -> Result<StdExitCode> {
 
     let start_dir: &Utf8Path = if let Some(manifest_path) = &args.manifest_path {
         if !manifest_path.is_file() {
-            bail!("Manifest path is not a file");
+            error!("Manifest path is not a file");
+            return Ok(exit_code::ExitCode::Usage.into());
         }
         manifest_path
             .parent()
