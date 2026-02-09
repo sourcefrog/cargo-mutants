@@ -25,7 +25,7 @@
   - [Testing in-place](in-place.md)
   - [Iterating on missed mutants](iterate.md)
   - [Strict lints](lints.md)
-- [Generating mutants](mutants.md)
+- [Mutation patterns](mutants.md)
   - [Error values](error-values.md)
   - [Macros](macros.md)
 - [Improving performance](performance.md)

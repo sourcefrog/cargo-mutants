@@ -1,4 +1,4 @@
-# Generating mutants
+# Mutation patterns
 
 cargo mutants generates mutants by inspecting the existing
 source code and applying a set of rules to generate new code
@@ -36,6 +36,7 @@ More mutation genres and patterns will be added in future releases.
 | floats            | `0.0, 1.0, -1.0`                                           |
 | `NonZeroI*`       | `1.try_into().unwrap(), (-1).try_into().unwrap()`            |
 | `NonZeroU*`       | `1.try_into().unwrap()`                                    |
+| `NonZero<T>`      | `1.try_into().unwrap(), (-1).try_into().unwrap()`: negative values are omitted if `T` seems to be unsigned |
 | `bool`            | `true`, `false` |
 | `String`          | `String::new()`, `"xyzzy".into()` |
 | `&'_ str` .       | `""`, `"xyzzy"` |
