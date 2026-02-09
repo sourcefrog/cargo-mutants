@@ -211,7 +211,7 @@ jobs:
         # A clunky way to cd into the likely unpacked name, excluding the directory,
         # still matching e.g. `1.2.3-pre2`.
         run: |
-          cd $( find target/package -type d -name 'cargo-mutants-*' -print -quit )
+          cd "$( find target/package -type d -name 'cargo-mutants-*' -print -quit )"
           cargo test
 
   branch-mutants:
