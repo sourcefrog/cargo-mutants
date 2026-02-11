@@ -63,7 +63,7 @@ mod test {
 
     #[test]
     fn literal_filename_matches_anywhere() {
-        let set = build_glob_set(&["foo.rs"])
+        let set = build_glob_set(["foo.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(set.is_match("foo.rs"));
@@ -75,7 +75,7 @@ mod test {
 
     #[test]
     fn filename_matches_directories_and_their_contents() {
-        let set = build_glob_set(&["console"])
+        let set = build_glob_set(["console"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(set.is_match("console"));
@@ -87,7 +87,7 @@ mod test {
 
     #[test]
     fn glob_without_slash_matches_filename_anywhere() {
-        let set = build_glob_set(&["*.rs"])
+        let set = build_glob_set(["*.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(set.is_match("foo.rs"));
@@ -99,7 +99,7 @@ mod test {
 
     #[test]
     fn set_with_multiple_filenames() {
-        let set = build_glob_set(&["foo.rs", "bar.rs"])
+        let set = build_glob_set(["foo.rs", "bar.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(set.is_match("foo.rs"));
@@ -109,7 +109,7 @@ mod test {
 
     #[test]
     fn glob_with_slashes_matches_whole_path() {
-        let set = build_glob_set(&["src/*.rs"])
+        let set = build_glob_set(["src/*.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(!set.is_match("foo.rs"));
@@ -124,7 +124,7 @@ mod test {
 
     #[test]
     fn starstar_at_start_of_path_matches_anywhere() {
-        let set = build_glob_set(&["**/foo.rs"])
+        let set = build_glob_set(["**/foo.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(set.is_match("foo.rs"));
@@ -138,7 +138,7 @@ mod test {
 
     #[test]
     fn starstar_within_path_matches_zero_or_more_directories() {
-        let set = build_glob_set(&["src/**/f*.rs"])
+        let set = build_glob_set(["src/**/f*.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(!set.is_match("foo.rs"), "path must start with src");
@@ -161,7 +161,7 @@ mod test {
     #[cfg(unix)]
     fn on_unix_backslash_is_escape() {
         // weird glob but ok
-        let set = build_glob_set(&["src\\*.rs"])
+        let set = build_glob_set(["src\\*.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(
