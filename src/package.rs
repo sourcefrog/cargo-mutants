@@ -65,7 +65,7 @@ impl Package {
             return None;
         };
         Some(Package {
-            name,
+            name: name.to_string(),
             top_sources: package_top_sources(workspace_root, package_metadata),
             version: package_metadata.version.to_string(),
             relative_dir,
