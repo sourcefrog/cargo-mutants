@@ -1,6 +1,8 @@
 # cargo-mutants changelog
 
-## Unreleased
+## 27.0.0
+
+Released 2026-03-07.
 
 - Changed: Command line values for `--file`, `--exclude`, `--examine-re`, and `--exclude-re` are now combined with, rather than replacing, values given in the configuration file, consistently with every other option that takes a list. (Use `--config=OTHER` or `--no-config` to avoid using values in the configuration.) Thanks to @sandersaares for pointing this out.
 
