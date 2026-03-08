@@ -56,6 +56,33 @@ fn type_replacements(type_: &Type, error_exprs: &[Expr]) -> impl Iterator<Item =
                 ]
             } else if path_is_nonzero_unsigned(path) {
                 vec![quote! { 1.try_into().unwrap() }]
+            } else if let Some(inner_type) = match_first_type_arg(path, "NonZero") {
+                // NonZero<T> generic form (stabilized in Rust 1.79)
+                if let Type::Path(syn::TypePath {
+                    path: inner_path, ..
+                }) = inner_type
+                {
+                    if path_is_unsigned(inner_path) {
+                        vec![quote! { 1.try_into().unwrap() }]
+                    } else if path_is_signed(inner_path) {
+                        vec![
+                            quote! { 1.try_into().unwrap() },
+                            quote! { (-1).try_into().unwrap() },
+                        ]
+                    } else {
+                        // Unknown T, assume it could be signed
+                        vec![
+                            quote! { 1.try_into().unwrap() },
+                            quote! { (-1).try_into().unwrap() },
+                        ]
+                    }
+                } else {
+                    // T is not a simple path, assume it could be signed
+                    vec![
+                        quote! { 1.try_into().unwrap() },
+                        quote! { (-1).try_into().unwrap() },
+                    ]
+                }
             } else if path_is_float(path) {
                 vec![quote! { 0.0 }, quote! { 1.0 }, quote! { -1.0 }]
             } else if path_ends_with(path, "Result") {
@@ -393,7 +420,6 @@ fn path_is_nonzero_signed(path: &Path) -> bool {
 }
 
 fn path_is_nonzero_unsigned(path: &Path) -> bool {
-    // TODO: Also NonZero<usize> etc.
     if let Some(l) = path.segments.last().map(|p| p.ident.to_string()) {
         matches!(
             l.as_str(),
@@ -491,6 +517,58 @@ mod test {
             &parse_quote! { -> std::num::NonZeroU32 },
             &[],
             &["1.try_into().unwrap()"],
+        );
+    }
+
+    #[test]
+    fn nonzero_generic_unsigned_replacements() {
+        check_replacements(
+            &parse_quote! { -> NonZero<u32> },
+            &[],
+            &["1.try_into().unwrap()"],
+        );
+
+        check_replacements(
+            &parse_quote! { -> NonZero<usize> },
+            &[],
+            &["1.try_into().unwrap()"],
+        );
+
+        check_replacements(
+            &parse_quote! { -> std::num::NonZero<u8> },
+            &[],
+            &["1.try_into().unwrap()"],
+        );
+    }
+
+    #[test]
+    fn nonzero_generic_signed_replacements() {
+        check_replacements(
+            &parse_quote! { -> NonZero<i32> },
+            &[],
+            &["1.try_into().unwrap()", "(-1).try_into().unwrap()"],
+        );
+
+        check_replacements(
+            &parse_quote! { -> NonZero<isize> },
+            &[],
+            &["1.try_into().unwrap()", "(-1).try_into().unwrap()"],
+        );
+
+        check_replacements(
+            &parse_quote! { -> std::num::NonZero<i64> },
+            &[],
+            &["1.try_into().unwrap()", "(-1).try_into().unwrap()"],
+        );
+    }
+
+    #[test]
+    fn nonzero_generic_unknown_type_replacements() {
+        // When T is not a recognized integer type, assume it could be signed.
+        check_replacements(
+            &parse_quote! { -> NonZero<T> },
+            &[],
+            &["1.try_into().unwrap()", "(-1).try_into().unwrap()"],
         );
     }
 
