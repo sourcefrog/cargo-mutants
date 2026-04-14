@@ -4,11 +4,20 @@ assertion_line: 33
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
+src/lib.rs:10:5: replace add_numbers -> i32 with 0
+src/lib.rs:10:5: replace add_numbers -> i32 with 1
+src/lib.rs:10:5: replace add_numbers -> i32 with -1
+src/lib.rs:10:7: replace + with - in add_numbers
+src/lib.rs:10:7: replace + with * in add_numbers
 src/lib.rs:15:5: replace multiply -> i32 with 0
 src/lib.rs:15:5: replace multiply -> i32 with 1
 src/lib.rs:15:5: replace multiply -> i32 with -1
 src/lib.rs:15:7: replace * with + in multiply
 src/lib.rs:15:7: replace * with / in multiply
+src/lib.rs:21:5: replace subtract -> i32 with 1
+src/lib.rs:21:5: replace subtract -> i32 with -1
+src/lib.rs:21:7: replace - with + in subtract
+src/lib.rs:21:7: replace - with / in subtract
 src/lib.rs:27:5: replace add_one -> i32 with 0
 src/lib.rs:27:5: replace add_one -> i32 with 1
 src/lib.rs:27:5: replace add_one -> i32 with -1

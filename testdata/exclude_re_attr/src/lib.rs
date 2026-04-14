@@ -5,7 +5,7 @@
 
 /// This function has an exclude_re that filters out the "replace with ()" mutation
 /// but keeps binary operator mutations.
-#[mutants::exclude_re("replace .* with ()")]
+#[mutants::exclude_re(r"with \(\)")]
 pub fn add_numbers(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -15,8 +15,8 @@ pub fn multiply(a: i32, b: i32) -> i32 {
     a * b
 }
 
-/// This function uses cfg_attr form of exclude_re.
-#[cfg_attr(test, mutants::exclude_re("replace .* with"))]
+/// This function uses cfg_attr form of exclude_re, filtering out "with 0" mutations.
+#[cfg_attr(test, mutants::exclude_re("with 0"))]
 pub fn subtract(a: i32, b: i32) -> i32 {
     a - b
 }
