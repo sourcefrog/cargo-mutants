@@ -64,7 +64,7 @@ For example, to keep all mutations except the "replace with ()" return-value
 mutation:
 
 ```rust
-#[mutants::exclude_re("with \\(\\)")]
+#[mutants::exclude_re(r"with \(\)")]
 fn do_something(x: i32) -> i32 {
     x + 1
 }
