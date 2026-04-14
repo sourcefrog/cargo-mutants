@@ -5,6 +5,7 @@
 
 /// This function has an exclude_re that filters out the "replace with ()" mutation
 /// but keeps binary operator mutations.
+/// Filtered: "replace add_numbers -> i32 with ()"
 #[mutants::exclude_re(r"with \(\)")]
 pub fn add_numbers(a: i32, b: i32) -> i32 {
     a + b
@@ -16,12 +17,14 @@ pub fn multiply(a: i32, b: i32) -> i32 {
 }
 
 /// This function uses cfg_attr form of exclude_re, filtering out "with 0" mutations.
+/// Filtered: "replace subtract -> i32 with 0"
 #[cfg_attr(test, mutants::exclude_re("with 0"))]
 pub fn subtract(a: i32, b: i32) -> i32 {
     a - b
 }
 
 /// This function has an exclude_re that filters out binary operator mutations.
+/// Filtered: "replace + with - in add_one", "replace + with * in add_one"
 #[mutants::exclude_re("replace [+] with")]
 pub fn add_one(a: i32) -> i32 {
     a + 1
@@ -30,6 +33,7 @@ pub fn add_one(a: i32) -> i32 {
 pub struct Calculator;
 
 /// exclude_re on an impl block applies to all methods inside.
+/// Filtered: "replace Calculator::is_positive -> bool with true/false"
 #[mutants::exclude_re("replace .* -> bool")]
 impl Calculator {
     pub fn is_positive(x: i32) -> bool {
@@ -42,6 +46,7 @@ impl Calculator {
 }
 
 /// exclude_re on a trait block applies to all default method implementations.
+/// Filtered: "replace Checker::is_valid -> bool with true/false"
 #[mutants::exclude_re("replace .* -> bool")]
 pub trait Checker {
     fn is_valid(&self) -> bool {
@@ -54,6 +59,7 @@ pub trait Checker {
 }
 
 /// exclude_re on a mod block applies to all functions inside.
+/// Filtered: "replace predicates::always_true -> bool with true/false"
 #[mutants::exclude_re("replace .* -> bool")]
 mod predicates {
     pub fn always_true() -> bool {
@@ -71,6 +77,8 @@ pub struct Combo;
 #[mutants::exclude_re("replace .* -> bool")]
 impl Combo {
     /// This method adds its own exclude_re on top of the impl-level one.
+    /// Filtered by impl: "replace Combo::count -> bool ..." (N/A, returns i32)
+    /// Filtered by method: "replace Combo::count -> i32 with 0/1/-1"
     #[mutants::exclude_re("replace .* -> i32")]
     pub fn count(&self) -> i32 {
         1 + 2
