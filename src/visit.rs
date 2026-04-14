@@ -350,7 +350,9 @@ impl DiscoveryVisitor<'_> {
                 true
             }
             Err(err) => {
-                self.error = Some(anyhow!("invalid regex in #[mutants::exclude_re]: {err}"));
+                self.error.get_or_insert(anyhow!(
+                    "invalid regex in #[mutants::exclude_re]: {err}"
+                ));
                 false
             }
         }
