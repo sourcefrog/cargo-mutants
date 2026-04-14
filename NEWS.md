@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, and files. Multiple patterns can be applied. Also supported within `cfg_attr`.
+
 ## 27.0.0
 
 Released 2026-03-07.

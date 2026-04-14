@@ -1,0 +1,11 @@
+[package]
+name = "cargo-mutants-testdata-exclude-re-attr"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+doctest = false
+
+[dependencies]
+mutants = { path = "../../mutants_attrs" }

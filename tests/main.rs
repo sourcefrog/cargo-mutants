@@ -3180,6 +3180,16 @@ fn list_mutants_in_cfg_attr_test_skip_json() {
 }
 
 #[test]
+fn list_mutants_in_exclude_re_attr() {
+    let tmp_src_dir = copy_of_testdata("exclude_re_attr");
+    run()
+        .arg("mutants")
+        .arg("--list")
+        .current_dir(tmp_src_dir.path())
+        .assert_insta("list_mutants_in_exclude_re_attr");
+}
+
+#[test]
 fn list_mutants_with_dir_option() {
     let temp = copy_of_testdata("factorial");
     run()
