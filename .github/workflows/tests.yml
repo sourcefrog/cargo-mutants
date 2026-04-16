@@ -71,7 +71,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cargo-mutants-linux
           path: |
@@ -193,7 +193,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo package --no-verify
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cargo-mutants-package
           path: |
@@ -252,7 +252,7 @@ jobs:
           --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
           --exclude=windows.rs --exclude=console.rs
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutants-incremental-${{ matrix.test_tool}}.out
@@ -297,7 +297,7 @@ jobs:
           --test-tool=${{matrix.test_tool}} --timeout=500 --build-timeout=500
           --exclude=windows.rs --exclude=console.rs
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutants-incremental-${{ matrix.test_tool}}.out
@@ -347,7 +347,7 @@ jobs:
           --exclude=console.rs
           -- -- -Zunstable-options --fail-fast
       - name: Archive mutants.out
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mutants-${{matrix.test_tool}}-shard${{matrix.shard}}.out
