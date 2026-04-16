@@ -775,6 +775,7 @@ fn hang_const_fn_is_unviable() {
 ///   the loop will never stop, but the test should eventually be killed
 ///   by a timeout.
 #[test]
+#[ignore = "This test can leak compiler processes that are stuck in a loop"]
 fn mutants_causing_tests_to_hang_are_stopped_by_manual_timeout() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     // Also test that it accepts decimal seconds
@@ -844,6 +845,7 @@ fn hang_avoided_by_build_timeout_with_cap_lints() {
 }
 
 #[test]
+#[ignore = "This test can leak compiler processes that are stuck in a loop"]
 fn constfn_mutation_passes_check() {
     let tmp_src_dir = copy_of_testdata("hang_when_mutated");
     let cmd = run()
