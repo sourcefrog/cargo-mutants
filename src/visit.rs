@@ -14,9 +14,11 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::vec;
 
+use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
 use proc_macro2::{Ident, TokenStream};
 use quote::{ToTokens, quote};
+use regex::RegexSet;
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
@@ -142,6 +144,8 @@ pub fn walk_file(
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
         error_exprs,
+        error: None,
+        exclude_re_stack: Vec::new(),
         external_mods: Vec::new(),
         mutants: Vec::new(),
         mod_namespace_stack: Vec::new(),
@@ -151,6 +155,9 @@ pub fn walk_file(
         options,
     };
     visitor.visit_file(&syn_file);
+    if let Some(err) = visitor.error {
+        return Err(err);
+    }
     Ok((visitor.mutants, visitor.external_mods))
 }
 
@@ -284,6 +291,18 @@ struct DiscoveryVisitor<'o> {
     error_exprs: &'o [Expr],
 
     options: &'o Options,
+
+    /// Stack of compiled `RegexSet`s from `#[mutants::exclude_re("...")]` attributes.
+    ///
+    /// Each entry corresponds to a scope (file, mod, impl, trait, fn).
+    /// When collecting a mutant, all entries in the stack are checked.
+    exclude_re_stack: Vec<RegexSet>,
+
+    /// If set, an error occurred during visiting (e.g. invalid regex in an attribute).
+    ///
+    /// Since `Visit` trait methods cannot return errors, we store the error here
+    /// and propagate it after the visitor finishes.
+    error: Option<anyhow::Error>,
 }
 
 impl DiscoveryVisitor<'_> {
@@ -315,6 +334,42 @@ impl DiscoveryVisitor<'_> {
         );
     }
 
+    /// Push `#[mutants::exclude_re("...")]` patterns from the given attributes onto the stack.
+    ///
+    /// Returns `true` if successful, `false` if an error was stored (invalid regex).
+    /// On error, the caller should return early without visiting children.
+    fn push_exclude_re(&mut self, attrs: &[Attribute]) -> bool {
+        let patterns = attrs_exclude_re_patterns(attrs);
+        if patterns.is_empty() {
+            self.exclude_re_stack.push(RegexSet::empty());
+            return true;
+        }
+        match RegexSet::new(&patterns) {
+            Ok(re) => {
+                self.exclude_re_stack.push(re);
+                true
+            }
+            Err(err) => {
+                self.error.get_or_insert(anyhow!(
+                    "invalid regex in #[mutants::exclude_re]: {err}"
+                ));
+                false
+            }
+        }
+    }
+
+    fn pop_exclude_re(&mut self) {
+        self.exclude_re_stack
+            .pop()
+            .expect("exclude_re stack should not be empty");
+    }
+
+    /// Check whether a mutant name is excluded by any of the currently-active
+    /// `#[mutants::exclude_re("...")]` attributes on the stack.
+    fn excluded_by_attr_re(&self, name: &str) -> bool {
+        self.exclude_re_stack.iter().any(|re| re.is_match(name))
+    }
+
     /// Record that we generated some mutants.
     fn collect_mutant(
         &mut self,
@@ -332,7 +387,12 @@ impl DiscoveryVisitor<'_> {
             genre,
             None,
         );
-        if self.options.allows_mutant(&mutant) {
+        if self.excluded_by_attr_re(&mutant.name) {
+            trace!(
+                name = mutant.name(false),
+                "skip mutant by exclude_re attribute"
+            );
+        } else if self.options.allows_mutant(&mutant) {
             self.mutants.push(mutant);
         } else {
             trace!(name = mutant.name(false), "skip mutant by options");
@@ -428,7 +488,11 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             trace!("file excluded by attrs");
             return;
         }
+        if !self.push_exclude_re(&i.attrs) {
+            return;
+        }
         syn::visit::visit_file(self, i);
+        self.pop_exclude_re();
     }
 
     /// Visit top-level `fn foo()`.
@@ -444,10 +508,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
+        if !self.push_exclude_re(&i.attrs) {
+            return;
+        }
         let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
         self.collect_fn_mutants(&i.sig, &i.block);
         syn::visit::visit_item_fn(self, i);
         self.leave_function(function);
+        self.pop_exclude_re();
     }
 
     /// Visit `fn foo()` within an `impl`.
@@ -468,10 +536,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         {
             return;
         }
+        if !self.push_exclude_re(&i.attrs) {
+            return;
+        }
         let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
         self.collect_fn_mutants(&i.sig, &i.block);
         syn::visit::visit_impl_item_fn(self, i);
         self.leave_function(function);
+        self.pop_exclude_re();
     }
 
     /// Visit `fn foo() { ... }` within a trait, i.e. a default implementation of a function.
@@ -490,10 +562,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             if block_is_empty(block) {
                 return;
             }
+            if !self.push_exclude_re(&i.attrs) {
+                return;
+            }
             let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
             self.collect_fn_mutants(&i.sig, block);
             syn::visit::visit_trait_item_fn(self, i);
             self.leave_function(function);
+            self.pop_exclude_re();
         }
     }
 
@@ -502,10 +578,14 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
+        if !self.push_exclude_re(&i.attrs) {
+            return;
+        }
         let type_name = i.self_ty.to_pretty_string();
         let name = if let Some((_, trait_path, _)) = &i.trait_ {
             if path_ends_with(trait_path, "Default") {
                 // Can't think of how to generate a viable different default.
+                self.pop_exclude_re();
                 return;
             }
             format!("<impl {trait} for {type_name}>", trait = trait_path.to_pretty_string())
@@ -513,6 +593,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             type_name
         };
         self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
+        self.pop_exclude_re();
     }
 
     /// Visit `trait Foo { ... }`
@@ -522,7 +603,11 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
+        if !self.push_exclude_re(&i.attrs) {
+            return;
+        }
         self.in_namespace(&name, |v| syn::visit::visit_item_trait(v, i));
+        self.pop_exclude_re();
     }
 
     /// Visit `mod foo { ... }` or `mod foo;`.
@@ -531,6 +616,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         let _span = trace_span!("mod", line = node.mod_token.span.start().line, mod_name).entered();
         if attrs_excluded(&node.attrs) {
             trace!("mod excluded by attrs");
+            return;
+        }
+        if !self.push_exclude_re(&node.attrs) {
             return;
         }
 
@@ -566,6 +654,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
         self.in_namespace(&mod_namespace.name, |v| syn::visit::visit_item_mod(v, node));
         assert_eq!(self.mod_namespace_stack.pop(), Some(mod_namespace));
+        self.pop_exclude_re();
     }
 
     /// Visit `a op b` expressions.
@@ -744,7 +833,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                             struct_name: struct_name.clone(),
                         }),
                     );
-                    self.mutants.push(mutant);
+                    if !self.excluded_by_attr_re(&mutant.name) {
+                        self.mutants.push(mutant);
+                    }
                 }
             }
         }
@@ -940,6 +1031,73 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
         return false;
     }
     skip
+}
+
+/// Extract regex patterns from `#[mutants::exclude_re("...")]` attributes.
+///
+/// This also handles `#[cfg_attr(test, mutants::exclude_re("..."))]`.
+fn attrs_exclude_re_patterns(attrs: &[Attribute]) -> Vec<String> {
+    attrs
+        .iter()
+        .filter_map(attr_mutants_exclude_re_pattern)
+        .collect()
+}
+
+/// If this attribute is `#[mutants::exclude_re("pattern")]`, return the pattern string.
+///
+/// Also matches `#[cfg_attr(..., mutants::exclude_re("pattern"))]`.
+fn attr_mutants_exclude_re_pattern(attr: &Attribute) -> Option<String> {
+    if path_is(attr.path(), &["mutants", "exclude_re"]) {
+        return extract_string_from_attr(attr);
+    }
+    if !path_is(attr.path(), &["cfg_attr"]) {
+        return None;
+    }
+    // For cfg_attr, we need to find mutants::exclude_re("...") in the token list.
+    // The tokens look like: `test, mutants::exclude_re("pattern")`
+    // We use syn to parse the inner attribute.
+    let tokens = match &attr.meta {
+        syn::Meta::List(list) => &list.tokens,
+        _ => return None,
+    };
+    // Wrap the inner content after the condition as an attribute and try to parse it.
+    // We need to find the portion after the first comma that looks like mutants::exclude_re("...")
+    let token_str = tokens.to_string();
+    // Find "mutants :: exclude_re" (with possible spaces around ::)
+    // by scanning for the pattern in the token representation.
+    let normalized = token_str.replace(" :: ", "::");
+    let marker = "mutants::exclude_re";
+    let start = normalized.find(marker)?;
+    // Extract from the marker onward in the original token string.
+    // Find the same position in the original string, accounting for space normalization.
+    let remaining = &normalized[start + marker.len()..];
+    // remaining should start with something like `("pattern")`
+    let remaining = remaining.trim_start();
+    if !remaining.starts_with('(') {
+        return None;
+    }
+    // Find matching close paren, accounting for the string content
+    let inner = &remaining[1..]; // skip '('
+    // Parse the content as a string literal
+    let close_paren = inner.rfind(')')?;
+    let literal_str = inner[..close_paren].trim();
+    // Parse as a Rust string literal
+    syn::parse_str::<syn::LitStr>(literal_str)
+        .ok()
+        .map(|lit| lit.value())
+}
+
+/// Extract a string literal argument from an attribute like `#[something("value")]`.
+fn extract_string_from_attr(attr: &Attribute) -> Option<String> {
+    let meta = &attr.meta;
+    if let syn::Meta::List(list) = meta {
+        let tokens = &list.tokens;
+        // Parse the tokens as a single string literal
+        if let Ok(lit) = syn::parse2::<syn::LitStr>(tokens.clone()) {
+            return Some(lit.value());
+        }
+    }
+    None
 }
 
 /// Finds the first path attribute (`#[path = "..."]`)
@@ -1651,6 +1809,271 @@ mod test {
                 "replace + with -",
                 "replace + with *"
             ]
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_filters_specific_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("with \\(\\)")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        // The fn replacement "replace add -> i32 with 0" etc should remain,
+        // but "replace add -> i32 with ()" should be excluded.
+        // Also binary operator mutations remain.
+        assert!(
+            !names.iter().any(|n| n.contains("with ()")),
+            "should not contain 'with ()' mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_keeps_all_when_no_match() {
+        let options = Options::default();
+        let mutants_with_attr = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("this_matches_nothing")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let mutants_without_attr = mutate_source_str(
+            indoc! {"
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+        assert_eq!(mutants_with_attr.len(), mutants_without_attr.len());
+    }
+
+    #[test]
+    fn exclude_re_attr_invalid_regex_returns_error() {
+        let options = Options::default();
+        let result = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("(unclosed")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        );
+        assert!(result.is_err(), "invalid regex should produce an error");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("invalid regex"),
+            "error should mention 'invalid regex': {err_msg}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_on_impl_block_applies_to_methods() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                struct Foo;
+                #[mutants::exclude_re("replace .* -> bool")]
+                impl Foo {
+                    fn is_ok(&self) -> bool {
+                        true
+                    }
+                    fn count(&self) -> i32 {
+                        1 + 2
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        // is_ok fn replacement should be excluded, but count fn and binary ops should remain
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn cfg_attr_exclude_re_filters_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[cfg_attr(test, mutants::exclude_re("replace .* with 0"))]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "should not contain 'with 0' mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_on_trait_block_applies_to_default_methods() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("replace .* -> bool")]
+                trait Check {
+                    fn is_ok(&self) -> bool {
+                        true
+                    }
+                    fn count(&self) -> i32 {
+                        1 + 2
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_on_mod_block_applies_to_functions() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("replace .* -> bool")]
+                mod inner {
+                    pub fn is_ok() -> bool {
+                        true
+                    }
+                    pub fn count() -> i32 {
+                        1 + 2
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_inner_file_attribute_applies_to_all_functions() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #![mutants::exclude_re("replace .* -> bool")]
+
+                fn is_ok() -> bool {
+                    true
+                }
+                fn count() -> i32 {
+                    1 + 2
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_inherits_from_outer_scope() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                struct Foo;
+                #[mutants::exclude_re("replace .* -> bool")]
+                impl Foo {
+                    #[mutants::exclude_re("replace .* -> i32")]
+                    fn count(&self) -> i32 {
+                        1 + 2
+                    }
+                    fn is_ok(&self) -> bool {
+                        true
+                    }
+                    fn add(&self, a: i32, b: i32) -> i32 {
+                        a + b
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        // is_ok: excluded by impl-level pattern (-> bool)
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        // count: fn-value excluded by fn-level pattern (-> i32), but also
+        // impl-level pattern (-> bool) doesn't affect it; binary ops remain
+        assert!(
+            !names
+                .iter()
+                .any(|n| n.contains("replace count") || n.contains("replace Foo::count")),
+            "should not contain count fn-value mutant but got: {names:?}"
+        );
+        assert!(
+            names
+                .iter()
+                .any(|n| n.contains("replace + with") && n.contains("count")),
+            "should contain binary op mutant in count: {names:?}"
+        );
+        // add: fn-value NOT excluded (impl pattern only covers bool), binary ops remain
+        assert!(
+            names
+                .iter()
+                .any(|n| n.contains("add") && n.contains("-> i32")),
+            "should still contain add fn-value mutant: {names:?}"
         );
     }
 }

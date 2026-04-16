@@ -49,3 +49,59 @@ mod test {
     }
 }
 ```
+
+## Excluding specific mutations with an attribute
+
+If `#[mutants::skip]` is too broad (it disables _all_ mutations on a function)
+you can use `#[mutants::exclude_re("pattern")]` to exclude only mutations
+whose name matches a regex, while keeping the rest.
+
+The regex is matched against the full mutant name (the same string shown by
+`cargo mutants --list`), using the same syntax as `--exclude-re` on the command
+line.
+
+For example, to keep all mutations except the "replace with ()" return-value
+mutation:
+
+```rust
+#[mutants::exclude_re(r"with \(\)")]
+fn do_something(x: i32) -> i32 {
+    x + 1
+}
+```
+
+Multiple attributes can be applied to exclude several patterns:
+
+```rust
+#[mutants::exclude_re("with 0")]
+#[mutants::exclude_re("with 1")]
+fn compute(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+As with `mutants::skip`, cargo-mutants also looks for `mutants::exclude_re`
+within other attributes such as `cfg_attr`, without evaluating the outer
+attribute:
+
+```rust
+#[cfg_attr(test, mutants::exclude_re("replace .* -> bool"))]
+fn is_valid(&self) -> bool {
+    // ...
+    true
+}
+```
+
+### Scope
+
+`#[mutants::exclude_re]` can be placed on:
+
+- **Functions** — applies to all mutations within that function.
+- **`impl` blocks** — applies to all methods within the block.
+- **`trait` blocks** — applies to all default method implementations.
+- **`mod` blocks** — applies to all items within the module.
+- **Files** (as an inner attribute `#![mutants::exclude_re("...")]`) — applies to the entire file.
+
+Patterns from outer scopes are inherited: if an `impl` block excludes a pattern,
+all methods inside also exclude that pattern, in addition to any patterns on the
+methods themselves.

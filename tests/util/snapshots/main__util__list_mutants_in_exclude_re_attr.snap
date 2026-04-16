@@ -1,0 +1,49 @@
+---
+source: tests/util/mod.rs
+assertion_line: 33
+expression: "String::from_utf8_lossy(&output.stdout)"
+
+---
+src/lib.rs:11:5: replace add_numbers -> i32 with 0
+src/lib.rs:11:5: replace add_numbers -> i32 with 1
+src/lib.rs:11:5: replace add_numbers -> i32 with -1
+src/lib.rs:11:7: replace + with - in add_numbers
+src/lib.rs:11:7: replace + with * in add_numbers
+src/lib.rs:16:5: replace multiply -> i32 with 0
+src/lib.rs:16:5: replace multiply -> i32 with 1
+src/lib.rs:16:5: replace multiply -> i32 with -1
+src/lib.rs:16:7: replace * with + in multiply
+src/lib.rs:16:7: replace * with / in multiply
+src/lib.rs:23:5: replace subtract -> i32 with 1
+src/lib.rs:23:5: replace subtract -> i32 with -1
+src/lib.rs:23:7: replace - with + in subtract
+src/lib.rs:23:7: replace - with / in subtract
+src/lib.rs:30:5: replace add_one -> i32 with 0
+src/lib.rs:30:5: replace add_one -> i32 with 1
+src/lib.rs:30:5: replace add_one -> i32 with -1
+src/lib.rs:40:11: replace > with == in Calculator::is_positive
+src/lib.rs:40:11: replace > with < in Calculator::is_positive
+src/lib.rs:40:11: replace > with >= in Calculator::is_positive
+src/lib.rs:44:9: replace Calculator::double -> i32 with 0
+src/lib.rs:44:9: replace Calculator::double -> i32 with 1
+src/lib.rs:44:9: replace Calculator::double -> i32 with -1
+src/lib.rs:44:11: replace + with - in Calculator::double
+src/lib.rs:44:11: replace + with * in Calculator::double
+src/lib.rs:57:9: replace Checker::score -> i32 with 0
+src/lib.rs:57:9: replace Checker::score -> i32 with 1
+src/lib.rs:57:9: replace Checker::score -> i32 with -1
+src/lib.rs:57:11: replace + with - in Checker::score
+src/lib.rs:57:11: replace + with * in Checker::score
+src/lib.rs:70:9: replace predicates::increment -> i32 with 0
+src/lib.rs:70:9: replace predicates::increment -> i32 with 1
+src/lib.rs:70:9: replace predicates::increment -> i32 with -1
+src/lib.rs:70:11: replace + with - in predicates::increment
+src/lib.rs:70:11: replace + with * in predicates::increment
+src/lib.rs:84:11: replace + with - in Combo::count
+src/lib.rs:84:11: replace + with * in Combo::count
+src/lib.rs:93:9: replace Combo::add -> i32 with 0
+src/lib.rs:93:9: replace Combo::add -> i32 with 1
+src/lib.rs:93:9: replace Combo::add -> i32 with -1
+src/lib.rs:93:11: replace + with - in Combo::add
+src/lib.rs:93:11: replace + with * in Combo::add
+
