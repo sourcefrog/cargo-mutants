@@ -1,12 +1,12 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2026 Martin Pool
 
 //! A directory containing mutated source to run cargo builds and tests.
 
 #![warn(clippy::pedantic)]
 
-use std::fs::write;
+use std::fs::{symlink_metadata, write};
 
-use anyhow::{Context, ensure};
+use anyhow::{Context, bail};
 use camino::{Utf8Path, Utf8PathBuf};
 use tempfile::TempDir;
 use tracing::info;
@@ -92,15 +92,30 @@ impl BuildDir {
 
     pub fn overwrite_file(&self, relative_path: &Utf8Path, code: &str) -> Result<()> {
         let full_path = self.path.join(relative_path);
-        // for safety, don't follow symlinks
-        ensure!(full_path.is_file(), "{full_path:?} is not a file");
-        write(&full_path, code.as_bytes())
-            .with_context(|| format!("failed to write code to {full_path:?}"))
+        match symlink_metadata(&full_path) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                bail!("{full_path:?} is a symlink, refusing to overwrite it")
+            }
+            Ok(metadata) if !metadata.file_type().is_file() => {
+                bail!(
+                    "{full_path:?} is not a regular file (type is {:?}), refusing to overwrite it",
+                    metadata.file_type()
+                );
+            }
+            Ok(_) => write(&full_path, code.as_bytes())
+                .with_context(|| format!("failed to overwrite {full_path:?}")),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                bail!("{full_path:?} does not exist, refusing to create it")
+            }
+            Err(e) => bail!("failed to stat {full_path:?}: {e}"),
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::fs::create_dir;
+
     use crate::test_util::copy_of_testdata;
 
     use super::*;
@@ -171,6 +186,119 @@ mod test {
         assert_eq!(
             build_dir.path().canonicalize_utf8()?,
             workspace.root().canonicalize_utf8()?
+        );
+        Ok(())
+    }
+
+    /// This shouldn't happen unless we're confused about which files to mutate, but let's make sure
+    /// we give a clear error.
+    #[test]
+    fn fail_to_overwrite_dir() -> Result<()> {
+        let tmp = copy_of_testdata("factorial");
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let build_dir = BuildDir::in_place(tmp_path)?;
+        create_dir(tmp.path().join("foo"))?;
+
+        let err = build_dir
+            .overwrite_file(Utf8Path::new("foo"), "code")
+            .expect_err("expected overwrite_file to fail when the destination is a dir");
+        println!("error message is {err:?}");
+        assert!(
+            err.to_string().contains("is not a regular file"),
+            "unexpected error message: {err}"
+        );
+        Ok(())
+    }
+
+    /// This shouldn't normally happen, but if the destination contains a symlink, we shouldn't overwrite it because
+    /// it might be pointing outside the scratch directory, and we don't want to mess with the user's files.
+    #[test]
+    #[cfg(unix)]
+    fn fail_to_overwrite_symlink() -> Result<()> {
+        use std::os::unix::fs::symlink;
+
+        let tmp = copy_of_testdata("factorial");
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let build_dir = BuildDir::in_place(tmp_path)?;
+        symlink("foo", tmp.path().join("foo"))?;
+
+        let err = build_dir
+            .overwrite_file(Utf8Path::new("foo"), "code")
+            .expect_err("expected overwrite_file to fail when the destination is a symlink");
+        println!("error message is {err:?}");
+        assert!(
+            err.to_string()
+                .contains("is a symlink, refusing to overwrite it"),
+            "unexpected error message: {err}"
+        );
+        Ok(())
+    }
+
+    /// We only ever overwrite existing files in the build dir, and if they don't existing then
+    /// something surprising has happened.
+    ///
+    /// (We could relax this if we ever expect to create new files, but we don't need to today.)
+    #[test]
+    fn dont_create_new_files() -> Result<()> {
+        let tmp = copy_of_testdata("factorial");
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let build_dir = BuildDir::in_place(tmp_path)?;
+
+        let err = build_dir
+            .overwrite_file(Utf8Path::new("foo"), "code")
+            .expect_err("expected overwrite_file to fail when the destination does not exist");
+        println!("error message is {err:?}");
+        assert!(
+            err.to_string().contains("does not exist"),
+            "unexpected error message: {err}"
+        );
+        Ok(())
+    }
+
+    /// Test reporting of generic failures to write into the build dir, by making them unwriteable.
+    #[test]
+    #[cfg(unix)]
+    fn fail_to_overwrite() -> Result<()> {
+        use std::{fs::set_permissions, os::unix::fs::PermissionsExt};
+
+        let tmp = copy_of_testdata("factorial");
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let build_dir = BuildDir::in_place(tmp_path)?;
+        let relpath = Utf8Path::new("src/bin/factorial.rs");
+        set_permissions(
+            tmp.path().join(relpath),
+            std::fs::Permissions::from_mode(0o000),
+        )?;
+
+        let err = build_dir.overwrite_file(relpath, "code").unwrap_err();
+        println!("error message is {err:?}");
+        assert!(
+            err.to_string().contains("failed to overwrite"),
+            "unexpected error message: {err}"
+        );
+        Ok(())
+    }
+
+    /// An edge case: can't even stat the destination file.
+    #[test]
+    #[cfg(unix)]
+    fn fail_to_overwrite_dir_permission_denied() -> Result<()> {
+        use std::{fs::set_permissions, os::unix::fs::PermissionsExt};
+
+        let tmp = copy_of_testdata("factorial");
+        let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
+        let build_dir = BuildDir::in_place(tmp_path)?;
+        let relpath = Utf8Path::new("src/bin/factorial.rs");
+        set_permissions(
+            tmp.path().join(relpath.parent().unwrap()),
+            std::fs::Permissions::from_mode(0o000),
+        )?;
+
+        let err = build_dir.overwrite_file(relpath, "code").unwrap_err();
+        println!("error message is {err:?}");
+        assert!(
+            err.to_string().contains("failed to stat"),
+            "unexpected error message: {err}"
         );
         Ok(())
     }
