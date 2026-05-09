@@ -4,6 +4,8 @@
 
 - New: mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
 
+- Fixed: Set the mtime on files copied using reflinks to the scratch directory, so that they're not deleted prematurely by tools that delete old files from `/tmp`.
+
 ## 27.0.0
 
 Released 2026-03-07.

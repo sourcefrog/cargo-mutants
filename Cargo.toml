@@ -34,6 +34,7 @@ color-print = "0.3"
 console = "0.15"
 ctrlc = { version = "3.4", features = ["termination"] }
 fastrand = "2"
+filetime = "0.2.27"
 flickzeug = "0.4.5"
 fs2 = "0.4"
 globset = "0.4.16"
