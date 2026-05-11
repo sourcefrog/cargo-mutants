@@ -30,13 +30,19 @@ static VCS_DIRS: &[&str] = &[".git", ".hg", ".bzr", ".svn", "_darcs", ".jj", ".p
 /// Copy a file, attempting to use reflink if supported.
 ///
 /// Returns the number of bytes copied.
-#[cfg(not(target_env = "musl"))] // https://github.com/sourcefrog/cargo-mutants/issues/581
+#[cfg(not(target_env = "musl"))] // https://github.com/sourcefrog/cargo-mutants/issues/581, musl copy file syscall is non-standard.
 fn copy_file(src: &Path, dest: &Path, reflink_supported: &AtomicBool) -> Result<u64> {
     // Try reflink first if we haven't determined it's not supported
     if reflink_supported.load(Ordering::Relaxed) {
         match reflink::reflink(src, dest) {
             Ok(()) => {
-                // Reflink succeeded, get file size for progress tracking
+                // Set dest mtime to now. clonefile(2) on macOS preserves the source
+                // mtime, which can be days old; macOS's /usr/libexec/dirhelper
+                // periodically deletes files in /var/folders/<uid>/T/ with mtime
+                // older than CLEAN_FILES_OLDER_THAN_DAYS (default 3), which
+                // silently unlinks reflinked source files mid-run.
+                filetime::set_file_mtime(dest, filetime::FileTime::now())
+                    .with_context(|| format!("set_file_mtime {}", dest.display()))?;
                 let metadata = fs::metadata(dest)
                     .with_context(|| format!("Failed to get metadata for {}", dest.display()))?;
                 return Ok(metadata.len());
