@@ -3,10 +3,10 @@
 //! This tests that specific mutations can be excluded by regex while
 //! keeping other mutations active on the same function.
 
-/// This function has an exclude_re that filters out the "replace with ()" mutation
-/// but keeps binary operator mutations.
-/// Filtered: "replace add_numbers -> i32 with ()"
-#[mutants::exclude_re(r"with \(\)")]
+/// This function has an exclude_re that filters out the "with 0" FnValue
+/// mutation but keeps "with 1", "with -1", and the binary operator mutations.
+/// Filtered: "replace add_numbers -> i32 with 0"
+#[mutants::exclude_re("with 0")]
 pub fn add_numbers(a: i32, b: i32) -> i32 {
     a + b
 }

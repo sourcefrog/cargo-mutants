@@ -60,11 +60,11 @@ The regex is matched against the full mutant name (the same string shown by
 `cargo mutants --list`), using the same syntax as `--exclude-re` on the command
 line.
 
-For example, to keep all mutations except the "replace with ()" return-value
-mutation:
+For example, to keep all mutations on an `i32`-returning function except the
+"replace ... -> i32 with 0" return-value mutation:
 
 ```rust
-#[mutants::exclude_re(r"with \(\)")]
+#[mutants::exclude_re("with 0")]
 fn do_something(x: i32) -> i32 {
     x + 1
 }

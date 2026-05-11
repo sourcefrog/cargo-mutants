@@ -4,7 +4,6 @@ assertion_line: 33
 expression: "String::from_utf8_lossy(&output.stdout)"
 
 ---
-src/lib.rs:11:5: replace add_numbers -> i32 with 0
 src/lib.rs:11:5: replace add_numbers -> i32 with 1
 src/lib.rs:11:5: replace add_numbers -> i32 with -1
 src/lib.rs:11:7: replace + with - in add_numbers
