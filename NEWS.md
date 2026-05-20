@@ -5,6 +5,7 @@
 - New: mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
 
 - New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, and files. Multiple patterns can be applied. Also supported within `cfg_attr`.
+- Fixed: Set the mtime on files copied using reflinks to the scratch directory, so that they're not deleted prematurely by tools that delete old files from `/tmp`.
 
 ## 27.0.0
 

@@ -533,7 +533,7 @@ fn output_option() {
         "timeout.txt",
         "unviable.txt",
     ] {
-        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out");
     }
 }
 
@@ -573,7 +573,7 @@ fn output_option_use_env() {
         "timeout.txt",
         "unviable.txt",
     ] {
-        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out");
     }
 }
 
@@ -3728,7 +3728,7 @@ fn output_option_use_config() {
         "timeout.txt",
         "unviable.txt",
     ] {
-        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out",);
+        assert!(mutants_out.join(name).is_file(), "{name} is in mutants.out");
     }
 }
 
