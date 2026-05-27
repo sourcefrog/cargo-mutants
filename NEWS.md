@@ -4,6 +4,8 @@
 
 - New: mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
 
+- New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, files, and on expressions that can carry an attribute (such as `match`, struct literals, call expressions, method calls, and unary expressions). Multiple patterns can be applied. Also supported within `cfg_attr`.
+
 - Docs: Clarify that `#[mutants::skip]` is honoured at every scope where attributes can be placed, not only on functions: `impl` blocks, `trait` declarations, modules, files (as `#![mutants::skip]`), and expressions that can carry an outer attribute. Only the documentation was misleading; the behaviour is unchanged.
 - Fixed: Set the mtime on files copied using reflinks to the scratch directory, so that they're not deleted prematurely by tools that delete old files from `/tmp`.
 
