@@ -80,9 +80,10 @@ fn compute(a: i32, b: i32) -> i32 {
 }
 ```
 
-As with `mutants::skip`, cargo-mutants also looks for `mutants::exclude_re`
-within other attributes such as `cfg_attr`, without evaluating the outer
-attribute:
+As with `mutants::skip`, cargo-mutants also recognises `mutants::exclude_re`
+when it is nested inside a `cfg_attr`. The cfg condition is *not* evaluated —
+the attribute is always honoured regardless of whether the condition would
+hold during compilation.
 
 ```rust
 #[cfg_attr(test, mutants::exclude_re("replace .* -> bool"))]
