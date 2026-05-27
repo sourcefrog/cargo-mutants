@@ -983,6 +983,16 @@ mod test {
 
     use super::*;
 
+    mod skip_attr_cfg_attr;
+    mod skip_attr_expr_call;
+    mod skip_attr_expr_match;
+    mod skip_attr_expr_method_call;
+    mod skip_attr_expr_struct;
+    mod skip_attr_expr_unary;
+    mod skip_attr_file;
+    mod skip_attr_impl;
+    mod skip_attr_trait;
+
     #[test]
     fn path_ends_with() {
         use super::path_ends_with;
