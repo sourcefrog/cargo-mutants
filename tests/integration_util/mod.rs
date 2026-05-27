@@ -37,6 +37,12 @@ pub fn run() -> assert_cmd::Command {
 }
 
 /// Returns the path to the cargo-mutants binary under test.
+///
+/// Currently only consumed by Unix-only tests (e.g., signal-handling tests
+/// that need to spawn the binary directly via `std::process::Command`), so
+/// the function is gated on `cfg(unix)` to avoid a `dead_code` warning on
+/// other platforms.
+#[cfg(unix)]
 pub fn main_binary() -> &'static std::path::Path {
     assert_cmd::cargo_bin!("cargo-mutants")
 }
