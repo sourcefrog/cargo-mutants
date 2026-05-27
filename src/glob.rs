@@ -177,7 +177,7 @@ mod test {
     #[test]
     #[cfg(windows)]
     fn on_windows_backslash_is_path_separator() {
-        let set = build_glob_set(&["src\\*.rs"])
+        let set = build_glob_set(["src\\*.rs"])
             .expect("build GlobSet")
             .expect("GlobSet should not be empty");
         assert!(set.is_match("src\\foo.rs"));
