@@ -509,19 +509,21 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        if let Expr::Path(ExprPath { path, .. }) = &*i.func {
-            trace!(path = path.to_pretty_string(), "visit call");
-            if let Some(hit) = self
-                .options
-                .skip_calls
-                .iter()
-                .find(|s| path_ends_with(path, s))
-            {
-                trace!("skip call to {hit}");
-                return;
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            if let Expr::Path(ExprPath { path, .. }) = &*i.func {
+                trace!(path = path.to_pretty_string(), "visit call");
+                if let Some(hit) = v
+                    .options
+                    .skip_calls
+                    .iter()
+                    .find(|s| path_ends_with(path, s))
+                {
+                    trace!("skip call to {hit}");
+                    return;
+                }
             }
-        }
-        syn::visit::visit_expr_call(self, i);
+            syn::visit::visit_expr_call(v, i);
+        });
     }
 
     fn visit_expr_method_call(&mut self, i: &'ast syn::ExprMethodCall) {
@@ -529,11 +531,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        if let Some(hit) = self.options.skip_calls.iter().find(|s| i.method == s) {
-            trace!("skip method call to {hit}");
-            return;
-        }
-        syn::visit::visit_expr_method_call(self, i);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            if let Some(hit) = v.options.skip_calls.iter().find(|s| i.method == s) {
+                trace!("skip method call to {hit}");
+                return;
+            }
+            syn::visit::visit_expr_method_call(v, i);
+        });
     }
 
     /// Visit a source file.
@@ -708,6 +712,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
+        // Note: `#[mutants::exclude_re("...")]` placed before a binary expression
+        // is absorbed by syn into the leftmost operand's attrs (e.g., the path
+        // expression), not into `ExprBinary.attrs`. There's therefore no current
+        // Rust syntax that would populate `i.attrs` here, so we don't push an
+        // exclude_re scope. To suppress mutants on a binary operator, place the
+        // attribute on an enclosing item, mod, file, or expression
+        // (call/method_call/match/struct).
         let replacements = match i.op {
             // We don't generate `<=` from `==` because it can too easily go
             // wrong with unsigned types compared to 0.
@@ -761,18 +772,20 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        match i.op {
-            UnOp::Not(_) | UnOp::Neg(_) => {
-                self.collect_mutant(i.op.span().into(), None, &quote! {}, Genre::UnaryOperator);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            match i.op {
+                UnOp::Not(_) | UnOp::Neg(_) => {
+                    v.collect_mutant(i.op.span().into(), None, &quote! {}, Genre::UnaryOperator);
+                }
+                _ => {
+                    trace!(
+                        op = i.op.to_pretty_string(),
+                        "No mutants generated for this unary operator"
+                    );
+                }
             }
-            _ => {
-                trace!(
-                    op = i.op.to_pretty_string(),
-                    "No mutants generated for this unary operator"
-                );
-            }
-        }
-        syn::visit::visit_expr_unary(self, i);
+            syn::visit::visit_expr_unary(v, i);
+        });
     }
 
     fn visit_expr_match(&mut self, i: &'ast syn::ExprMatch) {
@@ -785,52 +798,54 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
 
-        let has_catchall = i
-            .arms
-            .iter()
-            .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
-        if has_catchall {
-            // Successively delete each of the match arms, allowing them to hit the catch-all arm,
-            // which will often be a viable mutant.
-            for arm in &i.arms {
-                if matches!(arm.pat, syn::Pat::Wild(_)) || arm.guard.is_some() {
-                    // Don't delete the `_ => whatever` arm, because that will very likely fail to compile.
-                    //
-                    // Also, don't delete arms with guard expressions, because the replacement of
-                    // the guard with 'false' below is logically equivalent to removing the arm.
-                    continue;
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            let has_catchall = i
+                .arms
+                .iter()
+                .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
+            if has_catchall {
+                // Successively delete each of the match arms, allowing them to hit the catch-all arm,
+                // which will often be a viable mutant.
+                for arm in &i.arms {
+                    if matches!(arm.pat, syn::Pat::Wild(_)) || arm.guard.is_some() {
+                        // Don't delete the `_ => whatever` arm, because that will very likely fail to compile.
+                        //
+                        // Also, don't delete arms with guard expressions, because the replacement of
+                        // the guard with 'false' below is logically equivalent to removing the arm.
+                        continue;
+                    }
+                    let replacement = quote! {};
+                    v.collect_mutant(
+                        arm.span().into(),
+                        Some(arm.pat.to_pretty_string()),
+                        &replacement,
+                        Genre::MatchArm,
+                    );
                 }
-                let replacement = quote! {};
-                self.collect_mutant(
-                    arm.span().into(),
-                    Some(arm.pat.to_pretty_string()),
-                    &replacement,
-                    Genre::MatchArm,
-                );
+            } else {
+                trace!("match has no `_` pattern");
             }
-        } else {
-            trace!("match has no `_` pattern");
-        }
 
-        i.arms
-            .iter()
-            .flat_map(|arm| &arm.guard)
-            .for_each(|(_if, guard_expr)| {
-                self.collect_mutant(
-                    guard_expr.span().into(),
-                    None,
-                    &quote! { true },
-                    Genre::MatchArmGuard,
-                );
-                self.collect_mutant(
-                    guard_expr.span().into(),
-                    None,
-                    &quote! { false },
-                    Genre::MatchArmGuard,
-                );
-            });
+            i.arms
+                .iter()
+                .flat_map(|arm| &arm.guard)
+                .for_each(|(_if, guard_expr)| {
+                    v.collect_mutant(
+                        guard_expr.span().into(),
+                        None,
+                        &quote! { true },
+                        Genre::MatchArmGuard,
+                    );
+                    v.collect_mutant(
+                        guard_expr.span().into(),
+                        None,
+                        &quote! { false },
+                        Genre::MatchArmGuard,
+                    );
+                });
 
-        syn::visit::visit_expr_match(self, i);
+            syn::visit::visit_expr_match(v, i);
+        });
     }
 
     fn visit_expr_struct(&mut self, i: &'ast syn::ExprStruct) {
@@ -841,50 +856,52 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
 
-        // Check if this struct has a base (default) expression like `..Default::default()`
-        if let Some(_rest) = &i.rest {
-            // Get the struct type name
-            let struct_name = i.path.to_pretty_string();
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            // Check if this struct has a base (default) expression like `..Default::default()`
+            if let Some(_rest) = &i.rest {
+                // Get the struct type name
+                let struct_name = i.path.to_pretty_string();
 
-            // Generate a mutant for each field by deleting it
-            // We need to include the trailing comma in the span
-            for pair in i.fields.pairs() {
-                let field = pair.value();
-                if let syn::Member::Named(field_name) = &field.member {
-                    let field_name_str = field_name.to_string();
-                    // Span includes the field and its trailing comma (if present)
-                    let span = if let Some(comma) = pair.punct() {
-                        // Include the comma in the span
-                        let field_span = field.span();
-                        let comma_span = comma.span();
-                        Span {
-                            start: field_span.start().into(),
-                            end: comma_span.end().into(),
+                // Generate a mutant for each field by deleting it
+                // We need to include the trailing comma in the span
+                for pair in i.fields.pairs() {
+                    let field = pair.value();
+                    if let syn::Member::Named(field_name) = &field.member {
+                        let field_name_str = field_name.to_string();
+                        // Span includes the field and its trailing comma (if present)
+                        let span = if let Some(comma) = pair.punct() {
+                            // Include the comma in the span
+                            let field_span = field.span();
+                            let comma_span = comma.span();
+                            Span {
+                                start: field_span.start().into(),
+                                end: comma_span.end().into(),
+                            }
+                        } else {
+                            // No comma, just the field
+                            field.span().into()
+                        };
+                        let mutant = Mutant::new_discovered(
+                            v.source_file.clone(),
+                            v.fn_stack.last().cloned(),
+                            span,
+                            None,
+                            String::new(),
+                            Genre::StructField,
+                            Some(MutationTarget::StructLiteralField {
+                                field_name: field_name_str,
+                                struct_name: struct_name.clone(),
+                            }),
+                        );
+                        if !v.excluded_by_attr_re(&mutant.name) {
+                            v.mutants.push(mutant);
                         }
-                    } else {
-                        // No comma, just the field
-                        field.span().into()
-                    };
-                    let mutant = Mutant::new_discovered(
-                        self.source_file.clone(),
-                        self.fn_stack.last().cloned(),
-                        span,
-                        None,
-                        String::new(),
-                        Genre::StructField,
-                        Some(MutationTarget::StructLiteralField {
-                            field_name: field_name_str,
-                            struct_name: struct_name.clone(),
-                        }),
-                    );
-                    if !self.excluded_by_attr_re(&mutant.name) {
-                        self.mutants.push(mutant);
                     }
                 }
             }
-        }
 
-        syn::visit::visit_expr_struct(self, i);
+            syn::visit::visit_expr_struct(v, i);
+        });
     }
 }
 
@@ -1217,6 +1234,13 @@ mod test {
     use crate::workspace::{PackageFilter, Workspace};
 
     use super::*;
+
+    mod exclude_re_expr_call;
+    mod exclude_re_expr_common;
+    mod exclude_re_expr_match;
+    mod exclude_re_expr_method_call;
+    mod exclude_re_expr_struct;
+    mod exclude_re_expr_unary;
 
     #[test]
     fn path_ends_with() {
