@@ -1950,10 +1950,8 @@ mod test {
         )
         .unwrap();
         let names_with: Vec<String> = mutants_with_attr.iter().map(|m| m.name(false)).collect();
-        let names_without: Vec<String> = mutants_without_attr
-            .iter()
-            .map(|m| m.name(false))
-            .collect();
+        let names_without: Vec<String> =
+            mutants_without_attr.iter().map(|m| m.name(false)).collect();
         assert_eq!(
             names_with, names_without,
             "exclude_re pattern that matches no mutants should produce the \

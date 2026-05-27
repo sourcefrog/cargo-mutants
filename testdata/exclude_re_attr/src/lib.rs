@@ -3,6 +3,10 @@
 //! This tests that specific mutations can be excluded by regex while
 //! keeping other mutations active on the same function.
 
+/// Sub-module that uses a file-scoped inner `#![mutants::exclude_re(...)]`
+/// attribute to filter mutations across the entire file.
+pub mod file_scoped;
+
 /// This function has an exclude_re that filters out the "with 0" FnValue
 /// mutation but keeps "with 1", "with -1", and the binary operator mutations.
 /// Filtered: "replace add_numbers -> i32 with 0"
@@ -151,5 +155,11 @@ mod tests {
         assert_eq!(c.count(), 3);
         assert!(c.is_ok());
         assert_eq!(c.add(2, 3), 5);
+    }
+
+    #[test]
+    fn test_file_scoped() {
+        assert!(file_scoped::always_true());
+        assert_eq!(file_scoped::add_three(2), 5);
     }
 }
