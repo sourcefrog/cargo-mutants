@@ -64,19 +64,41 @@ mod test {
   (`foo(...)`), method-call (`x.foo(...)`), and unary expressions (`!x`,
   `-x`) — applies to the expression and everything nested inside it.
 
-> **Caveat:** attributes on expressions are not supported on the stable
-> Rust toolchain. As a workaround, you can use the form
-> `#[cfg_attr(any(), mutants::skip)]`, which "hides" the attribute from
-> the compiler but keeps it visible to cargo-mutants. This works even on
-> stable Rust. The empty `any()` cfg predicate is built into rustc and
-> always evaluates to false, so the inner attribute is never expanded.
-> For example:
->
-> ```rust,ignore
-> fn frobnicate(x: i32) -> i32 {
->     #[cfg_attr(any(), mutants::skip)]
->     {
->         x + 1
->     }
-> }
-> ```
+## Hiding the attribute from rustc with `cfg_attr(any(), ...)`
+
+Some uses of `#[mutants::skip]` are inconvenient or impossible to apply
+directly:
+
+- Stable Rust does not accept custom proc-macro attributes on
+  expressions; placing `#[mutants::skip]` directly on a block or other
+  expression only compiles on nightly (it requires the unstable
+  `stmt_expr_attributes` and `proc_macro_hygiene` features).
+- You may not want a crate-wide dependency on the `mutants` crate just
+  to suppress a few mutants.
+
+For both cases, wrap the attribute in a `cfg_attr` whose condition is
+always false:
+
+```rust,ignore
+fn frobnicate(x: i32) -> i32 {
+    #[cfg_attr(any(), mutants::skip)]
+    {
+        x + 1
+    }
+}
+```
+
+`any()` is built into rustc and, with no operands, always evaluates to
+false. The compiler therefore strips the whole `cfg_attr` away and never
+expands the inner `mutants::skip` proc-macro attribute. cargo-mutants
+parses the source independently and still recognises the inner
+`mutants::skip` directive and applies the suppression.
+
+Because the inner attribute is never expanded, code that only uses the
+`cfg_attr(any(), ...)` form **does not need a dependency on the
+`mutants` crate at all**. (A direct `#[mutants::skip]` does still need
+the dependency so that rustc can resolve the attribute path.)
+
+Using `any()` rather than a made-up cfg name (such as `cfg(mutants)` or
+`cfg(never)`) also avoids the `unexpected_cfgs` lint that rustc emits
+for cfg names it does not know about.
