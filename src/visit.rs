@@ -751,6 +751,23 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
         syn::visit::visit_expr_struct(self, i);
     }
+
+    /// Visit a block expression, e.g. `{ ... }` used as a statement or as the
+    /// right-hand side of `let x = { ... };`.
+    ///
+    /// An outer `#[mutants::skip]` attribute attached to the block (in either
+    /// position) suppresses mutants generated for every expression inside the
+    /// block. `Block` itself carries no attributes — they live on the enclosing
+    /// `ExprBlock`, which is what this handler inspects.
+    fn visit_expr_block(&mut self, i: &'ast syn::ExprBlock) {
+        let _span = trace_span!("expr_block", line = i.span().start().line).entered();
+        trace!("visit block expression");
+        if attrs_excluded(&i.attrs) {
+            trace!("block excluded by attrs");
+            return;
+        }
+        syn::visit::visit_expr_block(self, i);
+    }
 }
 
 // Get the span of the block excluding the braces, or None if it is empty.
@@ -917,7 +934,9 @@ fn path_ends_with(path: &syn::Path, ident: &str) -> bool {
 
 /// True if the attribute contains `mutants::skip`.
 ///
-/// This for example returns true for `#[mutants::skip]` or `#[cfg_attr(test, mutants::skip)]`.
+/// This for example returns true for `#[mutants::skip]`,
+/// `#[cfg_attr(test, mutants::skip)]`, or
+/// `#[cfg_attr(any(), mutants::skip)]`.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     if path_is(attr.path(), &["mutants", "skip"]) {
         return true;
@@ -929,6 +948,16 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     if let Err(err) = attr.parse_nested_meta(|meta| {
         if path_is(&meta.path, &["mutants", "skip"]) {
             skip = true;
+        } else if meta.input.peek(syn::token::Paren) {
+            // Function-style cfg predicate like `any(...)`, `all(...)`, `not(...)`.
+            // We don't evaluate the predicate; just consume and discard its contents
+            // so parse_nested_meta can advance to the next item.
+            let content;
+            let _ = syn::parenthesized!(content in meta.input);
+            let _: proc_macro2::TokenStream = content.parse()?;
+        } else if meta.input.peek(syn::Token![=]) {
+            // `name = "value"` form (e.g. `target_os = "linux"`); consume the value.
+            let _: syn::Expr = meta.value()?.parse()?;
         }
         Ok(())
     }) {
@@ -984,6 +1013,7 @@ mod test {
     use super::*;
 
     mod skip_attr_cfg_attr;
+    mod skip_attr_expr_block;
     mod skip_attr_expr_call;
     mod skip_attr_expr_match;
     mod skip_attr_expr_method_call;

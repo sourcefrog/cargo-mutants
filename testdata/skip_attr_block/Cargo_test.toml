@@ -1,0 +1,11 @@
+[package]
+name = "cargo-mutants-testdata-skip-attr-block"
+version = "0.1.0"
+edition = "2018"
+publish = false
+
+# No dependency on the `mutants` crate is needed: the proc-macro is
+# wrapped in `cfg_attr(any(), ...)` and is therefore never expanded.
+
+[lib]
+doctest = false

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed.
+
 - New: mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
 
 - Docs: Clarify that `#[mutants::skip]` is honoured at every scope where attributes can be placed, not only on functions: `impl` blocks, `trait` declarations, modules, files (as `#![mutants::skip]`), and expressions that can carry an outer attribute. Only the documentation was misleading; the behaviour is unchanged.

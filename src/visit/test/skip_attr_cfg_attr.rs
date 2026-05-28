@@ -71,3 +71,77 @@ fn cfg_attr_mutants_skip_on_mod_suppresses_inner_items() {
         "sibling function outside the mod should still produce mutants: {names:?}"
     );
 }
+
+/// Function-style cfg predicates like `any(...)`, `all(...)`, and `not(...)`
+/// inside `cfg_attr` must still be recognised as carrying a `mutants::skip`
+/// directive. `cfg_attr(any(), ...)` is the recommended stable-Rust
+/// workaround for skipping expression-position mutants because the empty
+/// `any()` evaluates to false at compile time, so rustc never expands the
+/// inner attribute.
+#[test]
+fn cfg_attr_with_any_predicate_is_recognised_as_mutants_skip() {
+    let mutants = mutate_source_str(
+        indoc! {r#"
+            #[cfg_attr(any(), mutants::skip)]
+            fn add(a: i32, b: i32) -> i32 {
+                a + b
+            }
+
+            fn outside(a: i32, b: i32) -> i32 {
+                a * b
+            }
+        "#},
+        &Options::default(),
+    )
+    .unwrap();
+    let names: Vec<String> = mutants.iter().map(|m| m.name(false)).collect();
+
+    assert!(
+        !names.iter().any(|n| n.contains("add")),
+        "cfg_attr(any(), mutants::skip) should suppress mutants on the fn: {names:?}"
+    );
+    assert!(
+        names.iter().any(|n| n.contains("outside")),
+        "sibling function should still produce mutants: {names:?}"
+    );
+}
+
+#[test]
+fn cfg_attr_with_not_all_predicate_is_recognised_as_mutants_skip() {
+    let mutants = mutate_source_str(
+        indoc! {r#"
+            #[cfg_attr(not(all()), mutants::skip)]
+            fn add(a: i32, b: i32) -> i32 {
+                a + b
+            }
+        "#},
+        &Options::default(),
+    )
+    .unwrap();
+    let names: Vec<String> = mutants.iter().map(|m| m.name(false)).collect();
+
+    assert!(
+        !names.iter().any(|n| n.contains("add")),
+        "cfg_attr(not(all()), mutants::skip) should suppress mutants on the fn: {names:?}"
+    );
+}
+
+#[test]
+fn cfg_attr_with_name_value_predicate_is_recognised_as_mutants_skip() {
+    let mutants = mutate_source_str(
+        indoc! {r#"
+            #[cfg_attr(target_os = "linux", mutants::skip)]
+            fn add(a: i32, b: i32) -> i32 {
+                a + b
+            }
+        "#},
+        &Options::default(),
+    )
+    .unwrap();
+    let names: Vec<String> = mutants.iter().map(|m| m.name(false)).collect();
+
+    assert!(
+        !names.iter().any(|n| n.contains("add")),
+        "cfg_attr(name = \"value\", mutants::skip) should suppress mutants on the fn: {names:?}"
+    );
+}

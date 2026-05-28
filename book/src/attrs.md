@@ -60,6 +60,45 @@ mod test {
 - **`mod` blocks** — applies to all items within the module.
 - **Files** (as an inner attribute `#![mutants::skip]`) — applies to the entire file.
 - **Expressions** that can syntactically carry an outer attribute, including
-  `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
-  (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the
-  expression and everything nested inside it.
+  block (`{ ... }`), `match`, struct literal (`Foo { ... }`), call
+  (`foo(...)`), method-call (`x.foo(...)`), and unary expressions (`!x`,
+  `-x`) — applies to the expression and everything nested inside it.
+
+## Hiding the attribute from rustc with `cfg_attr(any(), ...)`
+
+Some uses of `#[mutants::skip]` are inconvenient or impossible to apply
+directly:
+
+- Stable Rust does not accept custom proc-macro attributes on
+  expressions; placing `#[mutants::skip]` directly on a block or other
+  expression only compiles on nightly (it requires the unstable
+  `stmt_expr_attributes` and `proc_macro_hygiene` features).
+- You may not want a crate-wide dependency on the `mutants` crate just
+  to suppress a few mutants.
+
+For both cases, wrap the attribute in a `cfg_attr` whose condition is
+always false:
+
+```rust,ignore
+fn frobnicate(x: i32) -> i32 {
+    #[cfg_attr(any(), mutants::skip)]
+    {
+        x + 1
+    }
+}
+```
+
+`any()` is built into rustc and, with no operands, always evaluates to
+false. The compiler therefore strips the whole `cfg_attr` away and never
+expands the inner `mutants::skip` proc-macro attribute. cargo-mutants
+parses the source independently and still recognises the inner
+`mutants::skip` directive and applies the suppression.
+
+Because the inner attribute is never expanded, code that only uses the
+`cfg_attr(any(), ...)` form **does not need a dependency on the
+`mutants` crate at all**. (A direct `#[mutants::skip]` does still need
+the dependency so that rustc can resolve the attribute path.)
+
+Using `any()` rather than a made-up cfg name (such as `cfg(mutants)` or
+`cfg(never)`) also avoids the `unexpected_cfgs` lint that rustc emits
+for cfg names it does not know about.
