@@ -5,9 +5,9 @@
 //! On stable Rust, custom (proc-macro) attributes on expressions and
 //! block expressions are gated behind the unstable `stmt_expr_attributes`
 //! and `proc_macro_hygiene` features. To keep this testdata compilable on
-//! stable, we use the `#[cfg_attr(mutants, mutants::skip)]` wrapping: the
-//! `mutants` cfg is never set during normal builds or `cargo check
-//! --tests`, so rustc strips the `cfg_attr` to nothing and never sees the
+//! stable, we use the `#[cfg_attr(any(), mutants::skip)]` wrapping: the
+//! built-in `any()` cfg predicate with no operands evaluates to false at
+//! compile time, so rustc strips the whole `cfg_attr` and never sees the
 //! inner `mutants::skip` proc-macro attribute. cargo-mutants still
 //! recognises it via `visit::attr_is_mutants_skip` and applies the
 //! suppression. The unit tests under
@@ -21,7 +21,7 @@
 /// as usual.
 pub fn statement_position(a: i32, b: i32, c: i32, d: i32) -> i32 {
     let mut total = 0;
-    #[cfg_attr(mutants, mutants::skip)]
+    #[cfg_attr(any(), mutants::skip)]
     {
         total += a + b;
     }
@@ -35,7 +35,7 @@ pub fn statement_position(a: i32, b: i32, c: i32, d: i32) -> i32 {
 /// produce no mutants.
 pub fn tail_block(a: i32, b: i32, c: i32) -> i32 {
     let _ = 0;
-    #[cfg_attr(mutants, mutants::skip)]
+    #[cfg_attr(any(), mutants::skip)]
     {
         if a > b {
             a + b
@@ -51,7 +51,7 @@ pub fn tail_block(a: i32, b: i32, c: i32) -> i32 {
 /// Every operator inside the annotated block — `>`, `+`, `-` — must
 /// produce no mutants.
 pub fn labeled_block(a: i32, b: i32, c: i32) -> i32 {
-    #[cfg_attr(mutants, mutants::skip)]
+    #[cfg_attr(any(), mutants::skip)]
     'block: {
         if a > b {
             break 'block a + b;

@@ -66,13 +66,15 @@ mod test {
 
 > **Caveat:** attributes on expressions are not supported on the stable
 > Rust toolchain. As a workaround, you can use the form
-> `#[cfg_attr(mutants, mutants::skip)]`, which "hides" the attribute from
+> `#[cfg_attr(any(), mutants::skip)]`, which "hides" the attribute from
 > the compiler but keeps it visible to cargo-mutants. This works even on
-> stable Rust. For example:
+> stable Rust. The empty `any()` cfg predicate is built into rustc and
+> always evaluates to false, so the inner attribute is never expanded.
+> For example:
 >
 > ```rust,ignore
 > fn frobnicate(x: i32) -> i32 {
->     #[cfg_attr(mutants, mutants::skip)]
+>     #[cfg_attr(any(), mutants::skip)]
 >     {
 >         x + 1
 >     }
