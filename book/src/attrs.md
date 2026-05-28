@@ -60,6 +60,6 @@ mod test {
 - **`mod` blocks** — applies to all items within the module.
 - **Files** (as an inner attribute `#![mutants::skip]`) — applies to the entire file.
 - **Expressions** that can syntactically carry an outer attribute, including
-  `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
-  (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the
-  expression and everything nested inside it.
+  block (`{ ... }`), `match`, struct literal (`Foo { ... }`), call
+  (`foo(...)`), method-call (`x.foo(...)`), and unary expressions (`!x`,
+  `-x`) — applies to the expression and everything nested inside it.

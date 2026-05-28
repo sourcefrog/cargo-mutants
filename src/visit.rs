@@ -751,6 +751,23 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
 
         syn::visit::visit_expr_struct(self, i);
     }
+
+    /// Visit a block expression, e.g. `{ ... }` used as a statement or as the
+    /// right-hand side of `let x = { ... };`.
+    ///
+    /// An outer `#[mutants::skip]` attribute attached to the block (in either
+    /// position) suppresses mutants generated for every expression inside the
+    /// block. `Block` itself carries no attributes — they live on the enclosing
+    /// `ExprBlock`, which is what this handler inspects.
+    fn visit_expr_block(&mut self, i: &'ast syn::ExprBlock) {
+        let _span = trace_span!("expr_block", line = i.span().start().line).entered();
+        trace!("visit block expression");
+        if attrs_excluded(&i.attrs) {
+            trace!("block excluded by attrs");
+            return;
+        }
+        syn::visit::visit_expr_block(self, i);
+    }
 }
 
 // Get the span of the block excluding the braces, or None if it is empty.
@@ -984,6 +1001,7 @@ mod test {
     use super::*;
 
     mod skip_attr_cfg_attr;
+    mod skip_attr_expr_block;
     mod skip_attr_expr_call;
     mod skip_attr_expr_match;
     mod skip_attr_expr_method_call;
