@@ -63,3 +63,18 @@ mod test {
   block (`{ ... }`), `match`, struct literal (`Foo { ... }`), call
   (`foo(...)`), method-call (`x.foo(...)`), and unary expressions (`!x`,
   `-x`) — applies to the expression and everything nested inside it.
+
+> **Caveat:** attributes on expressions are not supported on the stable
+> Rust toolchain. As a workaround, you can use the form
+> `#[cfg_attr(mutants, mutants::skip)]`, which "hides" the attribute from
+> the compiler but keeps it visible to cargo-mutants. This works even on
+> stable Rust. For example:
+>
+> ```rust,ignore
+> fn frobnicate(x: i32) -> i32 {
+>     #[cfg_attr(mutants, mutants::skip)]
+>     {
+>         x + 1
+>     }
+> }
+> ```

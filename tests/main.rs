@@ -2629,6 +2629,70 @@ fn check_tree_with_mutants_skip() {
     );
 }
 
+/// `#[mutants::skip]` placed on a block expression inside a function body
+/// must suppress every mutant generated for code inside that block.
+///
+/// The `skip_attr_block` tree pairs each annotated block with un-annotated
+/// surrounding code, so the absence of mutants from the annotated lines and
+/// their presence on the un-annotated lines is the actual assertion. We use
+/// `--check` so the listed mutants are also confirmed to compile on stable,
+/// ruling out regressions where suppression accidentally rewrites the source.
+///
+/// The tree uses the `#[cfg_attr(mutants, mutants::skip)]` form because
+/// stable Rust does not accept custom proc-macro attributes on expressions;
+/// see the testdata's README for details. The direct `#[mutants::skip]` form
+/// is covered by unit tests in `src/visit/test/skip_attr_expr_block.rs`.
+#[test]
+fn check_tree_with_skip_attr_on_block_expressions() {
+    let tmp_src_dir = copy_of_testdata("skip_attr_block");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(indoc! { r"
+            Found 22 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:23:5: replace statement_position -> i32 with 0
+            ok       src/lib.rs:23:5: replace statement_position -> i32 with 1
+            ok       src/lib.rs:23:5: replace statement_position -> i32 with -1
+            ok       src/lib.rs:28:11: replace + with - in statement_position
+            ok       src/lib.rs:28:11: replace + with * in statement_position
+            ok       src/lib.rs:28:16: replace - with + in statement_position
+            ok       src/lib.rs:28:16: replace - with / in statement_position
+            ok       src/lib.rs:37:5: replace tail_block -> i32 with 0
+            ok       src/lib.rs:37:5: replace tail_block -> i32 with 1
+            ok       src/lib.rs:37:5: replace tail_block -> i32 with -1
+            ok       src/lib.rs:54:5: replace labeled_block -> i32 with 0
+            ok       src/lib.rs:54:5: replace labeled_block -> i32 with 1
+            ok       src/lib.rs:54:5: replace labeled_block -> i32 with -1
+            ok       src/lib.rs:69:5: replace unannotated_sibling -> i32 with 0
+            ok       src/lib.rs:69:5: replace unannotated_sibling -> i32 with 1
+            ok       src/lib.rs:69:5: replace unannotated_sibling -> i32 with -1
+            ok       src/lib.rs:69:17: replace * with + in unannotated_sibling
+            ok       src/lib.rs:69:17: replace * with / in unannotated_sibling
+            ok       src/lib.rs:70:17: replace / with % in unannotated_sibling
+            ok       src/lib.rs:70:17: replace / with * in unannotated_sibling
+            ok       src/lib.rs:71:7: replace | with & in unannotated_sibling
+            ok       src/lib.rs:71:7: replace | with ^ in unannotated_sibling
+            22 mutants tested: 22 succeeded
+            "})
+        .stderr("");
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 22,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 22,
+        })
+    );
+}
+
 #[test]
 fn check_tree_where_build_fails() {
     let tmp_src_dir = copy_of_testdata("typecheck_fails");
