@@ -39,33 +39,33 @@ pub fn fix_manifest(manifest_scratch_path: &Utf8Path, source_dir: &Utf8Path) -> 
 fn fix_manifest_toml(
     manifest_toml: &str,
     manifest_source_dir: &Utf8Path,
-) -> Result<Option<toml::Value>> {
-    let mut value: toml::Value = manifest_toml.parse().context("parse manifest")?;
-    let orig_value = value.clone();
-    if let Some(top_table) = value.as_table_mut() {
-        if let Some(dependencies) = top_table.get_mut("dependencies") {
+) -> Result<Option<toml::Table>> {
+    let mut top_table = manifest_toml
+        .parse::<toml::Table>()
+        .context("parse manifest")?;
+    let original_top_table = top_table.clone();
+    if let Some(dependencies) = top_table.get_mut("dependencies") {
+        fix_dependency_table(dependencies, manifest_source_dir);
+    }
+    if let Some(replace) = top_table.get_mut("replace") {
+        // The replace section is a table from package name/version to a
+        // table which might include a `path` key. (The keys are not exactly
+        // package names but it doesn't matter.)
+        // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section>
+        fix_dependency_table(replace, manifest_source_dir);
+    }
+    if let Some(patch_table) = top_table.get_mut("patch").and_then(|p| p.as_table_mut()) {
+        // The keys of the patch table are registry names or source URLs;
+        // the values are like dependency tables.
+        // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section>
+        for (_name, dependencies) in patch_table {
             fix_dependency_table(dependencies, manifest_source_dir);
         }
-        if let Some(replace) = top_table.get_mut("replace") {
-            // The replace section is a table from package name/version to a
-            // table which might include a `path` key. (The keys are not exactly
-            // package names but it doesn't matter.)
-            // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-replace-section>
-            fix_dependency_table(replace, manifest_source_dir);
-        }
-        if let Some(patch_table) = top_table.get_mut("patch").and_then(|p| p.as_table_mut()) {
-            // The keys of the patch table are registry names or source URLs;
-            // the values are like dependency tables.
-            // <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section>
-            for (_name, dependencies) in patch_table {
-                fix_dependency_table(dependencies, manifest_source_dir);
-            }
-        }
     }
-    if value == orig_value {
+    if top_table == original_top_table {
         Ok(None)
     } else {
-        Ok(Some(value))
+        Ok(Some(top_table))
     }
 }
 
@@ -119,9 +119,11 @@ pub fn fix_cargo_config(build_path: &Utf8Path, source_path: &Utf8Path) -> Result
 ///
 /// See <https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html?search=#paths-overrides>.
 fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Option<String>> {
-    let mut value: toml::Value = config_toml.parse().context("parse config.toml")?;
+    let mut top_table = config_toml
+        .parse::<toml::Table>()
+        .context("parse config.toml")?;
     let mut changed = false;
-    if let Some(paths) = value.get_mut("paths").and_then(|p| p.as_array_mut()) {
+    if let Some(paths) = top_table.get_mut("paths").and_then(|p| p.as_array_mut()) {
         for path_value in paths {
             if let Some(path_str) = path_value.as_str()
                 && let Some(new_path) = fix_path(path_str, source_dir)
@@ -132,7 +134,7 @@ fn fix_cargo_config_toml(config_toml: &str, source_dir: &Utf8Path) -> Result<Opt
         }
     }
     if changed {
-        Ok(Some(toml::to_string_pretty(&value)?))
+        Ok(Some(toml::to_string_pretty(&top_table)?))
     } else {
         Ok(None)
     }
@@ -211,6 +213,46 @@ mod test {
         assert_eq!(
             fixed["dependencies"]["wibble"]["path"].as_str().unwrap(),
             Utf8Path::new("/home/user/src/foo/../wibble")
+        );
+    }
+
+    #[test]
+    fn fix_manifest_toml_supports_multiline_inline_table_dependencies() {
+        let manifest_toml = indoc! { r#"
+            [package]
+            name = "demo"
+            version = "0.1.0"
+
+            [dependencies]
+            axum-extra = {
+                version = "0.12.5",
+                features = ["typed-header"],
+                path = "../axum-extra",
+            }
+        "# };
+        let orig_path = Utf8Path::new("/home/user/src/foo");
+        let fixed = fix_manifest_toml(manifest_toml, orig_path)
+            .unwrap()
+            .expect("toml was modified");
+
+        assert_eq!(
+            fixed["dependencies"]["axum-extra"]["version"].as_str(),
+            Some("0.12.5")
+        );
+        assert_eq!(
+            fixed["dependencies"]["axum-extra"]["features"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|value| value.as_str())
+                .collect::<Vec<_>>(),
+            [Some("typed-header")]
+        );
+        assert_eq!(
+            fixed["dependencies"]["axum-extra"]["path"]
+                .as_str()
+                .unwrap(),
+            Utf8Path::new("/home/user/src/foo/../axum-extra")
         );
     }
 
