@@ -4,9 +4,12 @@
 
 - New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed. Note that custom proc-macro attributes on expressions require a nightly Rust toolchain (`stmt_expr_attributes` and `proc_macro_hygiene` feature gates).
 
-- New: mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
+- Fixed: Support the new TOML 1.1 syntax that's supported by Cargo in Rust 1.94. Thanks to @Coruscant11.
+
+- New: Mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
 
 - Docs: Clarify that `#[mutants::skip]` is honoured at every scope where attributes can be placed, not only on functions: `impl` blocks, `trait` declarations, modules, files (as `#![mutants::skip]`), and expressions that can carry an outer attribute. Only the documentation was misleading; the behaviour is unchanged.
+
 - Fixed: Set the mtime on files copied using reflinks to the scratch directory, so that they're not deleted prematurely by tools that delete old files from `/tmp`.
 
 ## 27.0.0
