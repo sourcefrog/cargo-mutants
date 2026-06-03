@@ -72,14 +72,16 @@ fn cfg_attr_mutants_skip_on_mod_suppresses_inner_items() {
     );
 }
 
-/// Function-style cfg predicates like `any(...)`, `all(...)`, and `not(...)`
-/// inside `cfg_attr` must still be recognised as carrying a `mutants::skip`
-/// directive. `cfg_attr(any(), ...)` is the recommended stable-Rust
-/// workaround for skipping expression-position mutants because the empty
-/// `any()` evaluates to false at compile time, so rustc never expands the
-/// inner attribute.
+// The tests below pin the implementation detail that `attr_is_mutants_skip`
+// ignores the cfg condition for *every* shape of `cfg_attr` predicate, not
+// just plain identifiers like `test`. This keeps the behavior consistent
+// regardless of how the user spells the condition. It is not a public
+// guarantee — `book/src/attrs.md` deliberately does not promise that the
+// condition is ignored — but the consistency matters internally because a
+// silently-dropped `mutants::skip` would be very surprising.
+
 #[test]
-fn cfg_attr_with_any_predicate_is_recognised_as_mutants_skip() {
+fn cfg_attr_with_function_style_predicate_still_treats_mutants_skip_as_skip() {
     let mutants = mutate_source_str(
         indoc! {r#"
             #[cfg_attr(any(), mutants::skip)]
@@ -98,7 +100,7 @@ fn cfg_attr_with_any_predicate_is_recognised_as_mutants_skip() {
 
     assert!(
         !names.iter().any(|n| n.contains("add")),
-        "cfg_attr(any(), mutants::skip) should suppress mutants on the fn: {names:?}"
+        "cfg_attr with a function-style predicate must still be recognised as carrying mutants::skip: {names:?}"
     );
     assert!(
         names.iter().any(|n| n.contains("outside")),
@@ -107,7 +109,7 @@ fn cfg_attr_with_any_predicate_is_recognised_as_mutants_skip() {
 }
 
 #[test]
-fn cfg_attr_with_not_all_predicate_is_recognised_as_mutants_skip() {
+fn cfg_attr_with_nested_function_style_predicate_still_treats_mutants_skip_as_skip() {
     let mutants = mutate_source_str(
         indoc! {r#"
             #[cfg_attr(not(all()), mutants::skip)]
@@ -122,12 +124,12 @@ fn cfg_attr_with_not_all_predicate_is_recognised_as_mutants_skip() {
 
     assert!(
         !names.iter().any(|n| n.contains("add")),
-        "cfg_attr(not(all()), mutants::skip) should suppress mutants on the fn: {names:?}"
+        "cfg_attr with a nested function-style predicate must still be recognised as carrying mutants::skip: {names:?}"
     );
 }
 
 #[test]
-fn cfg_attr_with_name_value_predicate_is_recognised_as_mutants_skip() {
+fn cfg_attr_with_name_value_predicate_still_treats_mutants_skip_as_skip() {
     let mutants = mutate_source_str(
         indoc! {r#"
             #[cfg_attr(target_os = "linux", mutants::skip)]
@@ -142,6 +144,6 @@ fn cfg_attr_with_name_value_predicate_is_recognised_as_mutants_skip() {
 
     assert!(
         !names.iter().any(|n| n.contains("add")),
-        "cfg_attr(name = \"value\", mutants::skip) should suppress mutants on the fn: {names:?}"
+        "cfg_attr with a name = value predicate must still be recognised as carrying mutants::skip: {names:?}"
     );
 }

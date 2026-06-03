@@ -131,6 +131,19 @@ lto = "thin"
 inherits = "test"
 debug = "none"
 
+# Custom cfgs used by the test suite. Listing them here suppresses the
+# `unexpected_cfgs` lint warning when the cfg is not set.
+#
+# `mutants_nightly` — opts into integration tests that exercise nightly-only
+# syntax in their testdata trees (for example `#[mutants::skip]` placed
+# directly on an expression). Set by running:
+#
+#     cargo +nightly test --config 'build.rustflags=["--cfg=mutants_nightly"]'
+#
+# See AGENTS.md for details.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(mutants_nightly)'] }
+
 # Config for <https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md>
 [workspace.metadata.release]
 pre-release-replacements = [

@@ -934,9 +934,13 @@ fn path_ends_with(path: &syn::Path, ident: &str) -> bool {
 
 /// True if the attribute contains `mutants::skip`.
 ///
-/// This for example returns true for `#[mutants::skip]`,
-/// `#[cfg_attr(test, mutants::skip)]`, or
-/// `#[cfg_attr(any(), mutants::skip)]`.
+/// This for example returns true for `#[mutants::skip]` or for
+/// `#[cfg_attr(<cond>, mutants::skip)]` regardless of what `<cond>` is —
+/// cargo-mutants does not evaluate the cfg condition, so any predicate
+/// shape (a plain ident like `test`, a function-style predicate like
+/// `any()`/`not(...)`, or a `name = "value"` form) is treated the same.
+/// This is an implementation detail, not a public guarantee; see
+/// `book/src/attrs.md` for what we actually promise to users.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     if path_is(attr.path(), &["mutants", "skip"]) {
         return true;
@@ -950,8 +954,8 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
             skip = true;
         } else if meta.input.peek(syn::token::Paren) {
             // Function-style cfg predicate like `any(...)`, `all(...)`, `not(...)`.
-            // We don't evaluate the predicate; just consume and discard its contents
-            // so parse_nested_meta can advance to the next item.
+            // We don't evaluate the predicate; just consume and discard its
+            // contents so parse_nested_meta can advance to the next item.
             let content;
             let _ = syn::parenthesized!(content in meta.input);
             let _: proc_macro2::TokenStream = content.parse()?;

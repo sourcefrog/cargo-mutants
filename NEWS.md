@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed.
+- New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed. Note that custom proc-macro attributes on expressions require a nightly Rust toolchain (`stmt_expr_attributes` and `proc_macro_hygiene` feature gates).
 
 - New: mutate `NonZero<T>` into `1`, and also `-1` when `T` is or may be signed.
 

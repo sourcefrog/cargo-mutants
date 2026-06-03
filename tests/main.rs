@@ -2635,48 +2635,64 @@ fn check_tree_with_mutants_skip() {
 /// The `skip_attr_block` tree pairs each annotated block with un-annotated
 /// surrounding code, so the absence of mutants from the annotated lines and
 /// their presence on the un-annotated lines is the actual assertion. We use
-/// `--check` so the listed mutants are also confirmed to compile on stable,
-/// ruling out regressions where suppression accidentally rewrites the source.
+/// `--check` so the listed mutants are also confirmed to compile, ruling
+/// out regressions where suppression accidentally rewrites the source.
 ///
-/// The tree uses the `#[cfg_attr(mutants, mutants::skip)]` form because
-/// stable Rust does not accept custom proc-macro attributes on expressions;
-/// see the testdata's README for details. The direct `#[mutants::skip]` form
-/// is covered by unit tests in `src/visit/test/skip_attr_expr_block.rs`.
+/// Custom proc-macro attributes on expressions are nightly-only on rustc,
+/// so the testdata uses `#![cfg_attr(mutants_nightly, feature(...))]` to
+/// enable the required feature gates and this test is `#[ignore]`d unless
+/// `mutants_nightly` is set. To run it, build the test binary with:
+///
+/// ```text
+/// cargo +nightly test --config 'build.rustflags=["--cfg=mutants_nightly"]' \
+///     check_tree_with_skip_attr_on_block_expressions
+/// ```
+///
+/// The cfg is forwarded to the cargo-mutants subprocess (and therefore to
+/// the testdata's `cargo check --tests` invocation) via `RUSTFLAGS`. The
+/// direct `#[mutants::skip]` form is additionally covered by unit tests in
+/// `src/visit/test/skip_attr_expr_block.rs`, which only parse the source
+/// through syn and so work on stable.
 #[test]
+#[cfg_attr(
+    not(mutants_nightly),
+    ignore = "requires --cfg=mutants_nightly and a nightly toolchain; see test docs"
+)]
 fn check_tree_with_skip_attr_on_block_expressions() {
     let tmp_src_dir = copy_of_testdata("skip_attr_block");
     run()
         .arg("mutants")
         .args(["--check", "--no-times", "--no-shuffle"])
         .current_dir(tmp_src_dir.path())
+        .env("RUSTFLAGS", "--cfg=mutants_nightly")
         .env_remove("RUST_BACKTRACE")
         .assert()
         .success()
         .stdout(indoc! { r"
             Found 22 mutants to test
             ok       Unmutated baseline
-            ok       src/lib.rs:23:5: replace statement_position -> i32 with 0
-            ok       src/lib.rs:23:5: replace statement_position -> i32 with 1
-            ok       src/lib.rs:23:5: replace statement_position -> i32 with -1
-            ok       src/lib.rs:28:11: replace + with - in statement_position
-            ok       src/lib.rs:28:11: replace + with * in statement_position
-            ok       src/lib.rs:28:16: replace - with + in statement_position
-            ok       src/lib.rs:28:16: replace - with / in statement_position
-            ok       src/lib.rs:37:5: replace tail_block -> i32 with 0
-            ok       src/lib.rs:37:5: replace tail_block -> i32 with 1
-            ok       src/lib.rs:37:5: replace tail_block -> i32 with -1
-            ok       src/lib.rs:54:5: replace labeled_block -> i32 with 0
-            ok       src/lib.rs:54:5: replace labeled_block -> i32 with 1
-            ok       src/lib.rs:54:5: replace labeled_block -> i32 with -1
-            ok       src/lib.rs:69:5: replace unannotated_sibling -> i32 with 0
-            ok       src/lib.rs:69:5: replace unannotated_sibling -> i32 with 1
-            ok       src/lib.rs:69:5: replace unannotated_sibling -> i32 with -1
-            ok       src/lib.rs:69:17: replace * with + in unannotated_sibling
-            ok       src/lib.rs:69:17: replace * with / in unannotated_sibling
-            ok       src/lib.rs:70:17: replace / with % in unannotated_sibling
-            ok       src/lib.rs:70:17: replace / with * in unannotated_sibling
-            ok       src/lib.rs:71:7: replace | with & in unannotated_sibling
-            ok       src/lib.rs:71:7: replace | with ^ in unannotated_sibling
+            ok       src/lib.rs:27:5: replace statement_position -> i32 with 0
+            ok       src/lib.rs:27:5: replace statement_position -> i32 with 1
+            ok       src/lib.rs:27:5: replace statement_position -> i32 with -1
+            ok       src/lib.rs:32:11: replace + with - in statement_position
+            ok       src/lib.rs:32:11: replace + with * in statement_position
+            ok       src/lib.rs:32:16: replace - with + in statement_position
+            ok       src/lib.rs:32:16: replace - with / in statement_position
+            ok       src/lib.rs:41:5: replace tail_block -> i32 with 0
+            ok       src/lib.rs:41:5: replace tail_block -> i32 with 1
+            ok       src/lib.rs:41:5: replace tail_block -> i32 with -1
+            ok       src/lib.rs:58:5: replace labeled_block -> i32 with 0
+            ok       src/lib.rs:58:5: replace labeled_block -> i32 with 1
+            ok       src/lib.rs:58:5: replace labeled_block -> i32 with -1
+            ok       src/lib.rs:73:5: replace unannotated_sibling -> i32 with 0
+            ok       src/lib.rs:73:5: replace unannotated_sibling -> i32 with 1
+            ok       src/lib.rs:73:5: replace unannotated_sibling -> i32 with -1
+            ok       src/lib.rs:73:17: replace * with + in unannotated_sibling
+            ok       src/lib.rs:73:17: replace * with / in unannotated_sibling
+            ok       src/lib.rs:74:17: replace / with % in unannotated_sibling
+            ok       src/lib.rs:74:17: replace / with * in unannotated_sibling
+            ok       src/lib.rs:75:7: replace | with & in unannotated_sibling
+            ok       src/lib.rs:75:7: replace | with ^ in unannotated_sibling
             22 mutants tested: 22 succeeded
             "})
         .stderr("");
