@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed. Note that custom proc-macro attributes on expressions require a nightly Rust toolchain (`stmt_expr_attributes` and `proc_macro_hygiene` feature gates).
+- New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed. Note that the `#[mutants::skip]` attribute on expressions requires a nightly Rust toolchain (`stmt_expr_attributes` and `proc_macro_hygiene` feature gates).
 
 - Fixed: Support the new TOML 1.1 syntax that's supported by Cargo in Rust 1.94. Thanks to @Coruscant11.
 
