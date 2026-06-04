@@ -2709,6 +2709,88 @@ fn check_tree_with_skip_attr_on_block_expressions() {
     );
 }
 
+/// `#[mutants::skip]` placed directly on expressions other than block
+/// expressions must suppress every mutant generated inside the annotated
+/// expression, while sibling expressions of the same genre in the same
+/// function are still mutated as usual.
+///
+/// The `skip_attr_expressions` tree pairs an annotated expression of each
+/// supported genre — call, method call, `match`, struct literal and unary —
+/// with an un-annotated sibling expression of the same genre in the same
+/// function. The absence of mutants on the annotated expression's lines and
+/// their presence on the sibling's lines is the actual assertion. We use
+/// `--check` so the listed mutants are also confirmed to compile, ruling
+/// out regressions where suppression accidentally rewrites the source.
+///
+/// Custom proc-macro attributes on expressions and statements are
+/// nightly-only on rustc, so the testdata uses
+/// `#![cfg_attr(mutants_nightly, feature(...))]` to enable the required
+/// feature gates and this test is `#[ignore]`d unless `mutants_nightly`
+/// is set. To run it, build the test binary with:
+///
+/// ```text
+/// cargo +nightly test --config 'build.rustflags=["--cfg=mutants_nightly"]' \
+///     check_tree_with_skip_attr_on_expressions
+/// ```
+///
+/// The cfg is forwarded to the cargo-mutants subprocess (and therefore to
+/// the testdata's `cargo check --tests` invocation) via `RUSTFLAGS`. The
+/// direct `#[mutants::skip]` form is additionally covered by unit tests in
+/// `src/visit/test/skip_attr_expr_*.rs`, which only parse the source
+/// through syn and so work on stable. Block-expression skip has its own
+/// dedicated integration test `check_tree_with_skip_attr_on_block_expressions`.
+#[test]
+#[cfg_attr(
+    not(mutants_nightly),
+    ignore = "requires --cfg=mutants_nightly and a nightly toolchain; see test docs"
+)]
+fn check_tree_with_skip_attr_on_expressions() {
+    let tmp_src_dir = copy_of_testdata("skip_attr_expressions");
+    run()
+        .arg("mutants")
+        .args(["--check", "--no-times", "--no-shuffle"])
+        .current_dir(tmp_src_dir.path())
+        .env("RUSTFLAGS", "--cfg=mutants_nightly")
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .success()
+        .stdout(indoc! { r"
+            Found 18 mutants to test
+            ok       Unmutated baseline
+            ok       src/lib.rs:30:5: replace call_expr with ()
+            ok       src/lib.rs:32:14: replace - with + in call_expr
+            ok       src/lib.rs:32:14: replace - with / in call_expr
+            ok       src/lib.rs:41:5: replace method_call_expr with ()
+            ok       src/lib.rs:43:14: replace - with + in method_call_expr
+            ok       src/lib.rs:43:14: replace - with / in method_call_expr
+            ok       src/lib.rs:52:5: replace match_expr with ()
+            ok       src/lib.rs:59:9: delete match arm 0 in match_expr
+            ok       src/lib.rs:60:14: replace match guard n > y with true in match_expr
+            ok       src/lib.rs:60:14: replace match guard n > y with false in match_expr
+            ok       src/lib.rs:60:16: replace > with == in match_expr
+            ok       src/lib.rs:60:16: replace > with < in match_expr
+            ok       src/lib.rs:60:16: replace > with >= in match_expr
+            ok       src/lib.rs:70:5: replace struct_expr with ()
+            ok       src/lib.rs:77:9: delete field enabled from struct Settings expression in struct_expr
+            ok       src/lib.rs:78:9: delete field count from struct Settings expression in struct_expr
+            ok       src/lib.rs:88:5: replace unary_expr with ()
+            ok       src/lib.rs:89:13: delete ! in unary_expr
+            18 mutants tested: 18 succeeded
+            "})
+        .stderr("");
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "caught": 0,
+            "missed": 0,
+            "success": 18,
+            "timeout": 0,
+            "unviable": 0,
+            "total_mutants": 18,
+        })
+    );
+}
+
 #[test]
 fn check_tree_where_build_fails() {
     let tmp_src_dir = copy_of_testdata("typecheck_fails");
