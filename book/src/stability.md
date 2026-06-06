@@ -20,5 +20,6 @@ In particular the following changes can be expected:
 - Addition of new information to the JSON output files. Removal of existing files or fields will be avoided where possible.
 - Changes to the presentation of mutant names in the console and in JSON.
 - Changes to console output and progress.
+- `cfg` and `cfg_attr` predicates are not currently evaluated: `cfg(windows)` code will still be mutated on Unix, and `cfg_attr(any(), mutants::skip)` will still be skipped. This is [considered to be a bug](https://github.com/sourcefrog/cargo-mutants/issues/50) and will change in future.
 
 As a result of all these, a tree that passes all mutants in one version may fail some in a later version, and vice versa.
