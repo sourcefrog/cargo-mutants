@@ -8,7 +8,7 @@ sibling code so that the expected behavior is unambiguous:
 - `statement_position` — `#[mutants::skip] { ... }` used as a statement.
 - `tail_block` — `#[mutants::skip] { ... }` used as the function's tail
   expression.
-- `labeled_block` — `#[mutants::skip] 'lbl: { ... }` used as the
+- `labeled_block` — `#[mutants::skip] 'block: { ... }` used as the
   function's tail expression.
 - `unannotated_sibling` — no skip attribute; mutants must still be
   produced.
