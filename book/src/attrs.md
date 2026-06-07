@@ -70,6 +70,9 @@ If `#[mutants::skip]` is too broad (it disables _all_ mutations on a function)
 you can use `#[mutants::exclude_re("pattern")]` to exclude only mutations
 whose name matches a regex, while keeping the rest.
 
+`#[mutants::exclude_re]` is available in the [mutants](https://crates.io/crates/mutants)
+crate from version `0.0.5` onwards.
+
 The regex is matched against the full mutant name (the same string shown by
 `cargo mutants --list`), using the same syntax as `--exclude-re` on the command
 line.

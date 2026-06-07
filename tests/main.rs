@@ -3181,14 +3181,28 @@ fn list_mutants_in_cfg_attr_test_skip_json() {
         .assert_insta("list_mutants_in_cfg_attr_test_skip_json");
 }
 
+/// A malformed regex inside `#[mutants::exclude_re("...")]` must be reported
+/// to the user via the CLI, with the offending source location and the regex
+/// parser's human-readable explanation of why the regex is invalid. When the
+/// source contains more than one malformed regex, only the first one is
+/// reported, locking in the "preserve the first error" semantics of
+/// `DiscoveryVisitor` so each run produces a single actionable message.
 #[test]
-fn list_mutants_in_exclude_re_attr() {
-    let tmp_src_dir = copy_of_testdata("exclude_re_attr");
+fn exclude_re_attr_two_invalid_regexes_reports_only_the_first() {
+    let tmp_src_dir = copy_of_testdata("exclude_re_attr_two_invalid_regexes");
     run()
         .arg("mutants")
         .arg("--list")
         .current_dir(tmp_src_dir.path())
-        .assert_insta("list_mutants_in_exclude_re_attr");
+        .env_remove("RUST_BACKTRACE")
+        .assert()
+        .failure()
+        .stderr(contains(
+            r#"invalid regex in #[mutants::exclude_re("(first_invalid")]"#,
+        ))
+        .stderr(contains("src/lib.rs:"))
+        .stderr(contains("unclosed group"))
+        .stderr(contains("(second_invalid").not());
 }
 
 #[test]

@@ -1,5 +1,5 @@
 [package]
-name = "cargo-mutants-testdata-exclude-re-attr"
+name = "cargo-mutants-testdata-exclude-re-attr-two-invalid-regexes"
 version = "0.0.0"
 edition = "2021"
 publish = false
