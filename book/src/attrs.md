@@ -59,6 +59,9 @@ mod test {
 - **`trait` blocks** — applies to all default method implementations.
 - **`mod` blocks** — applies to all items within the module.
 - **Files** (as an inner attribute `#![mutants::skip]`) — applies to the entire file.
+- **`const` and `static` items** — applies to mutations generated from
+  inside the initializer expression. This also covers associated constants
+  declared inside `impl` and `trait` blocks.
 - **Expressions** that can syntactically carry an outer attribute, including
   `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
   (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the

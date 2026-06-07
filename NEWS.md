@@ -1,5 +1,9 @@
 # cargo-mutants changelog
 
+## Unreleased
+
+- Fixed: `#[mutants::skip]` (and `#[cfg_attr(..., mutants::skip)]`) is now honoured when placed on `const` and `static` items, including associated constants in `impl` and `trait` blocks. Previously the attribute was silently ignored on these items and operator mutants inside the initializer expression were still generated ([#508](https://github.com/sourcefrog/cargo-mutants/issues/508)).
+
 ## 27.1.0
 
 Released 2026-06-02.

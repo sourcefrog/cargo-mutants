@@ -497,6 +497,77 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         }
     }
 
+    /// Visit a top-level `const FOO: T = ...;` item.
+    ///
+    /// The visitor itself does not generate const-specific mutants, but it
+    /// honours `#[mutants::skip]` on the item so that operator mutants inside
+    /// the initializer expression can be suppressed.
+    fn visit_item_const(&mut self, i: &'ast syn::ItemConst) {
+        let _span = trace_span!(
+            "const",
+            line = i.const_token.span.start().line,
+            name = i.ident.to_pretty_string()
+        )
+        .entered();
+        if attrs_excluded(&i.attrs) {
+            trace!("const excluded by attrs");
+            return;
+        }
+        syn::visit::visit_item_const(self, i);
+    }
+
+    /// Visit a top-level `static FOO: T = ...;` item.
+    ///
+    /// As with [`Self::visit_item_const`], this only exists so that
+    /// `#[mutants::skip]` on the item suppresses mutants inside the
+    /// initializer expression.
+    fn visit_item_static(&mut self, i: &'ast syn::ItemStatic) {
+        let _span = trace_span!(
+            "static",
+            line = i.static_token.span.start().line,
+            name = i.ident.to_pretty_string()
+        )
+        .entered();
+        if attrs_excluded(&i.attrs) {
+            trace!("static excluded by attrs");
+            return;
+        }
+        syn::visit::visit_item_static(self, i);
+    }
+
+    /// Visit an associated `const FOO: T = ...;` inside an `impl` block.
+    fn visit_impl_item_const(&mut self, i: &'ast syn::ImplItemConst) {
+        let _span = trace_span!(
+            "const",
+            line = i.const_token.span.start().line,
+            name = i.ident.to_pretty_string()
+        )
+        .entered();
+        if attrs_excluded(&i.attrs) {
+            trace!("associated const excluded by attrs");
+            return;
+        }
+        syn::visit::visit_impl_item_const(self, i);
+    }
+
+    /// Visit an associated `const FOO: T [= ...];` inside a `trait` block.
+    ///
+    /// Only the default-value expression (if present) contains anything that
+    /// can be mutated; this method gates that descent on `#[mutants::skip]`.
+    fn visit_trait_item_const(&mut self, i: &'ast syn::TraitItemConst) {
+        let _span = trace_span!(
+            "const",
+            line = i.const_token.span.start().line,
+            name = i.ident.to_pretty_string()
+        )
+        .entered();
+        if attrs_excluded(&i.attrs) {
+            trace!("trait associated const excluded by attrs");
+            return;
+        }
+        syn::visit::visit_trait_item_const(self, i);
+    }
+
     /// Visit `impl Foo { ...}` or `impl Debug for Foo { ... }`.
     fn visit_item_impl(&mut self, i: &'ast syn::ItemImpl) {
         if attrs_excluded(&i.attrs) {
@@ -991,7 +1062,11 @@ mod test {
     mod skip_attr_expr_unary;
     mod skip_attr_file;
     mod skip_attr_impl;
+    mod skip_attr_impl_item_const;
+    mod skip_attr_item_const;
+    mod skip_attr_item_static;
     mod skip_attr_trait;
+    mod skip_attr_trait_item_const;
 
     #[test]
     fn path_ends_with() {
