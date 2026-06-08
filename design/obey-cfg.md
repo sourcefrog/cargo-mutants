@@ -8,7 +8,7 @@ Related issues / docs:
 - [`book/src/stability.md`](../book/src/stability.md) ("cfg and cfg_attr predicates are not currently evaluated…")
 - [`book/src/attrs.md`](../book/src/attrs.md) ("`cargo-mutants` does not evaluate the `cfg_attr` condition")
 - Upstream issue [sourcefrog/cargo-mutants#50](https://github.com/sourcefrog/cargo-mutants/issues/50).
-- Assumes the [`exclude-re-attr` branch](../src/visit.rs) is already merged (introduces the `exclude_re` scope stack on `DiscoveryVisitor`).
+- Assumes a prerequisite change to `DiscoveryVisitor` (in the `exclude-re-attr` work, not yet on `main`) that adds an `exclude_re` scope stack, allowing nested `#[mutants::exclude_re("...")]` attributes. The cfg-obeying design extends that stack with an optional cfg guard (§6.6). If the prerequisite has not landed when this design is implemented, that scope-stack scaffolding becomes part of the same work.
 
 ---
 
@@ -193,8 +193,11 @@ real rustc which conditions are true. Details in §5.
 
 ```rust
 fn is_live(c: &Candidate, truths: &HashMap<CfgExpr, bool>) -> bool {
-    c.conds.must_be_true.iter().all(|e| truths[e])
-        && c.conds.must_be_false.iter().all(|e| !truths[e])
+    // Unknown expressions (e.g. probe failed for this package) are treated
+    // conservatively as the value that keeps the candidate live: `true` for
+    // must_be_true, `false` for must_be_false. See §5.4 and §6.3.
+    c.conds.must_be_true.iter().all(|e| *truths.get(e).unwrap_or(&true))
+        && c.conds.must_be_false.iter().all(|e| !*truths.get(e).unwrap_or(&false))
 }
 ```
 
@@ -669,7 +672,7 @@ walk_tree ──► Vec<Candidate>
                   cargo test --test __cargo_mutants_probe (per package)
                          │
                          ▼
-                  parse "CMP|cNNNN|0|1" lines ──► HashMap<CfgExpr,bool> per pkg
+                  parse "CMP|<id>|<0|1>" lines ──► HashMap<CfgExpr,bool> per pkg
                          │
                          ▼
                   filter Candidates ──► Vec<Mutant> ──► lab::test_mutants
