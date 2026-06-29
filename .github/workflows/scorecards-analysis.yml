@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: Scorecards supply-chain security
 # Run only manually, because the answers don't change often and the results have 
 # many unhelpful positives.

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, files, and on expressions that can carry an attribute (such as `match`, struct literals, call expressions, method calls, and unary expressions). Multiple patterns can be applied. Also supported within `cfg_attr`. Requires the [mutants](https://crates.io/crates/mutants) crate version `0.0.5` or later.
 - Fixed: `#[mutants::skip]` (and `#[cfg_attr(..., mutants::skip)]`) is now honoured when placed on `const` and `static` items, including associated constants in `impl` and `trait` blocks. Previously the attribute was silently ignored on these items and operator mutants inside the initializer expression were still generated ([#508](https://github.com/sourcefrog/cargo-mutants/issues/508)).
 
 ## 27.1.0

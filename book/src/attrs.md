@@ -66,3 +66,67 @@ mod test {
   `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
   (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the
   expression and everything nested inside it.
+
+## Excluding specific mutations with an attribute
+
+If `#[mutants::skip]` is too broad (it disables _all_ mutations on a function)
+you can use `#[mutants::exclude_re("pattern")]` to exclude only mutations
+whose name matches a regex, while keeping the rest.
+
+`#[mutants::exclude_re]` is available in the [mutants](https://crates.io/crates/mutants)
+crate from version `0.0.5` onwards.
+
+The regex is matched against the full mutant name (the same string shown by
+`cargo mutants --list`), using the same syntax as `--exclude-re` on the command
+line.
+
+For example, to keep all mutations on an `i32`-returning function except the
+"replace ... -> i32 with 0" return-value mutation:
+
+```rust
+#[mutants::exclude_re("with 0")]
+fn do_something(x: i32) -> i32 {
+    x + 1
+}
+```
+
+Multiple attributes can be applied to exclude several patterns:
+
+```rust
+#[mutants::exclude_re("with 0")]
+#[mutants::exclude_re("with 1")]
+fn compute(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+As with `mutants::skip`, cargo-mutants also recognises `mutants::exclude_re`
+when it is nested inside a `cfg_attr`. The cfg condition is *not* evaluated —
+the attribute is always honoured regardless of whether the condition would
+hold during compilation.
+
+```rust
+#[cfg_attr(test, mutants::exclude_re("replace .* -> bool"))]
+fn is_valid(&self) -> bool {
+    // ...
+    true
+}
+```
+
+### Scope
+
+`#[mutants::exclude_re]` can be placed on:
+
+- **Functions** — applies to all mutations within that function.
+- **`impl` blocks** — applies to all methods within the block.
+- **`trait` blocks** — applies to all default method implementations.
+- **`mod` blocks** — applies to all items within the module.
+- **Files** (as an inner attribute `#![mutants::exclude_re("...")]`) — applies to the entire file.
+- **Expressions** that can syntactically carry an outer attribute, including
+  `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
+  (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the mutations
+  generated for that expression and any expressions nested inside it.
+
+Patterns from outer scopes are inherited: if an `impl` block excludes a pattern,
+all methods inside also exclude that pattern, in addition to any patterns on the
+methods themselves.

@@ -14,9 +14,11 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::vec;
 
+use anyhow::anyhow;
 use camino::{Utf8Path, Utf8PathBuf};
 use proc_macro2::{Ident, TokenStream};
 use quote::{ToTokens, quote};
+use regex::RegexSet;
 use syn::ext::IdentExt;
 use syn::spanned::Spanned;
 use syn::visit::Visit;
@@ -29,7 +31,7 @@ use crate::mutant::{Function, MutationTarget};
 use crate::package::Package;
 use crate::pretty::ToPrettyString;
 use crate::source::SourceFile;
-use crate::span::Span;
+use crate::span::{LineColumn, Span};
 use crate::{Console, Context, Genre, Mutant, Options, Result, check_interrupted};
 
 /// Mutants and files discovered in a source tree.
@@ -142,6 +144,8 @@ pub fn walk_file(
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
     let mut visitor = DiscoveryVisitor {
         error_exprs,
+        error: None,
+        exclude_re_stack: Vec::new(),
         external_mods: Vec::new(),
         mutants: Vec::new(),
         mod_namespace_stack: Vec::new(),
@@ -151,6 +155,9 @@ pub fn walk_file(
         options,
     };
     visitor.visit_file(&syn_file);
+    if let Some(err) = visitor.error {
+        return Err(err);
+    }
     Ok((visitor.mutants, visitor.external_mods))
 }
 
@@ -284,6 +291,18 @@ struct DiscoveryVisitor<'o> {
     error_exprs: &'o [Expr],
 
     options: &'o Options,
+
+    /// Stack of compiled `RegexSet`s from `#[mutants::exclude_re("...")]` attributes.
+    ///
+    /// Each entry corresponds to a scope (file, mod, impl, trait, fn).
+    /// When collecting a mutant, all entries in the stack are checked.
+    exclude_re_stack: Vec<RegexSet>,
+
+    /// If set, an error occurred during visiting (e.g. invalid regex in an attribute).
+    ///
+    /// Since `Visit` trait methods cannot return errors, we store the error here
+    /// and propagate it after the visitor finishes.
+    error: Option<anyhow::Error>,
 }
 
 impl DiscoveryVisitor<'_> {
@@ -315,6 +334,97 @@ impl DiscoveryVisitor<'_> {
         );
     }
 
+    /// Push `#[mutants::exclude_re("...")]` patterns from the given attributes onto the stack.
+    ///
+    /// Returns `true` if successful, `false` if an error was stored on the
+    /// visitor (invalid regex or malformed attribute). On error the caller
+    /// must not visit children and must not call [`Self::pop_exclude_re`],
+    /// because nothing was pushed.
+    ///
+    /// Prefer [`Self::in_exclude_re_scope`] over calling push/pop directly so
+    /// that early returns can't leave the stack unbalanced.
+    fn push_exclude_re(&mut self, attrs: &[Attribute]) -> bool {
+        let patterns = match attrs_exclude_re_patterns(attrs) {
+            Ok(patterns) => patterns,
+            Err((span, msg)) => {
+                let location = self
+                    .source_file
+                    .format_source_location(LineColumn::from(span.start()));
+                self.error
+                    .get_or_insert_with(|| anyhow!("{location}: {msg}"));
+                return false;
+            }
+        };
+        if patterns.is_empty() {
+            self.exclude_re_stack.push(RegexSet::empty());
+            return true;
+        }
+        match RegexSet::new(&patterns) {
+            Ok(re) => {
+                self.exclude_re_stack.push(re);
+                true
+            }
+            Err(err) => {
+                let location = attrs
+                    .iter()
+                    .find(|a| {
+                        path_is(a.path(), &["mutants", "exclude_re"])
+                            || path_is(a.path(), &["cfg_attr"])
+                    })
+                    .map_or_else(
+                        || self.source_file.tree_relative_slashes(),
+                        |a| {
+                            self.source_file
+                                .format_source_location(LineColumn::from(a.span().start()))
+                        },
+                    );
+                let quoted = patterns
+                    .iter()
+                    .map(|p| format!("\"{p}\""))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                self.error.get_or_insert_with(|| {
+                    anyhow!("{location}: invalid regex in #[mutants::exclude_re({quoted})]: {err}")
+                });
+                false
+            }
+        }
+    }
+
+    /// Pop the most recent `exclude_re` scope.
+    ///
+    /// Callers should normally use [`Self::in_exclude_re_scope`] instead of
+    /// calling [`Self::push_exclude_re`] and this directly, so that an early
+    /// return inside the scope can't leave the stack unbalanced.
+    fn pop_exclude_re(&mut self) {
+        self.exclude_re_stack
+            .pop()
+            .expect("exclude_re stack should not be empty");
+    }
+
+    /// Run `f` inside a new `#[mutants::exclude_re("...")]` scope derived from `attrs`.
+    ///
+    /// On any kind of failure (invalid regex, malformed attribute), the error
+    /// is stored on the visitor and `f` is not invoked. The scope is always
+    /// popped after `f` returns, so callers don't need to worry about early
+    /// returns inside `f` leaving the stack unbalanced.
+    fn in_exclude_re_scope<F>(&mut self, attrs: &[Attribute], f: F)
+    where
+        F: FnOnce(&mut Self),
+    {
+        if !self.push_exclude_re(attrs) {
+            return;
+        }
+        f(self);
+        self.pop_exclude_re();
+    }
+
+    /// Check whether a mutant name is excluded by any of the currently-active
+    /// `#[mutants::exclude_re("...")]` attributes on the stack.
+    fn excluded_by_attr_re(&self, name: &str) -> bool {
+        self.exclude_re_stack.iter().any(|re| re.is_match(name))
+    }
+
     /// Record that we generated some mutants.
     fn collect_mutant(
         &mut self,
@@ -332,7 +442,12 @@ impl DiscoveryVisitor<'_> {
             genre,
             None,
         );
-        if self.options.allows_mutant(&mutant) {
+        if self.excluded_by_attr_re(&mutant.name) {
+            trace!(
+                name = mutant.name(false),
+                "skip mutant by exclude_re attribute"
+            );
+        } else if self.options.allows_mutant(&mutant) {
             self.mutants.push(mutant);
         } else {
             trace!(name = mutant.name(false), "skip mutant by options");
@@ -394,19 +509,21 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        if let Expr::Path(ExprPath { path, .. }) = &*i.func {
-            trace!(path = path.to_pretty_string(), "visit call");
-            if let Some(hit) = self
-                .options
-                .skip_calls
-                .iter()
-                .find(|s| path_ends_with(path, s))
-            {
-                trace!("skip call to {hit}");
-                return;
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            if let Expr::Path(ExprPath { path, .. }) = &*i.func {
+                trace!(path = path.to_pretty_string(), "visit call");
+                if let Some(hit) = v
+                    .options
+                    .skip_calls
+                    .iter()
+                    .find(|s| path_ends_with(path, s))
+                {
+                    trace!("skip call to {hit}");
+                    return;
+                }
             }
-        }
-        syn::visit::visit_expr_call(self, i);
+            syn::visit::visit_expr_call(v, i);
+        });
     }
 
     fn visit_expr_method_call(&mut self, i: &'ast syn::ExprMethodCall) {
@@ -414,11 +531,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        if let Some(hit) = self.options.skip_calls.iter().find(|s| i.method == s) {
-            trace!("skip method call to {hit}");
-            return;
-        }
-        syn::visit::visit_expr_method_call(self, i);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            if let Some(hit) = v.options.skip_calls.iter().find(|s| i.method == s) {
+                trace!("skip method call to {hit}");
+                return;
+            }
+            syn::visit::visit_expr_method_call(v, i);
+        });
     }
 
     /// Visit a source file.
@@ -428,7 +547,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             trace!("file excluded by attrs");
             return;
         }
-        syn::visit::visit_file(self, i);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            syn::visit::visit_file(v, i);
+        });
     }
 
     /// Visit top-level `fn foo()`.
@@ -444,10 +565,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if fn_sig_excluded(&i.sig) || attrs_excluded(&i.attrs) || block_is_empty(&i.block) {
             return;
         }
-        let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
-        self.collect_fn_mutants(&i.sig, &i.block);
-        syn::visit::visit_item_fn(self, i);
-        self.leave_function(function);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            let function = v.enter_function(&i.sig.ident, &i.sig.output, i.span());
+            v.collect_fn_mutants(&i.sig, &i.block);
+            syn::visit::visit_item_fn(v, i);
+            v.leave_function(function);
+        });
     }
 
     /// Visit `fn foo()` within an `impl`.
@@ -468,10 +591,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         {
             return;
         }
-        let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
-        self.collect_fn_mutants(&i.sig, &i.block);
-        syn::visit::visit_impl_item_fn(self, i);
-        self.leave_function(function);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            let function = v.enter_function(&i.sig.ident, &i.sig.output, i.span());
+            v.collect_fn_mutants(&i.sig, &i.block);
+            syn::visit::visit_impl_item_fn(v, i);
+            v.leave_function(function);
+        });
     }
 
     /// Visit `fn foo() { ... }` within a trait, i.e. a default implementation of a function.
@@ -490,10 +615,12 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             if block_is_empty(block) {
                 return;
             }
-            let function = self.enter_function(&i.sig.ident, &i.sig.output, i.span());
-            self.collect_fn_mutants(&i.sig, block);
-            syn::visit::visit_trait_item_fn(self, i);
-            self.leave_function(function);
+            self.in_exclude_re_scope(&i.attrs, |v| {
+                let function = v.enter_function(&i.sig.ident, &i.sig.output, i.span());
+                v.collect_fn_mutants(&i.sig, block);
+                syn::visit::visit_trait_item_fn(v, i);
+                v.leave_function(function);
+            });
         }
     }
 
@@ -573,17 +700,22 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        let type_name = i.self_ty.to_pretty_string();
-        let name = if let Some((_, trait_path, _)) = &i.trait_ {
-            if path_ends_with(trait_path, "Default") {
-                // Can't think of how to generate a viable different default.
-                return;
-            }
-            format!("<impl {trait} for {type_name}>", trait = trait_path.to_pretty_string())
-        } else {
-            type_name
-        };
-        self.in_namespace(&name, |v| syn::visit::visit_item_impl(v, i));
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            let type_name = i.self_ty.to_pretty_string();
+            let name = if let Some((_, trait_path, _)) = &i.trait_ {
+                if path_ends_with(trait_path, "Default") {
+                    // Can't think of how to generate a viable different default.
+                    return;
+                }
+                format!(
+                    "<impl {trait} for {type_name}>",
+                    trait = trait_path.to_pretty_string()
+                )
+            } else {
+                type_name
+            };
+            v.in_namespace(&name, |vv| syn::visit::visit_item_impl(vv, i));
+        });
     }
 
     /// Visit `trait Foo { ... }`
@@ -593,7 +725,9 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        self.in_namespace(&name, |v| syn::visit::visit_item_trait(v, i));
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            v.in_namespace(&name, |vv| syn::visit::visit_item_trait(vv, i));
+        });
     }
 
     /// Visit `mod foo { ... }` or `mod foo;`.
@@ -604,39 +738,42 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             trace!("mod excluded by attrs");
             return;
         }
+        self.in_exclude_re_scope(&node.attrs, |v| {
+            let source_location = Span::from(node.span());
 
-        let source_location = Span::from(node.span());
+            // Extract path attribute value, if any (e.g. `#[path="..."]`)
+            let path_attribute = match find_path_attribute(&node.attrs) {
+                Ok(path) => path,
+                Err(path_attribute) => {
+                    let definition_site = v
+                        .source_file
+                        .format_source_location(source_location.start);
+                    error!(?path_attribute, ?definition_site, %mod_name, "invalid filesystem traversal in mod path attribute");
+                    return;
+                }
+            };
+            let mod_namespace = ModNamespace {
+                name: mod_name.clone(),
+                path_attribute,
+                source_location,
+            };
+            v.mod_namespace_stack.push(mod_namespace.clone());
 
-        // Extract path attribute value, if any (e.g. `#[path="..."]`)
-        let path_attribute = match find_path_attribute(&node.attrs) {
-            Ok(path) => path,
-            Err(path_attribute) => {
-                let definition_site = self
-                    .source_file
-                    .format_source_location(source_location.start);
-                error!(?path_attribute, ?definition_site, %mod_name, "invalid filesystem traversal in mod path attribute");
-                return;
+            // If there's no content in braces, then this is a `mod foo;`
+            // statement referring to an external file. We remember the module
+            // name and then later look for the file.
+            if node.content.is_none() {
+                // If we're already inside `mod a { ... }` and see `mod b;` then
+                // remember [a, b] as an external module to visit later.
+                v.external_mods.push(ExternalModRef {
+                    parts: v.mod_namespace_stack.clone(),
+                });
             }
-        };
-        let mod_namespace = ModNamespace {
-            name: mod_name,
-            path_attribute,
-            source_location,
-        };
-        self.mod_namespace_stack.push(mod_namespace.clone());
-
-        // If there's no content in braces, then this is a `mod foo;`
-        // statement referring to an external file. We remember the module
-        // name and then later look for the file.
-        if node.content.is_none() {
-            // If we're already inside `mod a { ... }` and see `mod b;` then
-            // remember [a, b] as an external module to visit later.
-            self.external_mods.push(ExternalModRef {
-                parts: self.mod_namespace_stack.clone(),
+            v.in_namespace(&mod_namespace.name, |vv| {
+                syn::visit::visit_item_mod(vv, node);
             });
-        }
-        self.in_namespace(&mod_namespace.name, |v| syn::visit::visit_item_mod(v, node));
-        assert_eq!(self.mod_namespace_stack.pop(), Some(mod_namespace));
+            assert_eq!(v.mod_namespace_stack.pop(), Some(mod_namespace));
+        });
     }
 
     /// Visit `a op b` expressions.
@@ -646,6 +783,13 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
+        // Note: `#[mutants::exclude_re("...")]` placed before a binary expression
+        // is absorbed by syn into the leftmost operand's attrs (e.g., the path
+        // expression), not into `ExprBinary.attrs`. There's therefore no current
+        // Rust syntax that would populate `i.attrs` here, so we don't push an
+        // exclude_re scope. To suppress mutants on a binary operator, place the
+        // attribute on an enclosing item, mod, file, or expression
+        // (call/method_call/match/struct).
         let replacements = match i.op {
             // We don't generate `<=` from `==` because it can too easily go
             // wrong with unsigned types compared to 0.
@@ -699,18 +843,20 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
         if attrs_excluded(&i.attrs) {
             return;
         }
-        match i.op {
-            UnOp::Not(_) | UnOp::Neg(_) => {
-                self.collect_mutant(i.op.span().into(), None, &quote! {}, Genre::UnaryOperator);
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            match i.op {
+                UnOp::Not(_) | UnOp::Neg(_) => {
+                    v.collect_mutant(i.op.span().into(), None, &quote! {}, Genre::UnaryOperator);
+                }
+                _ => {
+                    trace!(
+                        op = i.op.to_pretty_string(),
+                        "No mutants generated for this unary operator"
+                    );
+                }
             }
-            _ => {
-                trace!(
-                    op = i.op.to_pretty_string(),
-                    "No mutants generated for this unary operator"
-                );
-            }
-        }
-        syn::visit::visit_expr_unary(self, i);
+            syn::visit::visit_expr_unary(v, i);
+        });
     }
 
     fn visit_expr_match(&mut self, i: &'ast syn::ExprMatch) {
@@ -723,52 +869,54 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
 
-        let has_catchall = i
-            .arms
-            .iter()
-            .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
-        if has_catchall {
-            // Successively delete each of the match arms, allowing them to hit the catch-all arm,
-            // which will often be a viable mutant.
-            for arm in &i.arms {
-                if matches!(arm.pat, syn::Pat::Wild(_)) || arm.guard.is_some() {
-                    // Don't delete the `_ => whatever` arm, because that will very likely fail to compile.
-                    //
-                    // Also, don't delete arms with guard expressions, because the replacement of
-                    // the guard with 'false' below is logically equivalent to removing the arm.
-                    continue;
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            let has_catchall = i
+                .arms
+                .iter()
+                .any(|arm| matches!(arm.pat, syn::Pat::Wild(_)));
+            if has_catchall {
+                // Successively delete each of the match arms, allowing them to hit the catch-all arm,
+                // which will often be a viable mutant.
+                for arm in &i.arms {
+                    if matches!(arm.pat, syn::Pat::Wild(_)) || arm.guard.is_some() {
+                        // Don't delete the `_ => whatever` arm, because that will very likely fail to compile.
+                        //
+                        // Also, don't delete arms with guard expressions, because the replacement of
+                        // the guard with 'false' below is logically equivalent to removing the arm.
+                        continue;
+                    }
+                    let replacement = quote! {};
+                    v.collect_mutant(
+                        arm.span().into(),
+                        Some(arm.pat.to_pretty_string()),
+                        &replacement,
+                        Genre::MatchArm,
+                    );
                 }
-                let replacement = quote! {};
-                self.collect_mutant(
-                    arm.span().into(),
-                    Some(arm.pat.to_pretty_string()),
-                    &replacement,
-                    Genre::MatchArm,
-                );
+            } else {
+                trace!("match has no `_` pattern");
             }
-        } else {
-            trace!("match has no `_` pattern");
-        }
 
-        i.arms
-            .iter()
-            .flat_map(|arm| &arm.guard)
-            .for_each(|(_if, guard_expr)| {
-                self.collect_mutant(
-                    guard_expr.span().into(),
-                    None,
-                    &quote! { true },
-                    Genre::MatchArmGuard,
-                );
-                self.collect_mutant(
-                    guard_expr.span().into(),
-                    None,
-                    &quote! { false },
-                    Genre::MatchArmGuard,
-                );
-            });
+            i.arms
+                .iter()
+                .flat_map(|arm| &arm.guard)
+                .for_each(|(_if, guard_expr)| {
+                    v.collect_mutant(
+                        guard_expr.span().into(),
+                        None,
+                        &quote! { true },
+                        Genre::MatchArmGuard,
+                    );
+                    v.collect_mutant(
+                        guard_expr.span().into(),
+                        None,
+                        &quote! { false },
+                        Genre::MatchArmGuard,
+                    );
+                });
 
-        syn::visit::visit_expr_match(self, i);
+            syn::visit::visit_expr_match(v, i);
+        });
     }
 
     fn visit_expr_struct(&mut self, i: &'ast syn::ExprStruct) {
@@ -779,48 +927,52 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             return;
         }
 
-        // Check if this struct has a base (default) expression like `..Default::default()`
-        if let Some(_rest) = &i.rest {
-            // Get the struct type name
-            let struct_name = i.path.to_pretty_string();
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            // Check if this struct has a base (default) expression like `..Default::default()`
+            if let Some(_rest) = &i.rest {
+                // Get the struct type name
+                let struct_name = i.path.to_pretty_string();
 
-            // Generate a mutant for each field by deleting it
-            // We need to include the trailing comma in the span
-            for pair in i.fields.pairs() {
-                let field = pair.value();
-                if let syn::Member::Named(field_name) = &field.member {
-                    let field_name_str = field_name.to_string();
-                    // Span includes the field and its trailing comma (if present)
-                    let span = if let Some(comma) = pair.punct() {
-                        // Include the comma in the span
-                        let field_span = field.span();
-                        let comma_span = comma.span();
-                        Span {
-                            start: field_span.start().into(),
-                            end: comma_span.end().into(),
+                // Generate a mutant for each field by deleting it
+                // We need to include the trailing comma in the span
+                for pair in i.fields.pairs() {
+                    let field = pair.value();
+                    if let syn::Member::Named(field_name) = &field.member {
+                        let field_name_str = field_name.to_string();
+                        // Span includes the field and its trailing comma (if present)
+                        let span = if let Some(comma) = pair.punct() {
+                            // Include the comma in the span
+                            let field_span = field.span();
+                            let comma_span = comma.span();
+                            Span {
+                                start: field_span.start().into(),
+                                end: comma_span.end().into(),
+                            }
+                        } else {
+                            // No comma, just the field
+                            field.span().into()
+                        };
+                        let mutant = Mutant::new_discovered(
+                            v.source_file.clone(),
+                            v.fn_stack.last().cloned(),
+                            span,
+                            None,
+                            String::new(),
+                            Genre::StructField,
+                            Some(MutationTarget::StructLiteralField {
+                                field_name: field_name_str,
+                                struct_name: struct_name.clone(),
+                            }),
+                        );
+                        if !v.excluded_by_attr_re(&mutant.name) {
+                            v.mutants.push(mutant);
                         }
-                    } else {
-                        // No comma, just the field
-                        field.span().into()
-                    };
-                    let mutant = Mutant::new_discovered(
-                        self.source_file.clone(),
-                        self.fn_stack.last().cloned(),
-                        span,
-                        None,
-                        String::new(),
-                        Genre::StructField,
-                        Some(MutationTarget::StructLiteralField {
-                            field_name: field_name_str,
-                            struct_name: struct_name.clone(),
-                        }),
-                    );
-                    self.mutants.push(mutant);
+                    }
                 }
             }
-        }
 
-        syn::visit::visit_expr_struct(self, i);
+            syn::visit::visit_expr_struct(v, i);
+        });
     }
 }
 
@@ -1013,6 +1165,106 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     skip
 }
 
+/// Extract regex patterns from `#[mutants::exclude_re("...")]` attributes.
+///
+/// This also handles `#[cfg_attr(test, mutants::exclude_re("..."))]`, where
+/// the cfg condition is ignored (we always look for the attribute, matching
+/// the existing handling of `mutants::skip` within `cfg_attr`).
+///
+/// Returns the patterns in order if every relevant attribute parsed cleanly,
+/// or a `(span, message)` describing the first malformed occurrence. The
+/// span identifies the offending attribute so the caller can report a
+/// source location to the user.
+fn attrs_exclude_re_patterns(
+    attrs: &[Attribute],
+) -> std::result::Result<Vec<String>, (proc_macro2::Span, String)> {
+    let mut patterns = Vec::new();
+    for attr in attrs {
+        if path_is(attr.path(), &["mutants", "exclude_re"]) {
+            let pattern = parse_exclude_re_args(attr).map_err(|err| {
+                (
+                    attr.span(),
+                    format!("malformed #[mutants::exclude_re(...)] attribute: {err}"),
+                )
+            })?;
+            patterns.push(pattern);
+        } else if path_is(attr.path(), &["cfg_attr"]) {
+            collect_exclude_re_from_cfg_attr(attr, &mut patterns)?;
+        }
+    }
+    Ok(patterns)
+}
+
+/// Parse the arguments of a direct `#[mutants::exclude_re("pat")]` attribute.
+///
+/// Requires exactly one string literal argument; everything else is a parse
+/// error.
+fn parse_exclude_re_args(attr: &Attribute) -> syn::Result<String> {
+    attr.parse_args_with(|input: syn::parse::ParseStream| -> syn::Result<String> {
+        let lit: syn::LitStr = input.parse()?;
+        if !input.is_empty() {
+            return Err(input
+                .error("expected exactly one string literal argument to #[mutants::exclude_re]"));
+        }
+        Ok(lit.value())
+    })
+}
+
+/// Walk a `#[cfg_attr(..., mutants::exclude_re("pat"), ...)]` attribute,
+/// appending every found pattern to `patterns`.
+///
+/// If the `cfg_attr` itself cannot be parsed as nested meta (e.g. it has a
+/// cfg condition shape we don't understand here), the attribute is
+/// silently ignored — matching how [`attr_is_mutants_skip`] handles the
+/// same case. But if we successfully locate a `mutants::exclude_re` inside
+/// and its arguments are malformed, that is reported as a hard error so
+/// users don't think their exclude is in effect when it isn't.
+fn collect_exclude_re_from_cfg_attr(
+    attr: &Attribute,
+    patterns: &mut Vec<String>,
+) -> std::result::Result<(), (proc_macro2::Span, String)> {
+    let mut malformed: Option<(proc_macro2::Span, String)> = None;
+    let parse_result = attr.parse_nested_meta(|meta| {
+        if !path_is(&meta.path, &["mutants", "exclude_re"]) {
+            return Ok(());
+        }
+        let span = meta.path.span();
+        let inner: syn::Result<String> = (|| {
+            let content;
+            syn::parenthesized!(content in meta.input);
+            let lit: syn::LitStr = content.parse()?;
+            if !content.is_empty() {
+                return Err(content.error(
+                    "expected exactly one string literal argument to #[mutants::exclude_re]",
+                ));
+            }
+            Ok(lit.value())
+        })();
+        match inner {
+            Ok(pattern) => {
+                patterns.push(pattern);
+                Ok(())
+            }
+            Err(err) => {
+                malformed.get_or_insert((
+                    span,
+                    format!("malformed #[mutants::exclude_re(...)] inside cfg_attr: {err}"),
+                ));
+                // Propagate to abort parse_nested_meta; the recorded error
+                // takes precedence over the parse_result.
+                Err(err)
+            }
+        }
+    });
+    if let Some(err) = malformed {
+        return Err(err);
+    }
+    if let Err(err) = parse_result {
+        trace!(?attr, ?err, "Could not fully parse cfg_attr nested meta");
+    }
+    Ok(())
+}
+
 /// Finds the first path attribute (`#[path = "..."]`)
 ///
 /// # Errors
@@ -1054,6 +1306,12 @@ mod test {
 
     use super::*;
 
+    mod exclude_re_expr_call;
+    mod exclude_re_expr_common;
+    mod exclude_re_expr_match;
+    mod exclude_re_expr_method_call;
+    mod exclude_re_expr_struct;
+    mod exclude_re_expr_unary;
     mod skip_attr_cfg_attr;
     mod skip_attr_expr_call;
     mod skip_attr_expr_match;
@@ -1736,6 +1994,378 @@ mod test {
                 "replace + with -",
                 "replace + with *"
             ]
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_filters_specific_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("with 0")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        // "replace add -> i32 with 0" should be filtered out, but
+        // "replace add -> i32 with 1", "with -1", and the binary operator
+        // mutations on the body should still be present.
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "should not contain 'with 0' mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("with 1")),
+            "should still contain 'with 1' fn-value mutant: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("with -1")),
+            "should still contain 'with -1' fn-value mutant: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_keeps_all_when_no_match() {
+        // A valid regex that doesn't match any generated mutant must have no
+        // effect, matching the behaviour of `--exclude-re` on the CLI / in
+        // the config file.
+        let options = Options::default();
+        let mutants_with_attr = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("this_matches_nothing")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let mutants_without_attr = mutate_source_str(
+            indoc! {"
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "},
+            &options,
+        )
+        .unwrap();
+        let names_with: Vec<String> = mutants_with_attr.iter().map(|m| m.name(false)).collect();
+        let names_without: Vec<String> =
+            mutants_without_attr.iter().map(|m| m.name(false)).collect();
+        assert_eq!(
+            names_with, names_without,
+            "exclude_re pattern that matches no mutants should produce the \
+             exact same mutants as no attribute at all"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_invalid_regex_returns_error() {
+        let options = Options::default();
+        let result = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("(unclosed")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        );
+        assert!(result.is_err(), "invalid regex should produce an error");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("invalid regex"),
+            "error should mention 'invalid regex': {err_msg}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_without_string_arg_returns_error() {
+        // Missing arguments must not silently no-op; they should be reported
+        // as malformed so users don't think their exclude is in effect.
+        let options = Options::default();
+        let result = mutate_source_str(
+            indoc! {"
+                #[mutants::exclude_re]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "},
+            &options,
+        );
+        assert!(
+            result.is_err(),
+            "missing arg should produce an error, got: {result:?}"
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("malformed"),
+            "error should mention 'malformed': {err_msg}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_with_multiple_args_returns_error() {
+        let options = Options::default();
+        let result = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("a", "b")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        );
+        assert!(
+            result.is_err(),
+            "extra args should produce an error, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_with_non_string_arg_returns_error() {
+        let options = Options::default();
+        let result = mutate_source_str(
+            indoc! {"
+                #[mutants::exclude_re(42)]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "},
+            &options,
+        );
+        assert!(
+            result.is_err(),
+            "non-string arg should produce an error, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_error_includes_source_location() {
+        let options = Options::default();
+        let result = mutate_source_str(
+            indoc! {r#"
+                fn first() -> i32 { 1 }
+
+                #[mutants::exclude_re("(unclosed")]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        );
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        // Error should point at the line of the offending attribute.
+        assert!(
+            err_msg.contains("src/main.rs:3"),
+            "error should include source location pointing at attribute on line 3: {err_msg}"
+        );
+        // And include the bad pattern so the user can find it quickly.
+        assert!(
+            err_msg.contains("(unclosed"),
+            "error should include the offending pattern: {err_msg}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_on_impl_block_applies_to_methods() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                struct Foo;
+                #[mutants::exclude_re("replace .* -> bool")]
+                impl Foo {
+                    fn is_ok(&self) -> bool {
+                        true
+                    }
+                    fn count(&self) -> i32 {
+                        1 + 2
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        // is_ok fn replacement should be excluded, but count fn and binary ops should remain
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn cfg_attr_exclude_re_filters_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[cfg_attr(test, mutants::exclude_re("replace .* with 0"))]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "should not contain 'with 0' mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_on_trait_block_applies_to_default_methods() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("replace .* -> bool")]
+                trait Check {
+                    fn is_ok(&self) -> bool {
+                        true
+                    }
+                    fn count(&self) -> i32 {
+                        1 + 2
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_on_mod_block_applies_to_functions() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[mutants::exclude_re("replace .* -> bool")]
+                mod inner {
+                    pub fn is_ok() -> bool {
+                        true
+                    }
+                    pub fn count() -> i32 {
+                        1 + 2
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_inner_file_attribute_applies_to_all_functions() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #![mutants::exclude_re("replace .* -> bool")]
+
+                fn is_ok() -> bool {
+                    true
+                }
+                fn count() -> i32 {
+                    1 + 2
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("count")),
+            "should contain count mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn exclude_re_attr_inherits_from_outer_scope() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                struct Foo;
+                #[mutants::exclude_re("replace .* -> bool")]
+                impl Foo {
+                    #[mutants::exclude_re("replace .* -> i32")]
+                    fn count(&self) -> i32 {
+                        1 + 2
+                    }
+                    fn is_ok(&self) -> bool {
+                        true
+                    }
+                    fn add(&self, a: i32, b: i32) -> i32 {
+                        a + b
+                    }
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        // is_ok: excluded by impl-level pattern (-> bool)
+        assert!(
+            !names.iter().any(|n| n.contains("is_ok")),
+            "should not contain is_ok mutant but got: {names:?}"
+        );
+        // count: fn-value excluded by fn-level pattern (-> i32), but also
+        // impl-level pattern (-> bool) doesn't affect it; binary ops remain
+        assert!(
+            !names
+                .iter()
+                .any(|n| n.contains("replace count") || n.contains("replace Foo::count")),
+            "should not contain count fn-value mutant but got: {names:?}"
+        );
+        assert!(
+            names
+                .iter()
+                .any(|n| n.contains("replace + with") && n.contains("count")),
+            "should contain binary op mutant in count: {names:?}"
+        );
+        // add: fn-value NOT excluded (impl pattern only covers bool), binary ops remain
+        assert!(
+            names
+                .iter()
+                .any(|n| n.contains("add") && n.contains("-> i32")),
+            "should still contain add fn-value mutant: {names:?}"
         );
     }
 }
