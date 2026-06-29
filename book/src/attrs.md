@@ -14,7 +14,7 @@ code. It only flags the item for cargo-mutants.
 
 **Note:** `cargo-mutants` does not evaluate the `cfg_attr` condition; the
 inner `mutants::skip` is always honoured regardless of whether the condition
-would hold during compilation.
+would hold during compilation. This may change in future versions.
 
 You may want to also add a comment explaining why the item is skipped.
 
@@ -60,9 +60,13 @@ mod test {
 - **`mod` blocks** — applies to all items within the module.
 - **Files** (as an inner attribute `#![mutants::skip]`) — applies to the entire file.
 - **Expressions** that can syntactically carry an outer attribute, including
-  `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
-  (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the
-  expression and everything nested inside it.
+  block (`{ ... }`), `match`, struct literal (`Foo { ... }`), call
+  (`foo(...)`), method-call (`x.foo(...)`), and unary expressions (`!x`,
+  `-x`) — applies to the expression and everything nested inside it.
+  Note that the `#[mutants::skip]` macro on expressions requires the
+  unstable `stmt_expr_attributes` and `proc_macro_hygiene` features, so
+  expression-level `#[mutants::skip]` is currently only usable on a
+  nightly Rust toolchain.
 
 ## Excluding specific mutations with an attribute
 
@@ -120,9 +124,10 @@ fn is_valid(&self) -> bool {
 - **`mod` blocks** — applies to all items within the module.
 - **Files** (as an inner attribute `#![mutants::exclude_re("...")]`) — applies to the entire file.
 - **Expressions** that can syntactically carry an outer attribute, including
-  `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
-  (`x.foo(...)`), and unary expressions (`!x`, `-x`) — applies to the mutations
-  generated for that expression and any expressions nested inside it.
+  block (`{ ... }`), `match`, struct literal (`Foo { ... }`), call
+  (`foo(...)`), method-call (`x.foo(...)`), and unary expressions (`!x`,
+  `-x`) — applies to the mutations generated for that expression and any
+  expressions nested inside it.
 
 Patterns from outer scopes are inherited: if an `impl` block excludes a pattern,
 all methods inside also exclude that pattern, in addition to any patterns on the

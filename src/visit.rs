@@ -903,6 +903,25 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             syn::visit::visit_expr_struct(v, i);
         });
     }
+
+    /// Visit a block expression, e.g. `{ ... }` used as a statement or as the
+    /// right-hand side of `let x = { ... };`.
+    ///
+    /// An outer `#[mutants::skip]` attribute attached to the block (in either
+    /// position) suppresses mutants generated for every expression inside the
+    /// block. `Block` itself carries no attributes — they live on the enclosing
+    /// `ExprBlock`, which is what this handler inspects.
+    fn visit_expr_block(&mut self, i: &'ast syn::ExprBlock) {
+        let _span = trace_span!("expr_block", line = i.span().start().line).entered();
+        trace!("visit block expression");
+        if attrs_excluded(&i.attrs) {
+            trace!("block excluded by attrs");
+            return;
+        }
+        self.in_exclude_re_scope(&i.attrs, |v| {
+            syn::visit::visit_expr_block(v, i);
+        });
+    }
 }
 
 // Get the span of the block excluding the braces, or None if it is empty.
@@ -1069,7 +1088,13 @@ fn path_ends_with(path: &syn::Path, ident: &str) -> bool {
 
 /// True if the attribute contains `mutants::skip`.
 ///
-/// This for example returns true for `#[mutants::skip]` or `#[cfg_attr(test, mutants::skip)]`.
+/// This for example returns true for `#[mutants::skip]` or for
+/// `#[cfg_attr(<cond>, mutants::skip)]` regardless of what `<cond>` is —
+/// cargo-mutants does not evaluate the cfg condition, so any predicate
+/// shape (a plain ident like `test`, a function-style predicate like
+/// `any()`/`not(...)`, or a `name = "value"` form) is treated the same.
+/// This is an implementation detail, not a public guarantee; see
+/// `book/src/attrs.md` for what we actually promise to users.
 fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     if path_is(attr.path(), &["mutants", "skip"]) {
         return true;
@@ -1081,6 +1106,16 @@ fn attr_is_mutants_skip(attr: &Attribute) -> bool {
     if let Err(err) = attr.parse_nested_meta(|meta| {
         if path_is(&meta.path, &["mutants", "skip"]) {
             skip = true;
+        } else if meta.input.peek(syn::token::Paren) {
+            // Function-style cfg predicate like `any(...)`, `all(...)`, `not(...)`.
+            // We don't evaluate the predicate; just consume and discard its
+            // contents so parse_nested_meta can advance to the next item.
+            let content;
+            let _ = syn::parenthesized!(content in meta.input);
+            let _: proc_macro2::TokenStream = content.parse()?;
+        } else if meta.input.peek(syn::Token![=]) {
+            // `name = "value"` form (e.g. `target_os = "linux"`); consume the value.
+            let _: syn::Expr = meta.value()?.parse()?;
         }
         Ok(())
     }) {
@@ -1155,6 +1190,18 @@ fn collect_exclude_re_from_cfg_attr(
     let mut malformed: Option<(proc_macro2::Span, String)> = None;
     let parse_result = attr.parse_nested_meta(|meta| {
         if !path_is(&meta.path, &["mutants", "exclude_re"]) {
+            // Consume any cfg predicate arguments so parse_nested_meta can
+            // advance to the next item — mirroring `attr_is_mutants_skip`, so
+            // an `exclude_re` after a non-trivial predicate isn't silently lost.
+            if meta.input.peek(syn::token::Paren) {
+                // Function-style cfg predicate like `any(...)`, `all(...)`, `not(...)`.
+                let content;
+                let _ = syn::parenthesized!(content in meta.input);
+                let _: proc_macro2::TokenStream = content.parse()?;
+            } else if meta.input.peek(syn::Token![=]) {
+                // `name = "value"` form (e.g. `target_os = "linux"`).
+                let _: syn::Expr = meta.value()?.parse()?;
+            }
             return Ok(());
         }
         let span = meta.path.span();
@@ -1242,6 +1289,7 @@ mod test {
     mod exclude_re_expr_struct;
     mod exclude_re_expr_unary;
     mod skip_attr_cfg_attr;
+    mod skip_attr_expr_block;
     mod skip_attr_expr_call;
     mod skip_attr_expr_match;
     mod skip_attr_expr_method_call;
@@ -2149,6 +2197,54 @@ mod test {
         assert!(
             !names.iter().any(|n| n.contains("with 0")),
             "should not contain 'with 0' mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn cfg_attr_exclude_re_with_function_style_predicate_still_filters_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[cfg_attr(any(), mutants::exclude_re("replace .* with 0"))]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "cfg_attr exclude_re with a function-style predicate must still filter: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn cfg_attr_exclude_re_with_name_value_predicate_still_filters_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[cfg_attr(target_os = "linux", mutants::exclude_re("replace .* with 0"))]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "cfg_attr exclude_re with a name = value predicate must still filter: {names:?}"
         );
         assert!(
             names.iter().any(|n| n.contains("replace + with")),

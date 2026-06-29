@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: `#[mutants::skip]` is now honoured on block expressions (`{ ... }`), in both statement and expression position. All mutants generated inside the annotated block are suppressed. Note that the `#[mutants::skip]` attribute on expressions requires a nightly Rust toolchain (`stmt_expr_attributes` and `proc_macro_hygiene` feature gates).
+
 - New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, files, and on expressions that can carry an attribute (such as `match`, struct literals, call expressions, method calls, and unary expressions). Multiple patterns can be applied. Also supported within `cfg_attr`. Requires the [mutants](https://crates.io/crates/mutants) crate version `0.0.5` or later.
 
 ## 27.1.0
