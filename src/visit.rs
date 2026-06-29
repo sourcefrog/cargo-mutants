@@ -1190,6 +1190,18 @@ fn collect_exclude_re_from_cfg_attr(
     let mut malformed: Option<(proc_macro2::Span, String)> = None;
     let parse_result = attr.parse_nested_meta(|meta| {
         if !path_is(&meta.path, &["mutants", "exclude_re"]) {
+            // Consume any cfg predicate arguments so parse_nested_meta can
+            // advance to the next item — mirroring `attr_is_mutants_skip`, so
+            // an `exclude_re` after a non-trivial predicate isn't silently lost.
+            if meta.input.peek(syn::token::Paren) {
+                // Function-style cfg predicate like `any(...)`, `all(...)`, `not(...)`.
+                let content;
+                let _ = syn::parenthesized!(content in meta.input);
+                let _: proc_macro2::TokenStream = content.parse()?;
+            } else if meta.input.peek(syn::Token![=]) {
+                // `name = "value"` form (e.g. `target_os = "linux"`).
+                let _: syn::Expr = meta.value()?.parse()?;
+            }
             return Ok(());
         }
         let span = meta.path.span();
@@ -2185,6 +2197,54 @@ mod test {
         assert!(
             !names.iter().any(|n| n.contains("with 0")),
             "should not contain 'with 0' mutant but got: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn cfg_attr_exclude_re_with_function_style_predicate_still_filters_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[cfg_attr(any(), mutants::exclude_re("replace .* with 0"))]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "cfg_attr exclude_re with a function-style predicate must still filter: {names:?}"
+        );
+        assert!(
+            names.iter().any(|n| n.contains("replace + with")),
+            "should still contain binary op mutant: {names:?}"
+        );
+    }
+
+    #[test]
+    fn cfg_attr_exclude_re_with_name_value_predicate_still_filters_mutants() {
+        let options = Options::default();
+        let mutants = mutate_source_str(
+            indoc! {r#"
+                #[cfg_attr(target_os = "linux", mutants::exclude_re("replace .* with 0"))]
+                fn add(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            "#},
+            &options,
+        )
+        .unwrap();
+        let names: Vec<&str> = mutants.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            !names.iter().any(|n| n.contains("with 0")),
+            "cfg_attr exclude_re with a name = value predicate must still filter: {names:?}"
         );
         assert!(
             names.iter().any(|n| n.contains("replace + with")),
