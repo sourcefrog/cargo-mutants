@@ -16,7 +16,7 @@ The following options control what is printed to stdout and stderr.
 
 The same values can be set with the `CARGO_TERM_COLOR` environment variable, which is respected by many Cargo commands.
 
-cargo-mutants also respects the [`NO_COLOR`](https://no-color.org/) and [`CLICOLOR_FORCE`](https://bixense.com/clicolors/) environment variables. If they are set to a value other than `0` then colors will be disabled or enabled regardless of any other settings.
+cargo-mutants also respects the `NO_COLOR` and [`CLICOLOR_FORCE`](https://bixense.com/clicolors/) environment variables. If they are set to a value other than `0` then colors will be disabled or enabled regardless of any other settings.
 
 ## Debug trace
 

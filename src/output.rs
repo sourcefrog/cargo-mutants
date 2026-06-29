@@ -127,17 +127,17 @@ impl OutputDir {
 
             let rotated = in_dir.join(ROTATED_NAME);
             if rotated.exists() {
-                remove_dir_all(&rotated).with_context(|| format!("remove {:?}", &rotated))?;
+                remove_dir_all(&rotated).with_context(|| format!("remove {rotated:?}"))?;
             }
             rename(&output_dir, &rotated)
-                .with_context(|| format!("move {:?} to {:?}", &output_dir, &rotated))?;
+                .with_context(|| format!("move {output_dir:?} to {rotated:?}"))?;
         }
         create_dir(&output_dir)
-            .with_context(|| format!("create output directory {:?}", &output_dir))?;
+            .with_context(|| format!("create output directory {output_dir:?}"))?;
         let lock_file = LockFile::acquire_lock(output_dir.as_std_path())
             .context("create lock.json lock file")?;
         let log_dir = output_dir.join("log");
-        create_dir(&log_dir).with_context(|| format!("create log directory {:?}", &log_dir))?;
+        create_dir(&log_dir).with_context(|| format!("create log directory {log_dir:?}"))?;
         let diff_dir = output_dir.join("diff");
         create_dir(diff_dir).context("create diff dir")?;
 
