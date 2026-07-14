@@ -67,10 +67,26 @@ RUN --mount=type=bind,source=src,target=src \
         --locked && \
     xx-verify /bin/cargo-mutants
 
-# Create the final image by adding `cargo-mutants` to the Rust image.
+# Use the prepared build stage to build `cargo-nextest`.
+FROM build AS build-nextest
+
+# Build `cargo-nextest` in a similar fashion to `cargo-mutants` above.
+RUN --mount=type=cache,target=/tmp/target \
+    --mount=type=cache,target=/var/cache/cargo \
+    CARGO_HOME=/var/cache/cargo \
+    xx-cargo install \
+        --root / \
+        --target-dir /tmp/target \
+        --locked \
+        cargo-nextest && \
+    xx-verify /bin/cargo-nextest
+
+# Create the final image by adding `cargo-mutants` and `cargo-nextest` to the
+# Rust image.
 FROM "docker.io/library/rust:$FINAL_RUST_TAG" AS final
 
 COPY --from=build-mutants /bin/cargo-mutants /usr/local/cargo/bin/
+COPY --from=build-nextest /bin/cargo-nextest /usr/local/cargo/bin/
 
 WORKDIR /app
 
