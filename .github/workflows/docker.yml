@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+
+name: Docker
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v[0-9]+.*
+
+jobs:
+  lint:
+    name: Lint Dockerfile
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.3.0
