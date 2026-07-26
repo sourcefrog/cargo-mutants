@@ -61,6 +61,23 @@ env TMPDIR=/ram cargo mutants
 
 Some Rust build directories can be multiple gigabytes in size, and if you use `cargo mutants -j` there will be several directories of that size. Be careful that the ramdisk does not use so much memory that it causes the system to swap.
 
+## Platform security scanning
+
+Security software can inspect the many files and processes created during
+mutation testing, which can noticeably slow down a run.
+
+On Windows, consider using a [Dev Drive and its performance
+mode](https://nexte.st/docs/installation/windows/) for trusted source,
+`CARGO_HOME`, and target directories. If Dev Drive is unavailable, Windows
+Security exclusions for those specific directories can provide a similar
+benefit. Weigh the security implications before adding exclusions, and do not
+disable antivirus protection globally.
+
+On macOS, XProtect and Gatekeeper checks can also slow down repeated test
+execution. Follow the [nextest macOS
+guidance](https://nexte.st/docs/installation/macos/) to allow your terminal in
+Developer Tools. This avoids disabling system protections globally.
+
 ## Using faster linkers
 
 Because cargo-mutants does many incremental builds, link time is important, especially if the test suite is relatively fast.
