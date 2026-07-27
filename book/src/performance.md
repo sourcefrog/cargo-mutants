@@ -67,7 +67,7 @@ Security software can inspect the many files and processes created during
 mutation testing, which can noticeably slow down a run.
 
 On Windows, consider using a [Dev Drive and its performance
-mode](https://nexte.st/docs/installation/windows/) for trusted source,
+mode](https://learn.microsoft.com/en-us/windows/dev-drive/) for trusted source,
 `CARGO_HOME`, and target directories. If Dev Drive is unavailable, Windows
 Security exclusions for those specific directories can provide a similar
 benefit. Weigh the security implications before adding exclusions, and do not
