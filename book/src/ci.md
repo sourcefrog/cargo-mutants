@@ -12,11 +12,13 @@ There are at least two complementary ways to use cargo-mutants in CI:
 
 * Use the [`--in-place`](in-place.md) option to avoid copying the tree.
 
-## Installing into CI
+## GitHub Actions
+
+### Installing into CI
 
 The recommended way to install cargo-mutants is using [install-action](https://github.com/taiki-e/install-action), which will fetch a binary from cargo-mutants most recent GitHub release, which is faster than building from source. You could alternatively use [baptiste0928/cargo-install](https://github.com/baptiste0928/cargo-install) which will build it from source in your worker and cache the result.
 
-## Example workflow
+### Example workflow
 
 Here is an example of a GitHub Actions workflow that runs mutation tests and uploads the results as an artifact. This will fail if it finds any uncaught mutants.
 
@@ -29,7 +31,7 @@ The recommended way to install cargo-mutants is using [install-action](https://g
 The workflow used by cargo-mutants on itself can be seen at
 <https://github.com/sourcefrog/cargo-mutants/blob/main/.github/workflows/tests.yml>, but this is different from what you will typically want to use, because it runs cargo-mutants from HEAD.
 
-## Annotations
+### Annotations
 
 cargo-mutants will emit GitHub Actions structured annotations when it detects that it's running within an action. (Specifically, when `$GITHUB_ACTION` is set.)
 
