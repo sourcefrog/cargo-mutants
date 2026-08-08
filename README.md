@@ -51,6 +51,28 @@ To generate mutants in only one file:
 cargo mutants -f src/something.rs
 ```
 
+## Docker
+
+The cargo-mutants Docker image is just the official Rust Docker image with cargo-mutants and cargo-nextest preinstalled.
+
+From within a Rust source directory, just run
+
+```sh
+docker run --rm -v .:/app ghcr.io/sourcefrog/cargo-mutants:latest
+```
+
+Available Docker tags are
+
+* `<major>.<minor>.<patch>`, `<major>.<minor>`, `<major>`: Tracks a specific cargo-mutants release.
+ `latest`: Tracks the latest cargo-mutants release.
+* `edge`: Tracks the main branch in the cargo-mutants repository.
+
+A suffix can be added to each tag to specify which Rust Docker image the cargo-mutants Docker image is based on.
+
+* No suffix: Built on the `rust:latest` Docker image. Eg. `0.27.1`, `latest`, `edge`.
+* `-slim` suffix: Built on the `rust:slim` Docker image. Eg. `0.27.1-slim`, `latest-slim`, `edge-slim`.
+* `-alpine` suffix: Built on the `rust:alpine` Docker image. Eg. `0.27.1-alpine`, `latest-alpine`, `edge-alpine`.
+
 ## Integration with CI
 
 The [manual includes instructions and examples for automatically testing mutants in CI](https://mutants.rs/ci.html), including incremental testing of pull requests and full testing of the development branch.
