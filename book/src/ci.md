@@ -36,3 +36,26 @@ The workflow used by cargo-mutants on itself can be seen at
 cargo-mutants will emit GitHub Actions structured annotations when it detects that it's running within an action. (Specifically, when `$GITHUB_ACTION` is set.)
 
 This behavior can be forced on with the `--annotations=github` option, or off with `--annotations=none`.
+
+## GitLab CI/CD
+
+In GitLab CI/CD, the cargo-mutants Docker image may be used. Here is an example job.
+
+```yaml
+cargo-mutants:
+  image:
+    # Use the cargo-mutants Docker image.
+    name: ghcr.io/sourcefrog/cargo-mutants:latest
+    # The default entrypoint of this image is ["cargo", "mutants"]. However, the
+    # GitLab runner needs a shell so it can execute commands, so we must
+    # override the entrypoint. See
+    # https://docs.gitlab.com/ci/docker/using_docker_images/#override-the-entrypoint-of-an-image
+    entrypoint: [""]
+  script:
+    # Run cargo-mutants.
+    #
+    # - Specify "--in-place" to avoid copying the source tree.
+    # - Specify "--caught" and "--unviable" so we can see every mutant in the CI
+    #   log, not just the mutants we failed to catch.
+    - cargo mutants --in-place --caught --unviable
+```
