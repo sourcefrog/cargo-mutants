@@ -964,8 +964,15 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                                 struct_name: struct_name.clone(),
                             }),
                         );
-                        if !v.excluded_by_attr_re(&mutant.name) {
+                        if v.excluded_by_attr_re(&mutant.name) {
+                            trace!(
+                                name = mutant.name(false),
+                                "skip mutant by exclude_re attribute"
+                            );
+                        } else if v.options.allows_mutant(&mutant) {
                             v.mutants.push(mutant);
+                        } else {
+                            trace!(name = mutant.name(false), "skip mutant by options");
                         }
                     }
                 }
@@ -1993,6 +2000,60 @@ mod test {
                 "delete field count from struct Settings expression",
                 "replace + with -",
                 "replace + with *"
+            ]
+        );
+    }
+
+    fn struct_field_mutant_names(options: &Options) -> Vec<String> {
+        mutate_source_str(
+            indoc! {"
+                fn settings() -> Settings {
+                    Settings {
+                        enabled: true,
+                        count: 1 + 2,
+                        ..Default::default()
+                    }
+                }
+            "},
+            options,
+        )
+        .unwrap()
+        .into_iter()
+        .filter(|mutant| mutant.genre == Genre::StructField)
+        .map(|mutant| mutant.name(false))
+        .collect()
+    }
+
+    #[test]
+    fn struct_field_mutants_respect_examine_name_filter() {
+        let options = Options::from_arg_strs(["mutants", "--re", "delete field enabled"]);
+
+        assert_eq!(
+            struct_field_mutant_names(&options),
+            ["src/main.rs: delete field enabled from struct Settings expression in settings"]
+        );
+    }
+
+    #[test]
+    fn struct_field_mutants_respect_exclude_name_filter() {
+        let options = Options::from_arg_strs(["mutants", "--exclude-re", "delete field enabled"]);
+
+        assert_eq!(
+            struct_field_mutant_names(&options),
+            ["src/main.rs: delete field count from struct Settings expression in settings"]
+        );
+    }
+
+    #[test]
+    fn struct_field_mutants_survive_nonmatching_exclude_name_filter() {
+        let options =
+            Options::from_arg_strs(["mutants", "--exclude-re", "this pattern matches no mutant"]);
+
+        assert_eq!(
+            struct_field_mutant_names(&options),
+            [
+                "src/main.rs: delete field enabled from struct Settings expression in settings",
+                "src/main.rs: delete field count from struct Settings expression in settings",
             ]
         );
     }
