@@ -93,9 +93,14 @@ fn walk_package(
 ) -> Result<(Vec<Mutant>, Vec<SourceFile>)> {
     let mut mutants = Vec::new();
     let mut files = Vec::new();
-    let mut filename_queue =
-        VecDeque::from_iter(package.top_sources.iter().map(|p| (p.to_owned(), true)));
-    while let Some((path, package_top)) = filename_queue.pop_front() {
+    let mut filename_queue = VecDeque::from_iter(
+        package
+            .top_sources
+            .iter()
+            .map(|p| (p.to_owned(), true, Vec::new())),
+    );
+    while let Some((path, package_top, inherited_exclude_re_patterns)) = filename_queue.pop_front()
+    {
         let Some(source_file) = SourceFile::load(workspace_dir, &path, package, package_top)?
         else {
             info!("Skipping source file outside of tree: {path:?}");
@@ -103,7 +108,12 @@ fn walk_package(
         };
         progress.increment_files(1);
         check_interrupted()?;
-        let (mut file_mutants, external_mods) = walk_file(&source_file, error_exprs, options)?;
+        let (mut file_mutants, external_mods) = walk_file_with_exclude_re(
+            &source_file,
+            error_exprs,
+            options,
+            &inherited_exclude_re_patterns,
+        )?;
         progress.increment_mutants(file_mutants.len());
         // TODO: It would be better not to spend time generating mutants from
         // files that are not going to be visited later. However, we probably do
@@ -117,7 +127,11 @@ fn walk_package(
         // `--list-files`.
         for mod_namespace in &external_mods {
             if let Some(mod_path) = find_mod_source(workspace_dir, &source_file, mod_namespace) {
-                filename_queue.push_back((mod_path, false));
+                filename_queue.push_back((
+                    mod_path,
+                    false,
+                    mod_namespace.exclude_re_patterns.clone(),
+                ));
             }
         }
         if !options.allows_source_file_path(&source_file.tree_relative_path) {
@@ -138,14 +152,30 @@ pub fn walk_file(
     error_exprs: &[Expr],
     options: &Options,
 ) -> Result<(Vec<Mutant>, Vec<ExternalModRef>)> {
+    walk_file_with_exclude_re(source_file, error_exprs, options, &[])
+}
+
+/// Find all possible mutants in a source file, inheriting attribute regexes
+/// from the `mod` statement that referenced it.
+fn walk_file_with_exclude_re(
+    source_file: &SourceFile,
+    error_exprs: &[Expr],
+    options: &Options,
+    inherited_exclude_re_patterns: &[String],
+) -> Result<(Vec<Mutant>, Vec<ExternalModRef>)> {
     let _span = debug_span!("source_file", path = source_file.tree_relative_slashes()).entered();
     trace!("visit source file");
     let syn_file = syn::parse_str::<syn::File>(source_file.code())
         .with_context(|| format!("failed to parse {}", source_file.tree_relative_slashes()))?;
+    let exclude_re_stack = if inherited_exclude_re_patterns.is_empty() {
+        Vec::new()
+    } else {
+        vec![RegexSet::new(inherited_exclude_re_patterns)?]
+    };
     let mut visitor = DiscoveryVisitor {
         error_exprs,
         error: None,
-        exclude_re_stack: Vec::new(),
+        exclude_re_stack,
         external_mods: Vec::new(),
         mutants: Vec::new(),
         mod_namespace_stack: Vec::new(),
@@ -218,6 +248,9 @@ pub fn mutate_expr(code: &str) -> Vec<String> {
 pub struct ExternalModRef {
     /// Namespace components of the module path
     parts: Vec<ModNamespace>,
+
+    /// Attribute regexes inherited by the external module file.
+    exclude_re_patterns: Vec<String>,
 }
 
 /// Namespace for a module defined in a `mod foo { ... }` block or `mod foo;` statement
@@ -423,6 +456,14 @@ impl DiscoveryVisitor<'_> {
     /// `#[mutants::exclude_re("...")]` attributes on the stack.
     fn excluded_by_attr_re(&self, name: &str) -> bool {
         self.exclude_re_stack.iter().any(|re| re.is_match(name))
+    }
+
+    /// Return all attribute regex patterns active at the current location.
+    fn current_exclude_re_patterns(&self) -> Vec<String> {
+        self.exclude_re_stack
+            .iter()
+            .flat_map(|re| re.patterns().iter().cloned())
+            .collect()
     }
 
     /// Record that we generated some mutants.
@@ -767,6 +808,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                 // remember [a, b] as an external module to visit later.
                 v.external_mods.push(ExternalModRef {
                     parts: v.mod_namespace_stack.clone(),
+                    exclude_re_patterns: v.current_exclude_re_patterns(),
                 });
             }
             v.in_namespace(&mod_namespace.name, |vv| {
@@ -1376,6 +1418,45 @@ mod test {
             .discover(&PackageFilter::All, &options, &console)
             .unwrap();
         assert_eq!(discovered.mutants.as_slice(), &[]);
+    }
+
+    #[test]
+    fn exclude_re_attr_on_external_mod_applies_to_child_files() {
+        let options = Options::default();
+        let console = Console::new();
+        let tmp = copy_of_testdata("exclude_re_external_mod");
+        let workspace = Workspace::open(tmp.path()).unwrap();
+        let discovered = workspace
+            .discover(&PackageFilter::All, &options, &console)
+            .unwrap();
+        let names = discovered
+            .mutants
+            .iter()
+            .map(|mutant| mutant.name(false))
+            .collect_vec();
+
+        for excluded in [
+            "replace f ->",
+            "replace nested_f ->",
+            "replace inline::inline_f ->",
+            "replace inner_f ->",
+        ] {
+            assert!(
+                !names.iter().any(|name| name.contains(excluded)),
+                "{excluded} should be excluded: {names:?}"
+            );
+        }
+        for retained in [
+            "replace g ->",
+            "replace nested_g ->",
+            "replace inline::inline_g ->",
+            "replace inner_g ->",
+        ] {
+            assert!(
+                names.iter().any(|name| name.contains(retained)),
+                "{retained} should be retained: {names:?}"
+            );
+        }
     }
 
     /// Helper function for `find_path_attribute` tests

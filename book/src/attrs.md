@@ -120,7 +120,8 @@ fn is_valid(&self) -> bool {
 - **Functions** — applies to all mutations within that function.
 - **`impl` blocks** — applies to all methods within the block.
 - **`trait` blocks** — applies to all default method implementations.
-- **`mod` blocks** — applies to all items within the module.
+- **Modules** — applies to all items within the module, including when the
+  module is declared in a separate file.
 - **Files** (as an inner attribute `#![mutants::exclude_re("...")]`) — applies to the entire file.
 - **Expressions** that can syntactically carry an outer attribute, including
   `match`, struct literal (`Foo { ... }`), call (`foo(...)`), method-call
@@ -129,4 +130,5 @@ fn is_valid(&self) -> bool {
 
 Patterns from outer scopes are inherited: if an `impl` block excludes a pattern,
 all methods inside also exclude that pattern, in addition to any patterns on the
-methods themselves.
+methods themselves. This inheritance continues across external module file
+boundaries.
