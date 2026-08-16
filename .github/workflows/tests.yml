@@ -9,6 +9,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # Run weekly to see if anything was broken by upstream changes in Rust or any dependencies
+  schedule:
+    - cron: "55 10 * * 0"
   push:
     # branches:
     #   - main
