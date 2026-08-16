@@ -92,18 +92,28 @@ static SPONSOR_MESSAGE: &str = cstr!(
 );
 
 #[mutants::skip] // only visual effects, not worth testing
-fn clap_styles() -> Styles {
-    styling::Styles::styled()
-        .header(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
-        .usage(styling::AnsiColor::Green.on_default() | styling::Effects::BOLD)
-        .literal(styling::AnsiColor::Blue.on_default() | styling::Effects::BOLD)
-        .placeholder(styling::AnsiColor::Cyan.on_default())
-}
+const CLAP_STYLES: Styles = Styles::styled()
+    .header(
+        styling::AnsiColor::Green
+            .on_default()
+            .effects(styling::Effects::BOLD),
+    )
+    .usage(
+        styling::AnsiColor::Green
+            .on_default()
+            .effects(styling::Effects::BOLD),
+    )
+    .literal(
+        styling::AnsiColor::Blue
+            .on_default()
+            .effects(styling::Effects::BOLD),
+    )
+    .placeholder(styling::AnsiColor::Cyan.on_default());
 
 #[derive(Parser)]
-#[command(name = "cargo", bin_name = "cargo", styles(clap_styles()))]
+#[command(name = "cargo", bin_name = "cargo", styles(CLAP_STYLES))]
 enum Cargo {
-    #[command(name = "mutants", styles(clap_styles()))]
+    #[command(name = "mutants", styles(CLAP_STYLES))]
     Mutants(Args),
 }
 
@@ -132,7 +142,7 @@ pub enum SchemaType {
     author,
     about,
     after_help = SPONSOR_MESSAGE,
-    styles(clap_styles())
+    styles(CLAP_STYLES)
 )]
 pub struct Args {
     // Note: Please keep args grouped within the source by their "help_heading", with the headings
