@@ -64,7 +64,7 @@ If you use cargo-mutants or just like the idea you can help it get better:
 
 ## Project status
 
-As of August 2025 this is an actively-maintained spare time project. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) about every one or two months.
+As of August 2026 this is an semi-actively-maintained spare time project, although I've recently had less time to work on it. PRs and bugs will still be read with higher latency. I expect to make [releases](https://github.com/sourcefrog/cargo-mutants/releases) every few months at worst.
 
 It's very usable as it is and there's room for lots more future improvement, especially in adding new types of mutation.
 
