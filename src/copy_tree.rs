@@ -80,7 +80,6 @@ pub fn copy_tree(
     let reflink_supported = AtomicBool::new(true);
     let temp_dir = tempfile::Builder::new()
         .prefix(name_base)
-        .suffix(".tmp")
         .tempdir()
         .context("create temp dir")?;
     let dest = temp_dir

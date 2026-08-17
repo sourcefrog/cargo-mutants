@@ -1,0 +1,21 @@
+name: Illumos Integration Tests
+
+on:
+  push:
+    branches: [ "main", "illumos-ci" ]
+  pull_request:
+
+jobs:
+  test-illumos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Tests inside OmniOS VM
+        uses: vmactions/omnios-vm@v1
+        with:
+          prepare: |
+            pkg refresh
+            pkg install developer/build/onbld rust
+          run: |
+            cargo test
