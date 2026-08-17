@@ -10,7 +10,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use camino::{Utf8Path, Utf8PathBuf};
-use fs2::FileExt;
+use fs4::fs_std::FileExt;
 use jiff::Timestamp;
 use path_slash::PathExt;
 use serde::Serialize;
@@ -61,12 +61,12 @@ impl LockFile {
             .open(&lock_path)
             .context("open or create lock.json in existing directory")?;
         let mut first = true;
-        while let Err(err) = lock_file.try_lock_exclusive() {
+        while !lock_file
+            .try_lock_exclusive()
+            .context("try to lock lock.json")?
+        {
             if first {
-                info!(
-                    "Waiting for lock on {} ...: {err}",
-                    lock_path.to_slash_lossy()
-                );
+                info!("Waiting for lock on {} ...", lock_path.to_slash_lossy());
                 first = false;
             }
             check_interrupted()?;

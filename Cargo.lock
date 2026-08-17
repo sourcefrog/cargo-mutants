@@ -171,7 +171,7 @@ dependencies = [
  "fastrand",
  "filetime",
  "flickzeug",
- "fs2",
+ "fs4",
  "globset",
  "ignore",
  "indoc",
@@ -507,14 +507,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
-name = "fs2"
-version = "0.4.0"
+name = "fs4"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "237b7991317b8d94391c0a4813b1f74fd81c11352440cd598d2b763ed288bfc1"
+checksum = "8640e34b88f7652208ce9e88b1a37a2ae95227d84abec377ccd3c5cfeb141ed4"
 dependencies = [
- "kernel32-sys",
- "libc",
- "winapi 0.2.8",
+ "rustix 1.1.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

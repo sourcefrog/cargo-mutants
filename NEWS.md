@@ -8,6 +8,8 @@
 
 - Fixed: Shorter temporary directory names on Windows, to reduce the risk of running into the 260-character path limit.
 
+- Fixed: Support for Illumos, by updating to `fs4`.
+
 ## 27.1.0
 
 Released 2026-06-02.
