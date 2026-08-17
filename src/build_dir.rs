@@ -53,7 +53,15 @@ impl BuildDir {
 
     /// Make a new build dir, copying from a source directory, subject to exclusions.
     pub fn copy_from(source: &Utf8Path, options: &Options, console: &Console) -> Result<BuildDir> {
-        let name_base = format!("cargo-mutants-{}-", source.file_name().unwrap_or("unnamed"));
+        // TODO: This would be nicer with cfg_match, but we support MSRV 1.88 and it's stable in 1.95. Update this later.
+        #[cfg(windows)]
+        let name_base = "mutants-".to_string(); // Avoid the 260-character path limit.
+        #[cfg(not(windows))]
+        let name_base = if let Some(name) = source.file_name() {
+            format!("cargo-mutants-{name}-")
+        } else {
+            "cargo-mutants-".to_string()
+        };
         let source_abs = source
             .canonicalize_utf8()
             .context("canonicalize source path")?;
