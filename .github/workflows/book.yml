@@ -20,13 +20,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Install mdbook
+      - name: Install mdbook and mdbook-linkcheck
         uses: taiki-e/install-action@v2
         with:
-          tool: mdbook
-      - name: Install mdbook-linkcheck
-        # Temporarily pull the fix for https://github.com/Michael-F-Bryan/mdbook-linkcheck/pull/98
-        run: cargo install mdbook-linkcheck --git https://github.com/schilkp/mdbook-linkcheck --branch mdbook_v0.5
+          tool: mdbook, mdbook-linkcheck
       - name: Build mdbook
         run: |
           mdbook build book
@@ -57,13 +54,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Install mdbook
-        uses: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@v2
         with:
-          tool: mdbook
-      - name: Install mdbook-linkcheck
-        # Temporarily pull the fix for https://github.com/Michael-F-Bryan/mdbook-linkcheck/pull/98
-        run: cargo install mdbook-linkcheck --git https://github.com/schilkp/mdbook-linkcheck --branch mdbook_v0.5
+          tool: mdbook, mdbook-linkcheck
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build book
