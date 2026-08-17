@@ -442,6 +442,10 @@ impl DiscoveryVisitor<'_> {
             genre,
             None,
         );
+        self.push_mutant_if_allowed(mutant);
+    }
+
+    fn push_mutant_if_allowed(&mut self, mutant: Mutant) {
         if self.excluded_by_attr_re(&mutant.name) {
             trace!(
                 name = mutant.name(false),
@@ -964,16 +968,7 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
                                 struct_name: struct_name.clone(),
                             }),
                         );
-                        if v.excluded_by_attr_re(&mutant.name) {
-                            trace!(
-                                name = mutant.name(false),
-                                "skip mutant by exclude_re attribute"
-                            );
-                        } else if v.options.allows_mutant(&mutant) {
-                            v.mutants.push(mutant);
-                        } else {
-                            trace!(name = mutant.name(false), "skip mutant by options");
-                        }
+                        v.push_mutant_if_allowed(mutant);
                     }
                 }
             }
@@ -2025,7 +2020,7 @@ mod test {
     }
 
     #[test]
-    fn struct_field_mutants_respect_examine_name_filter() {
+    fn re_filters_struct_field_mutants() {
         let options = Options::from_arg_strs(["mutants", "--re", "delete field enabled"]);
 
         assert_eq!(
@@ -2035,7 +2030,7 @@ mod test {
     }
 
     #[test]
-    fn struct_field_mutants_respect_exclude_name_filter() {
+    fn exclude_re_filters_struct_field_mutants() {
         let options = Options::from_arg_strs(["mutants", "--exclude-re", "delete field enabled"]);
 
         assert_eq!(
@@ -2045,7 +2040,7 @@ mod test {
     }
 
     #[test]
-    fn struct_field_mutants_survive_nonmatching_exclude_name_filter() {
+    fn nonmatching_exclude_re_doesnt_filter_struct_field_mutants() {
         let options =
             Options::from_arg_strs(["mutants", "--exclude-re", "this pattern matches no mutant"]);
 
