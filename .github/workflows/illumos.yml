@@ -14,8 +14,12 @@ jobs:
       - name: Run Tests inside OmniOS VM
         uses: vmactions/omnios-vm@v1
         with:
+          cache-after-prepare: true
           prepare: |
             pkg refresh
             pkg install developer/build/onbld rust
           run: |
+            whoami
+            env
+            cat /etc/release || true
             cargo test
