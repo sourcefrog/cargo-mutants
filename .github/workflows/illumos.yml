@@ -5,6 +5,10 @@ on:
     branches: [ "main", "illumos-ci" ]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-illumos:
     runs-on: ubuntu-latest
