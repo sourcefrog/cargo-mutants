@@ -4,12 +4,16 @@ If you're working on a large project or one with a long test suite, you may not 
 
 The `--in-diff DIFF_FILE` option tests only mutants that overlap with regions changed in the diff.
 
-The diff is expected to either have a prefix of `b/` on the new filename, which is the format produced by `git diff`, or no prefix.
+The `--in-git-diff REVISION` option runs `git diff REVISION` in the workspace and tests mutants that overlap with that output. For example, `cargo mutants --in-git-diff main` tests code changed on the current branch since `main`.
 
-Some ways you could use `--in-diff`:
+`--in-diff` and `--in-git-diff` cannot be used together.
 
-1. Before submitting code, check your uncommitted changes with `git diff`.
-2. In CI, or locally, check the diff between the current branch and the base branch of the pull request.
+A diff passed with `--in-diff` is expected to either have a prefix of `b/` on the new filename, which is the format produced by `git diff`, or no prefix.
+
+Some ways you can filter by a diff:
+
+1. Before submitting code, write `git diff` to a file and pass it with `--in-diff`.
+2. In CI, or locally, pass the pull request's base branch to `--in-git-diff`.
 
 Changes to non-Rust files, or files from which no mutants are produced, are ignored.
 
