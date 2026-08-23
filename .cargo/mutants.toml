@@ -2,4 +2,7 @@
 
 error_values = ["::anyhow::anyhow!(\"mutated!\")"]
 exclude_globs = ["src/console.rs", "src/windows.rs"]
+exclude_re = [
+    "delete ! in LockFile::acquire_lock" # causes a hang
+]
 profile = "mutants"                                # Build without debug symbols
