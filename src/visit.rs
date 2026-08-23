@@ -1,4 +1,4 @@
-// Copyright 2021 - 2025 Martin Pool
+// Copyright 2021 - 2026 Martin Pool
 
 //! Visit all the files in a source tree, and then the AST of each file,
 //! to discover mutation opportunities.
@@ -81,9 +81,7 @@ pub fn walk_tree(
     Ok(Discovered { mutants, files })
 }
 
-/// Walk one package, starting from its top files, discovering files
-/// and mutants.
-#[allow(clippy::from_iter_instead_of_collect)]
+/// Walk one package, starting from its top files, discovering files and mutants.
 fn walk_package(
     workspace_dir: &Utf8Path,
     package: &Package,
@@ -1935,7 +1933,7 @@ mod test {
             "#,
         );
         // Should not generate any field deletion mutants without a default
-        assert!(mutants.is_empty());
+        assert_eq!(mutants, [] as [String; 0]);
     }
 
     #[test]

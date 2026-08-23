@@ -2846,7 +2846,7 @@ fn workspace_tree_is_well_tested() {
     for outcome in &outcomes[1..] {
         let mutant = &outcome["scenario"]["Mutant"];
         let package_name = mutant["package"].as_str().unwrap();
-        assert!(!package_name.is_empty());
+        assert_ne!(package_name, "");
         assert_eq!(outcome["summary"], "CaughtMutant");
         let mutant_phases = outcome["phase_results"].as_array().unwrap();
         assert_eq!(mutant_phases.len(), 2);

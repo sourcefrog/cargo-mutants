@@ -1,4 +1,4 @@
-// Copyright 2021-2024 Martin Pool
+// Copyright 2021-2026 Martin Pool
 
 //! A `mutants.out` directory holding logs and other output.
 
@@ -508,17 +508,15 @@ src/process.rs:248:5: replace get_command_output -> Result<String> with Ok(Strin
 ";
 
         // Read from an empty dir: succeeds.
-        assert!(
-            load_previously_caught(parent)
-                .expect("load succeeds")
-                .is_empty()
+        assert_eq!(
+            load_previously_caught(parent).expect("load succeeds"),
+            [] as [String; 0]
         );
 
         let output_dir = OutputDir::new(parent).unwrap();
-        assert!(
-            load_previously_caught(parent)
-                .expect("load succeeds")
-                .is_empty()
+        assert_eq!(
+            load_previously_caught(parent).expect("load succeeds"),
+            [] as [String; 0]
         );
 
         write(parent.join("mutants.out/caught.txt"), example.as_bytes()).unwrap();
