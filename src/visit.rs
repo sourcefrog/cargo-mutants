@@ -799,10 +799,10 @@ impl<'ast> Visit<'ast> for DiscoveryVisitor<'_> {
             BinOp::Ne(_) => vec![quote! { == }],
             BinOp::And(_) => vec![quote! { || }],
             BinOp::Or(_) => vec![quote! { && }],
-            BinOp::Lt(_) => vec![quote! { == }, quote! {>}, quote! { <= }],
-            BinOp::Gt(_) => vec![quote! { == }, quote! {<}, quote! { >= }],
-            BinOp::Le(_) => vec![quote! {>}],
-            BinOp::Ge(_) => vec![quote! {<}],
+            BinOp::Lt(_) => vec![quote! { == }, quote! {>}, quote! { <= }, quote! { >= }],
+            BinOp::Gt(_) => vec![quote! { == }, quote! {<}, quote! { >= }, quote! { <= }],
+            BinOp::Le(_) => vec![quote! {<}, quote! {>}],
+            BinOp::Ge(_) => vec![quote! {>}, quote! {<}],
             BinOp::Add(_) => vec![quote! {-}, quote! {*}],
             BinOp::AddAssign(_) => vec![quote! {-=}, quote! {*=}],
             BinOp::Sub(_) | BinOp::Mul(_) => vec![quote! {+}, quote! {/}],
@@ -1821,16 +1821,32 @@ mod test {
     fn mutate_comparisons() {
         assert_eq!(
             mutate_expr("a > b"),
-            &["replace > with ==", "replace > with <", "replace > with >="]
+            &[
+                "replace > with ==",
+                "replace > with <",
+                "replace > with >=",
+                "replace > with <="
+            ]
         );
         assert_eq!(
             mutate_expr("a < b "),
-            &["replace < with ==", "replace < with >", "replace < with <="]
+            &[
+                "replace < with ==",
+                "replace < with >",
+                "replace < with <=",
+                "replace < with >="
+            ]
         );
         assert_eq!(mutate_expr("a == b"), &["replace == with !="]);
         assert_eq!(mutate_expr("a != b"), &["replace != with =="]);
-        assert_eq!(mutate_expr("a >= b"), &["replace >= with <"]);
-        assert_eq!(mutate_expr("a <= b"), &["replace <= with >"]);
+        assert_eq!(
+            mutate_expr("a >= b"),
+            &["replace >= with >", "replace >= with <"]
+        );
+        assert_eq!(
+            mutate_expr("a <= b"),
+            &["replace <= with <", "replace <= with >"]
+        );
     }
 
     #[test]
