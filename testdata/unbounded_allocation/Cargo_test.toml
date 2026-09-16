@@ -1,0 +1,11 @@
+# A tree with a function that allocates without bound when one of its mutants is
+# applied, so that `--max-memory` can be seen to stop it.
+
+[package]
+name = "cargo-mutants-testdata-unbounded-allocation"
+version = "0.1.0"
+edition = "2018"
+publish = false
+
+[lib]
+doctest = false
