@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use camino::Utf8Path;
+use itertools::Itertools;
 use serde::Serialize;
 use tracing::{Level, debug, span, trace};
 
@@ -26,21 +27,57 @@ use crate::output::ScenarioOutput;
 /// How frequently to check if a subprocess finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
-/// How long to let a process wind up after `SIGTERM` before sending `SIGKILL`.
+/// How long to let a process, or a process group, wind up after `SIGTERM` before
+/// sending `SIGKILL`.
 const TERM_GRACE: Duration = Duration::from_millis(500);
 
-/// How often to check whether a signalled process has gone away.
+/// How often to check whether a signalled process or group has gone away.
 const TERM_POLL_INTERVAL: Duration = Duration::from_millis(20);
 
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-use windows::{configure_command, kill_child, terminate_child};
+use windows::{configure_command, kill_child, sweep_process_group, terminate_child};
 
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
-use unix::{configure_command, kill_child, terminate_child};
+use unix::{configure_command, kill_child, sweep_process_group, terminate_child};
+
+/// What sweeping a finished child's process group found and did.
+///
+/// A scenario's tests can leave processes running: a test binary that was not waited
+/// for, or anything a test spawned and forgot. Those processes stay in the child's
+/// process group, and would otherwise keep running (and keep allocating) while
+/// cargo-mutants moves on to later scenarios.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
+pub struct Sweep {
+    /// The pids that were in the group, where the platform can enumerate them.
+    pub pids: Option<Vec<i32>>,
+    /// Whether any process was still in the group after the direct child exited.
+    pub strays: bool,
+    /// Whether `SIGTERM` was not enough, and `SIGKILL` had to be sent.
+    pub killed: bool,
+}
+
+impl Sweep {
+    /// Describe what was reaped, or None if nothing was left over.
+    pub fn describe(&self) -> Option<String> {
+        if !self.strays {
+            return None;
+        }
+        let how = if self.killed { "SIGKILLed" } else { "reaped" };
+        Some(match &self.pids {
+            Some(pids) if !pids.is_empty() => format!(
+                "left {n} stray process{es} behind ({how}: {list})",
+                n = pids.len(),
+                es = if pids.len() == 1 { "" } else { "es" },
+                list = pids.iter().join(", ")
+            ),
+            _ => format!("left stray processes behind ({how})"),
+        })
+    }
+}
 
 pub struct Process {
     child: Child,
@@ -51,6 +88,9 @@ pub struct Process {
 impl Process {
     /// Run a subprocess to completion, watching for interrupts, with a timeout, while
     /// ticking the progress bar.
+    ///
+    /// Whatever the outcome, the child's process group is swept before returning, so
+    /// that nothing it left running survives into the next scenario.
     pub fn run(
         argv: &[String],
         env: &[(String, String)],
@@ -59,17 +99,42 @@ impl Process {
         jobserver: Option<&jobserver::Client>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
-    ) -> Result<Exit> {
+    ) -> Result<(Exit, Sweep)> {
         let mut child = Process::start(argv, env, cwd, timeout, jobserver, scenario_output)?;
-        let process_status = loop {
-            if let Some(exit_status) = child.poll()? {
-                break exit_status;
+        let result = loop {
+            match child.poll() {
+                Ok(Some(exit_status)) => break Ok(exit_status),
+                Ok(None) => {}
+                Err(err) => break Err(err),
             }
             console.tick();
             sleep(WAIT_POLL_INTERVAL);
         };
+        let sweep = child.sweep()?;
+        let process_status = result?;
         scenario_output.message(&format!("result: {process_status:?}"))?;
-        Ok(process_status)
+        if let Some(description) = sweep.describe() {
+            scenario_output.message(&description)?;
+        }
+        Ok((process_status, sweep))
+    }
+
+    /// Kill anything the child left running in its process group.
+    ///
+    /// This runs after every phase, not only after a timeout: a scenario that exited
+    /// cleanly can still have left a test binary or a process spawned by a test behind.
+    fn sweep(&mut self) -> Result<Sweep> {
+        let sweep = sweep_process_group(&self.child)?;
+        if sweep.strays {
+            debug!(
+                pids = ?sweep.pids,
+                killed = sweep.killed,
+                "swept processes left over in the child's process group"
+            );
+        } else {
+            trace!("no processes left in the child's process group");
+        }
+        Ok(sweep)
     }
 
     /// Launch a process, and return an object representing the child.
@@ -132,7 +197,8 @@ impl Process {
     ///
     /// `SIGTERM` first, so it gets a chance to clean up, but only for a bounded grace
     /// period: a process that ignores it, or that is stopped and so never receives it,
-    /// would otherwise hang the run here forever.
+    /// would otherwise hang the run here forever. Whatever else is left in the process
+    /// group is dealt with by the sweep in [`Process::run`].
     ///
     /// The status might not be `Timeout` if this raced with a normal exit.
     #[mutants::skip] // would leak processes from tests if skipped
