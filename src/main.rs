@@ -291,6 +291,18 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     list: bool,
 
+    /// Maximum memory for each scenario, e.g. 4G: a mutant that exceeds it is stopped
+    ///
+    /// Sizes may be given in bytes, or with a `K`, `M`, `G`, or `T` suffix, which are
+    /// binary multiples: `1K` is 1024 bytes.
+    ///
+    /// On Linux this uses a cgroup v2 `memory.max` if one can be created, and otherwise
+    /// `setrlimit(RLIMIT_AS)`, which limits address space rather than resident memory.
+    /// macOS accepts `RLIMIT_AS` but does not act on it, so this option has no effect
+    /// there.
+    #[arg(long, help_heading = "Execution", value_name = "SIZE")]
+    max_memory: Option<String>,
+
     /// List source files, don't run anything.
     #[arg(long, help_heading = "Execution")]
     list_files: bool,

@@ -37,6 +37,9 @@ mod unix;
 #[cfg(unix)]
 use unix::{configure_command, sweep_process_group, terminate_child};
 
+pub mod memory;
+use memory::{MemoryLimit, ScenarioMemoryLimit};
+
 /// What sweeping a finished child's process group found and did.
 ///
 /// A scenario's tests can leave processes running: a test binary that was not waited
@@ -76,6 +79,9 @@ pub struct Process {
     child: Child,
     start: Instant,
     timeout: Option<Duration>,
+    /// The memory limit in force for this process tree, if any, held until the process
+    /// group has been swept so that its cgroup is empty before we remove it.
+    memory: Option<ScenarioMemoryLimit>,
 }
 
 impl Process {
@@ -84,16 +90,26 @@ impl Process {
     ///
     /// Whatever the outcome, the child's process group is swept before returning, so
     /// that nothing it left running survives into the next scenario.
+    #[allow(clippy::too_many_arguments)] // parallel to run_cargo
     pub fn run(
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
+        memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
     ) -> Result<(Exit, Sweep)> {
-        let mut child = Process::start(argv, env, cwd, timeout, jobserver, scenario_output)?;
+        let mut child = Process::start(
+            argv,
+            env,
+            cwd,
+            timeout,
+            jobserver,
+            memory_limit,
+            scenario_output,
+        )?;
         let result = loop {
             match child.poll() {
                 Ok(Some(exit_status)) => break Ok(exit_status),
@@ -104,6 +120,11 @@ impl Process {
             sleep(WAIT_POLL_INTERVAL);
         };
         let sweep = child.sweep()?;
+        // Only safe once the sweep has emptied the cgroup: the kernel won't let us
+        // remove a cgroup that still has members.
+        if let Some(oom_kills) = child.memory.take().and_then(ScenarioMemoryLimit::finish) {
+            debug!(oom_kills, "cgroup memory.events after phase");
+        }
         let process_status = result?;
         scenario_output.message(&format!("result: {process_status:?}"))?;
         if let Some(description) = sweep.describe() {
@@ -131,12 +152,14 @@ impl Process {
     }
 
     /// Launch a process, and return an object representing the child.
+    #[allow(clippy::too_many_arguments)] // parallel to run_cargo
     pub fn start(
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
+        memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
     ) -> Result<Process> {
         let start = Instant::now();
@@ -156,6 +179,10 @@ impl Process {
             js.configure(&mut command);
         }
         configure_command(&mut command);
+        let memory = memory_limit.map(MemoryLimit::start).transpose()?;
+        if let Some(memory) = &memory {
+            memory.configure_command(&mut command)?;
+        }
         let child = command
             .spawn()
             .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
@@ -163,6 +190,7 @@ impl Process {
             child,
             start,
             timeout,
+            memory,
         })
     }
 

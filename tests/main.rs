@@ -30,6 +30,8 @@ use tempfile::{NamedTempFile, TempDir, tempdir};
 mod integration_util;
 mod util;
 use integration_util::run;
+#[cfg(target_os = "linux")]
+use util::outcome_json;
 use util::{
     CommandInstaExt, OUTER_TIMEOUT, assert_bytes_eq_json, copy_of_testdata, copy_testdata_to,
     outcome_json_counts,
@@ -3910,5 +3912,66 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario() {
             "unviable": 0,
             "success": 0,
         })
+    );
+}
+
+/// A mutant can turn a bounded loop into an unbounded allocator. `--max-memory` puts a
+/// ceiling on each scenario, so the kernel stops the runaway mutant in a fraction of a
+/// second, rather than the machine filling up until the test timeout arrives.
+///
+/// Only Linux enforces a per-scenario memory limit, so this is gated to Linux.
+#[cfg(target_os = "linux")]
+#[test]
+fn max_memory_catches_a_mutant_that_allocates_without_bound() {
+    let tmp_src_dir = copy_of_testdata("unbounded_allocation");
+    let assert = run()
+        .arg("mutants")
+        .args([
+            "--max-memory=256M",
+            "--regex=replace big_enough -> bool with false",
+            "--baseline=skip",
+            // Generous, so that "not a timeout" really means the memory limit stopped it.
+            "--timeout=60",
+            "--build-timeout=120",
+            "-L",
+            "debug",
+            "-v",
+        ])
+        .current_dir(tmp_src_dir.path())
+        .timeout(OUTER_TIMEOUT)
+        .assert();
+    let stdout = String::from_utf8_lossy(&assert.get_output().stdout).into_owned();
+    println!("stdout:\n{stdout}");
+    println!(
+        "debug log:\n{}",
+        read_to_string(tmp_src_dir.path().join("mutants.out/debug.log")).unwrap_or_default()
+    );
+    assert.success();
+
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        json!({
+            "total_mutants": 1,
+            "caught": 1,
+            "missed": 0,
+            "timeout": 0,
+            "unviable": 0,
+            "success": 0,
+        }),
+        "the runaway mutant should be caught by the memory limit, not by the timeout"
+    );
+
+    // It should die on the memory limit long before the 60s test timeout.
+    let outcomes = outcome_json(&tmp_src_dir);
+    let test_phase = outcomes["outcomes"][0]["phase_results"]
+        .as_array()
+        .expect("phase_results")
+        .iter()
+        .find(|pr| pr["phase"] == "Test")
+        .expect("the mutant reached the test phase");
+    let test_secs = test_phase["duration"].as_f64().expect("duration");
+    assert!(
+        test_secs < 20.0,
+        "the memory-limited test took {test_secs}s, which is not well under the timeout"
     );
 }

@@ -95,10 +95,10 @@ fn child_pgid(child: &Child) -> Pid {
 fn group_members(pgid: Pid) -> Option<Vec<i32>> {
     let mut pids = Vec::new();
     for dir_entry in std::fs::read_dir("/proc").ok()?.flatten() {
-        let Ok(pid) = dir_entry.file_name().to_string_lossy().parse::<i32>() else {
+        let Ok(member) = dir_entry.file_name().to_string_lossy().parse::<i32>() else {
             continue; // not a process directory
         };
-        let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) else {
+        let Ok(stat) = std::fs::read_to_string(format!("/proc/{member}/stat")) else {
             continue; // it exited while we were looking
         };
         // The second field is the command name in parentheses, and may itself contain
@@ -113,7 +113,7 @@ fn group_members(pgid: Pid) -> Option<Vec<i32>> {
             .and_then(|field| field.parse::<i32>().ok())
             == Some(pgid.as_raw())
         {
-            pids.push(pid);
+            pids.push(member);
         }
     }
     Some(pids)

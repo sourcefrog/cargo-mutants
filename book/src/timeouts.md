@@ -45,6 +45,65 @@ In this case you can use the `--build-timeout` or `--build-timeout-multiplier` o
 
 You might also choose to skip mutants that can cause long-running const evaluation.
 
+## Memory limits
+
+A timeout is not always enough. A mutant can turn a bounded loop into an unbounded
+allocator — flipping `+=` to `-=` on a parser's cursor, say — and a test that grows at
+hundreds of megabytes per second can exhaust the machine long before the test timeout
+arrives. On a CI runner the usual result is that the whole VM is torn down, with no log
+and no record of which mutants had been tested.
+
+`--max-memory SIZE`, or the `max_memory` key in the configuration file, puts a ceiling on
+each scenario's cargo process tree instead, so that the kernel stops the scenario rather
+than the machine. Sizes may be plain byte counts, or carry a `K`, `M`, `G`, or `T`
+suffix, which are binary multiples: `1K` is 1024 bytes.
+
+```shell
+cargo mutants --max-memory 8G
+```
+
+```toml
+# .cargo/mutants.toml
+max_memory = "8G"
+```
+
+The limit is off by default, and applies to every phase of every scenario, builds
+included, so leave room for the compiler as well as for the tests.
+
+Two mechanisms can enforce it, and they are not equivalent:
+
+* **cgroup v2** `memory.max`, on a cgroup created for each scenario. This limits
+  *resident* memory for the whole process tree, and the kernel reports what it did through
+  `memory.events`, so an OOM-killed mutant can be told apart from one caught by a failing
+  assertion. This is preferred whenever a writable cgroup is available.
+
+* **`setrlimit(RLIMIT_AS)`** on the cargo process, inherited by everything it spawns.
+  This limits *address space*, which is a much cruder proxy: allocators and rustc reserve
+  far more address space than they ever make resident, so a limit that is comfortable as
+  a resident-memory ceiling can fail builds outright when applied this way. If
+  cargo-mutants falls back to this mechanism, set the limit generously.
+
+Which one is in use is reported at startup, for example:
+
+```
+INFO Limiting each scenario to 8589934592 bytes of memory using cgroup v2 memory.max
+```
+
+For the cgroup mechanism, cargo-mutants needs somewhere it may create child cgroups with
+`memory.max`. It looks at its own cgroup first, and then at its parent, which works when
+something has already put a `memory.max` fence around cargo-mutants — a CI shard running
+under a memory-limited systemd scope or container, for instance. As a last resort it moves
+itself into a `cargo-mutants-supervisor` cgroup of its own so that its original cgroup can
+delegate the memory controller.
+
+On macOS, `RLIMIT_AS` is accepted by the kernel and then ignored, and cgroups do not
+exist, so `--max-memory` has no effect there; cargo-mutants warns and carries on. On any
+platform where *neither* mechanism can be applied, giving `--max-memory` is an error,
+reported before any mutant is tested, rather than a run that quietly had no limit.
+
+This option does not change how mutants are classified. A mutant whose tests are
+OOM-killed fails its tests and so is caught, in just the same way as one that panics.
+
 ## Leftover processes
 
 A test can leave processes running after it returns: a daemon it started, a helper it
