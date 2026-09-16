@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New: Outcome lines, scenario logs, and `outcomes.json` now say when a phase's process was killed by a signal, and when processes left running by the tests had to be reaped. The caught / missed / unviable / timeout classification is unchanged.
+
 - Fixed: Each cargo invocation now runs as the leader of its own process group, and that group is swept after every phase, not only after a timeout. Processes left running by a scenario's tests are `SIGTERM`ed, given a short grace period, and then `SIGKILL`ed, so they can't keep consuming memory or CPU while later mutants are tested. Unix only.
 
 - Fixed: After a timeout, cargo-mutants waits only a short grace period for the child to exit after `SIGTERM` before sending `SIGKILL`. Previously it waited indefinitely, so a process that ignored `SIGTERM`, or that had been stopped, hung the whole run.

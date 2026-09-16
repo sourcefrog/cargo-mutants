@@ -42,6 +42,8 @@ use windows::{configure_command, kill_child, sweep_process_group, terminate_chil
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
+pub use unix::signal_name;
+#[cfg(unix)]
 use unix::{configure_command, kill_child, sweep_process_group, terminate_child};
 
 /// What sweeping a finished child's process group found and did.

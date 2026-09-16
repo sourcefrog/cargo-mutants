@@ -84,6 +84,14 @@ pub(super) fn sweep_process_group(child: &Child) -> Result<Sweep> {
     })
 }
 
+/// The name of a signal, like `SIGKILL`, or its number if we don't recognize it.
+pub fn signal_name(signal: i32) -> String {
+    Signal::try_from(signal).map_or_else(
+        |_| format!("signal {signal}"),
+        |signal| signal.as_str().to_owned(),
+    )
+}
+
 /// The process group id of a child, which (because we start it with `process_group(0)`)
 /// is the same as its pid.
 ///
