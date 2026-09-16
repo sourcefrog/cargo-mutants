@@ -30,6 +30,8 @@ use tempfile::{NamedTempFile, TempDir, tempdir};
 mod integration_util;
 mod util;
 use integration_util::run;
+#[cfg(target_os = "linux")]
+use util::outcome_json;
 use util::{
     CommandInstaExt, OUTER_TIMEOUT, assert_bytes_eq_json, copy_of_testdata, copy_testdata_to,
     outcome_json_counts,
@@ -3917,6 +3919,102 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario()
             "unviable": 0,
             "success": 0,
         })
+    );
+    Ok(())
+}
+
+/// `--max-memory=0` reads like "no limit" by analogy with `--timeout=0`, but would mean
+/// "stop every scenario immediately", so it's rejected rather than obeyed.
+#[test]
+fn max_memory_too_small_is_rejected() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--max-memory=0", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .failure()
+        .stderr(contains("--max-memory must be at least"));
+}
+
+/// A limit generous enough for the compiler doesn't disturb an ordinary run.
+#[cfg(unix)]
+#[test]
+fn max_memory_does_not_disturb_a_normal_run() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--max-memory=8G", "-d"])
+        .arg(tmp_src_dir.path())
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .success()
+        .stdout(contains("4 mutants tested"));
+}
+
+/// A mutant can turn a bounded loop into an unbounded allocator. `--max-memory` puts a
+/// ceiling on each scenario, so the kernel stops the runaway mutant in a fraction of a
+/// second, rather than the machine filling up until the test timeout arrives.
+///
+/// Only the cgroup mechanism limits resident memory, so this is gated to Linux and skips
+/// where no writable cgroup is available.
+#[cfg(target_os = "linux")]
+#[test]
+fn max_memory_catches_a_mutant_that_allocates_without_bound()
+-> Result<(), Box<dyn std::error::Error>> {
+    let tmp_src_dir = copy_of_testdata("unbounded_allocation");
+    let assert = run()
+        .arg("mutants")
+        .args([
+            "--max-memory=256M",
+            "--regex=replace big_enough -> bool with false",
+            "--baseline=skip",
+            // Generous, so that "not a timeout" really means the memory limit stopped it.
+            "--timeout=60",
+            "--build-timeout=120",
+            "-L",
+            "debug",
+            "-v",
+        ])
+        .current_dir(tmp_src_dir.path())
+        .timeout(OUTER_TIMEOUT)
+        .assert();
+    let stdout = String::from_utf8_lossy(&assert.get_output().stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&assert.get_output().stderr).into_owned();
+    println!("stdout:\n{stdout}\nstderr:\n{stderr}");
+
+    // Under the RLIMIT_AS fallback a 256M address-space cap is too tight even to build,
+    // so there is nothing to assert.
+    if !stderr.contains("cgroup v2 memory.max") {
+        eprintln!("skipped: no writable cgroup v2 here, so --max-memory fell back to RLIMIT_AS");
+        return Ok(());
+    }
+    assert.success();
+
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        json!({
+            "total_mutants": 1,
+            "caught": 1,
+            "missed": 0,
+            "timeout": 0,
+            "unviable": 0,
+            "success": 0,
+        }),
+        "the runaway mutant should be caught by the memory limit, not by the timeout"
+    );
+
+    // It should die on the memory limit long before the 60s test timeout.
+    let outcomes = outcome_json(&tmp_src_dir);
+    let test_secs = outcomes["outcomes"][0]["phase_results"]
+        .as_array()
+        .ok_or("no phase_results in outcomes.json")?
+        .iter()
+        .find(|pr| pr["phase"] == "Test")
+        .ok_or("the mutant never reached the test phase")?["duration"]
+        .as_f64()
+        .ok_or("no duration on the test phase")?;
+    assert!(
+        test_secs < 20.0,
+        "the memory-limited test took {test_secs}s, which is not well under the timeout"
     );
     Ok(())
 }
