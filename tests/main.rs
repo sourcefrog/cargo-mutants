@@ -3846,3 +3846,69 @@ fn in_diff_with_nonexistent_file_returns_exit_code_6() {
         .code(6)
         .stderr(contains("Failed to read diff file").or(contains("Failed to open diff file")));
 }
+
+/// A test can leave a background process running after it exits. cargo-mutants puts
+/// each cargo invocation in its own process group and sweeps that group after every
+/// phase, so nothing spawned by a scenario outlives it.
+///
+/// The `spawns_background_child` tree records the pids it leaves behind, so we can
+/// probe them once cargo-mutants has finished.
+#[cfg(unix)]
+#[test]
+fn processes_spawned_by_tests_are_swept_after_each_scenario() {
+    use nix::sys::signal::{SIGKILL, kill};
+    use nix::unistd::Pid;
+
+    let tmp_src_dir = copy_of_testdata("spawns_background_child");
+    let pid_dir = tempdir().unwrap();
+    let pid_file = pid_dir.path().join("pids.txt");
+    let assert = run()
+        .arg("mutants")
+        .args(["--timeout=60", "--build-timeout=120", "-L", "debug"])
+        .env("BACKGROUND_CHILD_PID_FILE", &pid_file)
+        .current_dir(tmp_src_dir.path())
+        .timeout(OUTER_TIMEOUT)
+        .assert();
+    println!(
+        "stdout:\n{}",
+        String::from_utf8_lossy(&assert.get_output().stdout)
+    );
+    assert.success();
+
+    let pids: Vec<i32> = read_to_string(&pid_file)
+        .expect("read background child pid file")
+        .lines()
+        .map(|line| line.trim().parse().expect("parse pid"))
+        .collect();
+    assert!(
+        !pids.is_empty(),
+        "the tree's test should have spawned background processes"
+    );
+    let survivors: Vec<i32> = pids
+        .iter()
+        .copied()
+        .filter(|pid| kill(Pid::from_raw(*pid), None).is_ok())
+        .collect();
+    // Don't leave them running even if the assertion below fails.
+    for pid in &survivors {
+        let _ = kill(Pid::from_raw(*pid), SIGKILL);
+    }
+    assert_eq!(
+        survivors,
+        Vec::<i32>::new(),
+        "processes spawned by the tests were still running after cargo-mutants finished"
+    );
+
+    // Sweeping the process group must not change any verdict.
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        json!({
+            "total_mutants": 5,
+            "caught": 5,
+            "missed": 0,
+            "timeout": 0,
+            "unviable": 0,
+            "success": 0,
+        })
+    );
+}

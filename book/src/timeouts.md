@@ -45,6 +45,23 @@ In this case you can use the `--build-timeout` or `--build-timeout-multiplier` o
 
 You might also choose to skip mutants that can cause long-running const evaluation.
 
+## Leftover processes
+
+A test can leave processes running after it returns: a daemon it started, a helper it
+forgot to wait for, or a test binary that was not reaped. Those processes keep running
+— and keep allocating — while cargo-mutants moves on to the next mutant, so they can
+exhaust the machine's memory in a window where no cargo phase is running at all.
+
+To prevent this, cargo-mutants starts each cargo invocation as the leader of its own
+process group, and sweeps that group after *every* phase, not only after a timeout.
+Once the cargo process itself exits, anything left in the group is sent `SIGTERM`, given
+a short grace period, and then `SIGKILL`ed. What was reaped is recorded in the
+scenario's log, and the pids are shown at `--level=debug`.
+
+This has no effect on how a mutant is classified; it only stops work from one scenario
+leaking into the next. Windows has no process groups, and cargo-mutants does not yet use
+job objects, so this sweep is Unix-only.
+
 ## Exceptions
 
 The multiplier timeout options cannot be used when the baseline is skipped

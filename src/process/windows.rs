@@ -4,11 +4,18 @@ use anyhow::Context;
 
 use crate::Result;
 
-use super::Exit;
+use super::{Exit, Sweep};
 
 #[mutants::skip] // hard to exercise the ESRCH edge case
 pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
     child.kill().context("Kill child")
+}
+
+/// Windows has no process groups; the equivalent would be a job object, which we don't
+/// use yet, so there is nothing to sweep.
+#[allow(clippy::unnecessary_wraps)] // To match Unix
+pub(super) fn sweep_process_group(_child: &Child) -> Result<Sweep> {
+    Ok(Sweep::default())
 }
 
 #[mutants::skip]
