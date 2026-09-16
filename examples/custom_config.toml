@@ -30,6 +30,11 @@ timeout_multiplier = 2.0
 # Minimum test timeout in seconds
 minimum_test_timeout = 60.0
 
+# Maximum memory for each scenario, so that a mutant that allocates without bound is
+# stopped by the kernel rather than by the machine running out. Suffixes are binary
+# multiples: "1K" is 1024 bytes.
+max_memory = "8G"
+
 # Copy VCS directories (.git, etc.) to build directories
 copy_vcs = true
 
