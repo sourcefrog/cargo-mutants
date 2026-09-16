@@ -57,7 +57,7 @@ pub fn run_cargo(
         debug!(?encoded_rustflags);
         env.push(("CARGO_ENCODED_RUSTFLAGS".to_owned(), encoded_rustflags));
     }
-    let (process_status, sweep) = Process::run(
+    let (process_status, report) = Process::run(
         &argv,
         &env,
         build_dir.path(),
@@ -82,7 +82,7 @@ pub fn run_cargo(
         duration: start.elapsed(),
         process_status,
         argv,
-        sweep,
+        report,
     })
 }
 

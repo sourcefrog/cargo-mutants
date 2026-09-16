@@ -3954,8 +3954,7 @@ fn max_memory_does_not_disturb_a_normal_run() {
 /// ceiling on each scenario, so the kernel stops the runaway mutant in a fraction of a
 /// second, rather than the machine filling up until the test timeout arrives.
 ///
-/// Only the cgroup mechanism limits resident memory, so this is gated to Linux and skips
-/// where no writable cgroup is available.
+/// Only Linux enforces a per-scenario memory limit, so this is gated to Linux.
 #[cfg(target_os = "linux")]
 #[test]
 fn max_memory_catches_a_mutant_that_allocates_without_bound()
@@ -3980,9 +3979,13 @@ fn max_memory_catches_a_mutant_that_allocates_without_bound()
     let stdout = String::from_utf8_lossy(&assert.get_output().stdout).into_owned();
     let stderr = String::from_utf8_lossy(&assert.get_output().stderr).into_owned();
     println!("stdout:\n{stdout}\nstderr:\n{stderr}");
+    println!(
+        "debug log:\n{}",
+        read_to_string(tmp_src_dir.path().join("mutants.out/debug.log")).unwrap_or_default()
+    );
 
-    // Under the RLIMIT_AS fallback a 256M address-space cap is too tight even to build,
-    // so there is nothing to assert.
+    // Only the cgroup mechanism limits resident memory. Under the RLIMIT_AS fallback a
+    // 256M address-space cap is too tight even to build, so there is nothing to assert.
     if !stderr.contains("cgroup v2 memory.max") {
         eprintln!("skipped: no writable cgroup v2 here, so --max-memory fell back to RLIMIT_AS");
         return Ok(());
@@ -4000,6 +4003,18 @@ fn max_memory_catches_a_mutant_that_allocates_without_bound()
             "success": 0,
         }),
         "the runaway mutant should be caught by the memory limit, not by the timeout"
+    );
+
+    // An OOM-caught mutant should be distinguishable from one caught by a failing
+    // assertion, so the outcome line has to say the kernel did it...
+    assert!(
+        stdout.contains("OOM-killed"),
+        "no mention of the OOM kill in:\n{stdout}"
+    );
+    // ...and the run summary has to say it without needing -v.
+    assert!(
+        stdout.contains("1 stopped by the --max-memory limit"),
+        "no mention of the memory limit in the summary:\n{stdout}"
     );
 
     // It should die on the memory limit long before the 60s test timeout.

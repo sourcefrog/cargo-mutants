@@ -9,15 +9,16 @@
 //!
 //! Two mechanisms can do this, and they are not equivalent:
 //!
-//! * cgroup v2 `memory.max`, which limits *resident* memory for the whole process tree.
-//!   This is what we want, when we can get it.
+//! * cgroup v2 `memory.max`, which limits *resident* memory for the whole process tree
+//!   and reports OOM kills through `memory.events`. This is what we want, when we can
+//!   get it.
 //! * `setrlimit(RLIMIT_AS)`, which limits the *address space* of each process. It is a
-//!   cruder proxy -- allocators reserve far more address space than they use -- so the
-//!   limit has to be set generously, and it is only enforced on Linux.
+//!   cruder proxy -- allocators reserve far more address space than they use -- and it
+//!   is only enforced on Linux.
 //!
 //! `any(target_os = "linux", target_os = "android", target_os = "macos")` recurs below:
 //! it is where `nix` exposes `RLIMIT_AS` and cargo-mutants is supported. Everywhere else
-//! the `RlimitAs` variant does not exist at all, which is what makes it unconstructible
+//! the `RlimitAs` variants do not exist at all, which is what makes them unconstructible
 //! rather than merely unreachable.
 
 #[cfg(target_os = "linux")]
@@ -57,21 +58,21 @@ impl MemoryMechanism {
 
 /// Choose how to apply `--max-memory`, from what this platform and process can offer.
 ///
-/// `settable` says whether `RLIMIT_AS` can be set to the requested limit at all;
-/// `enforced` says whether the kernel would then act on it, which macOS does not.
+/// `rlimit_settable` says whether `RLIMIT_AS` can be set to the requested limit at all;
+/// `rlimit_enforced` says whether the kernel would then act on it, which macOS does not.
 ///
 /// Returns an error, rather than quietly running unlimited, when the user asked for a
-/// limit and nothing can enforce it.
+/// limit and neither mechanism is available.
 pub fn choose_mechanism(
     cgroup_available: bool,
-    settable: bool,
-    enforced: bool,
+    rlimit_settable: bool,
+    rlimit_enforced: bool,
 ) -> Result<MemoryMechanism> {
     if cgroup_available {
         Ok(MemoryMechanism::CgroupV2)
-    } else if settable && enforced {
+    } else if rlimit_settable && rlimit_enforced {
         Ok(MemoryMechanism::RlimitAs)
-    } else if settable {
+    } else if rlimit_settable {
         Ok(MemoryMechanism::Unenforced)
     } else {
         bail!(
@@ -83,7 +84,8 @@ pub fn choose_mechanism(
 
 /// A per-scenario memory limit, set up once and used for every phase of every scenario.
 ///
-/// Each variant owns exactly the state its mechanism needs.
+/// Each variant owns exactly the state its mechanism needs, so there is no way to be in
+/// cgroup mode without a cgroup to put scenarios in.
 #[derive(Debug)]
 pub enum MemoryLimit {
     #[cfg(target_os = "linux")]
@@ -172,9 +174,6 @@ impl MemoryLimit {
 }
 
 /// The memory limit in force for one scenario phase.
-///
-/// A cgroup is per-scenario state that has to outlive the spawn, which is why this is
-/// separate from [`MemoryLimit`]; the cgroup is removed when this is dropped.
 #[derive(Debug)]
 pub enum ScenarioMemoryLimit {
     #[cfg(target_os = "linux")]
@@ -208,6 +207,18 @@ impl ScenarioMemoryLimit {
             ScenarioMemoryLimit::Unenforced => {}
         }
         Ok(())
+    }
+
+    /// Finish with the limit, returning how many times the kernel OOM-killed something
+    /// in this scenario, where the mechanism can tell us.
+    ///
+    /// Any cgroup is removed as this is dropped.
+    pub fn finish(self) -> Option<u64> {
+        match self {
+            #[cfg(target_os = "linux")]
+            ScenarioMemoryLimit::CgroupV2(cgroup) => cgroup.oom_kills(),
+            _ => None,
+        }
     }
 }
 

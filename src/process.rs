@@ -46,6 +46,9 @@ pub use unix::signal_name;
 #[cfg(unix)]
 use unix::{configure_command, kill_child, sweep_process_group, terminate_child};
 
+pub mod memory;
+use memory::{MemoryLimit, ScenarioMemoryLimit};
+
 /// What sweeping a finished child's process group found and did.
 ///
 /// A scenario's tests can leave processes running: a test binary that was not waited
@@ -63,7 +66,7 @@ pub struct Sweep {
 }
 
 impl Sweep {
-    /// Describe what was reaped, or None if nothing was left over.
+    /// Describe what was reaped, for an outcome line, or None if nothing was left over.
     pub fn describe(&self) -> Option<String> {
         if !self.strays {
             return None;
@@ -81,16 +84,25 @@ impl Sweep {
     }
 }
 
-pub mod memory;
-use memory::{MemoryLimit, ScenarioMemoryLimit};
+/// What became of a phase's process tree, beyond the exit status of the direct child.
+///
+/// This is only ever reported, never used to classify the mutant: its job is to make an
+/// OOM-killed or signalled scenario distinguishable from one whose tests simply failed.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
+pub struct ProcessReport {
+    /// What the process group sweep found and did.
+    pub sweep: Sweep,
+    /// How many times the kernel OOM-killed a process in this phase's cgroup, when the
+    /// cgroup memory limit mechanism is in use.
+    pub oom_kills: Option<u64>,
+}
 
 pub struct Process {
     child: Child,
     start: Instant,
     timeout: Option<Duration>,
-    /// The memory limit in force for this process tree, if any. Held so that any cgroup
-    /// outlives the child and is removed once it has exited.
-    #[allow(dead_code)] // its Drop is the point
+    /// The memory limit in force for this process tree, if any, held until the process
+    /// group has been swept so that its cgroup is empty before we remove it.
     memory: Option<ScenarioMemoryLimit>,
 }
 
@@ -110,7 +122,7 @@ impl Process {
         memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
-    ) -> Result<(Exit, Sweep)> {
+    ) -> Result<(Exit, ProcessReport)> {
         let mut child = Process::start(
             argv,
             env,
@@ -130,12 +142,24 @@ impl Process {
             sleep(WAIT_POLL_INTERVAL);
         };
         let sweep = child.sweep()?;
+        // Only safe once the sweep has emptied the cgroup: the kernel won't let us
+        // remove a cgroup that still has members.
+        let oom_kills = child.memory.take().and_then(ScenarioMemoryLimit::finish);
+        if let Some(oom_kills) = oom_kills {
+            debug!(oom_kills, "cgroup memory.events after phase");
+        }
+        let report = ProcessReport { sweep, oom_kills };
         let process_status = result?;
         scenario_output.message(&format!("result: {process_status:?}"))?;
-        if let Some(description) = sweep.describe() {
+        if let Some(description) = report.sweep.describe() {
             scenario_output.message(&description)?;
         }
-        Ok((process_status, sweep))
+        if let Some(oom_kills) = report.oom_kills.filter(|n| *n > 0) {
+            scenario_output.message(&format!(
+                "the kernel OOM-killed {oom_kills} process(es) in this scenario's memory cgroup"
+            ))?;
+        }
+        Ok((process_status, report))
     }
 
     /// Kill anything the child left running in its process group.
@@ -217,16 +241,12 @@ impl Process {
         }
     }
 
-    /// Terminate the subprocess, initially gently and then harshly.
-    ///
-    /// Blocks until the subprocess is terminated and then returns the exit status.
+    /// Stop the subprocess, and block until it has gone.
     ///
     /// `SIGTERM` first, so it gets a chance to clean up, but only for a bounded grace
-    /// period: a process that ignores it, or that is stopped and so never receives it,
-    /// would otherwise hang the run here forever. Whatever else is left in the process
-    /// group is dealt with by the sweep in [`Process::run`].
-    ///
-    /// The status might not be `Timeout` if this raced with a normal exit.
+    /// period: a child that ignores it would otherwise hang us here forever, and the
+    /// sweep in [`Process::run`] would never get to run. Whatever else is left in the
+    /// process group is dealt with by that sweep.
     #[mutants::skip] // would leak processes from tests if skipped
     fn terminate(&mut self) -> Result<()> {
         let _span = span!(Level::DEBUG, "terminate_child", pid = self.child.id()).entered();
