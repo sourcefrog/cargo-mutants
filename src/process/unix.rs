@@ -11,11 +11,10 @@ use crate::Result;
 
 use super::Exit;
 
-#[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
+/// Send a signal to a process group, treating "nothing there" as success.
 #[mutants::skip] // hard to exercise the ESRCH edge case
-pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
-    let pid = Pid::from_raw(child.id().try_into().unwrap());
-    match killpg(pid, Signal::SIGTERM) {
+fn signal_group(pgid: Pid, signal: Signal) -> Result<()> {
+    match killpg(pgid, signal) {
         Ok(()) => Ok(()),
         Err(Errno::ESRCH) => {
             Ok(()) // Probably already gone
@@ -25,11 +24,29 @@ pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
         }
         Err(errno) => {
             // TODO: Maybe strerror?
-            let message = format!("failed to terminate child: error {errno}");
+            let message = format!("failed to signal process group {pgid}: error {errno}");
             warn!("{}", message);
             bail!(message);
         }
     }
+}
+
+/// The process group id of a child, which (because we start it with `process_group(0)`)
+/// is the same as its pid.
+fn child_pgid(child: &Child) -> Pid {
+    Pid::from_raw(child.id().try_into().expect("child pid fits in pid_t"))
+}
+
+#[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
+#[mutants::skip] // hard to exercise the ESRCH edge case
+pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
+    signal_group(child_pgid(child), Signal::SIGTERM)
+}
+
+#[allow(unknown_lints, clippy::needless_pass_by_ref_mut)] // To match Windows
+#[mutants::skip] // would leak processes from tests if skipped
+pub(super) fn kill_child(child: &mut Child) -> Result<()> {
+    signal_group(child_pgid(child), Signal::SIGKILL)
 }
 
 #[mutants::skip]
