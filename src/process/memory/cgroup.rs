@@ -12,21 +12,26 @@
 //! is itself a process in its own cgroup, we look at, in order of preference:
 //!
 //! 1. Our own cgroup, if the memory controller is or can be delegated from it: a scenario
-//!    cgroup there stays inside whatever limit the operator already put on us.
+//!    cgroup there stays inside whatever limit the operator already put on us. Making it
+//!    delegable writes `+memory` to our own `cgroup.subtree_control`, which is a lasting
+//!    change to a cgroup we do not own, though an additive one.
 //! 2. Our parent, if it already delegates the memory controller -- which is exactly the
-//!    case when something has already put a `memory.max` fence around us.
+//!    case when something has already put a `memory.max` fence around us. Scenario
+//!    cgroups are then siblings of ours and so sit *outside* that fence; see the warning
+//!    in [`CgroupTree::probe`].
 //! 3. Our own cgroup again, after moving ourselves down into a leaf so that it no longer
 //!    holds any processes. This is a visible side effect, so it's the last resort.
 
 use std::fs::{File, OpenOptions, create_dir, read_to_string, remove_dir, write};
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread::sleep;
 use std::time::Duration;
 
-use anyhow::{Context, bail};
-use tracing::{debug, trace};
+use anyhow::{Context, anyhow, bail};
+use tracing::{debug, trace, warn};
 
 use crate::Result;
 
@@ -37,6 +42,10 @@ const CGROUP_ROOT: &str = "/sys/fs/cgroup";
 /// kernel still considers occupied because a killed process has not been reaped yet.
 const REMOVE_ATTEMPTS: u32 = 10;
 const REMOVE_RETRY_INTERVAL: Duration = Duration::from_millis(20);
+
+/// How many names to try before giving up on finding a free one, in case a previous run
+/// died without cleaning up and this process reused its pid.
+const CREATE_ATTEMPTS: u32 = 100;
 
 /// A cgroup under which one memory-limited cgroup can be made per scenario.
 #[derive(Debug)]
@@ -79,6 +88,13 @@ impl CgroupTree {
             && delegates_memory(parent).unwrap_or(false)
             && let Some(tree) = try_using(parent, &mut problems)
         {
+            warn!(
+                "Scenario cgroups will be siblings of cargo-mutants' own cgroup, not inside \
+                 it, because its own cgroup cannot delegate the memory controller. \
+                 --max-memory still bounds each scenario, but their total is bounded only by \
+                 {}, not by any memory.max set on cargo-mutants itself",
+                parent.display()
+            );
             return Ok(tree);
         }
 
@@ -97,29 +113,55 @@ impl CgroupTree {
     /// Prove that a scenario cgroup can really be made here before promising the user one.
     fn check(parent: PathBuf, bytes: u64) -> Result<CgroupTree> {
         let tree = CgroupTree { parent };
+        // Dropped immediately, which removes it again.
         tree.create_scenario(bytes)
-            .context("test-create a scenario cgroup")?
-            .remove();
+            .context("test-create a scenario cgroup")?;
         debug!(?tree.parent, "using cgroup v2 for per-scenario memory limits");
         Ok(tree)
     }
 
     /// Make a cgroup to hold one scenario's process tree, limited to `bytes` of memory.
     pub fn create_scenario(&self, bytes: u64) -> Result<ScenarioCgroup> {
+        let cgroup = ScenarioCgroup {
+            dir: self.claim_dir()?,
+        };
+        cgroup.write("memory.max", &bytes.to_string())?;
+        // Swapping a runaway scenario out instead of stopping it would be slower than the
+        // failure we're trying to cause, but this knob only exists where the kernel
+        // accounts for swap, and memory.max alone still bounds resident memory.
+        if let Err(err) = cgroup.write("memory.swap.max", "0") {
+            debug!(?err, "no memory.swap.max: the limit will not cover swap");
+        }
+        Ok(cgroup)
+    }
+
+    /// Create a scenario cgroup directory with a name nothing else is using.
+    fn claim_dir(&self) -> Result<PathBuf> {
         /// Distinguishes concurrent scenarios from each other.
         static SERIAL: AtomicU64 = AtomicU64::new(0);
-        let dir = self.parent.join(format!(
-            "cargo-mutants-{pid}-{serial}",
-            pid = process::id(),
-            serial = SERIAL.fetch_add(1, Ordering::Relaxed)
-        ));
-        create_dir(&dir).with_context(|| format!("create cgroup {}", dir.display()))?;
-        let cgroup = ScenarioCgroup { dir };
-        cgroup.write("memory.max", &bytes.to_string())?;
-        // Without this the kernel would swap a runaway scenario out instead of stopping
-        // it, which is slower than the failure we're trying to cause.
-        cgroup.write("memory.swap.max", "0")?;
-        Ok(cgroup)
+        (0..CREATE_ATTEMPTS)
+            .find_map(|_| {
+                let dir = self.parent.join(format!(
+                    "cargo-mutants-{pid}-{serial}",
+                    pid = process::id(),
+                    serial = SERIAL.fetch_add(1, Ordering::Relaxed)
+                ));
+                match create_dir(&dir) {
+                    Ok(()) => Some(Ok(dir)),
+                    // A run that died without cleaning up leaves directories behind, and
+                    // this process may have been given its pid; just take the next name.
+                    Err(err) if err.kind() == ErrorKind::AlreadyExists => None,
+                    Err(err) => {
+                        Some(Err(err).with_context(|| format!("create cgroup {}", dir.display())))
+                    }
+                }
+            })
+            .unwrap_or_else(|| {
+                Err(anyhow!(
+                    "no free scenario cgroup name under {}",
+                    self.parent.display()
+                ))
+            })
     }
 }
 
@@ -143,7 +185,9 @@ impl ScenarioCgroup {
     /// How many times the kernel OOM-killed a process in this cgroup, from
     /// `memory.events`.
     pub fn oom_kills(&self) -> Option<u64> {
-        let events = read_to_string(self.dir.join("memory.events")).ok()?;
+        let events = read_to_string(self.dir.join("memory.events"))
+            .inspect_err(|err| debug!(?self.dir, ?err, "failed to read cgroup memory.events"))
+            .ok()?;
         trace!(?self.dir, %events, "cgroup memory.events");
         events
             .lines()
@@ -151,26 +195,33 @@ impl ScenarioCgroup {
             .and_then(|count| count.trim().parse().ok())
     }
 
-    /// Remove the cgroup, which the kernel only allows once it has no members left.
-    pub fn remove(self) {
-        // The process group sweep has already killed everything in here, but a process
-        // that has been killed still counts as a member until it is reaped, so give the
-        // kernel a moment to catch up.
-        for _ in 0..REMOVE_ATTEMPTS {
-            match remove_dir(&self.dir) {
-                Ok(()) => return,
-                Err(_) => sleep(REMOVE_RETRY_INTERVAL),
-            }
-        }
-        if let Err(err) = remove_dir(&self.dir) {
-            // Not worth failing a scenario over: an abandoned empty cgroup costs an inode.
-            debug!(?self.dir, ?err, "failed to remove scenario cgroup");
-        }
-    }
-
     fn write(&self, name: &str, value: &str) -> Result<()> {
         let path = self.dir.join(name);
         write(&path, value).with_context(|| format!("write {value:?} to {}", path.display()))
+    }
+}
+
+/// Removing the cgroup on drop is what keeps a failure part-way through a scenario --
+/// or part-way through creating the cgroup itself -- from leaking it.
+impl Drop for ScenarioCgroup {
+    fn drop(&mut self) {
+        // The kernel only removes a cgroup with no members left. The process group sweep
+        // has already killed everything in here, but a killed process still counts as a
+        // member until it is reaped, so give the kernel a moment to catch up.
+        let last_failure = (0..REMOVE_ATTEMPTS).find_map(|attempt| {
+            if attempt > 0 {
+                sleep(REMOVE_RETRY_INTERVAL);
+            }
+            match remove_dir(&self.dir) {
+                Ok(()) => Some(Ok(())),
+                Err(err) if attempt + 1 == REMOVE_ATTEMPTS => Some(Err(err)),
+                Err(_) => None,
+            }
+        });
+        if let Some(Err(err)) = last_failure {
+            // Not worth failing a scenario over: an abandoned empty cgroup costs an inode.
+            debug!(?self.dir, ?err, "gave up removing scenario cgroup");
+        }
     }
 }
 
