@@ -20,6 +20,7 @@ use crate::options::{Options, TestTool};
 use crate::outcome::{Phase, PhaseResult};
 use crate::output::ScenarioOutput;
 use crate::package::PackageSelection;
+use crate::process::memory::MemoryLimit;
 use crate::process::{Exit, Process};
 
 // Allowed nextest codes (those will be considered a mutation caught / ignored without a warning)
@@ -37,6 +38,7 @@ pub fn run_cargo(
     packages: &PackageSelection,
     phase: Phase,
     timeout: Option<Duration>,
+    memory_limit: Option<&MemoryLimit>,
     scenario_output: &mut ScenarioOutput,
     options: &Options,
     console: &Console,
@@ -55,12 +57,13 @@ pub fn run_cargo(
         debug!(?encoded_rustflags);
         env.push(("CARGO_ENCODED_RUSTFLAGS".to_owned(), encoded_rustflags));
     }
-    let process_status = Process::run(
+    let (process_status, report) = Process::run(
         &argv,
         &env,
         build_dir.path(),
         timeout,
         jobserver,
+        memory_limit,
         scenario_output,
         console,
     )?;
@@ -79,6 +82,7 @@ pub fn run_cargo(
         duration: start.elapsed(),
         process_status,
         argv,
+        report,
     })
 }
 
