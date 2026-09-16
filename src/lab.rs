@@ -38,9 +38,8 @@ pub fn test_mutants(
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
     console.set_debug_log(output_dir.open_debug_log()?);
-    // Before copying the tree or running anything: if the user asked for a memory limit
-    // that can't be enforced here, they should hear about it now, not after a long run
-    // that silently had no limit.
+    // Fail here, before the tree is copied, rather than after a long run that silently
+    // had no limit.
     let memory_limit = options.max_memory.map(MemoryLimit::new).transpose()?;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);

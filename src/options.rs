@@ -240,6 +240,12 @@ fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
     a.iter().chain(b).cloned().collect()
 }
 
+/// The smallest `--max-memory` worth accepting.
+///
+/// Anything near zero stops every scenario before it can do anything, which is never
+/// what someone means. In particular `--max-memory=0` is not "no limit", unlike `-t 0`.
+const MIN_MAX_MEMORY: u64 = 1 << 20;
+
 /// Parse a memory size like `256M`, `2GiB`, or a plain count of bytes.
 ///
 /// Suffixes are binary multiples, as they conventionally are for memory: `1K` is 1024
@@ -262,6 +268,17 @@ fn parse_size(s: &str) -> Result<u64> {
     number
         .checked_mul(multiple)
         .with_context(|| format!("size {s:?} is too large"))
+}
+
+/// Parse and sanity-check a `--max-memory` value.
+fn parse_max_memory(s: &str) -> Result<u64> {
+    let bytes = parse_size(s)?;
+    if bytes < MIN_MAX_MEMORY {
+        bail!(
+            "{s:?} is too small to run anything in: --max-memory must be at least {MIN_MAX_MEMORY} bytes"
+        );
+    }
+    Ok(bytes)
 }
 
 /// Should ANSI colors be drawn?
@@ -397,7 +414,7 @@ impl Options {
                 .max_memory
                 .as_deref()
                 .or(config.max_memory.as_deref())
-                .map(parse_size)
+                .map(parse_max_memory)
                 .transpose()
                 .context("Failed to parse --max-memory")?,
             minimum_test_timeout,
@@ -605,53 +622,62 @@ mod test {
     }
 
     #[test]
-    fn parse_size_understands_binary_suffixes() {
-        assert_eq!(parse_size("0").unwrap(), 0);
-        assert_eq!(parse_size("1024").unwrap(), 1024);
-        assert_eq!(parse_size("1024B").unwrap(), 1024);
-        assert_eq!(parse_size("256M").unwrap(), 256 * 1024 * 1024);
-        assert_eq!(parse_size("256MiB").unwrap(), 256 * 1024 * 1024);
-        assert_eq!(parse_size(" 4g ").unwrap(), 4 * 1024 * 1024 * 1024);
-        assert_eq!(parse_size("2T").unwrap(), 2 * (1u64 << 40));
-    }
-
-    #[test]
-    fn parse_size_rejects_nonsense() {
-        for bad in [
-            "",
-            "M",
-            "-1",
-            "1.5G",
-            "1 zettabyte",
-            "18446744073709551615K",
-        ] {
-            assert!(
-                parse_size(bad).is_err(),
-                "{bad:?} should not parse as a size"
-            );
+    fn parse_size_understands_binary_suffixes_and_rejects_nonsense() {
+        // Input -> bytes, where None means it should not parse at all.
+        let cases = [
+            ("0", Some(0)),
+            ("1024", Some(1024)),
+            ("1024B", Some(1024)),
+            ("256M", Some(256 * 1024 * 1024)),
+            ("256MiB", Some(256 * 1024 * 1024)),
+            (" 4g ", Some(4 * 1024 * 1024 * 1024)),
+            ("2T", Some(2 * (1u64 << 40))),
+            ("", None),
+            ("M", None),
+            ("-1", None),
+            ("1.5G", None),
+            ("1 zettabyte", None),
+            ("18446744073709551615K", None),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(parse_size(input).ok(), expected, "input: {input:?}");
         }
     }
 
+    /// Zero is a footgun rather than a way to turn the limit off, unlike `-t 0`.
     #[test]
-    fn options_from_max_memory_arg() {
-        let args = Args::parse_from(["mutants", "--max-memory=256M"]);
-        let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(options.max_memory, Some(256 * 1024 * 1024));
-
-        let args = Args::parse_from(["mutants"]);
-        let options = Options::new(&args, &Config::default()).unwrap();
-        assert_eq!(options.max_memory, None);
+    fn parse_max_memory_rejects_uselessly_small_limits() {
+        for tiny in ["0", "1", "1K", "1023K"] {
+            assert!(
+                parse_max_memory(tiny).is_err(),
+                "{tiny:?} should be rejected as too small"
+            );
+        }
+        assert_eq!(parse_max_memory("1M").ok(), Some(1 << 20));
     }
 
     #[test]
-    fn cli_max_memory_overrides_config() {
-        let config: Config = "max_memory = \"8G\"".parse().unwrap();
-        let options = Options::new(&Args::parse_from(["mutants"]), &config).unwrap();
+    fn options_from_max_memory_arg() -> Result<(), Box<dyn std::error::Error>> {
+        let args = Args::parse_from(["mutants", "--max-memory=256M"]);
+        let options = Options::new(&args, &Config::default())?;
+        assert_eq!(options.max_memory, Some(256 * 1024 * 1024));
+
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default())?;
+        assert_eq!(options.max_memory, None);
+        Ok(())
+    }
+
+    #[test]
+    fn cli_max_memory_overrides_config() -> Result<(), Box<dyn std::error::Error>> {
+        let config: Config = "max_memory = \"8G\"".parse()?;
+        let options = Options::new(&Args::parse_from(["mutants"]), &config)?;
         assert_eq!(options.max_memory, Some(8 * 1024 * 1024 * 1024));
 
         let args = Args::parse_from(["mutants", "--max-memory=1G"]);
-        let options = Options::new(&args, &config).unwrap();
+        let options = Options::new(&args, &config)?;
         assert_eq!(options.max_memory, Some(1024 * 1024 * 1024));
+        Ok(())
     }
 
     #[test]

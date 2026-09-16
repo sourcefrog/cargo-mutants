@@ -56,7 +56,9 @@ and no record of which mutants had been tested.
 `--max-memory SIZE`, or the `max_memory` key in the configuration file, puts a ceiling on
 each scenario's cargo process tree instead, so that the kernel stops the scenario rather
 than the machine. Sizes may be plain byte counts, or carry a `K`, `M`, `G`, or `T`
-suffix, which are binary multiples: `1K` is 1024 bytes.
+suffix, which are binary multiples: `1K` is 1024 bytes. The smallest accepted value is
+1M: unlike `--timeout=0`, `--max-memory=0` is not a way to turn the limit off, so it is
+rejected rather than silently stopping every scenario.
 
 ```shell
 cargo mutants --max-memory 8G
@@ -75,7 +77,9 @@ Two mechanisms can enforce it, and they are not equivalent:
 * **cgroup v2** `memory.max`, on a cgroup created for each scenario. This limits
   *resident* memory for the whole process tree, and the kernel reports what it did through
   `memory.events`, so an OOM-killed mutant can be told apart from one caught by a failing
-  assertion. This is preferred whenever a writable cgroup is available.
+  assertion. This is preferred whenever a writable cgroup is available. Swap is also
+  capped, where the kernel accounts for it; on kernels that do not, the limit covers
+  resident memory only.
 
 * **`setrlimit(RLIMIT_AS)`** on the cargo process, inherited by everything it spawns.
   This limits *address space*, which is a much cruder proxy: allocators and rustc reserve
@@ -90,11 +94,18 @@ INFO Limiting each scenario to 8589934592 bytes of memory using cgroup v2 memory
 ```
 
 For the cgroup mechanism, cargo-mutants needs somewhere it may create child cgroups with
-`memory.max`. It looks at its own cgroup first, and then at its parent, which works when
-something has already put a `memory.max` fence around cargo-mutants — a CI shard running
-under a memory-limited systemd scope or container, for instance. As a last resort it moves
-itself into a `cargo-mutants-supervisor` cgroup of its own so that its original cgroup can
-delegate the memory controller.
+`memory.max`. It looks at its own cgroup first, writing `+memory` to that cgroup's
+`cgroup.subtree_control` if it isn't set already. Failing that it looks at the parent,
+which works when something has already put a `memory.max` fence around cargo-mutants — a
+CI shard running under a memory-limited systemd scope or container, for instance. As a
+last resort it moves itself into a `cargo-mutants-supervisor` cgroup of its own so that
+its original cgroup can delegate the memory controller.
+
+> **The parent fallback escapes an enclosing limit.** Scenario cgroups made under the
+> parent are *siblings* of cargo-mutants' own cgroup, so a `memory.max` set on
+> cargo-mutants does not contain them: with `--jobs N` the run can use up to N ×
+> `--max-memory` in total, whatever that outer fence says. cargo-mutants warns when it
+> takes this path.
 
 On macOS, `RLIMIT_AS` is accepted by the kernel and then ignored, and cgroups do not
 exist, so `--max-memory` has no effect there; cargo-mutants warns and carries on. On any
@@ -102,7 +113,12 @@ platform where *neither* mechanism can be applied, giving `--max-memory` is an e
 reported before any mutant is tested, rather than a run that quietly had no limit.
 
 This option does not change how mutants are classified. A mutant whose tests are
-OOM-killed fails its tests and so is caught, in just the same way as one that panics.
+OOM-killed fails its tests and so is caught, in just the same way as one that panics. So
+that those are not invisible, the run summary counts them separately:
+
+```
+40 mutants tested in 3m 2s: 40 caught (3 stopped by the --max-memory limit)
+```
 
 ## Leftover processes
 
@@ -116,6 +132,10 @@ process group, and sweeps that group after *every* phase, not only after a timeo
 Once the cargo process itself exits, anything left in the group is sent `SIGTERM`, given
 a short grace period, and then `SIGKILL`ed. What was reaped is recorded in the
 scenario's log, and the pids are shown at `--level=debug`.
+
+The same escalation applies to the cargo process itself on a timeout: it is sent
+`SIGTERM`, and `SIGKILL`ed if it has not exited by the end of the grace period, so a
+child that ignores `SIGTERM` cannot stall the run.
 
 This has no effect on how a mutant is classified; it only stops work from one scenario
 leaking into the next. Windows has no process groups, and cargo-mutants does not yet use

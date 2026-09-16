@@ -3857,12 +3857,13 @@ fn in_diff_with_nonexistent_file_returns_exit_code_6() {
 /// probe them once cargo-mutants has finished.
 #[cfg(unix)]
 #[test]
-fn processes_spawned_by_tests_are_swept_after_each_scenario() {
+fn processes_spawned_by_tests_are_swept_after_each_scenario()
+-> Result<(), Box<dyn std::error::Error>> {
     use nix::sys::signal::{SIGKILL, kill};
     use nix::unistd::Pid;
 
     let tmp_src_dir = copy_of_testdata("spawns_background_child");
-    let pid_dir = tempdir().unwrap();
+    let pid_dir = tempdir()?;
     let pid_file = pid_dir.path().join("pids.txt");
     let assert = run()
         .arg("mutants")
@@ -3875,24 +3876,25 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario() {
     println!("stdout:\n{stdout}");
     assert.success();
 
-    let pids: Vec<i32> = read_to_string(&pid_file)
-        .expect("read background child pid file")
+    let pids: Vec<i32> = read_to_string(&pid_file)?
         .lines()
-        .map(|line| line.trim().parse().expect("parse pid"))
-        .collect();
-    assert!(
-        !pids.is_empty(),
-        "the tree's test should have spawned background processes"
-    );
+        .map(str::trim)
+        .map(str::parse)
+        .collect::<Result<_, _>>()?;
     let survivors: Vec<i32> = pids
         .iter()
         .copied()
         .filter(|pid| kill(Pid::from_raw(*pid), None).is_ok())
         .collect();
-    // Don't leave them running even if the assertion below fails.
+    // Before any assertion, so that a failure doesn't also leave these running.
+    // (clippy::needless_for_each rules out the iterator form here.)
     for pid in &survivors {
         let _ = kill(Pid::from_raw(*pid), SIGKILL);
     }
+    assert!(
+        !pids.is_empty(),
+        "the tree's test should have spawned background processes"
+    );
     assert_eq!(
         survivors,
         Vec::<i32>::new(),
@@ -3918,6 +3920,7 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario() {
             "success": 0,
         })
     );
+    Ok(())
 }
 
 /// A mutant can turn a bounded loop into an unbounded allocator. `--max-memory` puts a
@@ -3927,7 +3930,8 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario() {
 /// Only Linux enforces a per-scenario memory limit, so this is gated to Linux.
 #[cfg(target_os = "linux")]
 #[test]
-fn max_memory_catches_a_mutant_that_allocates_without_bound() {
+fn max_memory_catches_a_mutant_that_allocates_without_bound()
+-> Result<(), Box<dyn std::error::Error>> {
     let tmp_src_dir = copy_of_testdata("unbounded_allocation");
     let assert = run()
         .arg("mutants")
@@ -3946,11 +3950,19 @@ fn max_memory_catches_a_mutant_that_allocates_without_bound() {
         .timeout(OUTER_TIMEOUT)
         .assert();
     let stdout = String::from_utf8_lossy(&assert.get_output().stdout).into_owned();
-    println!("stdout:\n{stdout}");
+    let stderr = String::from_utf8_lossy(&assert.get_output().stderr).into_owned();
+    println!("stdout:\n{stdout}\nstderr:\n{stderr}");
     println!(
         "debug log:\n{}",
         read_to_string(tmp_src_dir.path().join("mutants.out/debug.log")).unwrap_or_default()
     );
+
+    // Only the cgroup mechanism limits resident memory. Under the RLIMIT_AS fallback a
+    // 256M address-space cap is too tight even to build, so there is nothing to assert.
+    if !stderr.contains("cgroup v2 memory.max") {
+        eprintln!("skipped: no writable cgroup v2 here, so --max-memory fell back to RLIMIT_AS");
+        return Ok(());
+    }
     assert.success();
 
     assert_eq!(
@@ -3967,23 +3979,30 @@ fn max_memory_catches_a_mutant_that_allocates_without_bound() {
     );
 
     // An OOM-caught mutant should be distinguishable from one caught by a failing
-    // assertion, so the outcome line has to say the kernel did it.
+    // assertion, so the outcome line has to say the kernel did it...
     assert!(
         stdout.contains("OOM-killed"),
         "no mention of the OOM kill in:\n{stdout}"
     );
+    // ...and the run summary has to say it without needing -v.
+    assert!(
+        stdout.contains("1 stopped by the --max-memory limit"),
+        "no mention of the memory limit in the summary:\n{stdout}"
+    );
 
     // It should die on the memory limit long before the 60s test timeout.
     let outcomes = outcome_json(&tmp_src_dir);
-    let test_phase = outcomes["outcomes"][0]["phase_results"]
+    let test_secs = outcomes["outcomes"][0]["phase_results"]
         .as_array()
-        .expect("phase_results")
+        .ok_or("no phase_results in outcomes.json")?
         .iter()
         .find(|pr| pr["phase"] == "Test")
-        .expect("the mutant reached the test phase");
-    let test_secs = test_phase["duration"].as_f64().expect("duration");
+        .ok_or("the mutant never reached the test phase")?["duration"]
+        .as_f64()
+        .ok_or("no duration on the test phase")?;
     assert!(
         test_secs < 20.0,
         "the memory-limited test took {test_secs}s, which is not well under the timeout"
     );
+    Ok(())
 }

@@ -68,6 +68,13 @@ pub struct LabOutcome {
     pub timeout: usize,
     pub unviable: usize,
     pub success: usize,
+    /// How many scenarios had something OOM-killed in their memory cgroup.
+    ///
+    /// Not a category of its own -- an OOM-killed mutant is also a caught one -- so it is
+    /// reported alongside the counts rather than in them, and kept out of the JSON, where
+    /// each phase already carries its own report.
+    #[serde(skip)]
+    pub oom_killed: usize,
     pub start_time: Timestamp,
     pub end_time: Option<Timestamp>,
     pub cargo_mutants_version: String,
@@ -83,6 +90,7 @@ impl LabOutcome {
             timeout: 0,
             unviable: 0,
             success: 0,
+            oom_killed: 0,
             start_time,
             end_time: None,
             cargo_mutants_version: crate::VERSION.to_string(),
@@ -91,6 +99,11 @@ impl LabOutcome {
 
     /// Record the event of one test.
     pub fn add(&mut self, outcome: ScenarioOutcome) {
+        // Counted for the baseline too: if the unmutated tree can't fit in the limit,
+        // that's the most important thing to say about the run.
+        if outcome.was_oom_killed() {
+            self.oom_killed += 1;
+        }
         if outcome.scenario.is_mutant() {
             self.total_mutants += 1;
             match outcome.summary() {
@@ -151,6 +164,12 @@ impl LabOutcome {
             by_outcome.push(format!("{} succeeded", self.success));
         }
         s.push(by_outcome.join(", "));
+        if self.oom_killed > 0 {
+            s.push(format!(
+                " ({} stopped by the --max-memory limit)",
+                self.oom_killed
+            ));
+        }
         s.join("")
     }
 }
@@ -260,6 +279,13 @@ impl ScenarioOutcome {
             .collect()
     }
 
+    /// True if the kernel OOM-killed anything in this scenario's memory cgroup.
+    pub fn was_oom_killed(&self) -> bool {
+        self.phase_results
+            .iter()
+            .any(|pr| pr.report.oom_kills.is_some_and(|n| n > 0))
+    }
+
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
     pub fn mutant_caught(&self) -> bool {
         self.scenario.is_mutant()
@@ -327,8 +353,6 @@ impl PhaseResult {
         self.process_status.is_success()
     }
 
-    /// Anything worth saying about how this phase's process tree ended, beyond its exit
-    /// status.
     fn death_reasons(&self) -> Vec<String> {
         let phase = self.phase.name();
         let mut reasons = Vec::new();
