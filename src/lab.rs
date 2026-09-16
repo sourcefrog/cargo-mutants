@@ -18,8 +18,8 @@ use tracing::{debug, debug_span, error, trace, warn};
 use crate::{
     BaselineStrategy, BuildDir, Console, Context, Mutant, Options, Phase, Result, Scenario,
     ScenarioOutcome, cargo::run_cargo, options::TestPackages, outcome::LabOutcome,
-    output::OutputDir, package::Package, package::PackageSelection, timeouts::Timeouts,
-    workspace::Workspace,
+    output::OutputDir, package::Package, package::PackageSelection, process::memory::MemoryLimit,
+    timeouts::Timeouts, workspace::Workspace,
 };
 
 /// Run all possible mutation experiments.
@@ -38,6 +38,9 @@ pub fn test_mutants(
 ) -> Result<LabOutcome> {
     let start_time = Instant::now();
     console.set_debug_log(output_dir.open_debug_log()?);
+    // Fail here, before the tree is copied, rather than after a long run that silently
+    // had no limit.
+    let memory_limit = options.max_memory.map(MemoryLimit::new).transpose()?;
     if options.shuffle {
         fastrand::shuffle(&mut mutants);
     }
@@ -62,6 +65,7 @@ pub fn test_mutants(
     let lab = Lab {
         output_mutex,
         jobserver,
+        memory_limit,
         tests_for_mutant,
         options,
         console,
@@ -164,6 +168,7 @@ fn join_threads(threads: Vec<thread::ScopedJoinHandle<'_, Result<()>>>) -> Resul
 struct Lab<'a> {
     output_mutex: Mutex<OutputDir>,
     jobserver: Option<jobserver::Client>,
+    memory_limit: Option<MemoryLimit>,
     tests_for_mutant: TestsForMutant,
     options: &'a Options,
     console: &'a Console,
@@ -207,6 +212,7 @@ impl Lab<'_> {
             build_dir,
             output_mutex: &self.output_mutex,
             jobserver: self.jobserver.as_ref(),
+            memory_limit: self.memory_limit.as_ref(),
             tests_for_mutant: &self.tests_for_mutant,
             options: self.options,
             console: self.console,
@@ -222,6 +228,7 @@ struct Worker<'a> {
     build_dir: &'a BuildDir,
     output_mutex: &'a Mutex<OutputDir>,
     jobserver: Option<&'a jobserver::Client>,
+    memory_limit: Option<&'a MemoryLimit>,
     tests_for_mutant: &'a TestsForMutant,
     options: &'a Options,
     console: &'a Console,
@@ -289,6 +296,7 @@ impl Worker<'_> {
                 test_packages,
                 phase,
                 timeout,
+                self.memory_limit,
                 &mut scenario_output,
                 self.options,
                 self.console,

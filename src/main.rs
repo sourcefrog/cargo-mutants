@@ -291,6 +291,13 @@ pub struct Args {
     #[arg(long, help_heading = "Execution")]
     list: bool,
 
+    /// Maximum memory for each scenario, e.g. 4G: a mutant that exceeds it is stopped
+    ///
+    /// Sizes may be given in bytes, or with a `K`, `M`, `G`, or `T` suffix, which are
+    /// binary multiples: `1K` is 1024 bytes. Enforced on Linux only; see the manual.
+    #[arg(long, help_heading = "Execution", value_name = "SIZE")]
+    max_memory: Option<String>,
+
     /// List source files, don't run anything.
     #[arg(long, help_heading = "Execution")]
     list_files: bool,
