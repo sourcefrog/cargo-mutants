@@ -15,6 +15,11 @@
 //! * `setrlimit(RLIMIT_AS)`, which limits the *address space* of each process. It is a
 //!   cruder proxy -- allocators reserve far more address space than they use -- and it
 //!   is only enforced on Linux.
+//!
+//! `any(target_os = "linux", target_os = "android", target_os = "macos")` recurs below:
+//! it is where `nix` exposes `RLIMIT_AS` and cargo-mutants is supported. Everywhere else
+//! the `RlimitAs` variants do not exist at all, which is what makes them unconstructible
+//! rather than merely unreachable.
 
 #[cfg(target_os = "linux")]
 mod cgroup;
@@ -78,12 +83,21 @@ pub fn choose_mechanism(
 }
 
 /// A per-scenario memory limit, set up once and used for every phase of every scenario.
+///
+/// Each variant owns exactly the state its mechanism needs, so there is no way to be in
+/// cgroup mode without a cgroup to put scenarios in.
 #[derive(Debug)]
-pub struct MemoryLimit {
-    bytes: u64,
-    mechanism: MemoryMechanism,
+pub enum MemoryLimit {
     #[cfg(target_os = "linux")]
-    cgroups: Option<cgroup::CgroupTree>,
+    CgroupV2 {
+        bytes: u64,
+        tree: cgroup::CgroupTree,
+    },
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
+    RlimitAs {
+        bytes: u64,
+    },
+    Unenforced,
 }
 
 impl MemoryLimit {
@@ -92,127 +106,122 @@ impl MemoryLimit {
     /// This is done once, before any mutant is tested, so that an unenforceable limit is
     /// an error the user sees immediately rather than a run that silently had no limit.
     pub fn new(bytes: u64) -> Result<MemoryLimit> {
-        #[cfg(target_os = "linux")]
-        let cgroups = match cgroup::CgroupTree::probe(bytes) {
-            Ok(tree) => Some(tree),
-            Err(err) => {
-                debug!(?err, "cgroup v2 memory limits are not available");
-                None
-            }
-        };
-        #[cfg(target_os = "linux")]
-        let cgroup_available = cgroups.is_some();
-        #[cfg(not(target_os = "linux"))]
-        let cgroup_available = false;
-
-        let mechanism =
-            choose_mechanism(cgroup_available, rlimit::settable(bytes), rlimit::ENFORCED)?;
-        if mechanism == MemoryMechanism::Unenforced {
+        let limit = MemoryLimit::detect(bytes)?;
+        if limit.mechanism() == MemoryMechanism::Unenforced {
             warn!(
                 "--max-memory has no effect on this platform: RLIMIT_AS is accepted but not enforced here, and cgroups are not available"
             );
         } else {
             info!(
                 "Limiting each scenario to {bytes} bytes of memory using {}",
-                mechanism.describe()
+                limit.mechanism().describe()
             );
         }
-        Ok(MemoryLimit {
-            bytes,
-            mechanism,
+        Ok(limit)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn detect(bytes: u64) -> Result<MemoryLimit> {
+        match cgroup::CgroupTree::probe(bytes) {
+            Ok(tree) => Ok(MemoryLimit::CgroupV2 { bytes, tree }),
+            Err(err) => {
+                debug!(?err, "cgroup v2 memory limits are not available");
+                MemoryLimit::without_cgroups(bytes)
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    fn detect(bytes: u64) -> Result<MemoryLimit> {
+        MemoryLimit::without_cgroups(bytes)
+    }
+
+    /// The limit to fall back to when no cgroup can be used.
+    fn without_cgroups(bytes: u64) -> Result<MemoryLimit> {
+        match choose_mechanism(false, rlimit::settable(bytes), rlimit::ENFORCED)? {
+            #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
+            MemoryMechanism::RlimitAs => Ok(MemoryLimit::RlimitAs { bytes }),
+            // We passed `false` for cgroups, so `CgroupV2` cannot come back; folding it in
+            // here keeps that a dead branch rather than a panic.
+            _ => Ok(MemoryLimit::Unenforced),
+        }
+    }
+
+    fn mechanism(&self) -> MemoryMechanism {
+        match self {
             #[cfg(target_os = "linux")]
-            cgroups,
-        })
+            MemoryLimit::CgroupV2 { .. } => MemoryMechanism::CgroupV2,
+            #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
+            MemoryLimit::RlimitAs { .. } => MemoryMechanism::RlimitAs,
+            MemoryLimit::Unenforced => MemoryMechanism::Unenforced,
+        }
     }
 
     /// Set up the limit for one scenario phase, before its command is spawned.
-    #[allow(clippy::unnecessary_wraps)] // fallible only where cgroups exist
+    #[cfg_attr(not(target_os = "linux"), allow(clippy::unnecessary_wraps))]
     pub fn start(&self) -> Result<ScenarioMemoryLimit> {
-        #[cfg(target_os = "linux")]
-        let cgroup = self
-            .cgroups
-            .as_ref()
-            .map(|tree| tree.create_scenario(self.bytes))
-            .transpose()
-            .context("create a cgroup for this scenario")?;
-        Ok(ScenarioMemoryLimit {
-            bytes: self.bytes,
-            mechanism: self.mechanism,
+        Ok(match self {
             #[cfg(target_os = "linux")]
-            cgroup,
+            MemoryLimit::CgroupV2 { bytes, tree } => ScenarioMemoryLimit::CgroupV2(
+                tree.create_scenario(*bytes)
+                    .context("create a cgroup for this scenario")?,
+            ),
+            #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
+            MemoryLimit::RlimitAs { bytes } => ScenarioMemoryLimit::RlimitAs(*bytes),
+            MemoryLimit::Unenforced => ScenarioMemoryLimit::Unenforced,
         })
     }
 }
 
 /// The memory limit in force for one scenario phase.
 #[derive(Debug)]
-pub struct ScenarioMemoryLimit {
-    bytes: u64,
-    mechanism: MemoryMechanism,
+pub enum ScenarioMemoryLimit {
     #[cfg(target_os = "linux")]
-    cgroup: Option<cgroup::ScenarioCgroup>,
+    CgroupV2(cgroup::ScenarioCgroup),
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
+    RlimitAs(u64),
+    Unenforced,
 }
 
 impl ScenarioMemoryLimit {
     /// Arrange for the command, once forked, to be subject to the limit, so that it
     /// applies from the very first allocation the child makes.
+    #[cfg_attr(not(target_os = "linux"), allow(clippy::unnecessary_wraps))]
     pub fn configure_command(&self, command: &mut Command) -> Result<()> {
-        match self.mechanism {
-            MemoryMechanism::CgroupV2 => self.move_into_cgroup(command),
-            MemoryMechanism::RlimitAs => {
-                rlimit::apply_to_child(command, self.bytes);
-                Ok(())
+        match self {
+            #[cfg(target_os = "linux")]
+            ScenarioMemoryLimit::CgroupV2(cgroup) => {
+                use std::io::Write;
+                use std::os::unix::process::CommandExt;
+
+                let procs = cgroup.open_procs()?;
+                // SAFETY: opened before the fork, so the closure only writes to an
+                // already-open descriptor -- no allocation, no locks -- which is safe
+                // between fork and exec. "0" means "the process doing the writing".
+                unsafe {
+                    command.pre_exec(move || (&procs).write_all(b"0\n"));
+                }
             }
-            MemoryMechanism::Unenforced => Ok(()),
-        }
-    }
-
-    /// Finish with the limit, returning how many times the kernel OOM-killed something
-    /// in this scenario, where the mechanism can tell us.
-    #[allow(clippy::unused_self)] // only cgroups have anything to report
-    pub fn finish(self) -> Option<u64> {
-        #[cfg(target_os = "linux")]
-        if let Some(cgroup) = self.cgroup {
-            let oom_kills = cgroup.oom_kills();
-            cgroup.remove();
-            return oom_kills;
-        }
-        None
-    }
-
-    #[cfg(target_os = "linux")]
-    fn move_into_cgroup(&self, command: &mut Command) -> Result<()> {
-        use std::io::Write;
-        use std::os::unix::process::CommandExt;
-
-        let cgroup = self
-            .cgroup
-            .as_ref()
-            .expect("a cgroup was created when the cgroup mechanism was chosen");
-        // Open before forking: the child can then move itself in with a single write to
-        // an already-open descriptor, which is safe to do between fork and exec.
-        let procs = cgroup.open_procs()?;
-        // SAFETY: the closure only writes to an already-open file descriptor, and does
-        // not allocate or take locks, so it is safe to run between fork and exec.
-        unsafe {
-            command.pre_exec(move || {
-                // "0" means "the process doing the writing".
-                (&procs).write_all(b"0\n")
-            });
+            #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
+            ScenarioMemoryLimit::RlimitAs(bytes) => rlimit::apply_to_child(command, *bytes),
+            ScenarioMemoryLimit::Unenforced => {}
         }
         Ok(())
     }
 
-    #[cfg(not(target_os = "linux"))]
-    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
-    fn move_into_cgroup(&self, _command: &mut Command) -> Result<()> {
-        unreachable!("the cgroup mechanism is only ever chosen on Linux")
+    /// Finish with the limit, returning how many times the kernel OOM-killed something
+    /// in this scenario, where the mechanism can tell us.
+    ///
+    /// Any cgroup is removed as this is dropped.
+    pub fn finish(self) -> Option<u64> {
+        match self {
+            #[cfg(target_os = "linux")]
+            ScenarioMemoryLimit::CgroupV2(cgroup) => cgroup.oom_kills(),
+            _ => None,
+        }
     }
 }
 
-/// `setrlimit(RLIMIT_AS)`, on the platforms where `nix` exposes it and cargo-mutants is
-/// supported. Elsewhere there is no rlimit fallback at all, and `--max-memory` is an
-/// error unless a cgroup can be used.
 #[cfg(any(target_os = "linux", target_os = "android", target_os = "macos"))]
 mod rlimit {
     use std::io;
@@ -253,16 +262,10 @@ mod rlimit {
 
 #[cfg(not(any(target_os = "linux", target_os = "android", target_os = "macos")))]
 mod rlimit {
-    use std::process::Command;
-
     pub const ENFORCED: bool = false;
 
     pub fn settable(_bytes: u64) -> bool {
         false
-    }
-
-    pub fn apply_to_child(_command: &mut Command, _bytes: u64) {
-        unreachable!("the RLIMIT_AS mechanism is only ever chosen where it can be set")
     }
 }
 
@@ -270,36 +273,36 @@ mod rlimit {
 mod test {
     use super::{MemoryMechanism, choose_mechanism};
 
+    /// The mechanism is picked from what the platform can do, in order of preference.
     #[test]
-    fn choose_mechanism_prefers_cgroups_over_rlimit() {
-        assert_eq!(
-            choose_mechanism(true, true, true).unwrap(),
-            MemoryMechanism::CgroupV2
-        );
-        assert_eq!(
-            choose_mechanism(false, true, true).unwrap(),
-            MemoryMechanism::RlimitAs
-        );
+    fn choose_mechanism_picks_by_availability() {
+        // (cgroups available, RLIMIT_AS settable, RLIMIT_AS enforced) -> mechanism, where
+        // None means --max-memory should be rejected outright.
+        let cases = [
+            ((true, true, true), Some(MemoryMechanism::CgroupV2)),
+            ((true, false, false), Some(MemoryMechanism::CgroupV2)),
+            ((false, true, true), Some(MemoryMechanism::RlimitAs)),
+            // macOS: the call is accepted and then ignored.
+            ((false, true, false), Some(MemoryMechanism::Unenforced)),
+            ((false, false, false), None),
+            ((false, false, true), None),
+        ];
+        for ((cgroup, settable, enforced), expected) in cases {
+            assert_eq!(
+                choose_mechanism(cgroup, settable, enforced).ok(),
+                expected,
+                "cgroup={cgroup} settable={settable} enforced={enforced}"
+            );
+        }
     }
 
-    /// On macOS `RLIMIT_AS` can be set but is ignored, so say so rather than pretending.
     #[test]
-    fn choose_mechanism_is_unenforced_when_rlimit_is_accepted_but_ignored() {
-        assert_eq!(
-            choose_mechanism(false, true, false).unwrap(),
-            MemoryMechanism::Unenforced
-        );
-    }
-
-    #[test]
-    fn choose_mechanism_with_no_usable_mechanism_is_an_error() {
+    fn choose_mechanism_with_no_usable_mechanism_names_the_option() {
         let err = choose_mechanism(false, false, false)
             .expect_err("--max-memory with no mechanism should be an error");
         assert!(
             err.to_string().contains("--max-memory"),
             "unhelpful error message: {err}"
         );
-        // Also an error if RLIMIT_AS would be enforced but can't be set at all.
-        assert!(choose_mechanism(false, false, true).is_err());
     }
 }
