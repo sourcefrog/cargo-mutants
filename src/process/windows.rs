@@ -11,6 +11,12 @@ pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
     child.kill().context("Kill child")
 }
 
+/// Windows has no `SIGTERM`, so `terminate_child` already killed it outright.
+#[mutants::skip] // would leak processes from tests if skipped
+pub(super) fn kill_child(child: &mut Child) -> Result<()> {
+    child.kill().context("Kill child")
+}
+
 /// Windows has no process groups; the equivalent would be a job object, which we don't
 /// use yet, so there is nothing to sweep.
 #[allow(clippy::unnecessary_wraps)] // To match Unix
