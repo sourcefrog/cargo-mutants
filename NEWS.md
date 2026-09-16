@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed: Each cargo invocation now runs as the leader of its own process group, and that group is swept after every phase, not only after a timeout. Processes left running by a scenario's tests are `SIGTERM`ed, given a short grace period, and then `SIGKILL`ed, so they can't keep consuming memory or CPU while later mutants are tested. Unix only.
+
+- Fixed: After a timeout, cargo-mutants waits only a short grace period for the child to exit after `SIGTERM` before sending `SIGKILL`. Previously it waited indefinitely, so a process that ignored `SIGTERM`, or that had been stopped, hung the whole run.
+
 - New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, files, and on expressions that can carry an attribute (such as `match`, struct literals, call expressions, method calls, and unary expressions). Multiple patterns can be applied. Also supported within `cfg_attr`. Requires the [mutants](https://crates.io/crates/mutants) crate version `0.0.5` or later.
 
 - Fixed: `#[mutants::skip]` (and `#[cfg_attr(..., mutants::skip)]`) is now honoured when placed on `const` and `static` items, including associated constants in `impl` and `trait` blocks. Previously the attribute was silently ignored on these items and operator mutants inside the initializer expression were still generated ([#508](https://github.com/sourcefrog/cargo-mutants/issues/508)).
