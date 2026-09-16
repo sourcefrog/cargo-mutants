@@ -3865,7 +3865,7 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario()
     let pid_file = pid_dir.path().join("pids.txt");
     let assert = run()
         .arg("mutants")
-        .args(["--timeout=60", "--build-timeout=120", "-L", "debug"])
+        .args(["--timeout=60", "--build-timeout=120", "-L", "debug", "-v"])
         .env("BACKGROUND_CHILD_PID_FILE", &pid_file)
         .current_dir(tmp_src_dir.path())
         .timeout(OUTER_TIMEOUT)
@@ -3897,6 +3897,13 @@ fn processes_spawned_by_tests_are_swept_after_each_scenario()
         survivors,
         Vec::<i32>::new(),
         "processes spawned by the tests were still running after cargo-mutants finished"
+    );
+
+    // The outcome line should say what was left behind, so that a scenario that leaks
+    // processes is visible rather than silent.
+    assert!(
+        stdout.contains("stray process"),
+        "no mention of the stray processes in:\n{stdout}"
     );
 
     // Sweeping the process group must not change any verdict.
