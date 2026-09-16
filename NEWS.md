@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- New: `--max-memory SIZE` (and the `max_memory` config key) bounds how much memory each scenario's cargo process tree may use, so that a mutant that turns a loop into an unbounded allocator is stopped by the kernel rather than taking the machine down with it. It is enforced with `setrlimit(RLIMIT_AS)`, which limits address space rather than resident memory, so set it generously. macOS does not enforce `RLIMIT_AS`, so the option is a no-op there. If the option is given and it cannot be applied, cargo-mutants fails before testing any mutant rather than running with no limit.
+- New: `--max-memory SIZE` (and the `max_memory` config key) bounds how much memory each scenario's cargo process tree may use, so that a mutant that turns a loop into an unbounded allocator is stopped by the kernel rather than taking the machine down with it. On Linux it uses a cgroup v2 `memory.max` where a writable cgroup is available, and otherwise `setrlimit(RLIMIT_AS)`; the mechanism in use is logged. macOS does not enforce `RLIMIT_AS`, so the option is a no-op there. If the option is given and it cannot be applied, cargo-mutants fails before testing any mutant rather than running with no limit.
 
 - New: `#[mutants::exclude_re("pattern")]` attribute to exclude specific mutations by regex, without disabling all mutations on the function. The attribute can be placed on functions, `impl` blocks, `trait` blocks, modules, files, and on expressions that can carry an attribute (such as `match`, struct literals, call expressions, method calls, and unary expressions). Multiple patterns can be applied. Also supported within `cfg_attr`. Requires the [mutants](https://crates.io/crates/mutants) crate version `0.0.5` or later.
 
