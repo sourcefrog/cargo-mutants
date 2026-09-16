@@ -121,6 +121,26 @@ This has no effect on how a mutant is classified; it only stops work from one sc
 leaking into the next. Windows has no process groups, and cargo-mutants does not yet use
 job objects, so this sweep is Unix-only.
 
+## Why a scenario died
+
+A mutant caught because the kernel killed its tests looks, in the summary counts, exactly
+like a mutant caught by a failing assertion. When there is more to say, cargo-mutants says
+it in parentheses on the outcome line:
+
+```
+caught   src/parse.rs:41:9: replace += with -= in Cursor::advance (test OOM-killed by the kernel (1 process) for exceeding the memory limit) in 3s build + 1s test
+caught   src/server.rs:88:5: replace listen -> bool with false (test killed by SIGABRT; test left 1 stray process behind (SIGKILLed: 30411)) in 2s build + 9s test
+```
+
+Three things get reported this way: the signal that killed a phase's cargo process, if it
+died by one; the kernel's `oom_kill` count from the scenario's cgroup, when the cgroup
+memory limit is in use; and anything the process group sweep had to clean up. The same
+information is written to the scenario's log and, in `mutants.out/outcomes.json`, to a
+`report` field on each phase result.
+
+None of this changes the caught / missed / unviable / timeout classification. It only
+makes the reason visible.
+
 ## Exceptions
 
 The multiplier timeout options cannot be used when the baseline is skipped

@@ -35,6 +35,8 @@ use windows::{configure_command, sweep_process_group, terminate_child};
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
+pub use unix::signal_name;
+#[cfg(unix)]
 use unix::{configure_command, sweep_process_group, terminate_child};
 
 pub mod memory;
@@ -46,7 +48,7 @@ use memory::{MemoryLimit, ScenarioMemoryLimit};
 /// for, or anything a test spawned and forgot. Those processes stay in the child's
 /// process group, and would otherwise keep running (and keep allocating) while
 /// cargo-mutants moves on to later scenarios.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct Sweep {
     /// The pids that were in the group, where the platform can enumerate them.
     pub pids: Option<Vec<i32>>,
@@ -62,17 +64,30 @@ impl Sweep {
         if !self.strays {
             return None;
         }
-        let how = if self.killed { "killed" } else { "reaped" };
+        let how = if self.killed { "SIGKILLed" } else { "reaped" };
         Some(match &self.pids {
-            Some(pids) => format!(
-                "{how} {n} stray process{es} left over by the tests: {list}",
+            Some(pids) if !pids.is_empty() => format!(
+                "left {n} stray process{es} behind ({how}: {list})",
                 n = pids.len(),
                 es = if pids.len() == 1 { "" } else { "es" },
                 list = pids.iter().join(", ")
             ),
-            None => format!("{how} stray processes left over by the tests"),
+            _ => format!("left stray processes behind ({how})"),
         })
     }
+}
+
+/// What became of a phase's process tree, beyond the exit status of the direct child.
+///
+/// This is only ever reported, never used to classify the mutant: its job is to make an
+/// OOM-killed or signalled scenario distinguishable from one whose tests simply failed.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
+pub struct ProcessReport {
+    /// What the process group sweep found and did.
+    pub sweep: Sweep,
+    /// How many times the kernel OOM-killed a process in this phase's cgroup, when the
+    /// cgroup memory limit mechanism is in use.
+    pub oom_kills: Option<u64>,
 }
 
 pub struct Process {
@@ -100,7 +115,7 @@ impl Process {
         memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
-    ) -> Result<(Exit, Sweep)> {
+    ) -> Result<(Exit, ProcessReport)> {
         let mut child = Process::start(
             argv,
             env,
@@ -122,15 +137,22 @@ impl Process {
         let sweep = child.sweep()?;
         // Only safe once the sweep has emptied the cgroup: the kernel won't let us
         // remove a cgroup that still has members.
-        if let Some(oom_kills) = child.memory.take().and_then(ScenarioMemoryLimit::finish) {
+        let oom_kills = child.memory.take().and_then(ScenarioMemoryLimit::finish);
+        if let Some(oom_kills) = oom_kills {
             debug!(oom_kills, "cgroup memory.events after phase");
         }
+        let report = ProcessReport { sweep, oom_kills };
         let process_status = result?;
         scenario_output.message(&format!("result: {process_status:?}"))?;
-        if let Some(description) = sweep.describe() {
+        if let Some(description) = report.sweep.describe() {
             scenario_output.message(&description)?;
         }
-        Ok((process_status, sweep))
+        if let Some(oom_kills) = report.oom_kills.filter(|n| *n > 0) {
+            scenario_output.message(&format!(
+                "the kernel OOM-killed {oom_kills} process(es) in this scenario's memory cgroup"
+            ))?;
+        }
+        Ok((process_status, report))
     }
 
     /// Kill anything the child left running in its process group.
