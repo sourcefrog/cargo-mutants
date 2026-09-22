@@ -263,11 +263,29 @@ mod test {
         Ok(())
     }
 
+    /// Returns false when the current process can bypass Unix DAC permission checks
+    /// (e.g. running as root or with a privilege like Illumos PRIV_FILE_DAC_WRITE).
+    /// Tests that depend on mode-0 restrictions making writes fail must skip in that case.
+    #[cfg(unix)]
+    fn unix_dac_permissions_enforced() -> bool {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("probe");
+        std::fs::write(&path, b"test").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o000)).unwrap();
+        std::fs::write(&path, b"x").is_err()
+    }
+
     /// Test reporting of generic failures to write into the build dir, by making them unwriteable.
     #[test]
     #[cfg(unix)]
     fn fail_to_overwrite() -> Result<()> {
         use std::{fs::set_permissions, os::unix::fs::PermissionsExt};
+
+        if !unix_dac_permissions_enforced() {
+            // Running with privileges that bypass file permissions (e.g. root); skip.
+            return Ok(());
+        }
 
         let tmp = copy_of_testdata("factorial");
         let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
@@ -292,6 +310,11 @@ mod test {
     #[cfg(unix)]
     fn fail_to_overwrite_dir_permission_denied() -> Result<()> {
         use std::{fs::set_permissions, os::unix::fs::PermissionsExt};
+
+        if !unix_dac_permissions_enforced() {
+            // Running with privileges that bypass file permissions (e.g. root); skip.
+            return Ok(());
+        }
 
         let tmp = copy_of_testdata("factorial");
         let tmp_path: &Utf8Path = tmp.path().try_into().unwrap();
