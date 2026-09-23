@@ -1029,7 +1029,7 @@ fn stop_on_missed_stops_at_first_missed_mutant_in_unapply_tree() {
             true
         }))
         .stderr(predicate::str::contains(
-            "Stopping after a missed mutant (--stop-on-missed): 3 mutants not tested",
+            "Stopped after a missed mutant (--stop-on-missed): 3 mutants not tested",
         ));
     assert_eq!(
         outcome_json_counts(&tmp_src_dir),
@@ -1061,7 +1061,7 @@ fn stop_on_missed_is_quiet_when_last_mutant_in_unapply_tree_is_missed() {
         .arg(tmp_src_dir.path())
         .assert()
         .code(2)
-        .stderr(predicate::str::contains("Stopping after a missed mutant").not());
+        .stderr(predicate::str::contains("Stopped after a missed mutant").not());
     assert_eq!(outcome_json_counts(&tmp_src_dir)["missed"], 1);
 }
 

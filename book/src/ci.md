@@ -16,7 +16,8 @@ There are at least two complementary ways to use cargo-mutants in CI:
 
 If a CI job only needs to know whether any mutant is missed, `--stop-on-missed` (or
 `stop_on_missed = true` in the config file) makes cargo-mutants stop starting new mutants
-as soon as one is missed. The exit code is 2, as for any run that finds missed mutants.
+as soon as one is missed. The [exit code](exit-codes.md) is the usual one for a run with
+missed mutants: 2, or 3 if some mutant also timed out.
 
 With `--jobs` greater than one, mutants that were already being tested in other
 jobs are finished and reported, so more than one missed mutant may be listed.
