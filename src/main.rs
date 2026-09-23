@@ -320,6 +320,12 @@ pub struct Args {
     #[arg(long, help_heading = "Execution", conflicts_with = "no_shuffle")]
     shuffle: bool,
 
+    /// Stop testing new mutants after the first missed mutant.
+    ///
+    /// Mutants that are already being tested are finished and reported.
+    #[arg(long, help_heading = "Execution")]
+    stop_on_missed: bool,
+
     /// Maximum run time for all cargo commands, in seconds.
     #[arg(long, short = 't', help_heading = "Execution")]
     timeout: Option<f64>,

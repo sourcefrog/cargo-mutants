@@ -30,6 +30,9 @@ timeout_multiplier = 2.0
 # Minimum test timeout in seconds
 minimum_test_timeout = 60.0
 
+# Stop testing new mutants after the first missed mutant
+# stop_on_missed = true
+
 # Copy VCS directories (.git, etc.) to build directories
 copy_vcs = true
 

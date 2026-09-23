@@ -13,13 +13,13 @@ use std::{thread, vec};
 
 use itertools::Itertools;
 use jiff::Timestamp;
-use tracing::{debug, debug_span, error, trace, warn};
+use tracing::{debug, debug_span, error, info, trace, warn};
 
 use crate::{
     BaselineStrategy, BuildDir, Console, Context, Mutant, Options, Phase, Result, Scenario,
-    ScenarioOutcome, cargo::run_cargo, options::TestPackages, outcome::LabOutcome,
-    output::OutputDir, package::Package, package::PackageSelection, timeouts::Timeouts,
-    workspace::Workspace,
+    ScenarioOutcome, cargo::run_cargo, console::plural, options::TestPackages, outcome::LabOutcome,
+    outcome::SummaryOutcome, output::OutputDir, package::Package, package::PackageSelection,
+    timeouts::Timeouts, workspace::Workspace,
 };
 
 /// Run all possible mutation experiments.
@@ -249,7 +249,24 @@ impl Worker<'_> {
                 }
                 TestsForMutant::Explicit(packages) => PackageSelection::Explicit(packages.clone()),
             };
-            self.run_one_scenario(&Scenario::Mutant(mutant), &test_packages, timeouts)?;
+            let outcome =
+                self.run_one_scenario(&Scenario::Mutant(mutant), &test_packages, timeouts)?;
+            if self.options.stop_on_missed && outcome.summary() == SummaryOutcome::MissedMutant {
+                // Empty the shared queue so that no worker starts another mutant;
+                // mutants already running in other workers still finish.
+                let not_tested = work_queue
+                    .lock()
+                    .expect("Lock pending work queue")
+                    .by_ref()
+                    .count();
+                if not_tested > 0 {
+                    info!(
+                        "Stopping after a missed mutant (--stop-on-missed): {} not tested",
+                        plural(not_tested, "mutant")
+                    );
+                }
+                return Ok(());
+            }
         }
     }
 

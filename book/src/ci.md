@@ -12,6 +12,18 @@ There are at least two complementary ways to use cargo-mutants in CI:
 
 * Use the [`--in-place`](in-place.md) option to avoid copying the tree.
 
+## Stopping at the first missed mutant
+
+If a CI job only needs to know whether any mutant is missed, `--stop-on-missed` (or
+`stop_on_missed = true` in the config file) makes cargo-mutants stop starting new mutants
+as soon as one is missed. The exit code is 2, as for any run that finds missed mutants.
+
+With `--jobs` greater than one, mutants that were already being tested in other
+jobs are finished and reported, so more than one missed mutant may be listed.
+The mutants that were never started are not listed in `missed.txt`, `caught.txt`
+or `outcomes.json`, so a run with `--stop-on-missed` does not tell you how many
+mutants would have been missed in total.
+
 ## Installing into CI
 
 The recommended way to install cargo-mutants is using [install-action](https://github.com/taiki-e/install-action), which will fetch a binary from cargo-mutants most recent GitHub release, which is faster than building from source. You could alternatively use [baptiste0928/cargo-install](https://github.com/baptiste0928/cargo-install) which will build it from source in your worker and cache the result.

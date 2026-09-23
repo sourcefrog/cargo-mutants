@@ -113,6 +113,9 @@ pub struct Options {
     /// interesting results.
     pub shuffle: bool,
 
+    /// Stop testing new mutants after the first missed mutant.
+    pub stop_on_missed: bool,
+
     /// Don't mutate arguments to functions or methods matching any of these name.
     ///
     /// This matches as a string against the last component of the path, so should not include
@@ -381,6 +384,7 @@ impl Options {
             show_times: !args.no_times,
             show_all_logs: args.all_logs,
             skip_calls,
+            stop_on_missed: args.stop_on_missed || config.stop_on_missed.unwrap_or(false),
             test_package,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
@@ -1085,6 +1089,22 @@ mod test {
         let config = Config::from_str("").unwrap();
         let options = Options::new(&args, &config).unwrap();
         assert!(!options.copy_vcs);
+    }
+
+    #[test]
+    fn stop_on_missed_is_set_from_args_or_config() {
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(!options.stop_on_missed);
+
+        let args = Args::parse_from(["mutants", "--stop-on-missed"]);
+        let options = Options::new(&args, &Config::default()).unwrap();
+        assert!(options.stop_on_missed);
+
+        let args = Args::parse_from(["mutants"]);
+        let config = Config::from_str("stop_on_missed = true").unwrap();
+        let options = Options::new(&args, &config).unwrap();
+        assert!(options.stop_on_missed);
     }
 
     #[test]
