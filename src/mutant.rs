@@ -477,6 +477,7 @@ mod test {
                 "replace > with == in controlled_loop",
                 "replace > with < in controlled_loop",
                 "replace > with >= in controlled_loop",
+                "replace > with <= in controlled_loop",
                 "replace * with + in controlled_loop",
                 "replace * with / in controlled_loop",
             ]
