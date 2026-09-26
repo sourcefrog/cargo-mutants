@@ -1,0 +1,9 @@
+---
+source: tests/main.rs
+expression: stdout
+---
+Found 6 mutants to test
+ok       Unmutated baseline
+MISSED   src/b.rs:2:5: replace one_untested -> i32 with 0
+3 mutants tested: 1 missed, 2 caught
+

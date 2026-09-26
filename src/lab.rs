@@ -7,19 +7,20 @@
 
 use std::cmp::{max, min};
 use std::panic::resume_unwind;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::{thread, vec};
 
 use itertools::Itertools;
 use jiff::Timestamp;
-use tracing::{debug, debug_span, error, trace, warn};
+use tracing::{debug, debug_span, error, info, trace, warn};
 
 use crate::{
     BaselineStrategy, BuildDir, Console, Context, Mutant, Options, Phase, Result, Scenario,
-    ScenarioOutcome, cargo::run_cargo, options::TestPackages, outcome::LabOutcome,
-    output::OutputDir, package::Package, package::PackageSelection, timeouts::Timeouts,
-    workspace::Workspace,
+    ScenarioOutcome, cargo::run_cargo, console::plural, options::TestPackages, outcome::LabOutcome,
+    outcome::SummaryOutcome, output::OutputDir, package::Package, package::PackageSelection,
+    timeouts::Timeouts, workspace::Workspace,
 };
 
 /// Run all possible mutation experiments.
@@ -63,6 +64,7 @@ pub fn test_mutants(
         output_mutex,
         jobserver,
         tests_for_mutant,
+        stop_requested: AtomicBool::new(false),
         options,
         console,
     };
@@ -111,6 +113,15 @@ pub fn test_mutants(
         }
         join_threads(threads)
     })?;
+    if lab.stop_requested.load(Ordering::SeqCst) {
+        let not_tested = work_queue.lock().expect("lock pending work queue").len();
+        if not_tested > 0 {
+            info!(
+                "Stopped after a missed mutant (--stop-on-missed): {} not tested",
+                plural(not_tested, "mutant")
+            );
+        }
+    }
 
     let output_dir = lab
         .output_mutex
@@ -165,6 +176,8 @@ struct Lab<'a> {
     output_mutex: Mutex<OutputDir>,
     jobserver: Option<jobserver::Client>,
     tests_for_mutant: TestsForMutant,
+    /// Set by `--stop-on-missed` when a mutant is missed: no worker starts another.
+    stop_requested: AtomicBool,
     options: &'a Options,
     console: &'a Console,
 }
@@ -208,6 +221,7 @@ impl Lab<'_> {
             output_mutex: &self.output_mutex,
             jobserver: self.jobserver.as_ref(),
             tests_for_mutant: &self.tests_for_mutant,
+            stop_requested: &self.stop_requested,
             options: self.options,
             console: self.console,
         }
@@ -223,6 +237,7 @@ struct Worker<'a> {
     output_mutex: &'a Mutex<OutputDir>,
     jobserver: Option<&'a jobserver::Client>,
     tests_for_mutant: &'a TestsForMutant,
+    stop_requested: &'a AtomicBool,
     options: &'a Options,
     console: &'a Console,
 }
@@ -236,6 +251,9 @@ impl Worker<'_> {
     ) -> Result<()> {
         let _span = debug_span!("worker thread", build_dir = ?self.build_dir.path()).entered();
         loop {
+            if self.stop_requested.load(Ordering::SeqCst) {
+                return Ok(());
+            }
             // Not a `for` statement so that we don't hold the lock
             // for the whole iteration.
             let Some(mutant) = work_queue.lock().expect("Lock pending work queue").next() else {
@@ -310,6 +328,11 @@ impl Worker<'_> {
                     return Err(err);
                 }
             }
+        }
+        if self.options.stop_on_missed && outcome.summary() == SummaryOutcome::MissedMutant {
+            // Set before reverting and recording this mutant, so that other workers
+            // stop taking new mutants as soon as possible.
+            self.stop_requested.store(true, Ordering::SeqCst);
         }
         if let Some(mutant) = scenario.mutant() {
             mutant.revert(self.build_dir)?;

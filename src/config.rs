@@ -78,6 +78,8 @@ pub struct Config {
     pub skip_calls: Vec<String>,
     /// Use built-in defaults for `skip_calls` in addition to any explicit values.
     pub skip_calls_defaults: Option<bool>,
+    /// Stop testing new mutants after the first missed mutant.
+    pub stop_on_missed: Option<bool>,
     /// Run tests from these packages for all mutants.
     pub test_package: Vec<String>,
 

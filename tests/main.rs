@@ -1005,6 +1005,66 @@ fn mutants_are_unapplied_after_testing_so_later_missed_mutants_are_found() {
         }));
 }
 
+/// With `--stop-on-missed` and one job, testing stops at the first missed mutant.
+///
+/// In the `unapply` tree the two mutants in `a.rs` are caught and the first one in
+/// `b.rs` is missed, so the second one in `b.rs` and those in `c.rs` are not tested.
+#[test]
+fn stop_on_missed_stops_at_first_missed_mutant_in_unapply_tree() {
+    let tmp_src_dir = copy_of_testdata("unapply");
+    run()
+        .args([
+            "mutants",
+            "--no-times",
+            "--no-shuffle",
+            "--stop-on-missed",
+            "-j1",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(2)
+        .stdout(predicate::function(|stdout: &str| {
+            insta::assert_snapshot!(stdout);
+            true
+        }))
+        .stderr(predicate::str::contains(
+            "Stopped after a missed mutant (--stop-on-missed): 3 mutants not tested",
+        ));
+    assert_eq!(
+        outcome_json_counts(&tmp_src_dir),
+        serde_json::json!({
+            "success": 0,
+            "caught": 2,
+            "unviable": 0,
+            "missed": 1,
+            "timeout": 0,
+            "total_mutants": 3,
+        })
+    );
+}
+
+/// When the missed mutant is the last one, `--stop-on-missed` has nothing to skip
+/// and says nothing about stopping.
+#[test]
+fn stop_on_missed_is_quiet_when_last_mutant_in_unapply_tree_is_missed() {
+    let tmp_src_dir = copy_of_testdata("unapply");
+    run()
+        .args([
+            "mutants",
+            "--no-times",
+            "--stop-on-missed",
+            "--re",
+            "one_untested -> i32 with -1",
+        ])
+        .arg("-d")
+        .arg(tmp_src_dir.path())
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("Stopped after a missed mutant").not());
+    assert_eq!(outcome_json_counts(&tmp_src_dir)["missed"], 1);
+}
+
 #[test]
 fn strict_warnings_about_unused_variables_are_disabled_so_mutants_compile() {
     let tmp_src_dir = copy_of_testdata("strict_warnings");
