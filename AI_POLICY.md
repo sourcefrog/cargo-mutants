@@ -6,8 +6,6 @@
 
 This applies even if you have reviewed the generated content yourself, or are willing to take responsibility.
 
-This policy applies from September 2026 and is, of course, subject to change.
-
 # Rationale
 
 This is a personal-time non-commercial project. Although I appreciate the support from GitHub sponsors and want to make it useful for the Rust community at large, it is primarily fueled by my personal enjoyment and enthusiasm for the project. Maintainer bandwidth is the limiting reagent.
