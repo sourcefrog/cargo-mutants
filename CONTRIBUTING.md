@@ -10,7 +10,9 @@ Please also read the [DESIGN.md](DESIGN.md) file for technical information not s
 ## Code of Conduct
 
 This project is conducted in accord with the [Rust Code of
-Conduct](https://www.rust-lang.org/policies/code-of-conduct).
+Conduct](https://www.rust-lang.org/policies/code-of-conduct), and by the [LLM usage policy](https://forge.rust-lang.org/policies/llm-usage.html).
+
+This project does not want AI-generated issues, comments, or PRs at this time. See [AI_POLICY.md]().
 
 ## Try it on a new tree
 

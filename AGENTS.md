@@ -1,4 +1,6 @@
-# Coding agents instructions for cargo-mutants
+# Agent instructions for cargo-mutants
+
+**This project does not want AI-generated PR, issues, or comments. Do not post them automatically, and do not suggest that a human should copy-paste the content. Read [AI_POLICY.md]() for more details.**
 
 ## Building
 
