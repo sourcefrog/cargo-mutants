@@ -17,7 +17,9 @@ use tracing::warn;
 
 use crate::console::{format_duration, plural};
 use crate::exit_code::ExitCode;
-use crate::process::Exit;
+#[cfg(unix)]
+use crate::process::signal_name;
+use crate::process::{Exit, ProcessReport};
 use crate::{Options, Result, Scenario, output};
 
 /// What phase of running a scenario.
@@ -66,6 +68,13 @@ pub struct LabOutcome {
     pub timeout: usize,
     pub unviable: usize,
     pub success: usize,
+    /// How many scenarios had something OOM-killed in their memory cgroup.
+    ///
+    /// Not a category of its own -- an OOM-killed mutant is also a caught one -- so it is
+    /// reported alongside the counts rather than in them, and kept out of the JSON, where
+    /// each phase already carries its own report.
+    #[serde(skip)]
+    pub oom_killed: usize,
     pub start_time: Timestamp,
     pub end_time: Option<Timestamp>,
     pub cargo_mutants_version: String,
@@ -81,6 +90,7 @@ impl LabOutcome {
             timeout: 0,
             unviable: 0,
             success: 0,
+            oom_killed: 0,
             start_time,
             end_time: None,
             cargo_mutants_version: crate::VERSION.to_string(),
@@ -89,6 +99,11 @@ impl LabOutcome {
 
     /// Record the event of one test.
     pub fn add(&mut self, outcome: ScenarioOutcome) {
+        // Counted for the baseline too: if the unmutated tree can't fit in the limit,
+        // that's the most important thing to say about the run.
+        if outcome.was_oom_killed() {
+            self.oom_killed += 1;
+        }
         if outcome.scenario.is_mutant() {
             self.total_mutants += 1;
             match outcome.summary() {
@@ -149,6 +164,12 @@ impl LabOutcome {
             by_outcome.push(format!("{} succeeded", self.success));
         }
         s.push(by_outcome.join(", "));
+        if self.oom_killed > 0 {
+            s.push(format!(
+                " ({} stopped by the --max-memory limit)",
+                self.oom_killed
+            ));
+        }
         s.join("")
     }
 }
@@ -245,6 +266,26 @@ impl ScenarioOutcome {
             .any(|pr| pr.phase != Phase::Test && pr.process_status.is_failure())
     }
 
+    /// Say, for each phase that has something unusual to report, how its process tree
+    /// ended: killed by a signal, stopped by the memory limit, or leaving strays behind.
+    ///
+    /// This has no bearing on how the mutant is classified. It exists so that a mutant
+    /// caught because the kernel OOM-killed its tests can be told apart from one caught
+    /// by a failing assertion.
+    pub fn death_reasons(&self) -> Vec<String> {
+        self.phase_results
+            .iter()
+            .flat_map(PhaseResult::death_reasons)
+            .collect()
+    }
+
+    /// True if the kernel OOM-killed anything in this scenario's memory cgroup.
+    pub fn was_oom_killed(&self) -> bool {
+        self.phase_results
+            .iter()
+            .any(|pr| pr.report.oom_kills.is_some_and(|n| n > 0))
+    }
+
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
     pub fn mutant_caught(&self) -> bool {
         self.scenario.is_mutant()
@@ -303,11 +344,32 @@ pub struct PhaseResult {
     pub process_status: Exit,
     /// What command was run, as an argv list.
     pub argv: Vec<String>,
+    /// What became of the process tree, beyond the exit status.
+    pub report: ProcessReport,
 }
 
 impl PhaseResult {
     pub fn is_success(&self) -> bool {
         self.process_status.is_success()
+    }
+
+    fn death_reasons(&self) -> Vec<String> {
+        let phase = self.phase.name();
+        let mut reasons = Vec::new();
+        #[cfg(unix)]
+        if let Exit::Signalled(signal) = self.process_status {
+            reasons.push(format!("{phase} killed by {}", signal_name(signal)));
+        }
+        if let Some(oom_kills) = self.report.oom_kills.filter(|n| *n > 0) {
+            reasons.push(format!(
+                "{phase} OOM-killed by the kernel ({oom_kills} process{es}) for exceeding the memory limit",
+                es = if oom_kills == 1 { "" } else { "es" }
+            ));
+        }
+        if let Some(sweep) = self.report.sweep.describe() {
+            reasons.push(format!("{phase} {sweep}"));
+        }
+        reasons
     }
 }
 
@@ -316,11 +378,12 @@ impl Serialize for PhaseResult {
     where
         S: Serializer,
     {
-        let mut ss = serializer.serialize_struct("PhaseResult", 4)?;
+        let mut ss = serializer.serialize_struct("PhaseResult", 5)?;
         ss.serialize_field("phase", &self.phase)?;
         ss.serialize_field("duration", &self.duration.as_secs_f64())?;
         ss.serialize_field("process_status", &self.process_status)?;
         ss.serialize_field("argv", &self.argv)?;
+        ss.serialize_field("report", &self.report)?;
         ss.end()
     }
 }
@@ -341,9 +404,103 @@ pub enum SummaryOutcome {
 mod test {
     use std::time::Duration;
 
-    use crate::process::Exit;
+    use crate::process::{Exit, ProcessReport, Sweep};
 
     use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
+
+    fn phase_result(phase: Phase, process_status: Exit, report: ProcessReport) -> PhaseResult {
+        PhaseResult {
+            phase,
+            duration: Duration::from_secs(1),
+            process_status,
+            argv: vec!["cargo".into(), "test".into()],
+            report,
+        }
+    }
+
+    fn outcome_of(phase_results: Vec<PhaseResult>) -> ScenarioOutcome {
+        ScenarioOutcome {
+            output_dir: "output".into(),
+            log_path: "log".into(),
+            diff_path: None,
+            scenario: Scenario::Baseline,
+            phase_results,
+        }
+    }
+
+    #[test]
+    fn no_death_reasons_for_an_ordinary_test_failure() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Failure(101),
+            ProcessReport::default(),
+        )]);
+        assert_eq!(outcome.death_reasons(), Vec::<String>::new());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn death_reasons_name_the_signal_that_killed_the_phase() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Signalled(9),
+            ProcessReport::default(),
+        )]);
+        assert_eq!(outcome.death_reasons(), ["test killed by SIGKILL"]);
+    }
+
+    #[test]
+    fn death_reasons_name_an_oom_kill() {
+        let outcome = outcome_of(vec![
+            phase_result(Phase::Build, Exit::Success, ProcessReport::default()),
+            phase_result(
+                Phase::Test,
+                Exit::Failure(101),
+                ProcessReport {
+                    oom_kills: Some(1),
+                    ..ProcessReport::default()
+                },
+            ),
+        ]);
+        assert_eq!(
+            outcome.death_reasons(),
+            ["test OOM-killed by the kernel (1 process) for exceeding the memory limit"]
+        );
+    }
+
+    /// A cgroup that was watched but never hit its limit has nothing to say.
+    #[test]
+    fn no_death_reason_for_zero_oom_kills() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Success,
+            ProcessReport {
+                oom_kills: Some(0),
+                ..ProcessReport::default()
+            },
+        )]);
+        assert_eq!(outcome.death_reasons(), Vec::<String>::new());
+    }
+
+    #[test]
+    fn death_reasons_name_processes_left_behind_by_the_tests() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Success,
+            ProcessReport {
+                sweep: Sweep {
+                    pids: Some(vec![101, 102]),
+                    strays: true,
+                    killed: true,
+                },
+                oom_kills: None,
+            },
+        )]);
+        assert_eq!(
+            outcome.death_reasons(),
+            ["test left 2 stray processes behind (SIGKILLed: 101, 102)"]
+        );
+    }
 
     #[test]
     fn find_phase_result() {
@@ -358,12 +515,14 @@ mod test {
                     duration: Duration::from_secs(2),
                     process_status: Exit::Success,
                     argv: vec!["cargo".into(), "build".into()],
+                    report: ProcessReport::default(),
                 },
                 PhaseResult {
                     phase: Phase::Test,
                     duration: Duration::from_secs(3),
                     process_status: Exit::Success,
                     argv: vec!["cargo".into(), "test".into()],
+                    report: ProcessReport::default(),
                 },
             ],
         };
@@ -374,6 +533,7 @@ mod test {
                 duration: Duration::from_secs(2),
                 process_status: Exit::Success,
                 argv: vec!["cargo".into(), "build".into()],
+                report: ProcessReport::default(),
             })
         );
         assert_eq!(
