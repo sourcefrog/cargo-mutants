@@ -62,7 +62,7 @@ jobs:
       - name: Check rustfmt
         run: cargo fmt --all --check
       - name: Check typos
-        uses: crate-ci/typos@master
+        uses: crate-ci/typos@v1
 
   binary:
     runs-on: ubuntu-latest
