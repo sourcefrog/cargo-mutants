@@ -13,8 +13,8 @@ on:
   schedule:
     - cron: "55 10 * * 0"
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
     paths:
       - ".cargo/*.toml"
       - ".github/workflows/tests.yml"
@@ -52,6 +52,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: beta
@@ -61,7 +62,7 @@ jobs:
       - name: Check rustfmt
         run: cargo fmt --all --check
       - name: Check typos
-        uses: crate-ci/typos@master
+        uses: crate-ci/typos@v1
 
   binary:
     runs-on: ubuntu-latest
