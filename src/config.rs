@@ -1,12 +1,17 @@
 // Copyright 2022-2026 Martin Pool.
 
-//! `.cargo/mutants.toml` configuration file.
+//! `mutants.toml` configuration file.
 //!
-//! The config file is read after parsing command line arguments,
+//! The config is read after parsing command line arguments,
 //! and after finding the source tree, because these together
 //! determine its location.
 //!
-//! The config file is then merged in to the [`Options`].
+//! Within the tree, the config is read from the first of
+//! [`CONFIG_FILE_NAMES`] that exists, or otherwise from a
+//! `[workspace.metadata.mutants]` or `[package.metadata.mutants]`
+//! table in the root `Cargo.toml`.
+//!
+//! The config is then merged in to the [`Options`].
 
 use std::default::Default;
 use std::fs::read_to_string;
@@ -30,7 +35,7 @@ use crate::options::Common;
 #[schemars(extend("$id" = "https://json.schemastore.org/cargo-mutants-config.json"))]
 #[schemars(title = "cargo-mutants configuration")]
 #[schemars(
-    description = "cargo-mutants configuration, read by default from `.cargo/mutants.toml`. See <https://mutants.rs/>."
+    description = "cargo-mutants configuration, read by default from `.cargo/mutants.toml` or another standard location in the source tree. See <https://mutants.rs/>."
 )]
 pub struct Config {
     /// Pass extra args to every cargo invocation.
@@ -93,6 +98,22 @@ pub struct Config {
     pub common: Common,
 }
 
+/// Paths, relative to the root of the source tree, from which the config is read,
+/// in order of precedence: the first one that exists is used.
+const CONFIG_FILE_NAMES: &[&str] = &[
+    ".cargo/mutants.toml",
+    "mutants.toml",
+    ".mutants.toml",
+    ".config/mutants.toml",
+];
+
+/// Tables in the root `Cargo.toml` from which the config is read if none of
+/// [`CONFIG_FILE_NAMES`] exists, in order of precedence.
+const MANIFEST_METADATA_TABLES: &[&[&str]] = &[
+    &["workspace", "metadata", "mutants"],
+    &["package", "metadata", "mutants"],
+];
+
 impl Config {
     pub fn read_file(path: &Path) -> Result<Config> {
         debug!(?path, "Read config");
@@ -101,17 +122,47 @@ impl Config {
         Config::from_str(&toml).with_context(|| format!("parse toml from {}", path.display()))
     }
 
-    /// Read the config from a tree's `.cargo/mutants.toml`, and return a default (empty)
-    /// Config is the file does not exist.
+    /// Read the config from the first of the standard locations in a tree that
+    /// exists, and return a default (empty) Config if there is none.
     pub fn read_tree_config(workspace_dir: &Utf8Path) -> Result<Config> {
-        let path = workspace_dir.join(".cargo").join("mutants.toml");
-        if path.exists() {
-            debug!(?path, "Found config in source tree");
-            Config::read_file(path.as_ref())
-        } else {
-            debug!("No config found in workspace");
-            Ok(Config::default())
+        for name in CONFIG_FILE_NAMES {
+            let path = workspace_dir.join(name);
+            if path.is_file() {
+                debug!(?path, "Found config in source tree");
+                return Config::read_file(path.as_ref());
+            }
         }
+        if let Some(config) = Config::read_manifest_metadata(workspace_dir)? {
+            return Ok(config);
+        }
+        debug!("No config found in workspace");
+        Ok(Config::default())
+    }
+
+    /// Read the config from a metadata table in the tree's root `Cargo.toml`,
+    /// if there is one.
+    fn read_manifest_metadata(workspace_dir: &Utf8Path) -> Result<Option<Config>> {
+        let path = workspace_dir.join("Cargo.toml");
+        if !path.is_file() {
+            return Ok(None);
+        }
+        let toml = read_to_string(&path).with_context(|| format!("read manifest {path}"))?;
+        let manifest: toml::Table =
+            toml::de::from_str(&toml).with_context(|| format!("parse toml from {path}"))?;
+        for keys in MANIFEST_METADATA_TABLES {
+            let mut value = manifest.get(keys[0]);
+            for key in &keys[1..] {
+                value = value.and_then(|value| value.get(key));
+            }
+            if let Some(value) = value {
+                let table = keys.join(".");
+                debug!(?path, table, "Found config in manifest");
+                return Config::deserialize(value.clone())
+                    .with_context(|| format!("parse `[{table}]` from {path}"))
+                    .map(Some);
+            }
+        }
+        Ok(None)
     }
 }
 
