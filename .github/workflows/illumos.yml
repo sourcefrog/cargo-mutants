@@ -22,6 +22,7 @@ jobs:
           prepare: |
             pkg refresh
             pkg install developer/build/onbld rust
+            cargo install cargo-nextest
           run: |
             whoami
             env
