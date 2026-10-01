@@ -13,8 +13,8 @@ on:
   schedule:
     - cron: "55 10 * * 0"
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
     paths:
       - ".cargo/*.toml"
       - ".github/workflows/tests.yml"
