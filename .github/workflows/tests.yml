@@ -157,6 +157,25 @@ jobs:
           target: ${{ matrix.target }}
       - run: cargo build --all-targets --all-features --target ${{ matrix.target }}
 
+  test-illumos:
+    needs: [quick-check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Tests inside OmniOS VM
+        uses: vmactions/omnios-vm@v1
+        with:
+          cache-after-prepare: true
+          prepare: |
+            pkg refresh
+            pkg install developer/build/onbld rust
+            cargo install cargo-nextest
+          run: |
+            whoami
+            env
+            cat /etc/release || true
+            cargo test
+
   # Testing direct-minimal-versions seems to have unclear value for a binary
   # crate?
   #
