@@ -264,7 +264,7 @@ mod test {
     }
 
     /// Returns false when the current process can bypass Unix DAC permission checks
-    /// (e.g. running as root or with a privilege like Illumos PRIV_FILE_DAC_WRITE).
+    /// (e.g. running as root or with a privilege like Illumos `PRIV_FILE_DAC_WRITE`).
     /// Tests that depend on mode-0 restrictions making writes fail must skip in that case.
     #[cfg(unix)]
     fn unix_dac_permissions_enforced() -> bool {
