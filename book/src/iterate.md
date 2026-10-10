@@ -10,7 +10,7 @@ When you're working to improve test coverage in a tree, you might use a process 
 
 4. Repeat until everything is caught.
 
-You can speed up this process by using the `--iterate` option. This tells cargo-mutants to skip mutants that were either caught or unviable in a previous run, and to accumulate the results.
+You can speed up this process by using the `--iterate` option (also available as `--incremental`). This tells cargo-mutants to skip mutants that were either caught or unviable in a previous run, and to accumulate the results.
 
 You can run repeatedly with `--iterate`, adding tests each time, until all the missed mutants are caught (or skipped.)
 
