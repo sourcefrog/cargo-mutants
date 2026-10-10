@@ -16,7 +16,6 @@
 #![warn(clippy::pedantic)]
 
 use std::fmt;
-use std::panic::catch_unwind;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
@@ -197,30 +196,24 @@ impl Workspace {
     /// if not, all packages are included.
     fn default_packages(&self) -> PackageSelection {
         let metadata = &self.metadata;
-        // `cargo_metadata::workspace_default_packages` will panic when calling Cargo older than 1.71;
-        // in that case we'll just fall back to everything, for lack of a better option.
-        // TODO: Use the new cargo_metadata API that doesn't panic?
-        match catch_unwind(|| metadata.workspace_default_packages()) {
-            Ok(default_packages) => {
-                let default_package_names: Vec<&str> = default_packages
-                    .iter()
-                    .map(|pmeta| pmeta.name.as_str())
-                    .sorted() // for reproducibility
-                    .collect();
-                debug!(
-                    ?default_package_names,
-                    "Manifest defines explicit default packages"
-                );
-                PackageSelection::Explicit(self.packages_by_name(&default_package_names))
-            }
-            Err(err) => {
-                warn!(
-                    cargo_metadata_error = err.downcast::<String>().unwrap_or_default(),
-                    "workspace_default_packages is not supported; testing all packages",
-                );
-                PackageSelection::All
-            }
+        // Cargo older than 1.71 doesn't report default members, and then
+        // `workspace_default_packages` would panic; fall back to everything,
+        // for lack of a better option.
+        if !metadata.workspace_default_members.is_available() {
+            warn!("Cargo does not report workspace default members; testing all packages");
+            return PackageSelection::All;
         }
+        let default_package_names: Vec<&str> = metadata
+            .workspace_default_packages()
+            .iter()
+            .map(|pmeta| pmeta.name.as_str())
+            .sorted() // for reproducibility
+            .collect();
+        debug!(
+            ?default_package_names,
+            "Manifest defines explicit default packages"
+        );
+        PackageSelection::Explicit(self.packages_by_name(&default_package_names))
     }
 }
 
@@ -351,6 +344,26 @@ mod test {
         };
         assert_eq!(packages.len(), 1);
         assert_eq!(packages[0].name, "main");
+    }
+
+    #[test]
+    fn default_packages_are_the_default_members_declared_in_the_manifest() {
+        let tmp = copy_of_testdata("workspace_default_members");
+        let workspace = Workspace::open(tmp.path()).expect("Find workspace root");
+        let PackageSelection::Explicit(packages) = workspace.default_packages() else {
+            panic!("Expected PackageSelection::Explicit");
+        };
+        assert_eq!(packages.iter().map(|p| &p.name).collect_vec(), ["main"]);
+    }
+
+    #[test]
+    fn default_packages_are_all_packages_when_cargo_does_not_report_default_members() {
+        let tmp = copy_of_testdata("workspace_default_members");
+        let mut workspace = Workspace::open(tmp.path()).expect("Find workspace root");
+        // Cargo older than 1.71 omits `workspace_default_members` from its metadata.
+        workspace.metadata.workspace_default_members =
+            cargo_metadata::WorkspaceDefaultMembers::default();
+        assert_matches!(workspace.default_packages(), PackageSelection::All);
     }
 
     #[test]
