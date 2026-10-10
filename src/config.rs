@@ -64,6 +64,8 @@ pub struct Config {
 
     /// Space or comma separated list of features to activate.
     pub features: Vec<String>,
+    /// Maximum memory for each scenario, e.g. "4G"; suffixes are binary multiples.
+    pub max_memory: Option<String>,
     /// Minimum test timeout, in seconds, as a floor on the autoset value.
     pub minimum_test_timeout: Option<f64>,
     /// Do not activate the `default` feature.
