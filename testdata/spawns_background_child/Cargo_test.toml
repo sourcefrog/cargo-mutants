@@ -1,0 +1,13 @@
+# A tree whose test leaves a background process running after the test binary exits.
+#
+# cargo-mutants should sweep the cargo process group after every phase, so that no
+# `sleep` process survives the scenario that spawned it.
+
+[package]
+name = "cargo-mutants-testdata-spawns-background-child"
+version = "0.1.0"
+edition = "2018"
+publish = false
+
+[lib]
+doctest = false
