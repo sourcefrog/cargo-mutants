@@ -13,6 +13,7 @@ use std::env;
 use std::fs::{self, File, create_dir, create_dir_all, read_dir, read_to_string, rename, write};
 use std::io::Write as IoWrite;
 use std::path::Path;
+use std::process::Command;
 
 use indoc::indoc;
 use insta::assert_snapshot;
@@ -2026,6 +2027,77 @@ fn list_mutants_changed_in_diff1() {
             .len(),
         2
     );
+}
+
+#[test]
+fn list_mutants_changed_in_git_diff_from_nested_workspace() {
+    let git_root = tempdir().unwrap();
+    let workspace = git_root.path().join("project");
+    create_dir(&workspace).unwrap();
+    copy_testdata_to("diff0", &workspace);
+    for args in [
+        &["init", "--quiet"][..],
+        &["config", "user.name", "Test User"],
+        &["config", "user.email", "test@example.com"],
+        &["add", "."],
+        &["commit", "--quiet", "--message", "baseline"],
+    ] {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(git_root.path())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "git {args:?} failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    fs::copy("testdata/diff1/src/lib.rs", workspace.join("src/lib.rs")).unwrap();
+
+    let output = run()
+        .args(["mutants", "--list", "--json", "--no-shuffle", "-d"])
+        .arg(&workspace)
+        .args(["--in-git-diff", "HEAD"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let mutants: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    let names = mutants
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|mutant| mutant["name"].as_str().unwrap())
+        .collect_vec();
+
+    assert_eq!(
+        names,
+        [
+            "src/lib.rs:6:5: replace two -> String with String::new()",
+            "src/lib.rs:6:5: replace two -> String with \"xyzzy\".into()",
+        ]
+    );
+}
+
+#[test]
+fn invalid_in_git_diff_revision_returns_exit_code_6() {
+    let tmp = copy_of_testdata("diff0");
+    let output = Command::new("git")
+        .args(["init", "--quiet"])
+        .current_dir(tmp.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    run()
+        .args(["mutants", "--list", "-d"])
+        .arg(tmp.path())
+        .args(["--in-git-diff", "not-a-revision"])
+        .assert()
+        .code(6)
+        .stderr(contains("Failed to run git diff").and(contains("not-a-revision")));
 }
 
 #[test]
