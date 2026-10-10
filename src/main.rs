@@ -158,6 +158,10 @@ pub struct Args {
     #[arg(long, help_heading = "Build")]
     profile: Option<String>,
 
+    /// Directory for all generated Cargo artifacts.
+    #[arg(long, help_heading = "Build", value_name = "DIRECTORY")]
+    target_dir: Option<Utf8PathBuf>,
+
     // Config ============================================================
     /// Read configuration from this file instead of .cargo/mutants.toml.
     #[arg(
