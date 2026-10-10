@@ -45,6 +45,53 @@ In this case you can use the `--build-timeout` or `--build-timeout-multiplier` o
 
 You might also choose to skip mutants that can cause long-running const evaluation.
 
+## Memory limits
+
+A timeout is not always enough. A mutant can turn a bounded loop into an unbounded
+allocator — flipping `+=` to `-=` on a parser's cursor, say — and a test that grows at
+hundreds of megabytes per second can exhaust the machine long before the test timeout
+arrives. On a CI runner the usual result is that the whole VM is torn down, with no log
+and no record of which mutants had been tested.
+
+`--max-memory SIZE`, or the `max_memory` key in the configuration file, puts a ceiling on
+each scenario's cargo process tree instead, so that the kernel stops the scenario rather
+than the machine. Sizes may be plain byte counts, or carry a `K`, `M`, `G`, or `T`
+suffix, which are binary multiples: `1K` is 1024 bytes. The smallest accepted value is
+1M: unlike `--timeout=0`, `--max-memory=0` is not a way to turn the limit off, so it is
+rejected rather than silently stopping every scenario.
+
+```shell
+cargo mutants --max-memory 8G
+```
+
+```toml
+# .cargo/mutants.toml
+max_memory = "8G"
+```
+
+The limit is off by default, and applies to every phase of every scenario, builds
+included, so leave room for the compiler as well as for the tests.
+
+It is enforced with `setrlimit(RLIMIT_AS)` on the cargo process, inherited by everything
+it spawns. That limits *address space*, which is a much cruder proxy than resident
+memory: allocators and rustc reserve far more address space than they ever make
+resident, so a limit that would be comfortable as a resident-memory ceiling can fail
+builds outright when applied this way. **Set it generously.**
+
+Which mechanism is in use is reported at startup:
+
+```
+INFO Limiting each scenario to 8589934592 bytes of memory using setrlimit(RLIMIT_AS)
+```
+
+On macOS, `RLIMIT_AS` is accepted by the kernel and then ignored, so `--max-memory` has
+no effect there; cargo-mutants warns and carries on. On any platform where it cannot be
+applied at all, giving `--max-memory` is an error, reported before any mutant is tested,
+rather than a run that quietly had no limit.
+
+This option does not change how mutants are classified. A mutant whose tests are stopped
+by the limit fails its tests and so is caught, in just the same way as one that panics.
+
 ## Exceptions
 
 The multiplier timeout options cannot be used when the baseline is skipped

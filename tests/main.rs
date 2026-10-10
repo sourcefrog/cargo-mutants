@@ -3846,3 +3846,30 @@ fn in_diff_with_nonexistent_file_returns_exit_code_6() {
         .code(6)
         .stderr(contains("Failed to read diff file").or(contains("Failed to open diff file")));
 }
+
+/// `--max-memory=0` reads like "no limit" by analogy with `--timeout=0`, but would mean
+/// "stop every scenario immediately", so it's rejected rather than obeyed.
+#[test]
+fn max_memory_too_small_is_rejected() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--max-memory=0", "-d"])
+        .arg(tmp_src_dir.path())
+        .assert()
+        .failure()
+        .stderr(contains("--max-memory must be at least"));
+}
+
+/// A limit generous enough for the compiler doesn't disturb an ordinary run.
+#[cfg(unix)]
+#[test]
+fn max_memory_does_not_disturb_a_normal_run() {
+    let tmp_src_dir = copy_of_testdata("small_well_tested");
+    run()
+        .args(["mutants", "--max-memory=8G", "-d"])
+        .arg(tmp_src_dir.path())
+        .timeout(OUTER_TIMEOUT)
+        .assert()
+        .success()
+        .stdout(contains("4 mutants tested"));
+}
