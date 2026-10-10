@@ -17,7 +17,9 @@ use tracing::warn;
 
 use crate::console::{format_duration, plural};
 use crate::exit_code::ExitCode;
-use crate::process::Exit;
+#[cfg(unix)]
+use crate::process::signal_name;
+use crate::process::{Exit, Sweep};
 use crate::{Options, Result, Scenario, output};
 
 /// What phase of running a scenario.
@@ -245,6 +247,19 @@ impl ScenarioOutcome {
             .any(|pr| pr.phase != Phase::Test && pr.process_status.is_failure())
     }
 
+    /// Say, for each phase that has something unusual to report, how its process tree
+    /// ended: killed by a signal, or leaving stray processes behind.
+    ///
+    /// This has no bearing on how the mutant is classified. It exists so that a mutant
+    /// caught because the kernel killed its tests can be told apart from one caught by a
+    /// failing assertion.
+    pub fn death_reasons(&self) -> Vec<String> {
+        self.phase_results
+            .iter()
+            .flat_map(PhaseResult::death_reasons)
+            .collect()
+    }
+
     /// True if this outcome is a caught mutant: it's a mutant and the tests failed.
     pub fn mutant_caught(&self) -> bool {
         self.scenario.is_mutant()
@@ -303,11 +318,26 @@ pub struct PhaseResult {
     pub process_status: Exit,
     /// What command was run, as an argv list.
     pub argv: Vec<String>,
+    /// What the sweep of the child's process group found and did.
+    pub sweep: Sweep,
 }
 
 impl PhaseResult {
     pub fn is_success(&self) -> bool {
         self.process_status.is_success()
+    }
+
+    fn death_reasons(&self) -> Vec<String> {
+        let phase = self.phase.name();
+        let mut reasons = Vec::new();
+        #[cfg(unix)]
+        if let Exit::Signalled(signal) = self.process_status {
+            reasons.push(format!("{phase} killed by {}", signal_name(signal)));
+        }
+        if let Some(sweep) = self.sweep.describe() {
+            reasons.push(format!("{phase} {sweep}"));
+        }
+        reasons
     }
 }
 
@@ -316,11 +346,12 @@ impl Serialize for PhaseResult {
     where
         S: Serializer,
     {
-        let mut ss = serializer.serialize_struct("PhaseResult", 4)?;
+        let mut ss = serializer.serialize_struct("PhaseResult", 5)?;
         ss.serialize_field("phase", &self.phase)?;
         ss.serialize_field("duration", &self.duration.as_secs_f64())?;
         ss.serialize_field("process_status", &self.process_status)?;
         ss.serialize_field("argv", &self.argv)?;
+        ss.serialize_field("sweep", &self.sweep)?;
         ss.end()
     }
 }
@@ -341,9 +372,67 @@ pub enum SummaryOutcome {
 mod test {
     use std::time::Duration;
 
-    use crate::process::Exit;
+    use crate::process::{Exit, Sweep};
 
     use super::{Phase, PhaseResult, Scenario, ScenarioOutcome};
+
+    fn phase_result(phase: Phase, process_status: Exit, sweep: Sweep) -> PhaseResult {
+        PhaseResult {
+            phase,
+            duration: Duration::from_secs(1),
+            process_status,
+            argv: vec!["cargo".into(), "test".into()],
+            sweep,
+        }
+    }
+
+    fn outcome_of(phase_results: Vec<PhaseResult>) -> ScenarioOutcome {
+        ScenarioOutcome {
+            output_dir: "output".into(),
+            log_path: "log".into(),
+            diff_path: None,
+            scenario: Scenario::Baseline,
+            phase_results,
+        }
+    }
+
+    #[test]
+    fn no_death_reasons_for_an_ordinary_test_failure() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Failure(101),
+            Sweep::default(),
+        )]);
+        assert_eq!(outcome.death_reasons(), Vec::<String>::new());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn death_reasons_name_the_signal_that_killed_the_phase() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Signalled(9),
+            Sweep::default(),
+        )]);
+        assert_eq!(outcome.death_reasons(), ["test killed by SIGKILL"]);
+    }
+
+    #[test]
+    fn death_reasons_name_processes_left_behind_by_the_tests() {
+        let outcome = outcome_of(vec![phase_result(
+            Phase::Test,
+            Exit::Success,
+            Sweep {
+                pids: Some(vec![101, 102]),
+                strays: true,
+                killed: true,
+            },
+        )]);
+        assert_eq!(
+            outcome.death_reasons(),
+            ["test left 2 stray processes behind (SIGKILLed: 101, 102)"]
+        );
+    }
 
     #[test]
     fn find_phase_result() {
@@ -358,12 +447,14 @@ mod test {
                     duration: Duration::from_secs(2),
                     process_status: Exit::Success,
                     argv: vec!["cargo".into(), "build".into()],
+                    sweep: Sweep::default(),
                 },
                 PhaseResult {
                     phase: Phase::Test,
                     duration: Duration::from_secs(3),
                     process_status: Exit::Success,
                     argv: vec!["cargo".into(), "test".into()],
+                    sweep: Sweep::default(),
                 },
             ],
         };
@@ -374,6 +465,7 @@ mod test {
                 duration: Duration::from_secs(2),
                 process_status: Exit::Success,
                 argv: vec!["cargo".into(), "build".into()],
+                sweep: Sweep::default(),
             })
         );
         assert_eq!(
