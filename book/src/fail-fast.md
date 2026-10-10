@@ -13,3 +13,5 @@ If you have a sufficiently recent toolchain you can enable this in the [`cargo_t
     cargo mutants -- -- -Zunstable-options --fail-fast
 
 *Note*: There are two `--` separators: the first delimits the arguments from `cargo mutants` to be passed to `cargo test` and the second delimits the arguments from `cargo test` so they are passed to the test target.
+
+These options stop a single test target at its first failing test. To stop the whole cargo-mutants run after the first missed mutant, see [`--stop-on-missed`](ci.md#stopping-at-the-first-missed-mutant).
