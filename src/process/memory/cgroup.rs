@@ -31,7 +31,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use anyhow::{Context, anyhow, bail};
-use tracing::{debug, warn};
+use tracing::{debug, trace, warn};
 
 use crate::Result;
 
@@ -180,6 +180,19 @@ impl ScenarioCgroup {
             .write(true)
             .open(&path)
             .with_context(|| format!("open {}", path.display()))
+    }
+
+    /// How many times the kernel OOM-killed a process in this cgroup, from
+    /// `memory.events`.
+    pub fn oom_kills(&self) -> Option<u64> {
+        let events = read_to_string(self.dir.join("memory.events"))
+            .inspect_err(|err| debug!(?self.dir, ?err, "failed to read cgroup memory.events"))
+            .ok()?;
+        trace!(?self.dir, %events, "cgroup memory.events");
+        events
+            .lines()
+            .find_map(|line| line.strip_prefix("oom_kill "))
+            .and_then(|count| count.trim().parse().ok())
     }
 
     fn write(&self, name: &str, value: &str) -> Result<()> {
