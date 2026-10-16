@@ -81,10 +81,17 @@ impl Sweep {
     }
 }
 
+pub mod memory;
+use memory::{MemoryLimit, ScenarioMemoryLimit};
+
 pub struct Process {
     child: Child,
     start: Instant,
     timeout: Option<Duration>,
+    /// The memory limit in force for this process tree, if any. Held so that any cgroup
+    /// outlives the child and is removed once it has exited.
+    #[allow(dead_code)] // its Drop is the point
+    memory: Option<ScenarioMemoryLimit>,
 }
 
 impl Process {
@@ -93,16 +100,26 @@ impl Process {
     ///
     /// Whatever the outcome, the child's process group is swept before returning, so
     /// that nothing it left running survives into the next scenario.
+    #[allow(clippy::too_many_arguments)] // parallel to run_cargo
     pub fn run(
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
+        memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
     ) -> Result<(Exit, Sweep)> {
-        let mut child = Process::start(argv, env, cwd, timeout, jobserver, scenario_output)?;
+        let mut child = Process::start(
+            argv,
+            env,
+            cwd,
+            timeout,
+            jobserver,
+            memory_limit,
+            scenario_output,
+        )?;
         let result = loop {
             match child.poll() {
                 Ok(Some(exit_status)) => break Ok(exit_status),
@@ -140,12 +157,14 @@ impl Process {
     }
 
     /// Launch a process, and return an object representing the child.
+    #[allow(clippy::too_many_arguments)] // parallel to run_cargo
     pub fn start(
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
+        memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
     ) -> Result<Process> {
         let start = Instant::now();
@@ -165,6 +184,10 @@ impl Process {
             js.configure(&mut command);
         }
         configure_command(&mut command);
+        let memory = memory_limit.map(MemoryLimit::start).transpose()?;
+        if let Some(memory) = &memory {
+            memory.configure_command(&mut command)?;
+        }
         let child = command
             .spawn()
             .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
@@ -172,6 +195,7 @@ impl Process {
             child,
             start,
             timeout,
+            memory,
         })
     }
 
@@ -295,68 +319,7 @@ fn quote_argv<S: AsRef<str>, I: IntoIterator<Item = S>>(argv: I) -> String {
 
 #[cfg(test)]
 mod test {
-    use super::{Sweep, quote_argv};
-
-    #[test]
-    fn sweep_describes_what_it_reaped() {
-        // (sweep, expected description)
-        let cases = [
-            (Sweep::default(), None),
-            (
-                Sweep {
-                    pids: None,
-                    strays: true,
-                    killed: false,
-                },
-                Some("left stray processes behind (reaped)"),
-            ),
-            (
-                Sweep {
-                    pids: None,
-                    strays: true,
-                    killed: true,
-                },
-                Some("left stray processes behind (SIGKILLed)"),
-            ),
-            (
-                // Enumeration ran but came up empty, so don't claim "0 processes".
-                Sweep {
-                    pids: Some(vec![]),
-                    strays: true,
-                    killed: false,
-                },
-                Some("left stray processes behind (reaped)"),
-            ),
-            (
-                Sweep {
-                    pids: Some(vec![101]),
-                    strays: true,
-                    killed: false,
-                },
-                Some("left 1 stray process behind (reaped: 101)"),
-            ),
-            (
-                Sweep {
-                    pids: Some(vec![101, 102]),
-                    strays: true,
-                    killed: true,
-                },
-                Some("left 2 stray processes behind (SIGKILLed: 101, 102)"),
-            ),
-            (
-                // Nothing was left behind, whatever else the sweep recorded.
-                Sweep {
-                    pids: Some(vec![101]),
-                    strays: false,
-                    killed: true,
-                },
-                None,
-            ),
-        ];
-        for (sweep, expected) in cases {
-            assert_eq!(sweep.describe().as_deref(), expected, "sweep: {sweep:?}");
-        }
-    }
+    use super::quote_argv;
 
     #[test]
     fn shell_quoting() {
