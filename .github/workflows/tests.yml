@@ -32,6 +32,7 @@ on:
       - "src/**"
       - "testdata/**"
       - "tests/**"
+  workflow_dispatch:
 
 # see https://matklad.github.io/2021/09/04/fast-rust-builds.html
 env:
