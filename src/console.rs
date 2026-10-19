@@ -90,6 +90,10 @@ impl Console {
             style_outcome(outcome),
             style_scenario(scenario, true),
         );
+        let death_reasons = outcome.death_reasons();
+        if !death_reasons.is_empty() {
+            write!(s, " ({})", death_reasons.join("; ")).expect("format death reasons");
+        }
         if options.show_times {
             let prs: Vec<String> = outcome
                 .phase_results()
