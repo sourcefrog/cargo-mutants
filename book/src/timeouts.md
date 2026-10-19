@@ -33,6 +33,11 @@ You can set an explicit timeouts with the `--timeout` option, also measured in s
 You can also set the test timeout as a multiple of the duration of the baseline test, with the `--timeout-multiplier` option and the `timeout_multiplier` configuration key.
 The multiplier only has an effect if the baseline is not skipped and if `--timeout` is not specified.
 
+When a timeout expires, the process is sent `SIGTERM` so that it can clean up, and then
+`SIGKILL` if it has not exited within a short grace period. A test process that ignores
+`SIGTERM`, or that has been stopped and so never receives it, therefore cannot stall the
+whole run.
+
 ## Build timeouts
 
 `const` expressions may be evaluated at compile time. In the same way that mutations can cause tests to hang, mutations to const code may potentially cause the compiler to enter an infinite loop.

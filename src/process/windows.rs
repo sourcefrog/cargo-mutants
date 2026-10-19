@@ -11,6 +11,12 @@ pub(super) fn terminate_child(child: &mut Child) -> Result<()> {
     child.kill().context("Kill child")
 }
 
+/// Windows has no `SIGTERM`, so `terminate_child` already killed it outright.
+#[mutants::skip] // would leak processes from tests if skipped
+pub(super) fn kill_child(child: &mut Child) -> Result<()> {
+    child.kill().context("Kill child")
+}
+
 #[mutants::skip]
 pub(super) fn configure_command(_command: &mut Command) {}
 

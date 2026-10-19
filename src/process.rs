@@ -26,15 +26,21 @@ use crate::output::ScenarioOutput;
 /// How frequently to check if a subprocess finished.
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(50);
 
+/// How long to let a process wind up after `SIGTERM` before sending `SIGKILL`.
+const TERM_GRACE: Duration = Duration::from_millis(500);
+
+/// How often to check whether a signalled process has gone away.
+const TERM_POLL_INTERVAL: Duration = Duration::from_millis(20);
+
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-use windows::{configure_command, terminate_child};
+use windows::{configure_command, kill_child, terminate_child};
 
 #[cfg(unix)]
 mod unix;
 #[cfg(unix)]
-use unix::{configure_command, terminate_child};
+use unix::{configure_command, kill_child, terminate_child};
 
 pub struct Process {
     child: Child,
@@ -124,6 +130,10 @@ impl Process {
     ///
     /// Blocks until the subprocess is terminated and then returns the exit status.
     ///
+    /// `SIGTERM` first, so it gets a chance to clean up, but only for a bounded grace
+    /// period: a process that ignores it, or that is stopped and so never receives it,
+    /// would otherwise hang the run here forever.
+    ///
     /// The status might not be `Timeout` if this raced with a normal exit.
     #[mutants::skip] // would leak processes from tests if skipped
     fn terminate(&mut self) -> Result<()> {
@@ -131,9 +141,29 @@ impl Process {
         debug!("terminating child process");
         terminate_child(&mut self.child)?;
         trace!("wait for child after termination");
+        let deadline = Instant::now() + TERM_GRACE;
+        loop {
+            match self.child.try_wait() {
+                Ok(Some(exit)) => {
+                    debug!("terminated child exit status {exit:?}");
+                    return Ok(());
+                }
+                Ok(None) => {}
+                Err(err) => {
+                    debug!(?err, "Failed to wait for child after termination");
+                    return Ok(());
+                }
+            }
+            if Instant::now() >= deadline {
+                debug!("child did not exit after SIGTERM; killing it");
+                kill_child(&mut self.child)?;
+                break;
+            }
+            sleep(TERM_POLL_INTERVAL);
+        }
         match self.child.wait() {
-            Err(err) => debug!(?err, "Failed to wait for child after termination"),
-            Ok(exit) => debug!("terminated child exit status {exit:?}"),
+            Err(err) => debug!(?err, "Failed to wait for child after kill"),
+            Ok(exit) => debug!("killed child exit status {exit:?}"),
         }
         Ok(())
     }
