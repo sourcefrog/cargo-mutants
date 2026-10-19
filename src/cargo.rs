@@ -20,6 +20,7 @@ use crate::options::{Options, TestTool};
 use crate::outcome::{Phase, PhaseResult};
 use crate::output::ScenarioOutput;
 use crate::package::PackageSelection;
+use crate::process::memory::MemoryLimit;
 use crate::process::{Exit, Process};
 
 // Allowed nextest codes (those will be considered a mutation caught / ignored without a warning)
@@ -37,6 +38,7 @@ pub fn run_cargo(
     packages: &PackageSelection,
     phase: Phase,
     timeout: Option<Duration>,
+    memory_limit: Option<&MemoryLimit>,
     scenario_output: &mut ScenarioOutput,
     options: &Options,
     console: &Console,
@@ -61,6 +63,7 @@ pub fn run_cargo(
         build_dir.path(),
         timeout,
         jobserver,
+        memory_limit,
         scenario_output,
         console,
     )?;

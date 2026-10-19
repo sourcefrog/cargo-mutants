@@ -36,25 +36,42 @@ mod unix;
 #[cfg(unix)]
 use unix::{configure_command, terminate_child};
 
+pub mod memory;
+use memory::{MemoryLimit, ScenarioMemoryLimit};
+
 pub struct Process {
     child: Child,
     start: Instant,
     timeout: Option<Duration>,
+    /// The memory limit in force for this process tree, if any. Held so that any cgroup
+    /// outlives the child and is removed once it has exited.
+    #[allow(dead_code)] // its Drop is the point
+    memory: Option<ScenarioMemoryLimit>,
 }
 
 impl Process {
     /// Run a subprocess to completion, watching for interrupts, with a timeout, while
     /// ticking the progress bar.
+    #[allow(clippy::too_many_arguments)] // parallel to run_cargo
     pub fn run(
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
+        memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
         console: &Console,
     ) -> Result<Exit> {
-        let mut child = Process::start(argv, env, cwd, timeout, jobserver, scenario_output)?;
+        let mut child = Process::start(
+            argv,
+            env,
+            cwd,
+            timeout,
+            jobserver,
+            memory_limit,
+            scenario_output,
+        )?;
         let process_status = loop {
             if let Some(exit_status) = child.poll()? {
                 break exit_status;
@@ -67,12 +84,14 @@ impl Process {
     }
 
     /// Launch a process, and return an object representing the child.
+    #[allow(clippy::too_many_arguments)] // parallel to run_cargo
     pub fn start(
         argv: &[String],
         env: &[(String, String)],
         cwd: &Utf8Path,
         timeout: Option<Duration>,
         jobserver: Option<&jobserver::Client>,
+        memory_limit: Option<&MemoryLimit>,
         scenario_output: &mut ScenarioOutput,
     ) -> Result<Process> {
         let start = Instant::now();
@@ -92,6 +111,10 @@ impl Process {
             js.configure(&mut command);
         }
         configure_command(&mut command);
+        let memory = memory_limit.map(MemoryLimit::start).transpose()?;
+        if let Some(memory) = &memory {
+            memory.configure_command(&mut command)?;
+        }
         let child = command
             .spawn()
             .with_context(|| format!("failed to spawn {}", argv.join(" ")))?;
@@ -99,6 +122,7 @@ impl Process {
             child,
             start,
             timeout,
+            memory,
         })
     }
 
