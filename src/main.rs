@@ -159,7 +159,7 @@ pub struct Args {
     profile: Option<String>,
 
     // Config ============================================================
-    /// Read configuration from this file instead of .cargo/mutants.toml.
+    /// Read configuration from this file instead of the config in the source tree.
     #[arg(
         long,
         help_heading = "Config",
@@ -168,7 +168,7 @@ pub struct Args {
     )]
     config: Option<Utf8PathBuf>,
 
-    /// Don't read .cargo/mutants.toml.
+    /// Don't read any configuration from the source tree.
     #[arg(long, help_heading = "Config", conflicts_with = "config")]
     no_config: bool,
 

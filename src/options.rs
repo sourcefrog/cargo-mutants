@@ -5,7 +5,7 @@
 //! The [`Options`] structure is built by combining, in priority order:
 //!
 //! 1. Command line options
-//! 2. Config options (read from `.cargo/mutants.toml`)
+//! 2. Config options (read from `.cargo/mutants.toml` or another location in the tree)
 //! 3. Built-in defaults
 
 use std::env;

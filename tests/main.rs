@@ -3462,6 +3462,197 @@ fn invalid_field_rejected() {
         );
 }
 
+/// Write a config into any of the locations that are searched within the tree.
+fn write_config_to(tempdir: &TempDir, relative_path: &str, config: &str) {
+    let path = tempdir.path().join(relative_path);
+    create_dir_all(path.parent().unwrap()).unwrap();
+    write(path, config.as_bytes()).unwrap();
+}
+
+/// Append a table to the tree's root `Cargo.toml`.
+fn append_to_manifest(tempdir: &TempDir, toml: &str) {
+    let path = tempdir.path().join("Cargo.toml");
+    let mut manifest = read_to_string(&path).unwrap();
+    manifest.push_str(toml);
+    write(path, manifest.as_bytes()).unwrap();
+}
+
+/// A config that makes `--list-files` list only the `_mod.rs` files.
+const CONFIG_EXAMINING_MOD_FILES: &str = "examine_globs = [\"src/*_mod.rs\"]\n";
+
+/// A config that makes `--list-files` list only `src/simple_fns.rs`.
+const CONFIG_EXAMINING_SIMPLE_FNS: &str = "examine_globs = [\"src/simple_fns.rs\"]\n";
+
+const MOD_FILES_LISTED: &str = "src/inside_mod.rs\nsrc/item_mod.rs\n";
+
+fn assert_list_files(tempdir: &TempDir, expected: &'static str) {
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(tempdir.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::diff(expected));
+}
+
+#[test]
+fn config_is_read_from_mutants_toml_in_tree_root() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(&testdata, "mutants.toml", CONFIG_EXAMINING_MOD_FILES);
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn config_is_read_from_dot_mutants_toml_in_tree_root() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(&testdata, ".mutants.toml", CONFIG_EXAMINING_MOD_FILES);
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn config_is_read_from_dot_config_mutants_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(
+        &testdata,
+        ".config/mutants.toml",
+        CONFIG_EXAMINING_MOD_FILES,
+    );
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn config_is_read_from_workspace_metadata_mutants_in_cargo_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    append_to_manifest(
+        &testdata,
+        indoc! { r#"
+
+            [workspace]
+
+            [workspace.metadata.mutants]
+            examine_globs = ["src/*_mod.rs"]
+        "#},
+    );
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn config_is_read_from_package_metadata_mutants_in_cargo_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    append_to_manifest(
+        &testdata,
+        indoc! { r#"
+
+            [package.metadata.mutants]
+            examine_globs = ["src/*_mod.rs"]
+        "#},
+    );
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn cargo_mutants_toml_takes_precedence_over_mutants_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_file(&testdata, CONFIG_EXAMINING_MOD_FILES);
+    write_config_to(&testdata, "mutants.toml", CONFIG_EXAMINING_SIMPLE_FNS);
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn mutants_toml_takes_precedence_over_dot_mutants_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(&testdata, "mutants.toml", CONFIG_EXAMINING_MOD_FILES);
+    write_config_to(&testdata, ".mutants.toml", CONFIG_EXAMINING_SIMPLE_FNS);
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn dot_mutants_toml_takes_precedence_over_dot_config_mutants_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(&testdata, ".mutants.toml", CONFIG_EXAMINING_MOD_FILES);
+    write_config_to(
+        &testdata,
+        ".config/mutants.toml",
+        CONFIG_EXAMINING_SIMPLE_FNS,
+    );
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn dot_config_mutants_toml_takes_precedence_over_workspace_metadata_mutants() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(
+        &testdata,
+        ".config/mutants.toml",
+        CONFIG_EXAMINING_MOD_FILES,
+    );
+    append_to_manifest(
+        &testdata,
+        indoc! { r#"
+
+            [workspace]
+
+            [workspace.metadata.mutants]
+            examine_globs = ["src/simple_fns.rs"]
+        "#},
+    );
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn workspace_metadata_mutants_takes_precedence_over_package_metadata_mutants() {
+    let testdata = copy_of_testdata("well_tested");
+    append_to_manifest(
+        &testdata,
+        indoc! { r#"
+
+            [package.metadata.mutants]
+            examine_globs = ["src/simple_fns.rs"]
+
+            [workspace]
+
+            [workspace.metadata.mutants]
+            examine_globs = ["src/*_mod.rs"]
+        "#},
+    );
+    assert_list_files(&testdata, MOD_FILES_LISTED);
+}
+
+#[test]
+fn invalid_field_in_workspace_metadata_mutants_rejected() {
+    let testdata = copy_of_testdata("well_tested");
+    append_to_manifest(
+        &testdata,
+        indoc! { r#"
+
+            [workspace]
+
+            [workspace.metadata.mutants]
+            wobble = false
+        "#},
+    );
+    run()
+        .args(["mutants", "--list-files", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .failure()
+        .stderr(
+            predicates::str::contains("parse `[workspace.metadata.mutants]` from ")
+                .and(predicates::str::contains("unknown field `wobble`")),
+        );
+}
+
+#[test]
+fn no_config_ignores_mutants_toml() {
+    let testdata = copy_of_testdata("well_tested");
+    write_config_to(&testdata, "mutants.toml", CONFIG_EXAMINING_SIMPLE_FNS);
+    run()
+        .args(["mutants", "--no-config", "--list-files", "-d"])
+        .arg(testdata.path())
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("src/methods.rs"));
+}
+
 #[test]
 fn list_with_config_file_exclusion() {
     let testdata = copy_of_testdata("well_tested");
