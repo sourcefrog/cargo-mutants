@@ -1,8 +1,6 @@
 ---
 source: tests/util/mod.rs
-assertion_line: 33
 expression: "String::from_utf8_lossy(&output.stdout)"
-
 ---
 [
   {
@@ -1894,6 +1892,38 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     }
   },
   {
+    "diff": "--- src/result.rs\n+++ replace < with >= in error_if_negative\n@@ -2,17 +2,17 @@\n // fn io_result() -> std::io::Result<\n \n /// Simple easily-recognizable Result.\n fn simple_result() -> Result<&'static str, ()> {\n     Ok(\"success\")\n }\n \n fn error_if_negative(a: i32) -> Result<(), ()> {\n-    if a < 0 {\n+    if a >= /* ~ changed by cargo-mutants ~ */ 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n     Err(Default::default())\n",
+    "file": "src/result.rs",
+    "function": {
+      "function_name": "error_if_negative",
+      "return_type": "-> Result<(), ()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 15
+        },
+        "start": {
+          "column": 1,
+          "line": 9
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/result.rs:10:10: replace < with >= in error_if_negative",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 10
+      },
+      "start": {
+        "column": 10,
+        "line": 10
+      }
+    }
+  },
+  {
     "diff": "--- src/result.rs\n+++ replace result_with_no_apparent_type_args -> std::fmt::Result with Ok(Default::default())\n@@ -10,17 +10,17 @@\n     if a < 0 {\n         Err(())\n     } else {\n         Ok(())\n     }\n }\n \n fn result_with_no_apparent_type_args() -> std::fmt::Result {\n-    Err(Default::default())\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n mod test {\n     use super::*;\n \n     #[test]\n     fn simple_result_success() {\n         assert_eq!(simple_result(), Ok(\"success\"));\n",
     "file": "src/result.rs",
     "function": {
@@ -2650,6 +2680,38 @@ expression: "String::from_utf8_lossy(&output.stdout)"
     "name": "src/slices.rs:5:20: replace < with <= in pad",
     "package": "cargo-mutants-testdata-well-tested",
     "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 5
+      },
+      "start": {
+        "column": 20,
+        "line": 5
+      }
+    }
+  },
+  {
+    "diff": "--- src/slices.rs\n+++ replace < with >= in pad\n@@ -1,13 +1,13 @@\n use std::borrow::Cow;\n \n fn pad<'a>(aa: &'a mut [Cow<'static, str>]) -> &'a [Cow<'static, str>] {\n     for a in aa.iter_mut() {\n-        if a.len() < 3 {\n+        if a.len() >= /* ~ changed by cargo-mutants ~ */ 3 {\n             a.to_mut().push_str(\"___\");\n         }\n     }\n     aa\n }\n \n fn return_mut_slice(a: &mut [usize]) -> &mut [usize] {\n     for x in a.iter_mut() {\n",
+    "file": "src/slices.rs",
+    "function": {
+      "function_name": "pad",
+      "return_type": "-> &'a[Cow<'static, str>]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 10
+        },
+        "start": {
+          "column": 1,
+          "line": 3
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "src/slices.rs:5:20: replace < with >= in pad",
+    "package": "cargo-mutants-testdata-well-tested",
+    "replacement": ">=",
     "span": {
       "end": {
         "column": 21,
