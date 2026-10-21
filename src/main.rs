@@ -65,7 +65,7 @@ use crate::{
     build_dir::BuildDir,
     console::Console,
     exit_code::ExitCode,
-    in_diff::diff_filter_file,
+    in_diff::{diff_filter_file, diff_filter_git},
     interrupt::check_interrupted,
     lab::test_mutants,
     list::{list_files, list_mutants},
@@ -230,6 +230,7 @@ pub struct Args {
         value_name = "FILE",
         long = "Zmutate-file",
         conflicts_with = "in_diff",
+        conflicts_with = "in_git_diff",
         conflicts_with = "package"
     )]
     mutate_file: Option<PathBuf>,
@@ -373,6 +374,15 @@ pub struct Args {
     /// Include only mutants in code touched by this diff.
     #[arg(long, short = 'D', help_heading = "Filters")]
     in_diff: Option<Utf8PathBuf>,
+
+    /// Include only mutants in code changed since this Git revision.
+    #[arg(
+        long,
+        value_name = "REVISION",
+        conflicts_with = "in_diff",
+        help_heading = "Filters"
+    )]
+    in_git_diff: Option<String>,
 
     /// Skip mutants that were caught in previous runs.
     #[arg(long, help_heading = "Filters")]
@@ -603,19 +613,24 @@ fn main() -> Result<ExitCode> {
         return Ok(ExitCode::Success);
     }
     let mut mutants = discovered.mutants;
-    if let Some(diff_path) = &args.in_diff {
-        mutants = match diff_filter_file(mutants, diff_path) {
-            Ok(mutants) => mutants,
-            Err(err) => {
-                if err.exit_code() == ExitCode::Success {
-                    info!("{err}");
-                } else {
-                    error!("{err}");
-                }
-                return Ok(err.exit_code());
+    let filtered = if let Some(diff_path) = &args.in_diff {
+        diff_filter_file(mutants, diff_path)
+    } else if let Some(revision) = &args.in_git_diff {
+        diff_filter_git(mutants, workspace.root(), revision)
+    } else {
+        Ok(mutants)
+    };
+    mutants = match filtered {
+        Ok(mutants) => mutants,
+        Err(err) => {
+            if err.exit_code() == ExitCode::Success {
+                info!("{err}");
+            } else {
+                error!("{err}");
             }
-        };
-    }
+            return Ok(err.exit_code());
+        }
+    };
     if let Some(shard) = &args.shard {
         mutants = options.sharding().shard(*shard, mutants);
     }
@@ -679,6 +694,16 @@ mod test {
         let args = super::Args::try_parse_from(["mutants", "--config=foo.toml", "--no-config"]);
         assert!(args.is_err(), "Expected error due to conflicting options");
         println!("Error message: {}", args.unwrap_err());
+    }
+
+    #[test]
+    fn in_diff_conflicts_with_in_git_diff() {
+        let args = super::Args::try_parse_from([
+            "mutants",
+            "--in-diff=changes.patch",
+            "--in-git-diff=main",
+        ]);
+        assert!(args.is_err(), "Expected conflicting diff sources to fail");
     }
 
     #[test]

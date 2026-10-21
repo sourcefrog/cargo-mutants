@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
+use std::process::Command;
 
 use anyhow::bail;
 use camino::Utf8Path;
@@ -37,6 +38,8 @@ pub enum DiffFilterError {
     InvalidDiff(String),
     /// Can't open or read the diff file.
     File(String),
+    /// Can't run git or git rejects the revision.
+    Git(String),
 }
 
 impl DiffFilterError {
@@ -50,9 +53,9 @@ impl DiffFilterError {
             | DiffFilterError::NoSourceFiles
             | DiffFilterError::NoMutants => ExitCode::Success,
             DiffFilterError::MismatchedDiff(_) => ExitCode::FilterDiffMismatch,
-            DiffFilterError::File(_) | DiffFilterError::InvalidDiff(_) => {
-                ExitCode::FilterDiffInvalid
-            }
+            DiffFilterError::File(_)
+            | DiffFilterError::Git(_)
+            | DiffFilterError::InvalidDiff(_) => ExitCode::FilterDiffInvalid,
         }
     }
 }
@@ -66,8 +69,43 @@ impl Display for DiffFilterError {
             DiffFilterError::MismatchedDiff(msg) => write!(f, "{msg}"),
             DiffFilterError::InvalidDiff(msg) => write!(f, "Failed to parse diff: {msg}"),
             DiffFilterError::File(msg) => write!(f, "Failed to read diff file: {msg}"),
+            DiffFilterError::Git(msg) => write!(f, "Failed to run git diff: {msg}"),
         }
     }
+}
+
+/// Run `git diff` and filter mutants to those changed since `revision`.
+pub fn diff_filter_git(
+    mutants: Vec<Mutant>,
+    workspace_root: &Utf8Path,
+    revision: &str,
+) -> Result<Vec<Mutant>, DiffFilterError> {
+    let output = Command::new("git")
+        .args([
+            "diff",
+            "--no-color",
+            "--no-ext-diff",
+            "--no-textconv",
+            "--relative",
+            "--src-prefix=a/",
+            "--dst-prefix=b/",
+            revision,
+            "--",
+        ])
+        .current_dir(workspace_root)
+        .output()
+        .map_err(|err| DiffFilterError::Git(err.to_string()))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let message = stderr.trim();
+        return Err(DiffFilterError::Git(if message.is_empty() {
+            format!("git exited with {}", output.status)
+        } else {
+            message.to_owned()
+        }));
+    }
+    let diff_text = String::from_utf8_lossy(&output.stdout);
+    diff_filter(mutants, &diff_text)
 }
 
 pub fn diff_filter_file(
