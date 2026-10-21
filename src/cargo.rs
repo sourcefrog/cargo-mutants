@@ -135,6 +135,9 @@ fn cargo_argv(packages: &PackageSelection, phase: Phase, options: &Options) -> V
             }
         }
     }
+    if let Some(target_dir) = &options.target_dir {
+        cargo_args.push(format!("--target-dir={target_dir}"));
+    }
     cargo_args.push("--verbose".to_string());
     match packages {
         PackageSelection::All => {
@@ -359,6 +362,41 @@ mod test {
                 "check",
                 "--tests",
                 "--profile=mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+    }
+
+    #[test]
+    fn target_dir_is_passed_to_all_cargo_commands() {
+        let options = Options::from_arg_strs(["mutants", "--target-dir", "target/mutants"]);
+
+        assert_eq!(
+            cargo_argv(&PackageSelection::All, Phase::Check, &options)[1..],
+            [
+                "check",
+                "--tests",
+                "--target-dir=target/mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+        assert_eq!(
+            cargo_argv(&PackageSelection::All, Phase::Build, &options)[1..],
+            [
+                "test",
+                "--no-run",
+                "--target-dir=target/mutants",
+                "--verbose",
+                "--workspace",
+            ]
+        );
+        assert_eq!(
+            cargo_argv(&PackageSelection::All, Phase::Test, &options)[1..],
+            [
+                "test",
+                "--target-dir=target/mutants",
                 "--verbose",
                 "--workspace",
             ]

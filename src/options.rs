@@ -122,6 +122,9 @@ pub struct Options {
     /// Cargo profile.
     pub profile: Option<String>,
 
+    /// Directory for Cargo build artifacts.
+    pub target_dir: Option<Utf8PathBuf>,
+
     /// Additional arguments for every cargo invocation.
     pub additional_cargo_args: Vec<String>,
 
@@ -384,6 +387,7 @@ impl Options {
             test_package,
             test_timeout: args.timeout.map(Duration::from_secs_f64),
             test_timeout_multiplier: args.timeout_multiplier.or(config.timeout_multiplier),
+            target_dir: args.target_dir.clone(),
         };
         if let Some(jobs) = options.jobs
             && jobs > 8

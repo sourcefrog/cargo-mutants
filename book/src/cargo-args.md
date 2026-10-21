@@ -27,6 +27,20 @@ no_default_features = true
 
 When both command line and config options are specified, the command line flags take precedence for boolean options (`all_features` and `no_default_features`), while features from both sources are combined.
 
+## Target directory
+
+Use `--target-dir` to set the Cargo target directory for every check, build, and test invocation:
+
+```shell
+cargo mutants --target-dir target/mutants
+```
+
+The path is passed to Cargo unchanged. The equivalent configuration-file form is:
+
+```toml
+additional_cargo_args = ["--target-dir=target/mutants"]
+```
+
 ## Arguments to all `cargo` commands
 
 To pass more arguments to every Cargo invocation, use `--cargo-arg`, or the `additional_cargo_args` configuration key.
