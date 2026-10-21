@@ -13,7 +13,7 @@ use std::env;
 use std::ffi::OsString;
 use std::time::Duration;
 
-use anyhow::Context;
+use anyhow::{Context, bail};
 use camino::{Utf8Path, Utf8PathBuf};
 use clap::ArgAction;
 use globset::GlobSet;
@@ -95,6 +95,9 @@ pub struct Options {
 
     /// The minimum test timeout, as a floor on the autoset value.
     pub minimum_test_timeout: Duration,
+
+    /// The maximum memory for each scenario's process tree, in bytes, if set.
+    pub max_memory: Option<u64>,
 
     pub print_caught: bool,
     pub print_unviable: bool,
@@ -237,6 +240,47 @@ fn join_slices(a: &[String], b: &[String]) -> Vec<String> {
     a.iter().chain(b).cloned().collect()
 }
 
+/// The smallest `--max-memory` worth accepting.
+///
+/// Anything near zero stops every scenario before it can do anything, which is never
+/// what someone means. In particular `--max-memory=0` is not "no limit", unlike `-t 0`.
+const MIN_MAX_MEMORY: u64 = 1 << 20;
+
+/// Parse a memory size like `256M`, `2GiB`, or a plain count of bytes.
+///
+/// Suffixes are binary multiples, as they conventionally are for memory: `1K` is 1024
+/// bytes, not 1000.
+fn parse_size(s: &str) -> Result<u64> {
+    let s = s.trim();
+    let digits_end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
+    let (digits, suffix) = s.split_at(digits_end);
+    let number: u64 = digits
+        .parse()
+        .with_context(|| format!("{s:?} does not start with a number of bytes"))?;
+    let multiple: u64 = match suffix.trim().to_ascii_lowercase().as_str() {
+        "" | "b" => 1,
+        "k" | "kb" | "kib" => 1 << 10,
+        "m" | "mb" | "mib" => 1 << 20,
+        "g" | "gb" | "gib" => 1 << 30,
+        "t" | "tb" | "tib" => 1 << 40,
+        _ => bail!("unrecognized size suffix {suffix:?} in {s:?}"),
+    };
+    number
+        .checked_mul(multiple)
+        .with_context(|| format!("size {s:?} is too large"))
+}
+
+/// Parse and sanity-check a `--max-memory` value.
+fn parse_max_memory(s: &str) -> Result<u64> {
+    let bytes = parse_size(s)?;
+    if bytes < MIN_MAX_MEMORY {
+        bail!(
+            "{s:?} is too small to run anything in: --max-memory must be at least {MIN_MAX_MEMORY} bytes"
+        );
+    }
+    Ok(bytes)
+}
+
 /// Should ANSI colors be drawn?
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Display, Deserialize, ValueEnum)]
 #[strum(serialize_all = "snake_case")]
@@ -366,6 +410,13 @@ impl Options {
             jobserver: args.jobserver,
             jobserver_tasks: args.jobserver_tasks,
             leak_dirs: args.leak_dirs,
+            max_memory: args
+                .max_memory
+                .as_deref()
+                .or(config.max_memory.as_deref())
+                .map(parse_max_memory)
+                .transpose()
+                .context("Failed to parse --max-memory")?,
             minimum_test_timeout,
             no_default_features: args.no_default_features
                 || config.no_default_features.unwrap_or(false),
@@ -568,6 +619,76 @@ mod test {
         let args = Args::parse_from(["mutants", "--build-timeout-multiplier=3.5"]);
         let options = Options::new(&args, &config).unwrap();
         assert_eq!(options.build_timeout_multiplier, Some(3.5));
+    }
+
+    #[test]
+    fn parse_size_understands_binary_suffixes_and_rejects_nonsense() {
+        // Input -> bytes, where None means it should not parse at all.
+        let cases = [
+            ("0", Some(0)),
+            ("1024", Some(1024)),
+            ("1024B", Some(1024)),
+            ("256M", Some(256 * 1024 * 1024)),
+            ("256MiB", Some(256 * 1024 * 1024)),
+            (" 4g ", Some(4 * 1024 * 1024 * 1024)),
+            ("2T", Some(2 * (1u64 << 40))),
+            ("", None),
+            ("M", None),
+            ("-1", None),
+            ("1.5G", None),
+            ("1 zettabyte", None),
+            ("18446744073709551615K", None),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(parse_size(input).ok(), expected, "input: {input:?}");
+        }
+    }
+
+    /// Zero is a footgun rather than a way to turn the limit off, unlike `-t 0`.
+    #[test]
+    fn parse_max_memory_rejects_uselessly_small_limits() {
+        for tiny in ["0", "1", "1K", "1023K"] {
+            assert!(
+                parse_max_memory(tiny).is_err(),
+                "{tiny:?} should be rejected as too small"
+            );
+        }
+        assert_eq!(parse_max_memory("1M").ok(), Some(1 << 20));
+    }
+
+    #[test]
+    fn options_from_max_memory_arg() -> Result<(), Box<dyn std::error::Error>> {
+        let args = Args::parse_from(["mutants", "--max-memory=256M"]);
+        let options = Options::new(&args, &Config::default())?;
+        assert_eq!(options.max_memory, Some(256 * 1024 * 1024));
+
+        let args = Args::parse_from(["mutants"]);
+        let options = Options::new(&args, &Config::default())?;
+        assert_eq!(options.max_memory, None);
+        Ok(())
+    }
+
+    #[test]
+    fn cli_max_memory_overrides_config() -> Result<(), Box<dyn std::error::Error>> {
+        let config: Config = "max_memory = \"8G\"".parse()?;
+        let options = Options::new(&Args::parse_from(["mutants"]), &config)?;
+        assert_eq!(options.max_memory, Some(8 * 1024 * 1024 * 1024));
+
+        let args = Args::parse_from(["mutants", "--max-memory=1G"]);
+        let options = Options::new(&args, &config)?;
+        assert_eq!(options.max_memory, Some(1024 * 1024 * 1024));
+        Ok(())
+    }
+
+    #[test]
+    fn unparseable_max_memory_is_an_error() {
+        let args = Args::parse_from(["mutants", "--max-memory=lots"]);
+        let err = Options::new(&args, &Config::default())
+            .expect_err("--max-memory=lots should not be accepted");
+        assert!(
+            format!("{err:#}").contains("--max-memory"),
+            "unhelpful error message: {err:#}"
+        );
     }
 
     #[test]
