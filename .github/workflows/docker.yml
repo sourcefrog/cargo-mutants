@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+
+name: Docker
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v[0-9]+.*
+
+jobs:
+  lint:
+    name: Lint Dockerfile
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.3.0
+
+  build:
+    name: Build Docker image
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ghcr.io/${{ github.repository }}
+    # Only build one base variant at a time so we can take advantage of the
+    # cache. I.e. only build one Alpine-based image and one Debian-based image
+    # at a time.
+    concurrency:
+      group: ${{ matrix.build_rust_tag }}
+      queue: max
+    steps:
+      - id: docker-metadata
+        name: Generate image names and tags
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          flavor: suffix=${{ matrix.tag_suffix }},onlatest=true
+          # - `type=semver,pattern={{version}}`,
+          #   `type=semver,pattern={{major}}.{{minor}}` and
+          #   `type=semver,pattern={{major}}`: Jobs that run on a semver-looking
+          #   git tag will be tagged as `major.minor.patch`, `major.minor`,
+          #   `major` and "latest". Eg. a job running on the git tag "v1.2.3"
+          #   will be tagged as "1", "1.2", "1.2.3" and "latest". Semantic
+          #   versions that indicate a pre-releases (eg. "v1.2.3-rc.4") will be
+          #   tagged as the full version only (i.e. "1.2.3-rc.4").
+          # - `type=edge,branch=main`: Jobs that run on the "main" branch will
+          #   be tagged with "edge".
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=edge,branch=main
+      - name: Login to GitHub container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.docker-metadata.outputs.tags }}
+          labels: ${{ steps.docker-metadata.outputs.labels }}
+          build-args: |
+            BUILD_RUST_TAG=${{ matrix.build_rust_tag }}
+            FINAL_RUST_TAG=${{ matrix.final_rust_tag }}
+          # Cache to and from the registry. Use image name like
+          # "ghcr.io/sourcefrog/cargo-mutants-cache".
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}-cache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}-cache,mode=max
+    # - `build_rust_tag`: The Rust image tag to use for the build stage.
+    # - `final_rust_tag`: The Rust image tag to use for the final stage.
+    # - `tag_suffix`: The suffix to append to to our image tags. Eg. images that
+    #   use "rust:latest" as the final stage will be tagged like ":1.2.3" and
+    #   images that use "rust:slim" as the final stage will be tagged like
+    #   ":1.2.3-slim".
+    # TODO: Don't tag as "latest-alpine", just tag as "alpine". I believe this
+    #       is currently not possible using docker/metadata-action.
+    strategy:
+      matrix:
+        include:
+          - build_rust_tag: slim
+            final_rust_tag: latest
+            tag_suffix: ""
+          - build_rust_tag: slim
+            final_rust_tag: slim
+            tag_suffix: -slim
+          - build_rust_tag: alpine
+            final_rust_tag: alpine
+            tag_suffix: -alpine
