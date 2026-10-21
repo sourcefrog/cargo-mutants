@@ -375,7 +375,7 @@ pub struct Args {
     in_diff: Option<Utf8PathBuf>,
 
     /// Skip mutants that were caught in previous runs.
-    #[arg(long, help_heading = "Filters")]
+    #[arg(long, visible_alias = "incremental", help_heading = "Filters")]
     iterate: bool,
 
     /// Only test mutants from these packages.
@@ -679,6 +679,12 @@ mod test {
         let args = super::Args::try_parse_from(["mutants", "--config=foo.toml", "--no-config"]);
         assert!(args.is_err(), "Expected error due to conflicting options");
         println!("Error message: {}", args.unwrap_err());
+    }
+
+    #[test]
+    fn incremental_alias_enables_iterate() {
+        let args = super::Args::try_parse_from(["mutants", "--incremental"]).unwrap();
+        assert!(args.iterate);
     }
 
     #[test]
